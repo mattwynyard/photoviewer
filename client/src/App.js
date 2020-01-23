@@ -61,10 +61,14 @@ class App extends React.Component {
       projectArr: projects,
       faultClass: [],
       faultTypes: [],
-      pageActive: 0
+      pageActive: 0,
+      checkedFaults: [],
+      checked: false
     };
     
   }
+
+  
 
   getProjects() {
     let cookie = Cookies.get('projects');
@@ -530,6 +534,22 @@ class App extends React.Component {
     this.getFaultTypes(this.state.faultClass[index].code);
   }
 
+  changeCheck(e) {
+    //console.log(e.target.id);
+    this.state.checkedFaults.push(e.target.id);
+    console.log(this.state.checkedFaults.length)
+  }
+
+  isChecked(value) {
+    console.log(value);
+    for (var i = 0; i < this.state.checkedFaults.length; i += 1) {
+      console.log("state:" + this.state.checkedFaults[i]);
+      if (value === this.state.checkedFaults[i]);
+      return true;
+    }
+    return false;
+  }
+
   closeFilter() {
     this.setState({pageActive: false});
   }
@@ -585,6 +605,10 @@ class App extends React.Component {
     } else {
       return null;
     }
+  }
+
+  tableLoad(e) {
+    console.log(e.target);
   }
   //RENDER
 
@@ -778,17 +802,17 @@ class App extends React.Component {
         </Modal.Header>
         <Modal.Body >	
         <Table size="sm" striped bordered hover>
-          <thead> 
-            </thead> 
-            <tbody>
-            {this.state.faultTypes.map((value, index) => 
-              <tr className='tablerow' key={`${index}`}>
-                  <td>                   
-                  <input type="checkbox" unchecked="true"/> {value.fault}
-                  </td>
-              </tr>
-            )}
-            </tbody>
+          <thead>
+          </thead> 
+          <tbody>      
+          {this.state.faultTypes.map((value, index) => 
+            <tr className='tablerow' key={`${index}`}>
+                <td>                   
+                <input type="checkbox" id={value.fault} checked={this.isChecked(value)} onChange={(e) => this.changeCheck(e)}/> {value.fault}
+                </td>
+            </tr>
+          )}
+          </tbody>
           </Table>
 		    </Modal.Body>
         <Modal.Footer>
