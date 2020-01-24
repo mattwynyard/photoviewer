@@ -2,6 +2,7 @@
 
 ./*.sql
 /model
+
 client/public
 # dependencies
 client/node_modules
