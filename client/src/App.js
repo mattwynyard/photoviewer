@@ -405,6 +405,7 @@ class App extends React.Component {
   }
 
   loadLayer(e) {
+    console.log(e.target.attributes.code.value);
     this.setState({activeProject: e.target.attributes.code.value});
     this.filterLayer(e.target.attributes.code.value);  
   }
