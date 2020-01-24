@@ -82,16 +82,41 @@ module.exports = {
         });
     },
 
-    layer: (layer) => { 
+    layer: (layer, filter) => { 
         return new Promise((resolve, reject) => {
-            connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) FROM faults", (err, result) => {
+            console.log(filter.length);
+            if (filter.length == 0) {
+                
+                connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
+                + "FROM faults WHERE project = '" + layer + "'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var geometry = resolve(result);
+                
+                return geometry;
+            }); 
+            } else {
+                var condition = "";
+                for (var i = 0; i < filter.length; i += 1) {
+                    if (i < filter.length - 1) {
+                        condition += ("'" + filter[i] + "'" + ",");
+                    } else {
+                        condition += "'" + filter[i] + "'";
+                    }
+                }
+                connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
+                + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
                 var geometry = resolve(result);
                 return geometry;
-            });
+                });
+            }
+            
         });
     },
 

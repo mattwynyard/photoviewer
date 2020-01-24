@@ -33,7 +33,7 @@ class App extends React.Component {
       mode: "map",
       zoom: 8,
       index: null,
-      markersData: [],
+      //markersData: [],
       centreData: [],
       objData: [],
       fault: [],
@@ -52,18 +52,19 @@ class App extends React.Component {
       showAbout: false,
       modalPhoto: null,
       popover: false,
-      filter: false,
+      filterModal: false,
       activeSelection: "Fault Type",
       photourl: null,
       amazon: "https:/taranaki.s3.ap-southeast-2.amazonaws.com/Roads/2019_11/",
       user: null,
-      passowrd: null,
+      password: null,
       projectArr: projects,
       faultClass: [],
       faultTypes: [],
       pageActive: 0,
       checkedFaults: [],
-      checked: false
+      checked: false,
+      activeProject: null
     };
     
   }
@@ -173,7 +174,8 @@ class App extends React.Component {
   /*  Adds db data to various arrays and an object. Then sets state to point to arrays. 
   */
   async addMarkers(data) {
-    let markersData = [];
+    this.setState({objData: []});
+    //let markersData = [];
     let objData = [];
     let faults = [];
     let photos = [];
@@ -181,8 +183,12 @@ class App extends React.Component {
     let size = [];
     for (var i = 0; i < data.length; i++) {
       let obj = {};
+      const position = JSON.parse(data[i].st_asgeojson);
+      const lng = position.coordinates[0];
+      const lat = position.coordinates[1];
+      let latlng = L.latLng(lat, lng);
       obj = {
-        gid: data[i].gid,
+        //gid: data[i].gid,
         roadid: data[i].roadid,
         carriage: data[i].carriagewa,
         location: data[i].location,
@@ -190,24 +196,22 @@ class App extends React.Component {
         size: data[i].size,
         priority: data[i].priority,
         photo: data[i].photoid,
-        datetime: data[i].faulttime
+        datetime: data[i].faulttime,
+        latlng: latlng
       };
-      faults.push(data[i].fault);
-      photos.push(data[i].photoid);
+      //faults.push(data[i].fault);
+      //photos.push(data[i].photoid);
       objData.push(obj);
-      priorities.push(data[i].priority);
-      const position = JSON.parse(data[i].st_asgeojson);
-      const lng = position.coordinates[0];
-      const lat = position.coordinates[1];
-      let latlng = L.latLng(lat, lng);
-      markersData.push(latlng);     
+      //priorities.push(data[i].priority);
+      
+      //markersData.push(latlng);     
     }
-    //this.setState({index: 0});
+    console.log("objData: render");
     this.setState({objData: objData});
-    this.setState({markersData: markersData});
-    //this.setState({photos: photos});
-    //this.setState({sizes: size});
-    //this.setState({priority: priorities});
+    //console.log("markersData: render");
+    //this.setState({markersData: markersData});
+    
+
     
   }
 
@@ -230,7 +234,7 @@ class App extends React.Component {
       lineData.push(points);
     }
     let polylines  = [];
-    console.log(lineData);
+    //console.log(lineData);
     this.setState({centreData: lineData});
   }
 
@@ -274,7 +278,6 @@ class App extends React.Component {
   }
 
   clickImage(e) {    
-    console.log('click imge')
     this.setState({show: true});
     let photo = this.getFault(this.state.index, 'photo');
     this.setState({currentPhoto: photo});
@@ -321,7 +324,7 @@ class App extends React.Component {
   }
 
   async logout(e) {
-    //console.log("logout");
+    console.log("logout");
     console.log(this.state.login);
     const response = await fetch('http://' + this.state.host + '/logout', {
       method: 'POST',
@@ -336,18 +339,19 @@ class App extends React.Component {
       })
     });
     const body = await response.json();
+    console.log(response);
     if (response.status !== 200) {
       throw Error(body.message) 
     } 
     
-    console.log(body.success);
+    //console.log(body.success);
     this.setState({login: "Login"});
     this.setState({loginModal: (e) => this.clickLogin(e)});
     Cookies.remove('token');
     Cookies.remove('user');
     Cookies.remove('projects');
     this.setState({projectArr: []});
-    console.log("ProjectArr: " + this.state.projectArr);
+    this.setState.checkedFaults = [];
     this.render();
   }
 
@@ -400,34 +404,48 @@ class App extends React.Component {
     this.setState({projectArr: prj});
   }
 
-  async loadLayer(e) {
-    console.log(e.target.attributes);
-    console.log(e.target.attributes.code.value);
+  loadLayer(e) {
+    this.setState({activeProject: e.target.attributes.code.value});
+    this.filterLayer(e.target.attributes.code.value);  
+  }
+
+
+  async filterLayer(project) {
     if (this.state.login !== "Login") {
-        const response = await fetch('http://' + this.state.host + '/layer', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.state.login,
-          project: e.target.attributes.code.value   
-        })
+      const response = await fetch('http://' + this.state.host + '/layer', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+        filter: this.state.checkedFaults   
       })
-      if (response.status !== 200) {
-        console.log(response.status);
-      } 
-      const body = await response.json();
-      await this.addMarkers(body);
+    })
+    if (response.status !== 200) {
+      console.log(response.status);
+    } 
+    const body = await response.json();
+    await this.addMarkers(body);
     } else {
       
     }    
   }
 
-  async filterLayer(e) {
-
+  submitFilter() {
+    this.setState({filterModal: false});
+    //if (this.state.checkedFaults.length != 0) {
+      //this.setState({objData: []});
+      this.filterLayer(this.state.activeProject);
+      // for (var i = 0; i < this.state.checkedFaults.length; i += 1) {
+      //   console.log(this.state.checkedFaults[i]);
+      //   }    
+      //}
+      
+    
   }
 
   async loadCentreline(e) {
@@ -450,7 +468,6 @@ class App extends React.Component {
         console.log(response.status);
       } 
       const body = await response.json();
-      //console.log(body);
       await this.addCentrelines(body);
     } else {
       
@@ -474,10 +491,7 @@ class App extends React.Component {
         console.log(response.status);
       } 
       const classes = await response.json();
-      console.log(classes);
       this.setState({faultClass: classes});
-      //classes.map(classes => console.log(classes.description));
-      //classes.map(classes => this.getFaultTypes(classes.description));
       this.getFaultTypes(this.state.faultClass[0].code);
     }
   }
@@ -501,6 +515,7 @@ class App extends React.Component {
         console.log(response.status);
       } 
       const faults = await response.json();
+      faults.map(obj => obj["type"] = cls)
       //console.log(faults);
       this.setState({faultTypes: faults});
     }
@@ -529,30 +544,42 @@ class App extends React.Component {
   }
 
   clickPage(index) {
-    console.log(index);
     this.setState({pageActive: index});
     this.getFaultTypes(this.state.faultClass[index].code);
   }
 
   changeCheck(e) {
-    //console.log(e.target.id);
-    this.state.checkedFaults.push(e.target.id);
-    console.log(this.state.checkedFaults.length)
+    //if checked true we are adding values to arr
+    let arr = this.state.checkedFaults;
+    if (e.target.checked) {
+      arr.push(e.target.id);                
+    } else {
+      for (var i = 0; i < arr.length; i += 1) {
+        if (e.target.id === arr[i]) {
+          arr.splice(i, 1);
+          break;
+        }
+      }
+    }  
+    this.setState({checkedFaults: arr});
+    console.log(this.state.checkedFaults);
   }
 
+/**
+ * checks if each fault is checked by searching checkedFault array
+ * @param {the id of the checkbox i.e. fault type} value 
+ * @return {}
+ */
   isChecked(value) {
-    console.log(value);
     for (var i = 0; i < this.state.checkedFaults.length; i += 1) {
-      console.log("state:" + this.state.checkedFaults[i]);
-      if (value === this.state.checkedFaults[i]);
-      return true;
+      if (value === this.state.checkedFaults[i]) {
+        return true;
+      }     
     }
     return false;
   }
 
-  closeFilter() {
-    this.setState({pageActive: false});
-  }
+  
   /**
    * called when photoviewer closed
    */
@@ -562,12 +589,12 @@ class App extends React.Component {
   }
 
   clickFilter(e) {
-    this.setState({filter: true});
+    this.setState({filterModal: true});
     this.loadFilters();
   }
 
   setDisplay(e) {
-    console.log(e.target.id);
+    //console.log(e.target.id);
     if(e.target.id === "priority") {
       this.setState({activeSelection: "Priority"});
     } else {
@@ -586,10 +613,12 @@ class App extends React.Component {
  */
   getFault(index, attribute) {
     if (this.state.objData.length !== 0 && index !== null) {
+      
       switch(attribute) {
         case "fault":
           return  this.state.objData[index].fault;
         case "priority":
+         
           return  this.state.objData[index].priority;
         case "location":
           return  this.state.objData[index].location;
@@ -613,10 +642,8 @@ class App extends React.Component {
   //RENDER
 
   render() {
-    console.log("render");
-    const position = [this.state.location.lat, this.state.location.lng];
-    const latlngs = this.state.centreData;
-    const { markersData } = this.state.markersData;
+    //console.log("render");
+    const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
     const { photo } = this.state.photos;      
     const handleClose = () => this.setState({show: false});
@@ -728,7 +755,7 @@ class App extends React.Component {
           photo={photo}
           worldCopyJump={true}
           boxZoom={true}
-          center={position}
+          center={centre}
           zoom={this.state.zoom}
           onZoom={(e) => this.onZoom(e)}>
           <TileLayer className="mapLayer"
@@ -755,18 +782,18 @@ class App extends React.Component {
             positions={latlngs}>
           </Polyline>
           )}
-          </LayerGroup>
+          {/* </LayerGroup>
           </LayersControl.Overlay>
            <LayersControl.Overlay checked name="first layer">
-          <LayerGroup>
-            {this.state.markersData.map((position, index) => 
+          <LayerGroup> */}
+            {this.state.objData.map((obj, index) => 
             
             <Marker 
               key={`${index}`}
               index={index}
               data={fault}
               photo={photo}
-              position={position} 
+              position={obj.latlng} 
               icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
               draggable={false} 
               onClick={(e) => this.clickMarker(e)}				  
@@ -790,7 +817,7 @@ class App extends React.Component {
           
       </Map>   
       </div>
-      <Modal className="filterModal" show={this.state.filter} size={'lg'} centered={true}>
+      <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
         <Modal.Header>
           <Modal.Title>Filter</Modal.Title><br></br>
           <Pagination size="sm">
@@ -808,7 +835,7 @@ class App extends React.Component {
           {this.state.faultTypes.map((value, index) => 
             <tr className='tablerow' key={`${index}`}>
                 <td>                   
-                <input type="checkbox" id={value.fault} checked={this.isChecked(value)} onChange={(e) => this.changeCheck(e)}/> {value.fault}
+                <input type="checkbox" id={value.fault} checked={this.isChecked(value.fault)} onChange={(e) => this.changeCheck(e)}/> {value.fault}
                 </td>
             </tr>
           )}
@@ -816,7 +843,7 @@ class App extends React.Component {
           </Table>
 		    </Modal.Body>
         <Modal.Footer>
-          <Button variant="primary" type="submit" onClick={(e) => this.closeFilter(e)}>
+          <Button variant="primary" type="submit" onClick={() => this.submitFilter()}>
             Filter
             </Button>
         </Modal.Footer>

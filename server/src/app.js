@@ -99,7 +99,6 @@ app.post('/logout', (req, res, next) => {
 });
 
 app.post('/class', async (req, res, next) => {
-  console.log("logout");
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     var fclass = await db.class();
@@ -112,11 +111,10 @@ app.post('/class', async (req, res, next) => {
 });
 
 app.post('/faults', async (req, res, next) => {
-  console.log("logout");
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     var faults = await db.faults(req.body.type);
-    //console.log(faults);
+    //console.log(faults.rows);
     res.set('Content-Type', 'application/json')
     res.send(faults.rows);
   } else {
@@ -126,14 +124,11 @@ app.post('/faults', async (req, res, next) => {
 });
 
 app.post('/layer', async (req, res, next) => {
-  //console.log(req.headers.authorization);
-  //console.log(req.body.user);
   const result = users.findUserToken(req.headers.authorization, req.body.user);
-  //console.log("result: " + result);
   if (result) {
-    var layer = req.body.menu;
-    var geometry = await db.layer(layer);
-    //console.log(geometry.rows);
+    var layer = req.body.project;
+    var filter = req.body.filter;
+    var geometry = await db.layer(layer, filter);
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
   } else {
