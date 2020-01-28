@@ -33,7 +33,6 @@ class App extends React.Component {
       mode: "map",
       zoom: 8,
       index: null,
-      //markersData: [],
       centreData: [],
       objData: [],
       fault: [],
@@ -64,7 +63,8 @@ class App extends React.Component {
       pageActive: 0,
       checkedFaults: [],
       checked: false,
-      activeProject: null
+      activeProject: null,
+      clearDisabled: true
     };
     
   }
@@ -132,6 +132,10 @@ class App extends React.Component {
     return icon;
   }
 
+  /**
+   * returns the current icon size when zoom level changes
+   * @param {the current zoom level} zoom 
+   */
   getSize(zoom) {
     if (zoom < 10) {
       return 4;
@@ -150,15 +154,13 @@ class App extends React.Component {
     // Call our fetch function below once the component mounts
     this.callBackendAPI()
     .catch(err => console.log(err));
-    this.map = this.map.leafletElement;
+    //this.map = this.map.leafletElement;
   }
 
 
   componentDidUpdate() {   
     //let marker = CustomMarker();
   }
-
-
 
   callBackendAPI = async () => {
     console.log('http://' + this.state.host + '/api');
@@ -174,13 +176,7 @@ class App extends React.Component {
   /*  Adds db data to various arrays and an object. Then sets state to point to arrays. 
   */
   async addMarkers(data) {
-    this.setState({objData: []});
-    //let markersData = [];
     let objData = [];
-    let faults = [];
-    let photos = [];
-    let priorities = [];
-    let size = [];
     for (var i = 0; i < data.length; i++) {
       let obj = {};
       const position = JSON.parse(data[i].st_asgeojson);
@@ -188,7 +184,6 @@ class App extends React.Component {
       const lat = position.coordinates[1];
       let latlng = L.latLng(lat, lng);
       obj = {
-        //gid: data[i].gid,
         roadid: data[i].roadid,
         carriage: data[i].carriagewa,
         location: data[i].location,
@@ -199,20 +194,10 @@ class App extends React.Component {
         datetime: data[i].faulttime,
         latlng: latlng
       };
-      //faults.push(data[i].fault);
-      //photos.push(data[i].photoid);
-      objData.push(obj);
-      //priorities.push(data[i].priority);
-      
-      //markersData.push(latlng);     
+      objData.push(obj);    
     }
     console.log("objData: render");
     this.setState({objData: objData});
-    //console.log("markersData: render");
-    //this.setState({markersData: markersData});
-    
-
-    
   }
 
   addCentrelines(data) {
@@ -220,10 +205,8 @@ class App extends React.Component {
     console.log(data.length);
     for (var i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson); 
-      //console.log(linestring);   
       if(linestring !== null) {
         var points = [];
-        //console.log("new segment");
         var segment = linestring.coordinates[0];
         for (var j = 0; j < segment.length; j++) {
           var point = segment[j];
@@ -234,7 +217,6 @@ class App extends React.Component {
       lineData.push(points);
     }
     let polylines  = [];
-    //console.log(lineData);
     this.setState({centreData: lineData});
   }
 
@@ -285,8 +267,6 @@ class App extends React.Component {
 
   getPhoto(direction) {
     let photo = this.state.currentPhoto;
-    //let photo = this.getFault(this.state.index, 'photo');
-    //let suffix = photo.slice(photo.length - 5, photo.length);
     let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
     let n = null;
     if (direction === "prev") {
@@ -343,8 +323,6 @@ class App extends React.Component {
     if (response.status !== 200) {
       throw Error(body.message) 
     } 
-    
-    //console.log(body.success);
     this.setState({login: "Login"});
     this.setState({loginModal: (e) => this.clickLogin(e)});
     Cookies.remove('token');
@@ -385,9 +363,7 @@ class App extends React.Component {
       this.setState({token: body.token});
       this.setState({loginModal: (e) => this.logout(e)}); 
       console.log(body.projects);     
-      this.buildProjects(body.projects);
-      //this.setState({projectArr: body.projects});
-      
+      this.buildProjects(body.projects);   
     } else {
       console.log("Login failed");
     }  
@@ -396,10 +372,8 @@ class App extends React.Component {
   buildProjects(projects) {
     let prj = []
     for(var i = 0; i < projects.length; i += 1) {
-      //prj.push(projects[i].description + " " + projects[i].date);
       prj.push(projects[i]);
     }
-    //console.log("projects:" + JSON.parse(projects[0]))
     Cookies.set('projects', JSON.stringify(prj), { expires: 7 })
     this.setState({projectArr: prj});
   }
@@ -438,15 +412,8 @@ class App extends React.Component {
 
   submitFilter() {
     this.setState({filterModal: false});
-    //if (this.state.checkedFaults.length != 0) {
-      //this.setState({objData: []});
-      this.filterLayer(this.state.activeProject);
-      // for (var i = 0; i < this.state.checkedFaults.length; i += 1) {
-      //   console.log(this.state.checkedFaults[i]);
-      //   }    
-      //}
-      
-    
+    this.filterLayer(this.state.activeProject);
+
   }
 
   async loadCentreline(e) {
@@ -604,7 +571,6 @@ class App extends React.Component {
   }
 
   getColor() {
-    //console.log("Hello");
     return '#' +  Math.random().toString(16).substr(-6);
   }
 /**
@@ -613,13 +579,14 @@ class App extends React.Component {
  * @param {the property of the fault} attribute 
  */
   getFault(index, attribute) {
+    //console.log("index: " + index);
+    //console.log("attribute: " + attribute);
+    //console.log("length: " + this.state.objData.length);
     if (this.state.objData.length !== 0 && index !== null) {
-      
       switch(attribute) {
         case "fault":
           return  this.state.objData[index].fault;
-        case "priority":
-         
+        case "priority":        
           return  this.state.objData[index].priority;
         case "location":
           return  this.state.objData[index].location;
@@ -643,7 +610,8 @@ class App extends React.Component {
   //RENDER
 
   render() {
-    //console.log("render");
+    console.log("render");
+    console.log("modal:" + this.state.show);
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
     const { photo } = this.state.photos;      
@@ -714,6 +682,7 @@ class App extends React.Component {
     const { currentPage } = this.state.pageActive;
 
     return (
+     
       <>     
         <div>
           <Navbar bg="light" expand="lg"> 
@@ -799,7 +768,6 @@ class App extends React.Component {
               draggable={false} 
               onClick={(e) => this.clickMarker(e)}				  
               >
-
               <Popup className="popup">
               <div>
                 <p className="faulttext">
@@ -846,7 +814,10 @@ class App extends React.Component {
         <Modal.Footer>
           <Button variant="primary" type="submit" onClick={() => this.submitFilter()}>
             Filter
-            </Button>
+          </Button>
+          <Button variant="primary" disabled = {this.state.disabled} type="submit" onClick={() => this.submitFilter()}>
+            Clear Filter
+          </Button>
         </Modal.Footer>
       </Modal>
 
