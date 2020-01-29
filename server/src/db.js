@@ -24,7 +24,7 @@ connection.on('connect', () => {
 module.exports = { 
     projects : (user) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description, date FROM projects WHERE client = $1::text AND active = true';
+            let sql = 'SELECT code, description, date, amazon FROM projects WHERE client = $1::text AND active = true';
             connection.query(sql, [user], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

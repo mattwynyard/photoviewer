@@ -83,6 +83,12 @@ body {
  
 }
 
+.clear {
+  position:absolute;
+  left: 18px;
+  bottom: 18px;
+
+}
 
 .popup {
   width: 200px;

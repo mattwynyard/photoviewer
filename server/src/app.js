@@ -61,7 +61,7 @@ app.post('/login', async (request, response, next) => {
         this.token = token;
         let projects = await db.projects(user);
         let arr = [];
-        console.log("login: " + user);
+        console.log(projects.rows);
         for (var i = 0; i < projects.rows.length; i += 1) {
           arr.push(projects.rows[i]);
         }
@@ -92,10 +92,6 @@ app.post('/logout', (req, res, next) => {
   } else {
     res.send({success: false});
   }
-  
-  // const user = req.body.user;
-  // console.log(user);
-  // res.send({logout: true})
 });
 
 app.post('/class', async (req, res, next) => {
