@@ -2,6 +2,7 @@
 
 ./*.sql
 /model
+.env
 
 client/public
 # dependencies

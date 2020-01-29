@@ -1,12 +1,13 @@
 'use strict'
+require('dotenv').config();
 const { Pool } = require('pg')
 
 const connection = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'onsite',
-    password: 'Glacier_7',
-    port: 5432,
+    user: process.env.USER,
+    host: process.env.HOST,
+    database: process.env.DB,
+    password: process.env.PASSWORD,
+    port: process.env.PORT,
     max: 20,
     connectionTimeoutMillis: 2000,
 })
