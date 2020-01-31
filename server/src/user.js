@@ -6,25 +6,29 @@ let findUserToken = (token, name) => {
     //console.log(name);
     //console.log(token);
     //console.log(users.name);
-    const result = users.find(user => user.name === name)
+    const result = users.find(user => user.token === token);
+    //console.log(result);
     if (result === undefined) {
+        //console.log("token not found");
         return false;
     }
-    if (result.token === token) {
+    if (result.name === name) {
+        //console.log("found token");
         return true;
     } else {
+       // console.log("user not found");
         return false;
     }
-    //console.log("Result: " + result.token);
 };
 
 let addUser = (user) => {
+    //console.log(user);
     users.push(user);
     
 };
 
-let deleteUser = (user) => {
-    users.splice(users.indexOf(user), 1);   
+let deleteToken = (token) => {
+    users.splice(users.indexOf(token), 1);   
 };
 
 let printUsers = () => {
@@ -36,5 +40,5 @@ let printUsers = () => {
 
 exports.printUsers = printUsers;
 exports.addUser = addUser;
-exports.deleteUser = deleteUser;
+exports.deleteToken = deleteToken;
 exports.findUserToken = findUserToken;

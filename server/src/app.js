@@ -48,20 +48,25 @@ app.post('/login', async (request, response, next) => {
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false });
     succeded = false;
-    console.log("failed login");
+    console.log("user doesn't exist");
   } else {
+    let count = await db.users(user);
+    //console.log("users: " + count.rows[0].count);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
+      count = count.rows[0].count;
+      const seed  = user + count;
       if (err) throw err;     
       if (res) {
-          const token = jwt.sign({ user }, jwtKey, {
+          const token = jwt.sign({ seed }, jwtKey, {
           algorithm: 'HS256',
           expiresIn: jwtExpirySeconds
         });
         succeded = true;
+        count = count += 1;
+        await db.updateCount(count, user);
         this.token = token;
         let projects = await db.projects(user);
-        let arr = [];
-        console.log(projects.rows);
+        let arr = []; //project arr
         for (var i = 0; i < projects.rows.length; i += 1) {
           arr.push(projects.rows[i]);
         }
@@ -87,7 +92,8 @@ app.post('/logout', (req, res, next) => {
   console.log("logout");
   
   if (req.headers.authorization === this.token) {
-    users.deleteUser(req.body.user);
+    users.deleteToken(req.body.token);
+    users.printUsers();
     res.send({success: true});
   } else {
     res.send({success: false});

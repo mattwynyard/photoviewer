@@ -2,8 +2,8 @@ const app = require('./app');
 const fs = require('fs');
 // const https = require('https');
 const http = require('http');
-const port = process.env.PORT || 5000;
-const hostname = process.env.HOST || 'localhost';
+const port = process.env.PROXY;
+const host = 'localhost';
 
 // const options = {
 //   key: fs.readFileSync('key.pem'),
@@ -19,6 +19,6 @@ const hostname = process.env.HOST || 'localhost';
 
 app.listen(port, () => {
   /* eslint-disable no-console */
-  console.log(`Listening: http://localhost:${port}`);
+  console.log(`Listening: http://${host}:${port}`);
   /* eslint-enable no-console */
 });

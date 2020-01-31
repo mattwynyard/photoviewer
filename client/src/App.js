@@ -3,6 +3,7 @@ import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, L
 import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Dropdown, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
+//import './api.js';
 import Cookies from 'js-cookie';
 
 class App extends React.Component {
@@ -21,7 +22,7 @@ class App extends React.Component {
         lat: -41.2728,
         lng: 173.2995,
       },
-      host: 'osmium.nz',
+      host: this.getHost(),
       token: Cookies.get('token'),
       login: user,
       loginModal: loginModal,
@@ -62,10 +63,42 @@ class App extends React.Component {
       checkedFaults: [],
       checked: false,
       activeProject: null,
+      activeLayers: [],
       clearDisabled: true
     };
     
   }
+
+  getHost() {
+    if (process.env.NODE_ENV === "development") {
+      return "localhost:5000";
+    } else if (process.env.NODE_ENV === "production") {
+      return "osmium.nz";
+    } else {
+      return "localhost:5000"
+    }
+   }
+
+  componentDidMount() {
+    // Call our fetch function below once the component mounts
+    this.callBackendAPI()
+    .catch(err => alert(err));
+    console.log(process.env.NODE_ENV);
+  }
+
+  componentDidUpdate() {   
+  }
+
+  callBackendAPI = async () => {
+    const response = await fetch('http://' + this.state.host + '/api'); 
+    const body = await response.json();
+    console.log(body.express);
+    if (response.status !== 200) {
+      alert(body);   
+      throw Error(body.message) 
+    }
+    return body;
+  };
 
   getProjects() {
     let cookie = Cookies.get('projects');
@@ -145,27 +178,6 @@ class App extends React.Component {
       return 32;
     }
   }
-
-  componentDidMount() {
-    // Call our fetch function below once the component mounts
-    this.callBackendAPI()
-    .catch(err => alert(err));
-    //this.clearCache();
-  }
-
-  componentDidUpdate() {   
-  }
-
-  callBackendAPI = async () => {
-    const response = await fetch('http://' + this.state.host + '/api'); 
-    const body = await response.json();
-    console.log(body.express);
-    if (response.status !== 200) {
-      alert(body);   
-      throw Error(body.message) 
-    }
-    return body;
-  };
 
   /**
    * Adds db data to various arrays and an object. Then sets state to point to arrays. 
@@ -254,6 +266,10 @@ class App extends React.Component {
     }
   }
 
+  /**
+   * Fired when user clciks photo on thubnail
+   * @param {event} e 
+   */
   clickImage(e) {    
     this.setState({show: true});
     let photo = this.getFault(this.state.index, 'photo');
@@ -299,18 +315,18 @@ class App extends React.Component {
   }
 
   clearCache() {
-    this.setState({login: "Login"});
-    this.setState({loginModal: (e) => this.clickLogin(e)});
     Cookies.remove('token');
     Cookies.remove('user');
     Cookies.remove('projects');
+    this.setState({login: "Login"});
+    this.setState({loginModal: (e) => this.clickLogin(e)});
+    this.setState({activeProject: null})
     this.setState({projectArr: []});
-    this.setState.checkedFaults = [];
+    this.setState({checkedFaults: []});
+    this.setState({objData: []});
   }
 
   async logout(e) {
-    //console.log("logout");
-    //console.log(this.state.login);
     const response = await fetch('http://' + this.state.host + '/logout', {
       method: 'POST',
       credentials: 'same-origin',
@@ -324,7 +340,7 @@ class App extends React.Component {
       })
     });
     const body = await response.json();
-    console.log(response);
+    //console.log(response);
     if (response.status !== 200) {
       throw Error(body.message) 
     } 
@@ -338,7 +354,6 @@ class App extends React.Component {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -378,15 +393,38 @@ class App extends React.Component {
     this.setState({projectArr: prj});
   }
 
+  /**
+   * 
+   * @param {event} e 
+   */
   loadLayer(e) {
     this.setState({activeProject: e.target.attributes.code.value});
-    this.filterLayer(e.target.attributes.code.value);  
-    for(var i = 0; i < this.state.projectArr.length; i += 1) {
-     
-      if (e.target.attributes.code.value === this.state.projectArr[i].code) {
+    for (var i = 0; i < this.state.projectArr.length; i += 1) {
+      if (this.state.projectArr[i].code === e.target.attributes.code.value) {
+        let project = {code: this.state.projectArr[i].code, description: this.state.projectArr[i].description, date: this.state.projectArr[i].date}
         this.setState({amazon: this.state.projectArr[i].amazon});
+        this.state.activeLayers.push(project);
       }
     }
+    this.filterLayer(e.target.attributes.code.value);  
+    
+  }
+
+  removeLayer(e) {
+    console.log(e.target.attributes.code.value);
+    console.log(this.state.activeLayers);
+    let layers = this.state.activeLayers;
+    for(var i = 0; i < layers.length; i += 1) {
+     
+      if (e.target.attributes.code.value === layers[i].code) {
+        console.log(layers[i]);
+        layers.splice(i, 1);
+        break;
+      }
+     
+    }
+    //TODO clear the filter
+    this.setState({activeLayers: layers});
   }
 
 
@@ -559,6 +597,7 @@ class App extends React.Component {
   }
 
   clickFilter(e) {
+    this.setState({index: null});
     this.setState({filterModal: true});
     this.loadFilters();
   }
@@ -571,13 +610,13 @@ class App extends React.Component {
     this.setState({checkedFaults: []});
   }
 
-  setDisplay(e) {
-    if(e.target.id === "priority") {
-      this.setState({activeSelection: "Priority"});
-    } else {
-      this.setState({activeSelection: "Fault Type"});
-    }
-  }
+  // setDisplay(e) {
+  //   if(e.target.id === "priority") {
+  //     this.setState({activeSelection: "Priority"});
+  //   } else {
+  //     this.setState({activeSelection: "Fault Type"});
+  //   }
+  // }
 
   /**
    * returns a random hex color
@@ -591,6 +630,7 @@ class App extends React.Component {
  * @param {the property of the fault} attribute 
  */
   getFault(index, attribute) {
+    //console.log(index);
     if (this.state.objData.length !== 0 && index !== null) {
       switch(attribute) {
         case "fault":
@@ -616,15 +656,22 @@ class App extends React.Component {
   tableLoad(e) {
     console.log(e.target);
   }
+
+  closePhotoModal(e) {
+   
+    this.setState({show: false});
+  }
+
+  clickGroup(e) {
+    console.log("click");
+  }
   //RENDER
 
   render() {
-    console.log("render");
+    //console.log("render");
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
     const { photo } = this.state.photos;  
-    //const { project } = this.state.activeProject;    
-    const handleClose = () => this.setState({show: false});
 
     const CustomTile = function CustomTile (props) {
         return (
@@ -634,8 +681,7 @@ class App extends React.Component {
           />
       );
     }
-    const CustomNav = function customNav(props) {
-      
+    const CustomNav = function customNav(props) {    
       if (props.title === 'Login') {
         return (
           <Nav className="ml-auto">
@@ -652,11 +698,16 @@ class App extends React.Component {
     const LayerNav = function LayerNav(props) {
       const loadLayer = props.loadLayer;
       const clickFilter = props.clickFilter;
+      const removeLayer= props.removeLayer;
       if (props.project !== null) {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu className="navdropdownitem" projects={props.projects} onClick={loadLayer}/>
+            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={loadLayer}/>
+            <NavDropdown.Divider />
+            {/* <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove Layer </NavDropdown.Item>
+            <NavDropdown.Divider /> */}
+            <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={removeLayer}/>
             <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.loadCentreline(e)}>Add centreline </NavDropdown.Item>
             <NavDropdown.Divider />
@@ -668,9 +719,9 @@ class App extends React.Component {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu className="navdropdownitem" projects={props.projects} onClick={(e) => loadLayer(e)}/>
+            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={(e) => loadLayer(e)}/>
             <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.loadCentreline(e)}>Remove layer</NavDropdown.Item>
+            <NavDropdown.Item title="Remove Layer" className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove layer</NavDropdown.Item>
             {/* <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={(e) => this.clickFilter(e)}>Filter Layer</NavDropdown.Item> */}
           </NavDropdown>
@@ -685,24 +736,24 @@ class App extends React.Component {
       if (p === undefined) {
         //console.log("Projects" + p);
         return ( 
-          <NavDropdown.Item title="Add Layers" className="dropdownitem">Add Layers
+          <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
           </NavDropdown.Item>
           );
       } else if(p.length === 0) {
         return ( 
-          <NavDropdown.Item title="Add Layers" className="dropdownitem">Add Layers
+          <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
           </NavDropdown.Item>
           );  
       } else {  
         return (        
-          <NavDropdown title="Add Layers" className="navdropdownitem" drop="right">
+          <NavDropdown title={props.title} className="navdropdownitem" drop="right">
           {props.projects.map((value, index) =>      
             <NavDropdown.Item className="navdropdownitem"
               key={`${index}`}
               index={index}
               title={value.code}
               code={value.code}
-              onClick={(e) => loadLayer(e)}>
+              onClick={props.onClick}>
                 {value.description + " " + value.date}
             </NavDropdown.Item>
           )}
@@ -725,16 +776,7 @@ class App extends React.Component {
                 alt="logo"
               />
               </Navbar.Brand>
-              <LayerNav project={this.state.activeProject} projects={this.state.projectArr} loadLayer={(e) => this.loadLayer(e)} clickFilter={(e) => this.clickFilter(e)}></LayerNav>
-            {/* <Nav>          
-              <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-                <CustomMenu className="navdropdownitem" projects={this.state.projectArr} onClick={(e) => this.loadLayer(e)}/>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.loadCentreline(e)}>Add centreline </NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={(e) => this.clickFilter(e)}>Filter Layer</NavDropdown.Item>
-              </NavDropdown>
-            </Nav> */}
+              <LayerNav project={this.state.activeProject} projects={this.state.projectArr} layers={this.state.activeLayers} removeLayer={(e) => this.removeLayer(e)} loadLayer={(e) => this.loadLayer(e)} clickFilter={(e) => this.clickFilter(e)}></LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
                 <NavDropdown.Item className="navdropdownitem" href="#terms" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
@@ -765,15 +807,43 @@ class App extends React.Component {
             url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
             zIndex={999}
           />
-           <NavDropdown className="displaytype" id="dropdown-basic-button" title={this.state.activeSelection}>
+          {/* <NavDropdown className="displaytype" id="dropdown-basic-button" title={this.state.activeSelection}>
             <Dropdown.Item id="priority" href="#filterpriority" onClick={(e) => this.setDisplay(e)}>Priority</Dropdown.Item>
             <Dropdown.Item id="type" href="#filtertype" onClick={(e) => this.setDisplay(e)}>Fault type</Dropdown.Item>
-          </NavDropdown>
+          </NavDropdown> */}
           <ScaleControl/>
           <Image className="satellite" src={this.state.osmThumbnail} onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
           <LayersControl position="topright">
-          <LayersControl.Overlay checked name="state highway">
-          <LayerGroup>
+          {this.state.activeLayers.map((layer, index) => 
+            <LayersControl.Overlay  key={`${index}`} checked name={layer.description + " " + layer.date}>
+              <LayerGroup >
+              {this.state.objData.map((obj, index) =>          
+                <Marker 
+                  key={`${index}`}
+                  index={index}
+                  data={fault}
+                  photo={photo}
+                  position={obj.latlng} 
+                  icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
+                  draggable={false} 
+                  onClick={(e) => this.clickMarker(e)}				  
+                  >
+                  <Popup className="popup">
+                  <div>
+                    <p className="faulttext">
+                      <b>{"Type: "}</b> {this.getFault(index, 'fault')} <br></br> <b>{"Priority: "} </b> {this.getFault(index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(index, 'location')}
+                    </p>
+                    <div>
+                    <Image className="thumbnail" src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} photo={photo} onClick={(e) => this.clickImage(e)} thumbnail={true}></Image >
+                    </div>          
+                  </div>
+                  </Popup>  
+                </Marker>
+                )}     
+              </LayerGroup>
+            </LayersControl.Overlay>
+          )}
+          </LayersControl>
           {this.state.centreData.map((latlngs, index) => 
           <Polyline 
             key={`${index}`}
@@ -783,39 +853,7 @@ class App extends React.Component {
             smoothFactor={3}
             positions={latlngs}>
           </Polyline>
-          )}
-          {/* </LayerGroup>
-          </LayersControl.Overlay>
-           <LayersControl.Overlay checked name="first layer">
-          <LayerGroup> */}
-            {this.state.objData.map((obj, index) => 
-            
-            <Marker 
-              key={`${index}`}
-              index={index}
-              data={fault}
-              photo={photo}
-              position={obj.latlng} 
-              icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
-              draggable={false} 
-              onClick={(e) => this.clickMarker(e)}				  
-              >
-              <Popup className="popup">
-              <div>
-                <p className="faulttext">
-                  <b>{"Type: "}</b> {this.getFault(index, 'fault')} <br></br> <b>{"Priority: "} </b> {this.getFault(index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(index, 'location')}
-                </p>
-                <div>
-                <Image className="thumbnail" src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} photo={photo} onClick={(e) => this.clickImage(e)} thumbnail={true}></Image >
-                </div>          
-              </div>
-              </Popup>  
-            </Marker>
-            )}     
-          </LayerGroup>
-          </LayersControl.Overlay>
-          </LayersControl>
-          
+          )}        
       </Map>   
       </div>
       <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
@@ -934,7 +972,7 @@ class App extends React.Component {
 		      <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
             Previous
           </Button>
-          <Button variant="primary" onClick={handleClose}>
+          <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>
           <Button className="next" variant="primary" onClick={(e) => this.clickNext(e)}>

@@ -70,22 +70,39 @@ module.exports = {
 
     road: (code) => { 
         return new Promise((resolve, reject) => {
-            console.log("SELECT gid, assetroadi, carriagewa, fullroadna, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'");
+            //console.log("SELECT gid, assetroadi, carriagewa, fullroadna, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'");
             connection.query("SELECT gid, assetroadi, carriagewa, fullroadna, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                console.log(result);
+                //console.log(result);
                 var geometry = resolve(result);
                 return geometry;
             });
         });
     },
 
+    // token: (token, user) => {
+    //     return new Promise((resolve, reject) => {
+    //         let sql = "INSERT INTO session(token, username, created) VALUES ('" + token + "','" + user + "', now())";
+    //         //console.log(sql);
+    //         connection.query(sql, (err, results) => {
+    //             if (err) {
+    //                 console.error('Error executing query', err.stack)
+    //                 return reject(err);
+    //             }
+    //             var p = resolve(results);
+    //             //console.log(results);
+    //             return p;
+    //         });
+    //     });
+    // },
+
+
     layer: (layer, filter) => { 
         return new Promise((resolve, reject) => {
-            console.log(filter.length);
+            //console.log(filter.length);
             if (filter.length == 0) {
                 
                 connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
@@ -134,5 +151,37 @@ module.exports = {
                 return p;
             });
         });
+    },
+
+    users: (username) => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT count FROM users WHERE username = $1::text';
+            connection.query(sql, [username], (err, results) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var p = resolve(results);
+                //console.log(results);
+                return p;
+            });
+        });
+    },
+
+    updateCount: (count, user) => {
+        return new Promise((resolve, reject) => {
+            let sql = "UPDATE users SET count = " + count + " WHERE username = '" + user + "'";
+            //console.log(sql);
+            connection.query(sql, (err, results) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var p = resolve(results);
+                //console.log(results);
+                return p;
+            });
+        });
     }
+
 }
