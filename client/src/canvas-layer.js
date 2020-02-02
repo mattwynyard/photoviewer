@@ -1,3 +1,5 @@
+//https://github.com/unicef/react-webgl-leaflet/blob/master/src/canvas-layer.js
+
 import L, { Layer } from 'leaflet'
 
 // -- L.DomUtil.setTransform from leaflet 1.0.0 to work on 0.0.7

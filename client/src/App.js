@@ -3,7 +3,9 @@ import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, L
 import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Dropdown, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
-//import './api.js';
+import './util.js';
+import CustomNav from './CustomClass.js';
+import CanvasLayer from './canvas-layer'
 import Cookies from 'js-cookie';
 
 class App extends React.Component {
@@ -84,9 +86,29 @@ class App extends React.Component {
     this.callBackendAPI()
     .catch(err => alert(err));
     console.log(process.env.NODE_ENV);
+
+    const map = this.map.leafletElement;
+    L.canvasLayer = function() {
+      return new CanvasLayer();
+    };
+
+    let cl = L.canvasLayer()
+    var glLayer = cl.delegate(this).addTo(map);
+    var canvas = glLayer._canvas
+    var gl = canvas.getContext('experimental-webgl', {
+      antialias: true
+    }) || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      console.log("gl not intialized");
+      return;
+    } else {
+      console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
+    }
   }
 
   componentDidUpdate() {   
+    
+
   }
 
   callBackendAPI = async () => {
@@ -227,18 +249,7 @@ class App extends React.Component {
     this.setState({centreData: lineData});
   }
 
-  /**
-   * 
-   * @param {the number to pad} n 
-   * @param {the amount of pading} width 
-   * @param {digit to pad out number with (default '0'} z 
-   * @return {the padded number (string)}
-   */
-  pad(n, width, z) {
-    z = z || '0';
-    n = n + '';
-    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-    }
+  
 
   //EVENTS
   /**
@@ -681,19 +692,6 @@ class App extends React.Component {
           />
       );
     }
-    const CustomNav = function customNav(props) {    
-      if (props.title === 'Login') {
-        return (
-          <Nav className="ml-auto">
-            <Nav.Link  id="Login" href="#login" onClick={props.onClick}>{props.title} </Nav.Link>
-          </Nav>);
-      } else {
-        return(
-        <Nav className="ml-auto"><NavDropdown className="navdropdown" title={props.title} id="basic-nav-dropdown">
-          <NavDropdown.Item className="navdropdownitem" href="#login"  onClick={props.onClick}>Logout</NavDropdown.Item>
-        </NavDropdown></Nav>);
-      }
-    }
 
     const LayerNav = function LayerNav(props) {
       const loadLayer = props.loadLayer;
@@ -792,7 +790,7 @@ class App extends React.Component {
           </Navbar>         
         </div>      
         <div className="map">
-        <Map       
+        <Map        
           ref={(ref) => { this.map = ref; }}
           className="map"
           fault={fault}
@@ -854,7 +852,7 @@ class App extends React.Component {
             positions={latlngs}>
           </Polyline>
           )}        
-      </Map>   
+      </Map >   
       </div>
       <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
         <Modal.Header>
