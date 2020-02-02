@@ -2,8 +2,8 @@ const app = require('./app');
 const fs = require('fs');
 // const https = require('https');
 const http = require('http');
-const port = process.env.PROXY;
-const host = 'localhost';
+const port = process.env.PROXY_PORT;
+const host = process.env.PROXY;
 
 // const options = {
 //   key: fs.readFileSync('key.pem'),

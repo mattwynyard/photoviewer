@@ -4,7 +4,7 @@ import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Dropdown, Table, P
 import L from 'leaflet';
 import './App.css';
 import './util.js';
-import CustomNav from './CustomClass.js';
+import CustomNav from './CustomNav.js';
 import CanvasLayer from './canvas-layer'
 import Cookies from 'js-cookie';
 
@@ -15,10 +15,8 @@ class App extends React.Component {
     //const osmURL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
     //const mapBoxURL = "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWp3eW55YXJkIiwiYSI6ImNrM3Q5cDB5ZDAwbG0zZW82enhnamFoN3cifQ.6tHRp0DztZanCDTnEuZJlg";
     super(props);
-    const user = this.getUser();
-    const loginModal = this.getLoginModal(user);
-    const projects =  this.getProjects();
 
+    this.customNav = React.createRef();
     this.state = {
       location: {
         lat: -41.2728,
@@ -26,10 +24,10 @@ class App extends React.Component {
       },
       host: this.getHost(),
       token: Cookies.get('token'),
-      login: user,
-      loginModal: loginModal,
+      login: this.getUser(),
+      loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
-      //tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWp3eW55YXJkIiwiYSI6ImNrM3Q5cDB5ZDAwbG0zZW82enhnamFoN3cifQ.6tHRp0DztZanCDTnEuZJlg",
+      tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
       osmThumbnail: "satellite64.png",
       mode: "map",
       zoom: 8,
@@ -56,9 +54,9 @@ class App extends React.Component {
       activeSelection: "Fault Type",
       photourl: null,
       amazon: null,
-      user: null,
+      user: this.getUser(),
       password: null,
-      projectArr: projects,
+      projectArr: this.getProjects(),
       faultClass: [],
       faultTypes: [],
       pageActive: 0,
@@ -83,6 +81,8 @@ class App extends React.Component {
 
   componentDidMount() {
     // Call our fetch function below once the component mounts
+    this.customNav.current.setTitle(this.state.user);
+    this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
     console.log(process.env.NODE_ENV);
@@ -152,7 +152,6 @@ class App extends React.Component {
   }
 
   getCustomIcon(data, zoom) {
-    //console.log("data" + data);
     let icon = null;
     const size = this.getSize(zoom);
     if (data === "5") {
@@ -278,7 +277,7 @@ class App extends React.Component {
   }
 
   /**
-   * Fired when user clciks photo on thubnail
+   * Fired when user clciks photo on thumbnail
    * @param {event} e 
    */
   clickImage(e) {    
@@ -330,7 +329,9 @@ class App extends React.Component {
     Cookies.remove('user');
     Cookies.remove('projects');
     this.setState({login: "Login"});
-    this.setState({loginModal: (e) => this.clickLogin(e)});
+    this.customNav.current.setOnClick((e) => this.clickLogin(e));
+    this.customNav.current.setTitle("Login");
+    
     this.setState({activeProject: null})
     this.setState({projectArr: []});
     this.setState({checkedFaults: []});
@@ -356,7 +357,6 @@ class App extends React.Component {
       throw Error(body.message) 
     } 
     this.clearCache();
-    //this.render();
   }
 
   async login(e) {
@@ -380,14 +380,16 @@ class App extends React.Component {
     } 
     
     if (body.result) {
-      console.log("Login succeded");
-      Cookies.set('token', body.token, { expires: 7 })
-      Cookies.set('user', body.user, { expires: 7 })
+      console.log("user: " + body.user + " Login succeded");
+      Cookies.set('token', body.token, { expires: 7 });
+      Cookies.set('user', body.user, { expires: 7 });
       this.setState({login: body.user});
       this.setState({token: body.token});
-      this.setState({loginModal: (e) => this.logout(e)}); 
+      //this.setState({loginModal: (e) => this.logout(e)}); 
       //console.log(body.projects);     
       this.buildProjects(body.projects);   
+      this.customNav.current.setTitle(body.user);
+      this.customNav.current.setOnClick((e) => this.logout(e));
     } else {
       console.log("Login failed");
     }  
@@ -399,7 +401,7 @@ class App extends React.Component {
     for(var i = 0; i < projects.length; i += 1) {
       prj.push(projects[i]);
     }
-    console.log(prj);
+    //console.log(prj);
     Cookies.set('projects', JSON.stringify(prj), { expires: 7 })
     this.setState({projectArr: prj});
   }
@@ -786,7 +788,7 @@ class App extends React.Component {
                 <NavDropdown.Item className="navdropdownitem" href="#about" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
               </NavDropdown>         
             </Nav>
-            <CustomNav className="navdropdown" title={this.state.login} onClick={this.state.loginModal} />
+            <CustomNav ref={this.customNav} className="navdropdown"/>
           </Navbar>         
         </div>      
         <div className="map">
