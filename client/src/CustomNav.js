@@ -17,6 +17,7 @@ export default class CustomNav extends React.Component {
     setOnClick(func) {
       this.setState({onClick: func});
     }
+    
     componentDidMount() {
     }
     

@@ -1,7 +1,7 @@
 const app = require('./app');
-const fs = require('fs');
+//const fs = require('fs');
 // const https = require('https');
-const http = require('http');
+//const http = require('http');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 

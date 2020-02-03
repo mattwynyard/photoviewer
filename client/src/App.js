@@ -13,7 +13,7 @@ class App extends React.Component {
   constructor(props) {
     
     //const osmURL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-    //const mapBoxURL = "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWp3eW55YXJkIiwiYSI6ImNrM3Q5cDB5ZDAwbG0zZW82enhnamFoN3cifQ.6tHRp0DztZanCDTnEuZJlg";
+    
     super(props);
 
     this.customNav = React.createRef();
@@ -27,7 +27,7 @@ class App extends React.Component {
       login: this.getUser(),
       loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
-      tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
+      //tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
       osmThumbnail: "satellite64.png",
       mode: "map",
       zoom: 8,
@@ -85,25 +85,25 @@ class App extends React.Component {
     this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
-    console.log(process.env.NODE_ENV);
+    //console.log(process.env.NODE_ENV);
 
-    const map = this.map.leafletElement;
-    L.canvasLayer = function() {
-      return new CanvasLayer();
-    };
+    // const map = this.map.leafletElement;
+    // L.canvasLayer = function() {
+    //   return new CanvasLayer();
+    // };
 
-    let cl = L.canvasLayer()
-    var glLayer = cl.delegate(this).addTo(map);
-    var canvas = glLayer._canvas
-    var gl = canvas.getContext('experimental-webgl', {
-      antialias: true
-    }) || canvas.getContext('experimental-webgl');
-    if (!gl) {
-      console.log("gl not intialized");
-      return;
-    } else {
-      console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
-    }
+    // let cl = L.canvasLayer()
+    // var glLayer = cl.delegate(this).addTo(map);
+    // var canvas = glLayer._canvas
+    // var gl = canvas.getContext('experimental-webgl', {
+    //   antialias: true
+    // }) || canvas.getContext('experimental-webgl');
+    // if (!gl) {
+    //   //console.log("gl not intialized");
+    //   return;
+    // } else {
+    //   //console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
+    // }
   }
 
   componentDidUpdate() {   
@@ -623,13 +623,18 @@ class App extends React.Component {
     this.setState({checkedFaults: []});
   }
 
-  // setDisplay(e) {
-  //   if(e.target.id === "priority") {
-  //     this.setState({activeSelection: "Priority"});
-  //   } else {
-  //     this.setState({activeSelection: "Fault Type"});
-  //   }
-  // }
+  /**
+   * 
+   * @param {the number to pad} n 
+   * @param {the amount of pading} width 
+   * @param {digit to pad out number with (default '0'} z 
+   * @return {the padded number (string)}
+   */
+  pad(n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+    }
 
   /**
    * returns a random hex color

@@ -42,7 +42,7 @@ app.post('/login', async (request, response, next) => {
   const password = request.body.key;
   const user = request.body.user;
   //uncomment to genrate password for new user
-  //generatePassword(password, 10);
+  generatePassword(password, 10);
   
   let p = await db.password(user);
   if (p.rows.length == 0) { //user doesn't exist

@@ -1,9 +1,9 @@
 'use strict'
 require('dotenv').config();
-const { Pool } = require('pg')
+const { Pool } = require('pg');
 
 const connection = new Pool({
-    user: process.env.USER,
+    user: process.env.USER_NAME,
     host: process.env.HOST,
     database: process.env.DB,
     password: process.env.PASSWORD,
@@ -17,9 +17,8 @@ connection.connect(function(err) {
         throw err;
     }
 });
-
 connection.on('connect', () => {
-    console.log("connected to database on port: 5432");
+    console.log("connected to database on port: " + process.env.PORT);
 });
 
 module.exports = { 
