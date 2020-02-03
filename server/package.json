@@ -2,11 +2,11 @@
   "name": "express-api-starter",
   "version": "0.0.1",
   "description": " A basic starter for an express.js API",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/app.js",
     "server": "nodemon src/server.js",
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon src/app.js",
     "lint": "eslint --fix src",
     "audit": "snyk test",
     "test": "mocha -w"
@@ -22,6 +22,7 @@
     "bcrypt": "^3.0.7",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^6.2.0",
     "express": "^4.17.1",
     "helmet": "^3.21.2",

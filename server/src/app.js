@@ -13,6 +13,17 @@ const jwt = require('jsonwebtoken');
 const jwtKey = 'onssuperSeCr_eTKKey?ffcafff';
 const jwtExpirySeconds = 300;
 
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
+const port = process.env.PROXY_PORT;
+const host = process.env.PROXY;
+
+const options = {
+  key: fs.readFileSync('./key.pem', 'utf8'),
+  cert: fs.readFileSync('./server.crt', 'utf8')
+}
+
 const token = null;
 
 app.use(cors());
@@ -30,7 +41,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// app.listen(port, () => {
+//   /* eslint-disable no-console */
+//   console.log(`Listening: https://${host}:${port}`);
+//   /* eslint-enable no-console */
+// });
 
+https.createServer(options, app).listen(port, () => {
+  /* eslint-disable no-console */
+  console.log(`Listening: https://${host}:${port}`);
+  /* eslint-enable no-console */
+});
 
 app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });
@@ -42,13 +63,13 @@ app.post('/login', async (request, response, next) => {
   const password = request.body.key;
   const user = request.body.user;
   //uncomment to genrate password for new user
-  generatePassword(password, 10);
+  //generatePassword(password, 10);
   
   let p = await db.password(user);
   if (p.rows.length == 0) { //user doesn't exist
-    response.send({ result: false });
+    response.send({ result: false, error: "user doesnt exist" });
     succeded = false;
-    console.log("user doesn't exist");
+    //console.log("user doesn't exist");
   } else {
     let count = await db.users(user);
     //console.log("users: " + count.rows[0].count);
@@ -82,7 +103,7 @@ app.post('/login', async (request, response, next) => {
         
       } else {    
         console.log("Incorrect password")   
-        response.send({ result: false });
+        response.send({ result: false, error: "incorrect password" });
       }
     }); 
   }  

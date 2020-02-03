@@ -22,6 +22,7 @@ class App extends React.Component {
         lat: -41.2728,
         lng: 173.2995,
       },
+      protocol: this.getProtocol(),
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -71,12 +72,21 @@ class App extends React.Component {
 
   getHost() {
     if (process.env.NODE_ENV === "development") {
-      return "localhost:5000";
+      return "localhost:8443";
     } else if (process.env.NODE_ENV === "production") {
       return "osmium.nz";
     } else {
-      return "localhost:5000"
+      return "localhost:8443";
     }
+   }
+
+   getProtocol() {
+     console.log("secure: " + process.env.REACT_APP_SECURE);
+     if (process.env.REACT_APP_SECURE === true) {
+       return "https://";
+     } else {
+       return "http://";
+      }
    }
 
   componentDidMount() {
@@ -102,7 +112,7 @@ class App extends React.Component {
     //   //console.log("gl not intialized");
     //   return;
     // } else {
-    //   //console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
+    //   console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
     // }
   }
 
@@ -112,7 +122,9 @@ class App extends React.Component {
   }
 
   callBackendAPI = async () => {
-    const response = await fetch('http://' + this.state.host + '/api'); 
+    console.log("calling api...");
+    const response = await fetch("https://" + this.state.host + '/api'); 
+    console.log(response.body);
     const body = await response.json();
     console.log(body.express);
     if (response.status !== 200) {
@@ -339,7 +351,7 @@ class App extends React.Component {
   }
 
   async logout(e) {
-    const response = await fetch('http://' + this.state.host + '/logout', {
+    const response = await fetch("https://" + this.state.host + '/logout', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -361,7 +373,7 @@ class App extends React.Component {
 
   async login(e) {
     this.setState({showLogin: false});
-    const response = await fetch('http://' + this.state.host + '/login', {
+    const response = await fetch('https://' + this.state.host + '/login', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -391,7 +403,8 @@ class App extends React.Component {
       this.customNav.current.setTitle(body.user);
       this.customNav.current.setOnClick((e) => this.logout(e));
     } else {
-      console.log("Login failed");
+
+      console.log(body.error);
     }  
   }
 
@@ -443,7 +456,7 @@ class App extends React.Component {
 
   async filterLayer(project) {
     if (this.state.login !== "Login") {
-      const response = await fetch('http://' + this.state.host + '/layer', {
+      const response = await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -474,7 +487,7 @@ class App extends React.Component {
 
   async loadCentreline(e) {
     if (this.state.login !== "Login") {
-        const response = await fetch('http://' + this.state.host + '/roads', {
+        const response = await fetch('https://' + this.state.host + '/roads', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,
@@ -499,7 +512,7 @@ class App extends React.Component {
 
   async loadFilters() {
     if (this.state.login !== "Login") {
-      const response = await fetch('http://' + this.state.host + '/class', {
+      const response = await fetch('https://' + this.state.host + '/class', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,
@@ -522,7 +535,7 @@ class App extends React.Component {
   async getFaultTypes(cls) {
     //console.log("type: " + cls);
     if (this.state.login !== "Login") {
-      const response = await fetch('http://' + this.state.host + '/faults', {
+      const response = await fetch('https://' + this.state.host + '/faults', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,

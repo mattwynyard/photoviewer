@@ -2,8 +2,8 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:5000/",
-  "start": "react-scripts start",
+  "proxy": "https://localhost:8443/",
+  "start": "HTTPS=true react-scripts start",
   "dependencies": {
     "bootstrap": "^4.4.0",
     "js-cookie": "^2.2.1",

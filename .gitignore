@@ -3,6 +3,9 @@
 ./*.sql
 /model
 .env
+*.pem
+*.crt
+*.cer
 
 client/public
 # dependencies
@@ -11,7 +14,8 @@ server/node_modules
 /.pnp
 .pnp.js
 .pem
-/.pem
+server/.crt
+
 
 # testing
 /coverage
