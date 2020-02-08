@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   next();
 });
-if(environment === 'devlopment') {
+if(environment === 'production') {
  http.createServer(function(req, res) {
   }).listen(port, hostname, () => {
       /* eslint-disable no-console */

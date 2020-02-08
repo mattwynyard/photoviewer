@@ -396,7 +396,7 @@ randomInt(range) {
       })
     });
     const body = await response.json();
-    console.log(body);
+    //console.log(body);
     if (response.status !== 200) {
       throw Error(body.message) 
     } 
