@@ -1,11 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-./*.sql
+/*.sql
 /model
-.env
-*.pem
-*.crt
-*.cer
+/.env
+/*.pem
+/*.crt
+/*.cer
 
 client/public
 # dependencies
@@ -17,6 +17,7 @@ server/node_modules
 server/.crt
 server/.cer
 server/.pem
+server/.env
 
 
 # testing
@@ -24,7 +25,7 @@ server/.pem
 
 # production
 /build
-/client/build
+client/build
 # misc
 .DS_Store
 .env.local
