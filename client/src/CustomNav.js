@@ -6,7 +6,8 @@ export default class CustomNav extends React.Component {
         super(props);
         this.state = {
             title: "Login",
-            onClick: null
+            onClick: null,
+
         }
     }
 

@@ -18,12 +18,7 @@ const https = require('https');
 const http = require('http');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
-
-const options = {
-  key: fs.readFileSync('./key.pem', 'utf8'),
-  cert: fs.readFileSync('./server.crt', 'utf8')
-}
-
+const environment = process.env.ENVIRONMENT;
 const token = null;
 
 app.use(cors());
@@ -40,18 +35,24 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   next();
 });
-
-// app.listen(port, () => {
-//   /* eslint-disable no-console */
-//   console.log(`Listening: https://${host}:${port}`);
-//   /* eslint-enable no-console */
-// });
-
-https.createServer(options, app).listen(port, () => {
-  /* eslint-disable no-console */
-  console.log(`Listening: https://${host}:${port}`);
-  /* eslint-enable no-console */
-});
+if(environment === 'devlopment') {
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      /* eslint-disable no-console */
+      console.log(`Listening: http://${hostname}:${port}`);
+      /* eslint-enable no-console */
+   });
+} else {
+  const options = {
+    key: fs.readFileSync('./key.pem', 'utf8'),
+    cert: fs.readFileSync('./server.crt', 'utf8')
+  }
+  https.createServer(options, app).listen(port, () => {
+    /* eslint-disable no-console */
+    console.log(`Listening: https://${host}:${port}`);
+    /* eslint-enable no-console */
+    });
+}
 
 app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });

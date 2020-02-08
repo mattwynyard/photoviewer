@@ -3,32 +3,26 @@ import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, L
 import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Dropdown, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
-import './util.js';
 import CustomNav from './CustomNav.js';
-import CanvasLayer from './canvas-layer'
 import Cookies from 'js-cookie';
 
 class App extends React.Component {
 
   constructor(props) {
     
-    //const osmURL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-    
     super(props);
-
     this.customNav = React.createRef();
     this.state = {
       location: {
         lat: -41.2728,
         lng: 173.2995,
       },
-      protocol: this.getProtocol(),
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
       loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
-      //tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
+      tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
       osmThumbnail: "satellite64.png",
       mode: "map",
       zoom: 8,
@@ -65,7 +59,9 @@ class App extends React.Component {
       checked: false,
       activeProject: null,
       activeLayers: [],
-      clearDisabled: true
+      clearDisabled: true,
+      message: "",
+
     };
     
   }
@@ -80,14 +76,14 @@ class App extends React.Component {
     }
    }
 
-   getProtocol() {
-     console.log("secure: " + process.env.REACT_APP_SECURE);
-     if (process.env.REACT_APP_SECURE === true) {
-       return "https://";
-     } else {
-       return "http://";
-      }
-   }
+  //  getProtocol() {
+  //    console.log("secure: " + process.env.REACT_APP_SECURE);
+  //    if (process.env.REACT_APP_SECURE === true) {
+  //      return "https://";
+  //    } else {
+  //      return "http://";
+  //     }
+  //  }
 
   componentDidMount() {
     // Call our fetch function below once the component mounts
@@ -96,37 +92,40 @@ class App extends React.Component {
     this.callBackendAPI()
     .catch(err => alert(err));
     //console.log(process.env.NODE_ENV);
+  
+  }
 
-    // const map = this.map.leafletElement;
-    // L.canvasLayer = function() {
-    //   return new CanvasLayer();
-    // };
 
-    // let cl = L.canvasLayer()
-    // var glLayer = cl.delegate(this).addTo(map);
-    // var canvas = glLayer._canvas
-    // var gl = canvas.getContext('experimental-webgl', {
-    //   antialias: true
-    // }) || canvas.getContext('experimental-webgl');
-    // if (!gl) {
-    //   //console.log("gl not intialized");
-    //   return;
-    // } else {
-    //   console.log("gl: " + gl.canvas.width + " " + gl.canvas.height);
-    // }
+
+// Returns a random integer from 0 to range - 1.
+randomInt(range) {
+    return Math.floor(Math.random() * range);
+}
+
+  LatLongToPixelXY(latitude, longitude) {
+    var pi_180 = Math.PI / 180.0;
+    var pi_4 = Math.PI * 4;
+    var sinLatitude = Math.sin(latitude * pi_180);
+    var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / pi_4) * 256;
+    var pixelX = (longitude + 180) / 360 * 256;
+    var pixel = {
+      x: pixelX,
+      y: pixelY
+    };
+  
+    return pixel;
   }
 
   componentDidUpdate() {   
     
-
+    
   }
 
   callBackendAPI = async () => {
-    console.log("calling api...");
+    //console.log("calling api...");
     const response = await fetch("https://" + this.state.host + '/api'); 
-    console.log(response.body);
+    //console.log(response.body);
     const body = await response.json();
-    console.log(body.express);
     if (response.status !== 200) {
       alert(body);   
       throw Error(body.message) 
@@ -219,12 +218,14 @@ class App extends React.Component {
 
   async addMarkers(data) {
     let objData = [];
+    let latLngs = [];
     for (var i = 0; i < data.length; i++) {
       let obj = {};
       const position = JSON.parse(data[i].st_asgeojson);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       let latlng = L.latLng(lat, lng);
+      latLngs.push(latlng);
       obj = {
         roadid: data[i].roadid,
         carriage: data[i].carriagewa,
@@ -238,6 +239,12 @@ class App extends React.Component {
       };
       objData.push(obj);    
     }
+
+    let bounds = L.latLngBounds(latLngs);
+    //let center = bounds.getCenter();
+    const map = this.map.leafletElement;
+    map.fitBounds(bounds);
+
     this.setState({objData: objData});
   }
 
@@ -316,7 +323,6 @@ class App extends React.Component {
 
   clickPrev(e) {
   const newPhoto = this.getPhoto("prev");
-  console.log(newPhoto);
   this.setState({currentPhoto: newPhoto});
 	const url = this.state.amazon + newPhoto + ".jpg";
   this.setState({photourl: url});
@@ -336,18 +342,22 @@ class App extends React.Component {
     this.setState({popover: true});
   }
 
-  clearCache() {
+  /**
+   * resets to null state when user logouts
+   */
+  reset() {
+    
     Cookies.remove('token');
     Cookies.remove('user');
     Cookies.remove('projects');
-    this.setState({login: "Login"});
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
-    
     this.setState({activeProject: null})
     this.setState({projectArr: []});
     this.setState({checkedFaults: []});
     this.setState({objData: []});
+    this.setState({activeLayers: []});
+    this.setState({login: "Login"});
   }
 
   async logout(e) {
@@ -364,15 +374,15 @@ class App extends React.Component {
       })
     });
     const body = await response.json();
-    //console.log(response);
     if (response.status !== 200) {
       throw Error(body.message) 
     } 
-    this.clearCache();
+    this.reset();
+   
   }
 
-  async login(e) {
-    this.setState({showLogin: false});
+  async login(e) {  
+    e.preventDefault();
     const response = await fetch('https://' + this.state.host + '/login', {
       method: 'POST',
       credentials: 'same-origin',
@@ -392,68 +402,73 @@ class App extends React.Component {
     } 
     
     if (body.result) {
-      console.log("user: " + body.user + " Login succeded");
       Cookies.set('token', body.token, { expires: 7 });
       Cookies.set('user', body.user, { expires: 7 });
       this.setState({login: body.user});
-      this.setState({token: body.token});
-      //this.setState({loginModal: (e) => this.logout(e)}); 
-      //console.log(body.projects);     
+      this.setState({token: body.token}); 
       this.buildProjects(body.projects);   
       this.customNav.current.setTitle(body.user);
       this.customNav.current.setOnClick((e) => this.logout(e));
+      this.setState({showLogin: false});
+      this.setState({message: ""})
     } else {
-
-      console.log(body.error);
-    }  
+      this.setState({message: "Username or password is incorrect!"});
+    } 
+     
   }
 
-  buildProjects(projects) {
-    
+  /**
+   * loops through project array received from db and sets
+   * project array in the state. Sets project cookie
+   * @param {Array} projects 
+   */
+  buildProjects(projects) {    
     let prj = []
     for(var i = 0; i < projects.length; i += 1) {
       prj.push(projects[i]);
     }
-    //console.log(prj);
     Cookies.set('projects', JSON.stringify(prj), { expires: 7 })
     this.setState({projectArr: prj});
   }
 
   /**
-   * 
+   * checks if layer loaded if not adds layer to active layers
+   * calls fetch layer
    * @param {event} e 
    */
-  loadLayer(e) {
+  loadLayer(e) {   
+    for(var i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
+      if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
+        return;
+      }
+    }
     this.setState({activeProject: e.target.attributes.code.value});
-    for (var i = 0; i < this.state.projectArr.length; i += 1) {
-      if (this.state.projectArr[i].code === e.target.attributes.code.value) {
+    for (var i = 0; i < this.state.projectArr.length; i += 1) { //find project
+      if (this.state.projectArr[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: this.state.projectArr[i].code, description: this.state.projectArr[i].description, date: this.state.projectArr[i].date}
         this.setState({amazon: this.state.projectArr[i].amazon});
         this.state.activeLayers.push(project);
       }
     }
-    this.filterLayer(e.target.attributes.code.value);  
-    
+    this.filterLayer(e.target.attributes.code.value);     
   }
 
   removeLayer(e) {
-    console.log(e.target.attributes.code.value);
-    console.log(this.state.activeLayers);
     let layers = this.state.activeLayers;
-    for(var i = 0; i < layers.length; i += 1) {
-     
+    for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
-        console.log(layers[i]);
         layers.splice(i, 1);
         break;
       }
-     
     }
     //TODO clear the filter
     this.setState({activeLayers: layers});
   }
 
-
+/**
+ * 
+ * @param {String} project data to fetch
+ */
   async filterLayer(project) {
     if (this.state.login !== "Login") {
       const response = await fetch('https://' + this.state.host + '/layer', {
@@ -468,47 +483,48 @@ class App extends React.Component {
         project: project,
         filter: this.state.checkedFaults   
       })
+    }).catch(() => {
+      console.log("error");
+      return;
+    });
+    if (typeof response !== "undefined" && response.status === 200) {
+      const body = await response.json();  
+      await this.addMarkers(body);
+    } else {     
+    }    
+  }    
+}
+
+submitFilter(e) {
+  this.setState({filterModal: false});
+  this.filterLayer(this.state.activeProject);
+
+}
+
+async loadCentreline(e) {
+  if (this.state.login !== "Login") {
+      const response = await fetch('https://' + this.state.host + '/roads', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code: "900",
+        menu: e.target.id,
+        user: this.state.login
+      })
     })
     if (response.status !== 200) {
       console.log(response.status);
     } 
     const body = await response.json();
-    await this.addMarkers(body);
-    } else {
-      
-    }    
-  }
-
-  submitFilter(e) {
-    this.setState({filterModal: false});
-    this.filterLayer(this.state.activeProject);
-
-  }
-
-  async loadCentreline(e) {
-    if (this.state.login !== "Login") {
-        const response = await fetch('https://' + this.state.host + '/roads', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: "900",
-          menu: e.target.id,
-          user: this.state.login
-        })
-      })
-      if (response.status !== 200) {
-        console.log(response.status);
-      } 
-      const body = await response.json();
-      await this.addCentrelines(body);
-    } else {
-      
-    }    
-  }
+    await this.addCentrelines(body);
+  } else {
+    
+  }    
+}
 
   async loadFilters() {
     if (this.state.login !== "Login") {
@@ -533,7 +549,6 @@ class App extends React.Component {
   }
 
   async getFaultTypes(cls) {
-    //console.log("type: " + cls);
     if (this.state.login !== "Login") {
       const response = await fetch('https://' + this.state.host + '/faults', {
         method: 'POST',
@@ -558,6 +573,7 @@ class App extends React.Component {
   }
 
   clickLogin(e) {
+    e.preventDefault();
     this.setState({showLogin: true});   
   }
 
@@ -696,13 +712,16 @@ class App extends React.Component {
   clickGroup(e) {
     console.log("click");
   }
+
+  
   //RENDER
 
   render() {
-    //console.log("render");
+
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
     const { photo } = this.state.photos;  
+    //const ref = React.createRef();
 
     const CustomTile = function CustomTile (props) {
         return (
@@ -714,22 +733,19 @@ class App extends React.Component {
     }
 
     const LayerNav = function LayerNav(props) {
-      const loadLayer = props.loadLayer;
-      const clickFilter = props.clickFilter;
-      const removeLayer= props.removeLayer;
-      if (props.project !== null) {
+      if (props.layers.length > 0) {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={loadLayer}/>
+            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={props.loadLayer}/>
             <NavDropdown.Divider />
             {/* <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove Layer </NavDropdown.Item>
             <NavDropdown.Divider /> */}
-            <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={removeLayer}/>
+            <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={props.removeLayer}/>
             <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.loadCentreline(e)}>Add centreline </NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={(e) => clickFilter(e)}>Filter Layer</NavDropdown.Item>
+            <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
           </NavDropdown>
         </Nav>
         );
@@ -737,9 +753,9 @@ class App extends React.Component {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={(e) => loadLayer(e)}/>
-            <NavDropdown.Divider />
-            <NavDropdown.Item title="Remove Layer" className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove layer</NavDropdown.Item>
+            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} layers={props.layers} onClick={props.loadLayer}/>
+            {/* <NavDropdown.Divider />
+            <NavDropdown.Item title="Remove Layer" className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove layer</NavDropdown.Item> */}
             {/* <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={(e) => this.clickFilter(e)}>Filter Layer</NavDropdown.Item> */}
           </NavDropdown>
@@ -747,21 +763,12 @@ class App extends React.Component {
         );
       }
     }
-
     const CustomMenu = function(props) {
-      const p = props.projects;
-      const loadLayer = props.onClick;
-      if (p === undefined) {
-        //console.log("Projects" + p);
-        return ( 
-          <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
-          </NavDropdown.Item>
-          );
-      } else if(p.length === 0) {
-        return ( 
-          <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
-          </NavDropdown.Item>
-          );  
+      if (typeof props.projects === 'undefined' || props.projects.length === 0) {
+          return (    
+            <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
+            </NavDropdown.Item>
+            );
       } else {  
         return (        
           <NavDropdown title={props.title} className="navdropdownitem" drop="right">
@@ -782,8 +789,9 @@ class App extends React.Component {
     }
 
     return (   
-      <>     
+      <> 
         <div>
+
           <Navbar bg="light" expand="lg"> 
             <Navbar.Brand href="#home">
             <img
@@ -825,10 +833,6 @@ class App extends React.Component {
             url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
             zIndex={999}
           />
-          {/* <NavDropdown className="displaytype" id="dropdown-basic-button" title={this.state.activeSelection}>
-            <Dropdown.Item id="priority" href="#filterpriority" onClick={(e) => this.setDisplay(e)}>Priority</Dropdown.Item>
-            <Dropdown.Item id="type" href="#filtertype" onClick={(e) => this.setDisplay(e)}>Fault type</Dropdown.Item>
-          </NavDropdown> */}
           <ScaleControl/>
           <Image className="satellite" src={this.state.osmThumbnail} onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
           <LayersControl position="topright">
@@ -866,12 +870,11 @@ class App extends React.Component {
           <Polyline 
             key={`${index}`}
             weight={3}
-            //color={'blue'} 
             color={this.getColor()}
             smoothFactor={3}
             positions={latlngs}>
           </Polyline>
-          )}        
+          )} 
       </Map >   
       </div>
       <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
@@ -947,6 +950,7 @@ class App extends React.Component {
             Close
           </Button>
         </Modal.Footer>
+      {/* login modal     */}
       </Modal>
       <Modal show={this.state.showLogin} size={'sm'} centered={true}>
         <Modal.Header>
@@ -958,20 +962,21 @@ class App extends React.Component {
             <Form.Label>Username</Form.Label>
             <Form.Control type="text" placeholder="Enter username" ref={user => this.userInput = user} />
           </Form.Group>
-
+          <Form.Text className= "message">{this.state.message}</Form.Text>
           <Form.Group controlId="formBasicPassword">
-            <Form.Label>Password</Form.Label>
+            <Form.Label>Password</Form.Label>           
             <Form.Control type="password" placeholder="Password" ref={key=> this.passwordInput = key}/>
           </Form.Group>
           <Button variant="primary" type="submit" onClick={(e) => this.login(e)}>
             Submit
           </Button>
-        </Form>	
+        </Form>
 		    </Modal.Body>
         <Modal.Footer>
         </Modal.Footer>
       </Modal>
-      
+
+ 
       <Modal show={this.state.show} size={'xl'} >
         <Modal.Body className="photoBody">	
         <div className="container">
@@ -999,7 +1004,7 @@ class App extends React.Component {
         </Modal.Footer>
       </Modal>
       <div className="footer">
-      </div>
+      </div> 
       </>
     );
   }
