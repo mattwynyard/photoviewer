@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Dropdown, Table, Pagination}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Modal, Button, Dropdown, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -17,6 +17,10 @@ class App extends React.Component {
         lat: -41.2728,
         lng: 173.2995,
       },
+      high : true,
+      med : true,
+      low : true,
+      priorities: [5, 4, 3],
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -91,40 +95,16 @@ class App extends React.Component {
     this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
-    //console.log(process.env.NODE_ENV);
-  
-  }
 
-
-
-// Returns a random integer from 0 to range - 1.
-randomInt(range) {
-    return Math.floor(Math.random() * range);
-}
-
-  LatLongToPixelXY(latitude, longitude) {
-    var pi_180 = Math.PI / 180.0;
-    var pi_4 = Math.PI * 4;
-    var sinLatitude = Math.sin(latitude * pi_180);
-    var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / pi_4) * 256;
-    var pixelX = (longitude + 180) / 360 * 256;
-    var pixel = {
-      x: pixelX,
-      y: pixelY
-    };
-  
-    return pixel;
   }
 
   componentDidUpdate() {   
-    
     
   }
 
   callBackendAPI = async () => {
     //console.log("calling api...");
     const response = await fetch("https://" + this.state.host + '/api'); 
-    //console.log(response.body);
     const body = await response.json();
     if (response.status !== 200) {
       alert(body);   
@@ -239,11 +219,15 @@ randomInt(range) {
       };
       objData.push(obj);    
     }
-
-    let bounds = L.latLngBounds(latLngs);
-    //let center = bounds.getCenter();
-    const map = this.map.leafletElement;
-    map.fitBounds(bounds);
+    if (latLngs.length != 0) {
+      let bounds = L.latLngBounds(latLngs);
+      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
+        const map = this.map.leafletElement;
+        map.fitBounds(bounds);
+      }
+      
+    }
+    
 
     this.setState({objData: objData});
   }
@@ -470,6 +454,7 @@ randomInt(range) {
  * @param {String} project data to fetch
  */
   async filterLayer(project) {
+    
     if (this.state.login !== "Login") {
       const response = await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -481,7 +466,8 @@ randomInt(range) {
       body: JSON.stringify({
         user: this.state.login,
         project: project,
-        filter: this.state.checkedFaults   
+        filter: this.state.checkedFaults,
+        priority: this.state.priorities,
       })
     }).catch(() => {
       console.log("error");
@@ -644,6 +630,38 @@ async loadCentreline(e) {
     this.loadFilters();
   }
 
+  clickPriority(e) {
+  let priQuery = this.state.priorities
+    switch(e.target.id) {
+      case "5":
+        if (e.target.checked) {
+          priQuery.push(5);
+        } else {      
+          priQuery.splice(priQuery.indexOf(5), 1 );
+        }
+        break;
+      case "4":
+        if (e.target.checked) {
+          priQuery.push(4);
+        } else {      
+          priQuery.splice(priQuery.indexOf(4), 1 );
+        }
+        break;
+      case "3":
+        if (e.target.checked) {
+          priQuery.push(3);
+        } else {      
+          priQuery.splice(priQuery.indexOf(3), 1 );
+        }
+        break;
+      default:
+        // code block
+    }
+    this.setState({priorities: priQuery})
+    this.filterLayer(this.state.activeProject);
+    //console.log(this.state.priorities)
+  }
+
   /**
    * clear checked fault array 
    * @param {the button} e 
@@ -743,7 +761,7 @@ async loadCentreline(e) {
             <NavDropdown.Divider /> */}
             <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={props.removeLayer}/>
             <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.loadCentreline(e)}>Add centreline </NavDropdown.Item>
+            <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
             <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
           </NavDropdown>
@@ -802,7 +820,9 @@ async loadCentreline(e) {
                 alt="logo"
               />
               </Navbar.Brand>
-              <LayerNav project={this.state.activeProject} projects={this.state.projectArr} layers={this.state.activeLayers} removeLayer={(e) => this.removeLayer(e)} loadLayer={(e) => this.loadLayer(e)} clickFilter={(e) => this.clickFilter(e)}></LayerNav>
+              <LayerNav project={this.state.activeProject} projects={this.state.projectArr} layers={this.state.activeLayers} 
+                        removeLayer={(e) => this.removeLayer(e)} loadLayer={(e) => this.loadLayer(e)} 
+                        addCentreline={(e) => this.loadCentreline(e)} clickFilter={(e) => this.clickFilter(e)}></LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
                 <NavDropdown.Item className="navdropdownitem" href="#terms" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
@@ -831,9 +851,22 @@ async loadCentreline(e) {
           <TileLayer className="mapLayer"
             attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors and Chat location by Iconika from the Noun Project"
             url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
-            zIndex={999}
+            zIndex={998}
           />
           <ScaleControl/>
+          <Accordion className="priority">
+            <Card>
+              <Accordion.Toggle className ="btn btn-secondary dropdown-toggle" as={Button} variant="light" eventKey="0">
+                Priority
+              </Accordion.Toggle>           
+              <Accordion.Collapse eventKey="0">
+                <Card.Body>
+                  <input id="5" type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 5<br></br>
+                <input type="checkbox" id="4" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 4<br></br>
+                <input type="checkbox" id="3" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 3</Card.Body>
+              </Accordion.Collapse>
+            </Card>
+          </Accordion>
           <Image className="satellite" src={this.state.osmThumbnail} onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
           <LayersControl position="topright">
           {this.state.activeLayers.map((layer, index) => 
@@ -853,10 +886,15 @@ async loadCentreline(e) {
                   <Popup className="popup">
                   <div>
                     <p className="faulttext">
-                      <b>{"Type: "}</b> {this.getFault(index, 'fault')} <br></br> <b>{"Priority: "} </b> {this.getFault(index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(index, 'location')}
+                      <b>{"Type: "}</b> {this.getFault(index, 'fault')} <br></br> <b>{"Priority: "} </b> 
+                      {this.getFault(index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(index, 'location')}
                     </p>
                     <div>
-                    <Image className="thumbnail" src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} photo={photo} onClick={(e) => this.clickImage(e)} thumbnail={true}></Image >
+                    <Image className="thumbnail" 
+                      src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
+                      photo={photo} 
+                      onClick={(e) => this.clickImage(e)} 
+                      thumbnail={true}></Image >
                     </div>          
                   </div>
                   </Popup>  
@@ -869,14 +907,15 @@ async loadCentreline(e) {
           {this.state.centreData.map((latlngs, index) => 
           <Polyline 
             key={`${index}`}
-            weight={3}
+            weight={2}
             color={this.getColor()}
-            smoothFactor={3}
+            smoothFactor={5}
             positions={latlngs}>
           </Polyline>
-          )} 
-      </Map >   
+          )}      
+      </Map >     
       </div>
+      {/*filter modal */}
       <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
         <Modal.Header>
           <Modal.Title>Filter</Modal.Title><br></br>
@@ -894,9 +933,13 @@ async loadCentreline(e) {
           <tbody>      
           {this.state.faultTypes.map((value, index) => 
             <tr className='tablerow' key={`${index}`}>
-                <td>                   
-                <input type="checkbox" id={value.fault} checked={this.isChecked(value.fault)} onChange={(e) => this.changeCheck(e)}/> {value.fault}
-                </td>
+              <td>                   
+              <input type="checkbox" id={value.fault} 
+              checked={this.isChecked(value.fault)} 
+              onChange={(e) => this.changeCheck(e)}/> {value.fault}        
+              </td>
+              <td>
+              </td>
             </tr>
           )}
           </tbody>
@@ -914,7 +957,7 @@ async loadCentreline(e) {
           
         </Modal.Footer>
       </Modal>
-
+          {/*help nav */}
       <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
         <Modal.Header>
           <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
@@ -950,6 +993,7 @@ async loadCentreline(e) {
             Close
           </Button>
         </Modal.Footer>
+
       {/* login modal     */}
       </Modal>
       <Modal show={this.state.showLogin} size={'sm'} centered={true}>
@@ -976,7 +1020,7 @@ async loadCentreline(e) {
         </Modal.Footer>
       </Modal>
 
- 
+      {/*photo modal */}    
       <Modal show={this.state.show} size={'xl'} >
         <Modal.Body className="photoBody">	
         <div className="container">

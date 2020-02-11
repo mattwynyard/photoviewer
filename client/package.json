@@ -5,7 +5,7 @@
   "proxy": "https://localhost:8443/",
   "start": "HTTPS=true react-scripts start",
   "dependencies": {
-    "bootstrap": "^4.4.0",
+    "bootstrap": "^4.4.0", 
     "js-cookie": "^2.2.1",
     "leaflet": "^1.6.0",
     "leaflet-webgl-overlay": "^1.0.8",

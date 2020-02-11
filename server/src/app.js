@@ -36,6 +36,7 @@ app.use((req, res, next) => {
   next();
 });
 if(environment === 'production') {
+  let hostname = "localhost";
  http.createServer(function(req, res) {
   }).listen(port, hostname, () => {
       /* eslint-disable no-console */
@@ -44,8 +45,8 @@ if(environment === 'production') {
    });
 } else {
   const options = {
-    key: fs.readFileSync('./key.pem', 'utf8'),
-    cert: fs.readFileSync('./server.crt', 'utf8')
+    key: fs.readFileSync('./server.key', 'utf8'),
+    cert: fs.readFileSync('./server.cert', 'utf8')
   }
   https.createServer(options, app).listen(port, () => {
     /* eslint-disable no-console */
@@ -152,7 +153,8 @@ app.post('/layer', async (req, res, next) => {
   if (result) {
     var layer = req.body.project;
     var filter = req.body.filter;
-    var geometry = await db.layer(layer, filter);
+    var priority = req.body.priority;
+    var geometry = await db.layer(layer, filter, priority);
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
   } else {

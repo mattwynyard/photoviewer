@@ -21,6 +21,18 @@ connection.on('connect', () => {
     console.log("connected to database on port: " + process.env.PORT);
 });
 
+function buildQuery(filter) {
+    var query = ""; //priority codes
+    for (var i = 0; i < filter.length; i += 1) {
+        if (i < filter.length - 1) {
+            query += ("'" + filter[i] + "'" + ",");
+        } else {
+            query += "'" + filter[i] + "'";
+        }
+    }
+    return query;
+}
+
 module.exports = { 
     projects : (user) => {
         return new Promise((resolve, reject) => {
@@ -99,32 +111,24 @@ module.exports = {
     // },
 
 
-    layer: (layer, filter) => { 
+    layer: (layer, filter, priority) => { 
+        let codes = buildQuery(priority);
+        let condition = buildQuery(filter)
         return new Promise((resolve, reject) => {
-            //console.log(filter.length);
+            
             if (filter.length == 0) {
-                
                 connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "'", (err, result) => {
+                + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
                 var geometry = resolve(result);
-                
                 return geometry;
             }); 
             } else {
-                var condition = "";
-                for (var i = 0; i < filter.length; i += 1) {
-                    if (i < filter.length - 1) {
-                        condition += ("'" + filter[i] + "'" + ",");
-                    } else {
-                        condition += "'" + filter[i] + "'";
-                    }
-                }
                 connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ")", (err, result) => {
+                + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
