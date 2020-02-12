@@ -345,6 +345,7 @@ class App extends React.Component {
   }
 
   async logout(e) {
+    e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/logout', {
       method: 'POST',
       credentials: 'same-origin',
@@ -454,7 +455,7 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project) {
-    
+    //console.log(this.state.priorities);
     if (this.state.login !== "Login") {
       const response = await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -631,6 +632,7 @@ async loadCentreline(e) {
   }
 
   clickPriority(e) {
+    this.setState({index: null});
   let priQuery = this.state.priorities
     switch(e.target.id) {
       case "5":
@@ -881,6 +883,7 @@ async loadCentreline(e) {
                   position={obj.latlng} 
                   icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
                   draggable={false} 
+                  riseOnHover={true}
                   onClick={(e) => this.clickMarker(e)}				  
                   >
                   <Popup className="popup">

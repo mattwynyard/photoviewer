@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const middlewares = require('./middlewares');
 const app = express();
-const users = require('./user.js')
+const users = require('./user.js');
 const jwt = require('jsonwebtoken');
 const jwtKey = 'onssuperSeCr_eTKKey?ffcafff';
 const jwtExpirySeconds = 300;
@@ -35,29 +35,28 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   next();
 });
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      /* eslint-disable no-console */
-      console.log(`Listening: http://${hostname}:${port}`);
-      /* eslint-enable no-console */
-   });
-} else {
-  const options = {
-    key: fs.readFileSync('./server.key', 'utf8'),
-    cert: fs.readFileSync('./server.cert', 'utf8')
-  }
-  https.createServer(options, app).listen(port, () => {
-    /* eslint-disable no-console */
-    console.log(`Listening: https://${host}:${port}`);
-    /* eslint-enable no-console */
-    });
-}
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       /* eslint-disable no-console */
+//       console.log(`Listening: http://${hostname}:${port}`);
+//       /* eslint-enable no-console */
+//    });
+// } else {
+//   const options = {
+//     key: fs.readFileSync('./server.key', 'utf8'),
+//     cert: fs.readFileSync('./server.cert', 'utf8')
+//   }
+//   https.createServer(options, app).listen(port, () => {
+//     /* eslint-disable no-console */
+//     console.log(`Listening: https://${host}:${port}`);
+//     /* eslint-enable no-console */
+//     });
+// }
 
 app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });
-  
 });
 
 app.post('/login', async (request, response, next) => {
@@ -93,18 +92,17 @@ app.post('/login', async (request, response, next) => {
         for (var i = 0; i < projects.rows.length; i += 1) {
           arr.push(projects.rows[i]);
         }
-        response.set('Content-Type', 'application/json')
-        response.cookie('token', token, { maxAge: jwtExpirySeconds * 1000 })
+        response.set('Content-Type', 'application/json');
+        response.cookie('token', token, { maxAge: jwtExpirySeconds * 1000 });
         response.json({ result: true, user: user, token: token, projects: arr});
         users.addUser({
           name: user,
           token: token,
           }
         );
-        users.printUsers();
-        
+        users.printUsers();   
       } else {    
-        console.log("Incorrect password")   
+        console.log("Incorrect password");   
         response.send({ result: false, error: "incorrect password" });
       }
     }); 
@@ -112,8 +110,7 @@ app.post('/login', async (request, response, next) => {
 });
 
 app.post('/logout', (req, res, next) => {
-  console.log("logout");
-  
+  console.log("logout"); 
   if (req.headers.authorization === this.token) {
     users.deleteToken(req.body.token);
     users.printUsers();
@@ -154,6 +151,7 @@ app.post('/layer', async (req, res, next) => {
     var layer = req.body.project;
     var filter = req.body.filter;
     var priority = req.body.priority;
+    console.log(req.body);
     var geometry = await db.layer(layer, filter, priority);
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
@@ -188,10 +186,8 @@ async function  generatePassword(password, rounds) {
   await bcrypt.genSalt(rounds, function(err, salt) {
       if (err) throw err;
       bcrypt.hash(password, salt, function(err, hash) {
-        console.log(hash);
-        
+        console.log(hash);     
       });
     });
 }
-
 module.exports = app;

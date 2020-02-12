@@ -1,7 +1,7 @@
 {
   "name": "express-api-starter",
-  "version": "0.0.1",
-  "description": " A basic starter for an express.js API",
+  "version": "1.0.1",
+  "description": "local host server for photoviewer",
   "main": "app.js",
   "scripts": {
     "start": "node src/app.js",
@@ -34,9 +34,13 @@
     "pg": "^7.14.0"
   },
   "devDependencies": {
-    "eslint": "^5.12.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.0.1",
     "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.18.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.9",
     "snyk": "^1.252.0",

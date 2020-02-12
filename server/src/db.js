@@ -21,13 +21,13 @@ connection.on('connect', () => {
     console.log("connected to database on port: " + process.env.PORT);
 });
 
-function buildQuery(filter) {
+function buildQuery(arr) {
     var query = ""; //priority codes
-    for (var i = 0; i < filter.length; i += 1) {
-        if (i < filter.length - 1) {
-            query += ("'" + filter[i] + "'" + ",");
+    for (var i = 0; i < arr.length; i += 1) {
+        if (i < arr.length - 1) {
+            query += ("'" + arr[i] + "'" + ",");
         } else {
-            query += "'" + filter[i] + "'";
+            query += "'" + arr[i] + "'";
         }
     }
     return query;
@@ -113,7 +113,6 @@ module.exports = {
 
     layer: (layer, filter, priority) => { 
         let codes = buildQuery(priority);
-        let condition = buildQuery(filter)
         return new Promise((resolve, reject) => {
             
             if (filter.length == 0) {
@@ -127,6 +126,7 @@ module.exports = {
                 return geometry;
             }); 
             } else {
+                let condition = buildQuery(filter);
                 connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
                 + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
