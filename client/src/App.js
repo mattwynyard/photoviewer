@@ -5,6 +5,46 @@ import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
+import './L.CanvasOverlay'
+
+function LatLongToPixelXY(latitude, longitude) {
+  var pi_180 = Math.PI / 180.0;
+  var pi_4 = Math.PI * 4;
+  var sinLatitude = Math.sin(latitude * pi_180);
+  var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;
+  var pixelX = ((longitude + 180) / 360) * 256;
+
+  var pixel = { x: pixelX, y: pixelY };
+
+  return pixel;
+}
+
+function translateMatrix(matrix, tx, ty) {
+  // translation is in last column of matrix
+  matrix[12] += matrix[0] * tx + matrix[4] * ty;
+  matrix[13] += matrix[1] * tx + matrix[5] * ty;
+  matrix[14] += matrix[2] * tx + matrix[6] * ty;
+  matrix[15] += matrix[3] * tx + matrix[7] * ty;
+}
+
+function scaleMatrix(matrix, scaleX, scaleY) {
+  // scaling x and y, which is just scaling first two columns of matrix
+  matrix[0] *= scaleX;
+  matrix[1] *= scaleX;
+  matrix[2] *= scaleX;
+  matrix[3] *= scaleX;
+
+  matrix[4] *= scaleY;
+  matrix[5] *= scaleY;
+  matrix[6] *= scaleY;
+  matrix[7] *= scaleY;
+}
+
+// Returns a random integer from 0 to range - 1.
+function randomInt(range) {
+  return Math.floor(Math.random() * range);
+}
+
 
 class App extends React.Component {
 
@@ -20,7 +60,7 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
-      priorities: [5, 4, 3],
+      priorities: [5, 4, 3], //todo fix for fulton hogan etc.
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -65,6 +105,7 @@ class App extends React.Component {
       activeLayers: [],
       clearDisabled: true,
       message: "",
+      
 
     };
     
@@ -93,13 +134,114 @@ class App extends React.Component {
     // Call our fetch function below once the component mounts
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
+    const leafletMap = this.map.leafletElement;
+    this.glLayer = L.canvasOverlay()
+                        .drawing(drawingOnCanvas)
+                       .addTo(leafletMap);
+    this.canvas = this.glLayer.canvas();
+    this.glLayer.canvas.width = this.canvas.width;
+    this.glLayer.canvas.height = this.canvas.height;
+    this.gl = this.canvas.getContext('webgl', { antialias: true });
+    this.canvas.addEventListener("webglcontextlost", function(event) {
+      event.preventDefault();
+      console.log("CRASH--recovering GL")
+    }, false);
+    this.canvas.addEventListener(
+    "webglcontextrestored", function(event) {
+    this.gl = this.canvas.getContext('webgl', { antialias: true });
+    }, false);
+    var pixelsToWebGLMatrix = new Float32Array(16);
+    this.mapMatrix = new Float32Array(16);
+        // -- WebGl setup
+    var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
+    this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
+    this.gl.compileShader(vertexShader);
+    var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+    this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
+    this.gl.compileShader(fragmentShader);
+
+    // link shaders to create our program
+    var program = this.gl.createProgram();
+    this.gl.attachShader(program, vertexShader);
+    this.gl.attachShader(program, fragmentShader);
+    this.gl.linkProgram(program);
+    this.gl.useProgram(program);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    this.gl.enable(this.gl.BLEND);
+  //  gl.disable(gl.DEPTH_TEST);
+    // ----------------------------
+    // look up the locations for the inputs to our shaders.
+    var u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
+    var colorLoc = this.gl.getAttribLocation(program, "a_color");
+    var vertLoc = this.gl.getAttribLocation(program, "a_vertex");
+    this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
+    // Set the matrix to some that makes 1 unit 1 pixel.
+    pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix);
+    // -- data
+    var verts = [];
+
+    //data.map(function (d, i) {
+    var pixel = LatLongToPixelXY(-36.8485, 174.7633);
+        //-- 2 coord, 3 rgb colors interleaved buffer
+        verts.push(pixel.x, pixel.y, 1, 0, 0);
+    //});
+
+    var numPoints = 1 ;
+
+    var vertBuffer = this.gl.createBuffer();
+    var vertArray = new Float32Array(verts);
+    var fsize = vertArray.BYTES_PER_ELEMENT;
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
+    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false,fsize*5,0);
+    this.gl.enableVertexAttribArray(vertLoc);
+    // -- offset for color buffer
+    this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, fsize*5, fsize*2);
+    this.gl.enableVertexAttribArray(colorLoc);
+    this.glLayer.gl = this.gl;
+    this.glLayer.mapMatrix = this.mapMatrix;
+    this.glLayer.redraw();
+
+    function drawingOnCanvas(canvasOverlay, params) {
+      if (params.gl == null)  {
+        return;
+      }
+
+      params.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      var pixelsToWebGLMatrix = new Float32Array(16);
+      pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+      params.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
+      var pointSize = Math.max(leafletMap.getZoom() - 4.0, 1.0);
+      params.gl.vertexAttrib1f(params.gl.aPointSize, pointSize);
+      // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
+      params.mapMatrix.set(pixelsToWebGLMatrix);
+      var bounds = leafletMap.getBounds();
+      //console.log(bounds);
+      var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
+      var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
+      // -- Scale to current zoom
+      var scale = Math.pow(2, leafletMap.getZoom());
+      scaleMatrix(params.mapMatrix, scale, scale);
+      translateMatrix(params.mapMatrix, -offset.x, -offset.y);
+      var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
+      // -- attach matrix value to 'mapMatrix' uniform in shader
+      params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
+      params.gl.drawArrays(params.gl.POINTS, 0, numPoints);
+
+  }
+
+
     this.callBackendAPI()
     .catch(err => alert(err));
+   
 
   }
 
   componentDidUpdate() {   
-    
+    this.glLayer.redraw();  
   }
 
   callBackendAPI = async () => {
@@ -147,7 +289,7 @@ class App extends React.Component {
     const size = this.getSize(zoom);
     if (data === "5") {
       icon = L.icon({
-      iconUrl: 'CameraSpringGreen_16px.png',
+      iconUrl: 'CameraRed_16px.png',
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
       });
@@ -219,7 +361,7 @@ class App extends React.Component {
       };
       objData.push(obj);    
     }
-    if (latLngs.length != 0) {
+    if (latLngs.length !== 0) {
       let bounds = L.latLngBounds(latLngs);
       if (bounds.getNorthEast() !== bounds.getSouthWest()) {
         const map = this.map.leafletElement;
@@ -250,9 +392,6 @@ class App extends React.Component {
     }
     this.setState({centreData: lineData});
   }
-
-  
-
   //EVENTS
   /**
    * fires when user scrolls mousewheel
@@ -732,9 +871,6 @@ async loadCentreline(e) {
   clickGroup(e) {
     console.log("click");
   }
-
-  
-  //RENDER
 
   render() {
 

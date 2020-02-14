@@ -18,9 +18,7 @@ let findUserToken = (token, name) => {
 };
 
 let addUser = (user) => {
-
-    users.push(user);
-    
+    users.push(user);   
 };
 
 let deleteToken = (token) => {

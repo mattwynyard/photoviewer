@@ -1,5 +1,17 @@
 'use strict'
 require('dotenv').config();
+
+function buildQuery(arr) {
+    var query = ""; //priority codes
+    for (var i = 0; i < arr.length; i += 1) {
+        if (i < arr.length - 1) {
+            query += ("'" + arr[i] + "'" + ",");
+        } else {
+            query += "'" + arr[i] + "'";
+        }
+    }
+    return query;
+}
 const { Pool } = require('pg');
 
 const connection = new Pool({
@@ -20,18 +32,6 @@ connection.connect(function(err) {
 connection.on('connect', () => {
     console.log("connected to database on port: " + process.env.PORT);
 });
-
-function buildQuery(arr) {
-    var query = ""; //priority codes
-    for (var i = 0; i < arr.length; i += 1) {
-        if (i < arr.length - 1) {
-            query += ("'" + arr[i] + "'" + ",");
-        } else {
-            query += "'" + arr[i] + "'";
-        }
-    }
-    return query;
-}
 
 module.exports = { 
     projects : (user) => {

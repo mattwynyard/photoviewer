@@ -11,6 +11,7 @@ const app = express();
 const users = require('./user.js');
 const jwt = require('jsonwebtoken');
 const jwtKey = 'onssuperSeCr_eTKKey?ffcafff';
+//const jwtKey = process.env.KEY;
 const jwtExpirySeconds = 300;
 
 const fs = require('fs');
@@ -35,25 +36,21 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   next();
 });
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function(req, res) {
-//   }).listen(port, hostname, () => {
-//       /* eslint-disable no-console */
-//       console.log(`Listening: http://${hostname}:${port}`);
-//       /* eslint-enable no-console */
-//    });
-// } else {
-//   const options = {
-//     key: fs.readFileSync('./server.key', 'utf8'),
-//     cert: fs.readFileSync('./server.cert', 'utf8')
-//   }
-//   https.createServer(options, app).listen(port, () => {
-//     /* eslint-disable no-console */
-//     console.log(`Listening: https://${host}:${port}`);
-//     /* eslint-enable no-console */
-//     });
-// }
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  const options = {
+    key: fs.readFileSync('./server.key', 'utf8'),
+    cert: fs.readFileSync('./server.cert', 'utf8')
+  }
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });
@@ -158,8 +155,7 @@ app.post('/layer', async (req, res, next) => {
   } else {
     console.log("Resource unavailable")
     next();
-  }
-  
+  } 
 });
 
 app.post('/roads', async (req, res, next) => {
@@ -175,8 +171,7 @@ app.post('/roads', async (req, res, next) => {
   } else {
     console.log("Resource unavailable")
     next();
-  }
-  
+  }  
 });
 
 app.use(middlewares.notFound);
