@@ -5,7 +5,8 @@ import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
-import './L.CanvasOverlay'
+import './L.CanvasOverlay';
+import Vector2D from './Vector2D';
 
 function LatLongToPixelXY(latitude, longitude) {
   var pi_180 = Math.PI / 180.0;
@@ -105,7 +106,7 @@ class App extends React.Component {
       activeLayers: [],
       clearDisabled: true,
       message: "",
-      
+      data: []
 
     };
     
@@ -129,11 +130,15 @@ class App extends React.Component {
   //      return "http://";
   //     }
   //  }
-
   componentDidMount() {
     // Call our fetch function below once the component mounts
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
+    this.callBackendAPI()
+    .catch(err => alert(err));
+  }
+
+  redraw(data, map) {
     const leafletMap = this.map.leafletElement;
     this.glLayer = L.canvasOverlay()
                         .drawing(drawingOnCanvas)
@@ -142,14 +147,7 @@ class App extends React.Component {
     this.glLayer.canvas.width = this.canvas.width;
     this.glLayer.canvas.height = this.canvas.height;
     this.gl = this.canvas.getContext('webgl', { antialias: true });
-    this.canvas.addEventListener("webglcontextlost", function(event) {
-      event.preventDefault();
-      console.log("CRASH--recovering GL")
-    }, false);
-    this.canvas.addEventListener(
-    "webglcontextrestored", function(event) {
-    this.gl = this.canvas.getContext('webgl', { antialias: true });
-    }, false);
+    this.addEventListeners(); //handle lost gl context
     var pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);
         // -- WebGl setup
@@ -180,15 +178,53 @@ class App extends React.Component {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix);
     // -- data
-    var verts = [];
+   
+    let verts = [];
+    var pointStart;
+    var thickness = 0.01;
+    //console.log(data);
+    var i = 0;
+    //for (var i = 0; i < data.length - 1; i += 1) {
+      var pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
+      var pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
+      var pixel2 = LatLongToPixelXY(data[i + 2][0], data[i + 2][1]);
+      let p0 =new Vector2D(pixel0.x, pixel0.y);
+      let p1 = new Vector2D(pixel1.x, pixel1.y);
+      let p2 = new Vector2D(pixel2.x, pixel2.y);
+      //var p2p1 = new Vector2D(p1.x - p0.x, p1.y - p0.y)
+      var p1p0 = p1.subtract(p0);
+      var p2p1 = p2.subtract(p1);
+      var normal = p1p0.normal();
+      var normalized = normal.normalize();
 
-    //data.map(function (d, i) {
-    var pixel = LatLongToPixelXY(-36.8485, 174.7633);
-        //-- 2 coord, 3 rgb colors interleaved buffer
-        verts.push(pixel.x, pixel.y, 1, 0, 0);
-    //});
+      var x = pixel0.x - (thickness * normalized.x);
+      var y = pixel0.y - (thickness * normalized.y)
+      verts.push(x, y, 1, 0, 1);
+      var x = pixel0.x + (thickness * normalized.x);
+      var y = pixel0.y + (thickness * normalized.y);
+      verts.push(x, y, 1, 0, 1);
 
-    var numPoints = 1 ;
+
+      var normal = p2p1.normal();
+      var tangent = (p2p1.normalize().add(p1p0.normalize()));
+      //console.log(tangent);
+      var nTangent = tangent.normalize();
+      var miter =  new Vector2D(nTangent.x, -nTangent.y);
+      
+      var length = thickness / miter.dot(normal);
+      var l = miter.multiply(length);
+      console.log(l);
+      //x = p1.x.add(l);
+      p1 = new Vector2D(pixel1.x, pixel1.y);
+      var c = p1.add(l);
+      p1 = new Vector2D(pixel1.x, pixel1.y);
+      var d = p1.subtract(l);
+      console.log(c);
+      console.log(d);
+      verts.push(c.x, c.y, 1, 0, 1);
+      verts.push(d.x, d.y, 1, 0, 1);
+
+      verts.push(pixel2.x, pixel2.y, 1, 0, 1);
 
     var vertBuffer = this.gl.createBuffer();
     var vertArray = new Float32Array(verts);
@@ -201,15 +237,14 @@ class App extends React.Component {
     // -- offset for color buffer
     this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, fsize*5, fsize*2);
     this.gl.enableVertexAttribArray(colorLoc);
-    this.glLayer.gl = this.gl;
-    this.glLayer.mapMatrix = this.mapMatrix;
+    this.glLayer.gl = this.gl; //set gl in canvas
+    this.glLayer.mapMatrix = this.mapMatrix; //set matrix in canvas
     this.glLayer.redraw();
 
     function drawingOnCanvas(canvasOverlay, params) {
       if (params.gl == null)  {
         return;
       }
-
       params.gl.clear(this.gl.COLOR_BUFFER_BIT);
       var pixelsToWebGLMatrix = new Float32Array(16);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
@@ -219,7 +254,6 @@ class App extends React.Component {
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
       params.mapMatrix.set(pixelsToWebGLMatrix);
       var bounds = leafletMap.getBounds();
-      //console.log(bounds);
       var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
       var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
@@ -229,19 +263,29 @@ class App extends React.Component {
       var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
-      params.gl.drawArrays(params.gl.POINTS, 0, numPoints);
-
-  }
-
-
-    this.callBackendAPI()
-    .catch(err => alert(err));
-   
-
+      var pointer = 0;
+      params.gl.drawArrays(params.gl.POINTS, pointer, 5);
+      //params.gl.lineWidth(10);
+      // for (var i = 0; i < map.length; i += 1) {
+      //   params.gl.drawArrays(params.gl.LINE_STRIP, pointer, map[i]);
+      //   pointer += map[i];
+      // }
+    }
   }
 
   componentDidUpdate() {   
-    this.glLayer.redraw();  
+    //this.glLayer.redraw();  
+  }
+
+  addEventListeners() {
+    this.canvas.addEventListener("webglcontextlost", function(event) {
+      event.preventDefault();
+      console.log("CRASH--recovering GL")
+    }, false);
+    this.canvas.addEventListener(
+    "webglcontextrestored", function(event) {
+    this.gl = this.canvas.getContext('webgl', { antialias: true });
+    }, false);
   }
 
   callBackendAPI = async () => {
@@ -366,17 +410,14 @@ class App extends React.Component {
       if (bounds.getNorthEast() !== bounds.getSouthWest()) {
         const map = this.map.leafletElement;
         map.fitBounds(bounds);
-      }
-      
+      }    
     }
-    
-
     this.setState({objData: objData});
   }
 
   addCentrelines(data) {
     let lineData = [];
-    console.log(data.length);
+    //console.log(data.length);
     for (var i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson); 
       if(linestring !== null) {
@@ -390,7 +431,17 @@ class App extends React.Component {
       }
       lineData.push(points);
     }
-    this.setState({centreData: lineData});
+    // var lines = [];
+    // var dataMap = []; //array to keep track of lengths of segments
+    // lineData.map((d, i) => {
+    //   lineData[i].map((n, j) => {
+    //     var coord = [n.lat, n.lng];
+    //     lines.push(coord);
+    //   });
+    //   dataMap.push(lineData[i].length);
+    // });
+    let staticData = [[-36.848461, 174.763336], [-36.648461, 174.467891], [-36.568461, 174.881336]];
+    this.redraw(staticData, [3]);
   }
   //EVENTS
   /**

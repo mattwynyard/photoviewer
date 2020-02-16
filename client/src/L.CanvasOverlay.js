@@ -54,9 +54,10 @@ L.CanvasOverlay = L.Layer.extend({
 
     gl: function(gl) {
         this.gl = gl;
+        console.log(this.gl);
     },
 
-    gl: function(matrix) {
+    matrix: function(matrix) {
         this.mapMatrix = matrix;
         //console.log(this.gl);
     },
@@ -65,7 +66,7 @@ L.CanvasOverlay = L.Layer.extend({
   
     onAdd: function (map) {
         this._map = map;
-        this._canvas = L.DomUtil.create('canvas', 'leaflet-heatmap-layer');
+        this._canvas = L.DomUtil.create('canvas', 'gl-layer');
 
         var size = this._map.getSize();
         this._canvas.width = size.x;
