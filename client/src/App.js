@@ -180,51 +180,128 @@ class App extends React.Component {
     // -- data
    
     let verts = [];
-    var pointStart;
     var thickness = 0.01;
+    var numPoints = (data.length - 1) * 6;
     //console.log(data);
     var i = 0;
-    //for (var i = 0; i < data.length - 1; i += 1) {
-      var pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
-      var pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
-      var pixel2 = LatLongToPixelXY(data[i + 2][0], data[i + 2][1]);
-      let p0 =new Vector2D(pixel0.x, pixel0.y);
-      let p1 = new Vector2D(pixel1.x, pixel1.y);
-      let p2 = new Vector2D(pixel2.x, pixel2.y);
-      //var p2p1 = new Vector2D(p1.x - p0.x, p1.y - p0.y)
-      var p1p0 = p1.subtract(p0);
-      var p2p1 = p2.subtract(p1);
-      var normal = p1p0.normal();
-      var normalized = normal.normalize();
+    for (var i = 0; i < data.length; i += 1) {
+        // const pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
+        // const pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]); 
+        // let p0 =new Vector2D(pixel0.x, pixel0.y);
+        // let p1 = new Vector2D(pixel1.x, pixel1.y);
+        // var p1p0 = p1.subtract(p0);
+        // var normal = p1p0.normal();
+        // var normalized = normal.normalize();
+        // var x = pixel0.x - (thickness * normalized.x);
+        // var y = pixel0.y - (thickness * normalized.y);
+        // verts.push(x, y, 1, 0, 1);
+        // var x = pixel0.x + (thickness * normalized.x);
+        // var y = pixel0.y + (thickness * normalized.y);    
+        // verts.push(x, y, 1, 0, 1);
+      if (i === data.length - 2) {
+        console.log("end");
+        const pixel0 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
+        const pixel1 = LatLongToPixelXY(data[i][0], data[i][1]);
+        const pixel2 = LatLongToPixelXY(data[i - 1][0], data[i - 1][1]);
 
-      var x = pixel0.x - (thickness * normalized.x);
-      var y = pixel0.y - (thickness * normalized.y)
-      verts.push(x, y, 1, 0, 1);
-      var x = pixel0.x + (thickness * normalized.x);
-      var y = pixel0.y + (thickness * normalized.y);
-      verts.push(x, y, 1, 0, 1);
+        let p0 = new Vector2D(pixel0.x, pixel0.y);
+        let p1 = new Vector2D(pixel1.x, pixel1.y);
+        var line = p1.subtract(p0);
+        var normal = line.normal();
+        var normalized = normal.normalize();
+        var x = pixel0.x - (thickness * normalized.x);
+        var y = pixel0.y - (thickness * normalized.y);
+        verts.push(x, y, 1, 0, 1);
+        var x = pixel0.x + (thickness * normalized.x);
+        var y = pixel0.y + (thickness * normalized.y);    
+        verts.push(x, y, 1, 0, 1);
 
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        let p2 = new Vector2D(pixel2.x, pixel2.y);
 
-      var normal = p2p1.normal();
-      var tangent = (p2p1.normalize().add(p1p0.normalize()));
-      //console.log(tangent);
-      var nTangent = tangent.normalize();
-      var miter =  new Vector2D(nTangent.x, -nTangent.y);
-      
-      var length = thickness / miter.dot(normal);
-      var l = miter.multiply(length);
-      console.log(l);
-      //x = p1.x.add(l);
-      p1 = new Vector2D(pixel1.x, pixel1.y);
-      var c = p1.add(l);
-      p1 = new Vector2D(pixel1.x, pixel1.y);
-      var d = p1.subtract(l);
-      console.log(c);
-      console.log(d);
-      verts.push(c.x, c.y, 1, 0, 1);
-      verts.push(d.x, d.y, 1, 0, 1);
+        var p2p1 = p2.subtract(p1);
+        normal = p2p1.normal();
+        var normalized = normal.normalize();
+        var p1p0 = p1.subtract(p0);
 
-      verts.push(pixel2.x, pixel2.y, 1, 0, 1);
+        p2p1.normalize();
+        p1p0.normalize();
+        // var p2p1 = p2.subtract(p1).normalize();
+        // var p1p0 = p1.subtract(p0).normalize();
+        var tangent = (p2p1.add(p1p0));
+        
+        var nTangent = tangent.normalize();
+        var miter = nTangent.normal();
+        //var miter =  new Vector2D(nTangent.x, -nTangent.y);
+        
+        var length = thickness / Vector2D.dot(miter, normalized);
+        var l = miter.multiply(length);
+        //console.log(l);
+        //x = p1.x.add(l);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var c = p1.subtract(l);
+        verts.push(c.x, c.y, 1, 0, 1);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var d = p1.add(l);
+        //console.log(c);
+        //console.log(d);
+        verts.push(x, y, 1, 0, 1);
+        verts.push(c.x, c.y, 1, 0, 1);
+        verts.push(d.x, d.y, 1, 0, 1);
+        break;
+      } else {
+        const pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
+        const pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
+        const pixel2 = LatLongToPixelXY(data[i + 2][0], data[i + 2][1]);
+
+        let p0 = new Vector2D(pixel0.x, pixel0.y);
+        let p1 = new Vector2D(pixel1.x, pixel1.y);
+        var line = p1.subtract(p0);
+        var normal = line.normal();
+        var normalized = normal.normalize();
+        var x = pixel0.x - (thickness * normalized.x);
+        var y = pixel0.y - (thickness * normalized.y);
+        verts.push(x, y, 1, 0, 1);
+        var x = pixel0.x + (thickness * normalized.x);
+        var y = pixel0.y + (thickness * normalized.y);    
+        verts.push(x, y, 1, 0, 1);
+
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        let p2 = new Vector2D(pixel2.x, pixel2.y);
+
+        var p2p1 = p2.subtract(p1);
+        normal = p2p1.normal();
+        var normalized = normal.normalize();
+        var p1p0 = p1.subtract(p0);
+
+        p2p1.normalize();
+        p1p0.normalize();
+        // var p2p1 = p2.subtract(p1).normalize();
+        // var p1p0 = p1.subtract(p0).normalize();
+        var tangent = (p2p1.add(p1p0));
+        
+        var nTangent = tangent.normalize();
+        var miter = nTangent.normal();
+        //var miter =  new Vector2D(nTangent.x, -nTangent.y);
+        
+        var length = thickness / Vector2D.dot(miter, normalized);
+        var l = miter.multiply(length);
+        //console.log(l);
+        //x = p1.x.add(l);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var c = p1.subtract(l);
+        verts.push(c.x, c.y, 1, 0, 1);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var d = p1.add(l);
+        //console.log(c);
+        //console.log(d);
+        verts.push(x, y, 1, 0, 1);
+        verts.push(c.x, c.y, 1, 0, 1);
+        verts.push(d.x, d.y, 1, 0, 1);
+      }
+    }
 
     var vertBuffer = this.gl.createBuffer();
     var vertArray = new Float32Array(verts);
@@ -264,7 +341,7 @@ class App extends React.Component {
       // -- attach matrix value to 'mapMatrix' uniform in shader
       params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
       var pointer = 0;
-      params.gl.drawArrays(params.gl.POINTS, pointer, 5);
+      params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
       //params.gl.lineWidth(10);
       // for (var i = 0; i < map.length; i += 1) {
       //   params.gl.drawArrays(params.gl.LINE_STRIP, pointer, map[i]);

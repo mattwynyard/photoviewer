@@ -99,12 +99,9 @@ export default class Vector2D {
     }
 
     normal() {
-        var y = -1 * this.y
-        return new Vector2D(this.x, y);
-    }
-
-    magnitude() {
-        return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+		var y = this.x;
+		var x = -1 * this.y;
+        return new Vector2D(x, y);
     }
     
     /* STATIC METHODS */
