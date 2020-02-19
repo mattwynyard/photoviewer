@@ -98,12 +98,6 @@ export default class Vector2D {
 		return this;
     }
 
-    normal() {
-		var y = this.x;
-		var x = -1 * this.y;
-        return new Vector2D(x, y);
-    }
-    
     /* STATIC METHODS */
     static negative(v) {
         return new Vector2D(-v.x, -v.y);

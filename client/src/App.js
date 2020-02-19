@@ -138,6 +138,24 @@ class App extends React.Component {
     .catch(err => alert(err));
   }
 
+  getMiter(p0, p1, p2, thickness) {
+    var p2p1 = Vector2D.subtract(p2, p1);
+    var p1p0 = Vector2D.subtract(p1, p0);
+    var y = p2p1.y * -1;
+    var normal = new Vector2D(y, p2p1.x);
+    var normalized = normal.normalize();
+    p2p1.normalize();
+    p1p0.normalize();
+    var p2p1 = Vector2D.subtract(p2, p1);
+    var tangent = Vector2D.add(p2p1, p1p0);    
+    var nTangent = tangent.normalize();
+    var y = nTangent.y * -1;
+    var miter = new Vector2D(-nTangent.y, nTangent.x);
+    var length = thickness / Vector2D.dot(miter, normalized);
+    var l = miter.multiply(length);
+    return new Vector2D(l.x, l.y);
+  }
+
   redraw(data, map) {
     const leafletMap = this.map.leafletElement;
     this.glLayer = L.canvasOverlay()
@@ -180,129 +198,139 @@ class App extends React.Component {
     // -- data
    
     let verts = [];
-    var thickness = 0.01;
-    var numPoints = (data.length - 1) * 6;
-    //console.log(data);
-    var i = 0;
+    let thickness = 0.0001;
     for (var i = 0; i < data.length; i += 1) {
-        // const pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
-        // const pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]); 
-        // let p0 =new Vector2D(pixel0.x, pixel0.y);
-        // let p1 = new Vector2D(pixel1.x, pixel1.y);
-        // var p1p0 = p1.subtract(p0);
-        // var normal = p1p0.normal();
-        // var normalized = normal.normalize();
-        // var x = pixel0.x - (thickness * normalized.x);
-        // var y = pixel0.y - (thickness * normalized.y);
-        // verts.push(x, y, 1, 0, 1);
-        // var x = pixel0.x + (thickness * normalized.x);
-        // var y = pixel0.y + (thickness * normalized.y);    
-        // verts.push(x, y, 1, 0, 1);
-      if (i === data.length - 2) {
-        console.log("end");
-        const pixel0 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
-        const pixel1 = LatLongToPixelXY(data[i][0], data[i][1]);
-        const pixel2 = LatLongToPixelXY(data[i - 1][0], data[i - 1][1]);
-
+      console.log(data[i]);
+      if(data[i].length < 3 ) {
+        //console.log(data[i]);
+        continue;
+      }
+      
+      for (var j = 0; j < data[i].length; j += 1) {
+        let r = Math.random();
+        let g = Math.random();
+        let b = Math.random();
+      if (j === 0) {
+        const pixel0 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
+        const pixel1 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
+        const pixel2 = LatLongToPixelXY(data[i][j + 2][0], data[i][j + 2][1]);
         let p0 = new Vector2D(pixel0.x, pixel0.y);
         let p1 = new Vector2D(pixel1.x, pixel1.y);
-        var line = p1.subtract(p0);
-        var normal = line.normal();
-        var normalized = normal.normalize();
-        var x = pixel0.x - (thickness * normalized.x);
-        var y = pixel0.y - (thickness * normalized.y);
-        verts.push(x, y, 1, 0, 1);
-        var x = pixel0.x + (thickness * normalized.x);
-        var y = pixel0.y + (thickness * normalized.y);    
-        verts.push(x, y, 1, 0, 1);
+        let line = Vector2D.subtract(p1, p0);
+        let normal = new Vector2D(-line.y, line.x)
+        let normalized = normal.normalize();
+        let a = p0.subtract(normalized.multiply(thickness));
+        normal = new Vector2D(-line.y, line.x);
+        normalized = normal.normalize();
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        let b = p0.add(normalized.multiply(thickness));
 
         p0 = new Vector2D(pixel0.x, pixel0.y);
         p1 = new Vector2D(pixel1.x, pixel1.y);
         let p2 = new Vector2D(pixel2.x, pixel2.y);
 
-        var p2p1 = p2.subtract(p1);
-        normal = p2p1.normal();
-        var normalized = normal.normalize();
-        var p1p0 = p1.subtract(p0);
-
-        p2p1.normalize();
-        p1p0.normalize();
-        // var p2p1 = p2.subtract(p1).normalize();
-        // var p1p0 = p1.subtract(p0).normalize();
-        var tangent = (p2p1.add(p1p0));
-        
-        var nTangent = tangent.normalize();
-        var miter = nTangent.normal();
-        //var miter =  new Vector2D(nTangent.x, -nTangent.y);
-        
-        var length = thickness / Vector2D.dot(miter, normalized);
-        var l = miter.multiply(length);
-        //console.log(l);
-        //x = p1.x.add(l);
+        let miter = this.getMiter(p0, p1, p2, thickness);
         p1 = new Vector2D(pixel1.x, pixel1.y);
-        var c = p1.subtract(l);
-        verts.push(c.x, c.y, 1, 0, 1);
+        let c = p1.subtract(miter);
         p1 = new Vector2D(pixel1.x, pixel1.y);
-        var d = p1.add(l);
+        let d = p1.add(miter);
+        // var r = Math.random();
+        // var g = Math.random();
+        // var b = Math.random();
+        //console.log(a);
+        //console.log(b);
         //console.log(c);
         //console.log(d);
-        verts.push(x, y, 1, 0, 1);
-        verts.push(c.x, c.y, 1, 0, 1);
-        verts.push(d.x, d.y, 1, 0, 1);
+        verts.push(a.x, a.y, r, g, b);
+        verts.push(b.x, b.y, r, g, b);
+        verts.push(c.x, c.y, r, g, b);
+        verts.push(c.x, c.y, r, g, b); 
+        verts.push(d.x, d.y, r, g, b);
+        verts.push(b.x, b.y, r, g, b);
+
+       } else if (j === data[i].length - 2) {
+
+        var pixel0 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
+        var pixel1 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
+        var pixel2 = LatLongToPixelXY(data[i][j - 1][0], data[i][j - 1][1]);
+        let p0 = new Vector2D(pixel0.x, pixel0.y);
+        let p1 = new Vector2D(pixel1.x, pixel1.y);
+        var line = p1.subtract(p0);
+        var normal = new Vector2D(-line.y, line.x)
+        var normalized = normal.normalize();
+        var a = p0.subtract(normalized.multiply(thickness));
+        var normal = new Vector2D(-line.y, line.x);
+        var normalized = normal.normalize();
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        let b = p0.add(normalized.multiply(thickness));
+
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        let p2 = new Vector2D(pixel2.x, pixel2.y);
+
+        var miter = this.getMiter(p0, p1, p2, thickness);
+
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var c = p1.subtract(miter);
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        var d = p1.add(miter);
+        //console.log(a);
+        //console.log(b);
+        //console.log(c);
+        //console.log(d);
+        
+        verts.push(a.x, a.y, r, g, b);
+        verts.push(b.x, b.y, r, g, b);
+        verts.push(c.x, c.y, r, g, b);
+        verts.push(c.x, c.y, r, g, b); 
+        verts.push(d.x, d.y, r, g, b);
+        verts.push(b.x, b.y, r, g, b);
+        //console.log("end");
         break;
-      } else {
-        const pixel0 = LatLongToPixelXY(data[i][0], data[i][1]);
-        const pixel1 = LatLongToPixelXY(data[i + 1][0], data[i + 1][1]);
-        const pixel2 = LatLongToPixelXY(data[i + 2][0], data[i + 2][1]);
 
-        let p0 = new Vector2D(pixel0.x, pixel0.y);
-        let p1 = new Vector2D(pixel1.x, pixel1.y);
-        var line = p1.subtract(p0);
-        var normal = line.normal();
-        var normalized = normal.normalize();
-        var x = pixel0.x - (thickness * normalized.x);
-        var y = pixel0.y - (thickness * normalized.y);
-        verts.push(x, y, 1, 0, 1);
-        var x = pixel0.x + (thickness * normalized.x);
-        var y = pixel0.y + (thickness * normalized.y);    
-        verts.push(x, y, 1, 0, 1);
+       } else {
+        //console.log("middle");
+        const pixel0 = LatLongToPixelXY(data[i][j -1][0], data[i][j -1][1]);
+        const pixel1 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
+        const pixel2 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
+        const pixel3 = LatLongToPixelXY(data[i][j + 2][0], data[i][j + 2][1]);
+        var p0 = new Vector2D(pixel0.x, pixel0.y);
+        var p1 = new Vector2D(pixel1.x, pixel1.y);
+        var p2 = new Vector2D(pixel2.x, pixel2.y);
+        var p3 = new Vector2D(pixel3.x, pixel3.y);
+        //meter calc
 
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let p2 = new Vector2D(pixel2.x, pixel2.y);
+        var miter1 = this.getMiter(p0, p1, p2, thickness);
+        var p1 = new Vector2D(pixel1.x, pixel1.y);
+        var p2 = new Vector2D(pixel2.x, pixel2.y);
+        var p3 = new Vector2D(pixel3.x, pixel3.y);
+        var miter2 = this.getMiter(p1, p2, p3, thickness);
 
-        var p2p1 = p2.subtract(p1);
-        normal = p2p1.normal();
-        var normalized = normal.normalize();
-        var p1p0 = p1.subtract(p0);
+        var v1 = new Vector2D(pixel1.x, pixel1.y);
+        var v2 = new Vector2D(pixel2.x, pixel2.y);
+        var c = Vector2D.add(v1, miter1);
+        var d = Vector2D.subtract(v1,  miter1);
+        var e = Vector2D.add(v2, miter2);
+        var f = Vector2D.subtract(v2,  miter2);
+        // var r = Math.random();
+        // var g = Math.random();
+        // var b = Math.random();
+        verts.push(c.x, c.y, r, g, b);
+        verts.push(d.x, d.y, r, g, b);
+        verts.push(e.x, e.y, r, g, b);
+        verts.push(e.x, e.y, r, g, b);
+        verts.push(f.x, f.y, r, g, b);
+        verts.push(d.x, d.y, r, g, b);
 
-        p2p1.normalize();
-        p1p0.normalize();
-        // var p2p1 = p2.subtract(p1).normalize();
-        // var p1p0 = p1.subtract(p0).normalize();
-        var tangent = (p2p1.add(p1p0));
-        
-        var nTangent = tangent.normalize();
-        var miter = nTangent.normal();
-        //var miter =  new Vector2D(nTangent.x, -nTangent.y);
-        
-        var length = thickness / Vector2D.dot(miter, normalized);
-        var l = miter.multiply(length);
-        //console.log(l);
-        //x = p1.x.add(l);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        var c = p1.subtract(l);
-        verts.push(c.x, c.y, 1, 0, 1);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        var d = p1.add(l);
+        //console.log(a);
+        //console.log(b);
         //console.log(c);
         //console.log(d);
-        verts.push(x, y, 1, 0, 1);
-        verts.push(c.x, c.y, 1, 0, 1);
-        verts.push(d.x, d.y, 1, 0, 1);
+
       }
     }
-
+  }
+    //console.log(verts);
     var vertBuffer = this.gl.createBuffer();
     var vertArray = new Float32Array(verts);
     var fsize = vertArray.BYTES_PER_ELEMENT;
@@ -341,17 +369,22 @@ class App extends React.Component {
       // -- attach matrix value to 'mapMatrix' uniform in shader
       params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
       var pointer = 0;
-      params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
-      //params.gl.lineWidth(10);
-      // for (var i = 0; i < map.length; i += 1) {
-      //   params.gl.drawArrays(params.gl.LINE_STRIP, pointer, map[i]);
-      //   pointer += map[i];
-      // }
+      for (var i = 0; i < data.length; i += 1) {
+        //console.log(map[i]);
+        var numPoints = (data[i].length - 1) * 6;
+        //console.log(numPoints);
+        params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
+        pointer += numPoints;
+      }
+      //console.log(leafletMap.getZoom());
+      //console.log(pointer);
     }
   }
 
-  componentDidUpdate() {   
-    //this.glLayer.redraw();  
+  
+
+  componentDidUpdate() {  
+    
   }
 
   addEventListeners() {
@@ -506,19 +539,29 @@ class App extends React.Component {
           points.push(latlng);
         }     
       }
+      //console.log(lineData);
       lineData.push(points);
     }
-    // var lines = [];
-    // var dataMap = []; //array to keep track of lengths of segments
-    // lineData.map((d, i) => {
-    //   lineData[i].map((n, j) => {
-    //     var coord = [n.lat, n.lng];
-    //     lines.push(coord);
-    //   });
-    //   dataMap.push(lineData[i].length);
-    // });
-    let staticData = [[-36.848461, 174.763336], [-36.648461, 174.467891], [-36.568461, 174.881336]];
-    this.redraw(staticData, [3]);
+    var lines = [];
+    var dataMap = []; //array to keep track of lengths of segments
+    lineData.map((d, i) => {
+      var segment = [];
+      lineData[i].map((n, j) => {
+        
+        var coord = [n.lat, n.lng];
+        //console.log(coord);
+        segment.push(coord);
+      });
+      if (i % 1 == 0) {
+        lines.push(segment);
+        dataMap.push(lineData[i].length);
+      }
+      
+    });
+    //let staticData = [[-36.917365206, 174.643535046],[-36.917493086, 174.644253555],[-36.917500885, 174.644287904],[-36.917505374, 174.644315907],
+    //[-36.917509427, 174.644365589],[-36.91750806, 174.64442263],[-36.917501645, 174.644471941],[-36.917489289, 174.644523863]];
+    //let staticData = [[-36.917365206, 174.643535046],[-36.917509427, 174.644365589],[-36.917489289, 174.644523863]];
+    this.redraw([lines[9000]], dataMap[9000]);
   }
   //EVENTS
   /**
@@ -765,7 +808,7 @@ async loadCentreline(e) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        code: "900",
+        code: "076",
         menu: e.target.id,
         user: this.state.login
       })
@@ -774,6 +817,7 @@ async loadCentreline(e) {
       console.log(response.status);
     } 
     const body = await response.json();
+    //console.log(body);
     await this.addCentrelines(body);
   } else {
     
