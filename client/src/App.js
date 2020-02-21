@@ -7,6 +7,29 @@ import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import Vector2D from './Vector2D';
+import 'simplify-js'
+import simplify from 'simplify-js';
+
+const RDP = (l, eps) => {
+  const last = l.length - 1;
+  const p1 = l[0];
+  const p2 = l[last];
+  const x21 = p2.x - p1.x;
+  const y21 = p2.y - p1.y;
+ 
+  const [dMax, x] = l.slice(1, last)
+      .map(p => Math.abs(y21 * p.x - x21 * p.y + p2.x * p1.y - p2.y * p1.x))
+      .reduce((p, c, i) => {
+        const v = Math.max(p[0], c);
+        return [v, v === p[0] ? p[1] : i + 1];
+      }, [-1, 0]);
+ 
+  if (dMax > eps) {
+    return [...RDP(l.slice(0, x + 1), eps), ...RDP(l.slice(x), eps).slice(1)];
+  }
+  return [l[0], l[last]]
+};
+
 
 function LatLongToPixelXY(latitude, longitude) {
   var pi_180 = Math.PI / 180.0;
@@ -139,24 +162,28 @@ class App extends React.Component {
   }
 
   getMiter(p0, p1, p2, thickness) {
-    var p2p1 = Vector2D.subtract(p2, p1);
-    var p1p0 = Vector2D.subtract(p1, p0);
-    var y = p2p1.y * -1;
-    var normal = new Vector2D(y, p2p1.x);
-    var normalized = normal.normalize();
+    let p2p1 = Vector2D.subtract(p2, p1);
+    let p1p0 = Vector2D.subtract(p1, p0);
+    let y = p2p1.y * -1;
+    let normal = new Vector2D(y, p2p1.x);
+    let normalized = normal.normalize();
     p2p1.normalize();
     p1p0.normalize();
-    var p2p1 = Vector2D.subtract(p2, p1);
-    var tangent = Vector2D.add(p2p1, p1p0);    
-    var nTangent = tangent.normalize();
-    var y = nTangent.y * -1;
-    var miter = new Vector2D(-nTangent.y, nTangent.x);
-    var length = thickness / Vector2D.dot(miter, normalized);
-    var l = miter.multiply(length);
+    p2p1 = Vector2D.subtract(p2, p1);
+    let tangent = Vector2D.add(p2p1, p1p0);    
+    let nTangent = tangent.normalize();
+    y = nTangent.y * -1;
+    let miter = new Vector2D(-nTangent.y, nTangent.x);
+    let length = thickness / Vector2D.dot(miter, normalized);
+    if (length > thickness * 1.5 || length < thickness * 0.5) {
+      return new Vector2D(0, 0);
+    }
+    let l = miter.multiply(length);
     return new Vector2D(l.x, l.y);
+  
   }
 
-  redraw(data, map) {
+  redraw(data) {
     const leafletMap = this.map.leafletElement;
     this.glLayer = L.canvasOverlay()
                         .drawing(drawingOnCanvas)
@@ -199,135 +226,180 @@ class App extends React.Component {
    
     let verts = [];
     let thickness = 0.0001;
+    //console.log(data);
     for (var i = 0; i < data.length; i += 1) {
-      console.log(data[i]);
-      if(data[i].length < 3 ) {
-        //console.log(data[i]);
-        continue;
-      }
+      let r = Math.random();
+        let g = Math.random();
+        let blue = Math.random();
       
       for (var j = 0; j < data[i].length; j += 1) {
-        let r = Math.random();
-        let g = Math.random();
-        let b = Math.random();
-      if (j === 0) {
-        const pixel0 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
-        const pixel1 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
-        const pixel2 = LatLongToPixelXY(data[i][j + 2][0], data[i][j + 2][1]);
-        let p0 = new Vector2D(pixel0.x, pixel0.y);
-        let p1 = new Vector2D(pixel1.x, pixel1.y);
-        let line = Vector2D.subtract(p1, p0);
-        let normal = new Vector2D(-line.y, line.x)
-        let normalized = normal.normalize();
-        let a = p0.subtract(normalized.multiply(thickness));
-        normal = new Vector2D(-line.y, line.x);
-        normalized = normal.normalize();
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        let b = p0.add(normalized.multiply(thickness));
-
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let p2 = new Vector2D(pixel2.x, pixel2.y);
-
-        let miter = this.getMiter(p0, p1, p2, thickness);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let c = p1.subtract(miter);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let d = p1.add(miter);
-        // var r = Math.random();
-        // var g = Math.random();
-        // var b = Math.random();
-        //console.log(a);
-        //console.log(b);
-        //console.log(c);
-        //console.log(d);
-        verts.push(a.x, a.y, r, g, b);
-        verts.push(b.x, b.y, r, g, b);
-        verts.push(c.x, c.y, r, g, b);
-        verts.push(c.x, c.y, r, g, b); 
-        verts.push(d.x, d.y, r, g, b);
-        verts.push(b.x, b.y, r, g, b);
-
-       } else if (j === data[i].length - 2) {
-
-        var pixel0 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
-        var pixel1 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
-        var pixel2 = LatLongToPixelXY(data[i][j - 1][0], data[i][j - 1][1]);
-        let p0 = new Vector2D(pixel0.x, pixel0.y);
-        let p1 = new Vector2D(pixel1.x, pixel1.y);
-        var line = p1.subtract(p0);
-        var normal = new Vector2D(-line.y, line.x)
-        var normalized = normal.normalize();
-        var a = p0.subtract(normalized.multiply(thickness));
-        var normal = new Vector2D(-line.y, line.x);
-        var normalized = normal.normalize();
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        let b = p0.add(normalized.multiply(thickness));
-
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let p2 = new Vector2D(pixel2.x, pixel2.y);
-
-        var miter = this.getMiter(p0, p1, p2, thickness);
-
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        var c = p1.subtract(miter);
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        var d = p1.add(miter);
-        //console.log(a);
-        //console.log(b);
-        //console.log(c);
-        //console.log(d);
         
-        verts.push(a.x, a.y, r, g, b);
-        verts.push(b.x, b.y, r, g, b);
-        verts.push(c.x, c.y, r, g, b);
-        verts.push(c.x, c.y, r, g, b); 
-        verts.push(d.x, d.y, r, g, b);
-        verts.push(b.x, b.y, r, g, b);
-        //console.log("end");
-        break;
+        if (data[i].length < 2) {
+          console.log(data[i]);
+          continue;
+        }
+        if(data[i].length < 3 ) {
+          //console.log(data[i]);
+          const pixel0 = {x: data[i][0].x, y: data[i][0].y};   
+          const pixel1 = {x: data[i][1].x, y: data[i][1].y};
+          if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
+            //console.log(data[i]);
+            continue;
+          }
+          let p0 = new Vector2D(pixel0.x, pixel0.y);
+          let p1 = new Vector2D(pixel1.x, pixel1.y);
+          let line = Vector2D.subtract(p1, p0);
+          let normal = new Vector2D(-line.y, line.x)
+          let normalized = normal.normalize();
+          let a = p0.subtract(normalized.multiply(thickness));
+          normal = new Vector2D(-line.y, line.x);
+          normalized = normal.normalize();
 
-       } else {
-        //console.log("middle");
-        const pixel0 = LatLongToPixelXY(data[i][j -1][0], data[i][j -1][1]);
-        const pixel1 = LatLongToPixelXY(data[i][j][0], data[i][j][1]);
-        const pixel2 = LatLongToPixelXY(data[i][j + 1][0], data[i][j + 1][1]);
-        const pixel3 = LatLongToPixelXY(data[i][j + 2][0], data[i][j + 2][1]);
-        var p0 = new Vector2D(pixel0.x, pixel0.y);
-        var p1 = new Vector2D(pixel1.x, pixel1.y);
-        var p2 = new Vector2D(pixel2.x, pixel2.y);
-        var p3 = new Vector2D(pixel3.x, pixel3.y);
-        //meter calc
+          p0 = new Vector2D(pixel0.x, pixel0.y);
+          let b = p0.add(normalized.multiply(thickness));
 
-        var miter1 = this.getMiter(p0, p1, p2, thickness);
-        var p1 = new Vector2D(pixel1.x, pixel1.y);
-        var p2 = new Vector2D(pixel2.x, pixel2.y);
-        var p3 = new Vector2D(pixel3.x, pixel3.y);
-        var miter2 = this.getMiter(p1, p2, p3, thickness);
+          normal = new Vector2D(-line.y, line.x)
+          normalized = normal.normalize();
+          let c = p1.subtract(normalized.multiply(thickness));
+          normal = new Vector2D(-line.y, line.x);
+          normalized = normal.normalize();
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          let d = p1.add(normalized.multiply(thickness));
+          // let l = Vector2D.subtract(a, b).length();
+          // if (l > thickness) {
+          //   //console.log(l);
+          // }
+          // l = Vector2D.subtract(c, d).length();
+          // if (l > thickness) {
+          //   console.log(l);
+          // }
+          let l = Vector2D.subtract(a, b).length();
+          if (l > thickness * 2.1) {
+            console.log(l);
+          }
+          verts.push(a.x, a.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue); 
+          verts.push(d.x, d.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
+          continue;
+        } else {
+          if (j === 0) {
+            const pixel0 = {x: data[i][j].x, y: data[i][j].y};
+            const pixel1 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+            const pixel2 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let line = Vector2D.subtract(p1, p0);
+            let normal = new Vector2D(-line.y, line.x)
+            let normalized = normal.normalize();
+            let a = p0.subtract(normalized.multiply(thickness));
+            normal = new Vector2D(-line.y, line.x);
+            normalized = normal.normalize();
+            
+            p0 = new Vector2D(pixel0.x, pixel0.y);
+            let b = p0.add(normalized.multiply(thickness));
+    
+            p0 = new Vector2D(pixel0.x, pixel0.y);
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+    
+            let miter = this.getMiter(p0, p1, p2, thickness);
+            if (miter.x === 0 && miter.y === 0) {
+              continue;
+            }
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            let c = p1.subtract(miter);
+            //console.log(c);
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            let d = p1.add(miter);  
+            
+            let l = Vector2D.subtract(a, b).length();
+            if (l > thickness * 2) {
+              //console.log(l);
+            }
 
-        var v1 = new Vector2D(pixel1.x, pixel1.y);
-        var v2 = new Vector2D(pixel2.x, pixel2.y);
-        var c = Vector2D.add(v1, miter1);
-        var d = Vector2D.subtract(v1,  miter1);
-        var e = Vector2D.add(v2, miter2);
-        var f = Vector2D.subtract(v2,  miter2);
-        // var r = Math.random();
-        // var g = Math.random();
-        // var b = Math.random();
-        verts.push(c.x, c.y, r, g, b);
-        verts.push(d.x, d.y, r, g, b);
-        verts.push(e.x, e.y, r, g, b);
-        verts.push(e.x, e.y, r, g, b);
-        verts.push(f.x, f.y, r, g, b);
-        verts.push(d.x, d.y, r, g, b);
+            verts.push(a.x, a.y, r, g, blue);
+            verts.push(b.x, b.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue); 
+            verts.push(d.x, d.y, r, g, blue);
+            verts.push(b.x, b.y, r, g, blue);
+           } else if (j === data[i].length - 2) {
+            const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
+            const pixel1 = {x: data[i][j].x, y: data[i][j].y};
+            const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+    
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+            let miter1 = this.getMiter(p0, p1, p2, thickness);
+            if (miter1.x === 0 && miter1.y === 0) {
+              break;
+            }
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            p2 = new Vector2D(pixel2.x, pixel2.y);
+     
+            let a = Vector2D.add(p1, miter1);
+            let b = Vector2D.subtract(p1,  miter1);
+    
+            p1 = p1 = new Vector2D(pixel1.x, pixel1.y);
+            p2 = p2 = new Vector2D(pixel2.x, pixel2.y);
+            let line = Vector2D.subtract(p2, p1);
+            let normal = new Vector2D(-line.y, line.x)
+            let normalized = normal.normalize();
+            let c = p2.subtract(normalized.multiply(thickness));
+            normal = new Vector2D(-line.y, line.x);
+            normalized = normal.normalize();
+            p2= p2 = new Vector2D(pixel2.x, pixel2.y);
+            let d = p2.add(normalized.multiply(thickness));
+            let l = Vector2D.subtract(c, d).length();
+            if (l > thickness * 2.1) {
+              console.log(l);
+            }
+            verts.push(a.x, a.y, r, g, blue);
+            verts.push(b.x, b.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue); 
+            verts.push(d.x, d.y, r, g, blue);
+            verts.push(a.x, a.y, r, g, blue);
+            break;  
+           } else {
+            //console.log("middle");
+            const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
+            const pixel1 = {x: data[i][j].x, y: data[i][j].y};
+            const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+            const pixel3 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+            let p3 = new Vector2D(pixel3.x, pixel3.y);
+            //meter calc
+            let miter1 = this.getMiter(p0, p1, p2, thickness);
+            if (miter1.x === 0 && miter1.y === 0) {
+              continue;
+            }
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            p2 = new Vector2D(pixel2.x, pixel2.y);
+            p3 = new Vector2D(pixel3.x, pixel3.y);
+            let miter2 = this.getMiter(p1, p2, p3, thickness);
+            if (miter2.x === 0 && miter2.y === 0) {
+              continue;
+            }
+            let a = Vector2D.add(p1, miter1);
+            let b = Vector2D.subtract(p1,  miter1);
+            let c = Vector2D.add(p2, miter2);
+            let d = Vector2D.subtract(p2,  miter2);
+            verts.push(a.x, a.y, r, g, blue);
+            verts.push(b.x, b.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue);
+            verts.push(c.x, c.y, r, g, blue);
+            verts.push(d.x, d.y, r, g, blue);
+            verts.push(b.x, b.y, r, g, blue);
+          }
+        }
 
-        //console.log(a);
-        //console.log(b);
-        //console.log(c);
-        //console.log(d);
-
-      }
     }
   }
     //console.log(verts);
@@ -370,9 +442,8 @@ class App extends React.Component {
       params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
       var pointer = 0;
       for (var i = 0; i < data.length; i += 1) {
-        //console.log(map[i]);
-        var numPoints = (data[i].length - 1) * 6;
-        //console.log(numPoints);
+        var numPoints = 0;
+        numPoints = (data[i].length - 1) * 6;
         params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
         pointer += numPoints;
       }
@@ -526,43 +597,49 @@ class App extends React.Component {
   }
 
   addCentrelines(data) {
-    let lineData = [];
-    //console.log(data.length);
+
+    let lines = [];
+    let pointBefore = 0;
+    let pointAfter = 0;
     for (var i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson); 
-      if(linestring !== null) {
+      if(linestring !== null) {       
+        let segment = linestring.coordinates[0];
         var points = [];
-        var segment = linestring.coordinates[0];
-        for (var j = 0; j < segment.length; j++) {
-          var point = segment[j];
-          let latlng = L.latLng(point[1], point[0]);
-          points.push(latlng);
-        }     
-      }
-      //console.log(lineData);
-      lineData.push(points);
-    }
-    var lines = [];
-    var dataMap = []; //array to keep track of lengths of segments
-    lineData.map((d, i) => {
-      var segment = [];
-      lineData[i].map((n, j) => {
-        
-        var coord = [n.lat, n.lng];
-        //console.log(coord);
-        segment.push(coord);
-      });
-      if (i % 1 == 0) {
-        lines.push(segment);
-        dataMap.push(lineData[i].length);
-      }
+        let pixelSegment = null; 
+        for (let j = 0; j < segment.length; j++) {
+          let point = segment[j];
+          let xy = LatLongToPixelXY(point[1], point[0]);     
+          points.push(xy);
+        }
+        pointBefore += points.length;
+        if (points.length > 2) {
+          pixelSegment = RDP(points, 0.0000000001);
+          lines.push(pixelSegment);
+          pointAfter += pixelSegment.length;
+        }  else {
+          lines.push(points);
+          pointAfter += points.length;
+        }           
+      } 
       
-    });
-    //let staticData = [[-36.917365206, 174.643535046],[-36.917493086, 174.644253555],[-36.917500885, 174.644287904],[-36.917505374, 174.644315907],
-    //[-36.917509427, 174.644365589],[-36.91750806, 174.64442263],[-36.917501645, 174.644471941],[-36.917489289, 174.644523863]];
-    //let staticData = [[-36.917365206, 174.643535046],[-36.917509427, 174.644365589],[-36.917489289, 174.644523863]];
-    this.redraw([lines[9000]], dataMap[9000]);
+    }   
+    // //let staticData = [[-36.917365206, 174.643535046],[-36.917493086, 174.644253555],[-36.917500885, 174.644287904],[-36.917505374, 174.644315907],
+    // //[-36.917509427, 174.644365589],[-36.91750806, 174.64442263],[-36.917501645, 174.644471941],[-36.917489289, 174.644523863]];
+    // //let staticData = [[-36.917365206, 174.643535046],[-36.917509427, 174.644365589],[-36.917489289, 174.644523863]];
+    // //console.log(lines);
+    //console.log(Math.floor(Math.random() * 1000));
+    //this.redraw([lines[Math.floor(Math.random() * 1000)]]);
+    console.log("before: " + pointBefore);
+    console.log("after: " + pointAfter);
+    this.redraw(lines);
   }
+
+  /**
+ * @param {!Array<pointType>} l
+ * @param {number} eps
+ */
+
   //EVENTS
   /**
    * fires when user scrolls mousewheel
