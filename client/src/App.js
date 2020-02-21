@@ -129,7 +129,7 @@ class App extends React.Component {
       activeLayers: [],
       clearDisabled: true,
       message: "",
-      data: []
+      lineData: null
 
     };
     
@@ -185,67 +185,116 @@ class App extends React.Component {
 
   redraw(data) {
     const leafletMap = this.map.leafletElement;
-    this.glLayer = L.canvasOverlay()
-                        .drawing(drawingOnCanvas)
-                       .addTo(leafletMap);
+    if (this.gl == null) {
+      this.glLayer = L.canvasOverlay()
+      //.drawing(drawingOnCanvas)
+      .addTo(leafletMap);
     this.canvas = this.glLayer.canvas();
     this.glLayer.canvas.width = this.canvas.width;
     this.glLayer.canvas.height = this.canvas.height;
     this.gl = this.canvas.getContext('webgl', { antialias: true });
-    this.addEventListeners(); //handle lost gl context
-    var pixelsToWebGLMatrix = new Float32Array(16);
-    this.mapMatrix = new Float32Array(16);
-        // -- WebGl setup
-    var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-    this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
-    this.gl.compileShader(vertexShader);
-    var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
-    this.gl.compileShader(fragmentShader);
+    }
+  this.glLayer.drawing(drawingOnCanvas);
+  this.addEventListeners(); //handle lost gl context
+  var pixelsToWebGLMatrix = new Float32Array(16);
+  this.mapMatrix = new Float32Array(16);
+      // -- WebGl setup
+  var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
+  this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
+  this.gl.compileShader(vertexShader);
+  var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+  this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
+  this.gl.compileShader(fragmentShader);
 
-    // link shaders to create our program
-    var program = this.gl.createProgram();
-    this.gl.attachShader(program, vertexShader);
-    this.gl.attachShader(program, fragmentShader);
-    this.gl.linkProgram(program);
-    this.gl.useProgram(program);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-    this.gl.enable(this.gl.BLEND);
-  //  gl.disable(gl.DEPTH_TEST);
-    // ----------------------------
-    // look up the locations for the inputs to our shaders.
-    var u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
-    var colorLoc = this.gl.getAttribLocation(program, "a_color");
-    var vertLoc = this.gl.getAttribLocation(program, "a_vertex");
-    this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
-    // Set the matrix to some that makes 1 unit 1 pixel.
-    pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix);
+  // link shaders to create our program
+  var program = this.gl.createProgram();
+  this.gl.attachShader(program, vertexShader);
+  this.gl.attachShader(program, fragmentShader);
+  this.gl.linkProgram(program);
+  this.gl.useProgram(program);
+  this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+  this.gl.enable(this.gl.BLEND);
+//  gl.disable(gl.DEPTH_TEST);
+  // ----------------------------
+  // look up the locations for the inputs to our shaders.
+  var u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
+  var colorLoc = this.gl.getAttribLocation(program, "a_color");
+  var vertLoc = this.gl.getAttribLocation(program, "a_vertex");
+  this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
+  // Set the matrix to some that makes 1 unit 1 pixel.
+  pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+  this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+  this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix);
+    
     // -- data
    
-    let verts = [];
-    let thickness = 0.0001;
-    //console.log(data);
-    for (var i = 0; i < data.length; i += 1) {
-      let r = Math.random();
-        let g = Math.random();
-        let blue = Math.random();
+  let verts = [];
+  let zoom = leafletMap.getZoom();
+  console.log(zoom);
+  let thickness = 0.0001;
+  //console.log(data);
+  for (var i = 0; i < data.length; i += 1) {
+    let r = Math.random();
+      let g = Math.random();
+      let blue = Math.random();
+    
+    for (var j = 0; j < data[i].length; j += 1) {
       
-      for (var j = 0; j < data[i].length; j += 1) {
-        
-        if (data[i].length < 2) {
-          console.log(data[i]);
+      if (data[i].length < 2) {
+        console.log(data[i]);
+        continue;
+      }
+      if(data[i].length < 3 ) {
+        //console.log(data[i]);
+        const pixel0 = {x: data[i][0].x, y: data[i][0].y};   
+        const pixel1 = {x: data[i][1].x, y: data[i][1].y};
+        if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
+          //console.log(data[i]);
           continue;
         }
-        if(data[i].length < 3 ) {
-          //console.log(data[i]);
-          const pixel0 = {x: data[i][0].x, y: data[i][0].y};   
-          const pixel1 = {x: data[i][1].x, y: data[i][1].y};
-          if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
-            //console.log(data[i]);
-            continue;
-          }
+        let p0 = new Vector2D(pixel0.x, pixel0.y);
+        let p1 = new Vector2D(pixel1.x, pixel1.y);
+        let line = Vector2D.subtract(p1, p0);
+        let normal = new Vector2D(-line.y, line.x)
+        let normalized = normal.normalize();
+        let a = p0.subtract(normalized.multiply(thickness));
+        normal = new Vector2D(-line.y, line.x);
+        normalized = normal.normalize();
+
+        p0 = new Vector2D(pixel0.x, pixel0.y);
+        let b = p0.add(normalized.multiply(thickness));
+
+        normal = new Vector2D(-line.y, line.x)
+        normalized = normal.normalize();
+        let c = p1.subtract(normalized.multiply(thickness));
+        normal = new Vector2D(-line.y, line.x);
+        normalized = normal.normalize();
+        p1 = new Vector2D(pixel1.x, pixel1.y);
+        let d = p1.add(normalized.multiply(thickness));
+        // let l = Vector2D.subtract(a, b).length();
+        // if (l > thickness) {
+        //   //console.log(l);
+        // }
+        // l = Vector2D.subtract(c, d).length();
+        // if (l > thickness) {
+        //   console.log(l);
+        // }
+        let l = Vector2D.subtract(a, b).length();
+        if (l > thickness * 2.1) {
+          console.log(l);
+        }
+        verts.push(a.x, a.y, r, g, blue);
+        verts.push(b.x, b.y, r, g, blue);
+        verts.push(c.x, c.y, r, g, blue);
+        verts.push(c.x, c.y, r, g, blue); 
+        verts.push(d.x, d.y, r, g, blue);
+        verts.push(b.x, b.y, r, g, blue);
+        continue;
+      } else {
+        if (j === 0) {
+          const pixel0 = {x: data[i][j].x, y: data[i][j].y};
+          const pixel1 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+          const pixel2 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
           let p0 = new Vector2D(pixel0.x, pixel0.y);
           let p1 = new Vector2D(pixel1.x, pixel1.y);
           let line = Vector2D.subtract(p1, p0);
@@ -254,26 +303,64 @@ class App extends React.Component {
           let a = p0.subtract(normalized.multiply(thickness));
           normal = new Vector2D(-line.y, line.x);
           normalized = normal.normalize();
-
+          
           p0 = new Vector2D(pixel0.x, pixel0.y);
           let b = p0.add(normalized.multiply(thickness));
+  
+          p0 = new Vector2D(pixel0.x, pixel0.y);
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          let p2 = new Vector2D(pixel2.x, pixel2.y);
+  
+          let miter = this.getMiter(p0, p1, p2, thickness);
+          if (miter.x === 0 && miter.y === 0) {
+            continue;
+          }
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          let c = p1.subtract(miter);
+          //console.log(c);
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          let d = p1.add(miter);  
+          
+          let l = Vector2D.subtract(a, b).length();
+          if (l > thickness * 2) {
+            //console.log(l);
+          }
 
-          normal = new Vector2D(-line.y, line.x)
-          normalized = normal.normalize();
-          let c = p1.subtract(normalized.multiply(thickness));
+          verts.push(a.x, a.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue); 
+          verts.push(d.x, d.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
+          } else if (j === data[i].length - 2) {
+          const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
+          const pixel1 = {x: data[i][j].x, y: data[i][j].y};
+          const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+  
+          let p0 = new Vector2D(pixel0.x, pixel0.y);
+          let p1 = new Vector2D(pixel1.x, pixel1.y);
+          let p2 = new Vector2D(pixel2.x, pixel2.y);
+          let miter1 = this.getMiter(p0, p1, p2, thickness);
+          if (miter1.x === 0 && miter1.y === 0) {
+            break;
+          }
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          p2 = new Vector2D(pixel2.x, pixel2.y);
+    
+          let a = Vector2D.add(p1, miter1);
+          let b = Vector2D.subtract(p1,  miter1);
+  
+          p1 = p1 = new Vector2D(pixel1.x, pixel1.y);
+          p2 = p2 = new Vector2D(pixel2.x, pixel2.y);
+          let line = Vector2D.subtract(p2, p1);
+          let normal = new Vector2D(-line.y, line.x)
+          let normalized = normal.normalize();
+          let c = p2.subtract(normalized.multiply(thickness));
           normal = new Vector2D(-line.y, line.x);
           normalized = normal.normalize();
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          let d = p1.add(normalized.multiply(thickness));
-          // let l = Vector2D.subtract(a, b).length();
-          // if (l > thickness) {
-          //   //console.log(l);
-          // }
-          // l = Vector2D.subtract(c, d).length();
-          // if (l > thickness) {
-          //   console.log(l);
-          // }
-          let l = Vector2D.subtract(a, b).length();
+          p2= p2 = new Vector2D(pixel2.x, pixel2.y);
+          let d = p2.add(normalized.multiply(thickness));
+          let l = Vector2D.subtract(c, d).length();
           if (l > thickness * 2.1) {
             console.log(l);
           }
@@ -282,123 +369,42 @@ class App extends React.Component {
           verts.push(c.x, c.y, r, g, blue);
           verts.push(c.x, c.y, r, g, blue); 
           verts.push(d.x, d.y, r, g, blue);
-          verts.push(b.x, b.y, r, g, blue);
-          continue;
-        } else {
-          if (j === 0) {
-            const pixel0 = {x: data[i][j].x, y: data[i][j].y};
-            const pixel1 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-            const pixel2 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let line = Vector2D.subtract(p1, p0);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let a = p0.subtract(normalized.multiply(thickness));
-            normal = new Vector2D(-line.y, line.x);
-            normalized = normal.normalize();
-            
-            p0 = new Vector2D(pixel0.x, pixel0.y);
-            let b = p0.add(normalized.multiply(thickness));
-    
-            p0 = new Vector2D(pixel0.x, pixel0.y);
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-    
-            let miter = this.getMiter(p0, p1, p2, thickness);
-            if (miter.x === 0 && miter.y === 0) {
-              continue;
-            }
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            let c = p1.subtract(miter);
-            //console.log(c);
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            let d = p1.add(miter);  
-            
-            let l = Vector2D.subtract(a, b).length();
-            if (l > thickness * 2) {
-              //console.log(l);
-            }
-
-            verts.push(a.x, a.y, r, g, blue);
-            verts.push(b.x, b.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue); 
-            verts.push(d.x, d.y, r, g, blue);
-            verts.push(b.x, b.y, r, g, blue);
-           } else if (j === data[i].length - 2) {
-            const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
-            const pixel1 = {x: data[i][j].x, y: data[i][j].y};
-            const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-    
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              break;
-            }
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            p2 = new Vector2D(pixel2.x, pixel2.y);
-     
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-    
-            p1 = p1 = new Vector2D(pixel1.x, pixel1.y);
-            p2 = p2 = new Vector2D(pixel2.x, pixel2.y);
-            let line = Vector2D.subtract(p2, p1);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let c = p2.subtract(normalized.multiply(thickness));
-            normal = new Vector2D(-line.y, line.x);
-            normalized = normal.normalize();
-            p2= p2 = new Vector2D(pixel2.x, pixel2.y);
-            let d = p2.add(normalized.multiply(thickness));
-            let l = Vector2D.subtract(c, d).length();
-            if (l > thickness * 2.1) {
-              console.log(l);
-            }
-            verts.push(a.x, a.y, r, g, blue);
-            verts.push(b.x, b.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue); 
-            verts.push(d.x, d.y, r, g, blue);
-            verts.push(a.x, a.y, r, g, blue);
-            break;  
-           } else {
-            //console.log("middle");
-            const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
-            const pixel1 = {x: data[i][j].x, y: data[i][j].y};
-            const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-            const pixel3 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let p3 = new Vector2D(pixel3.x, pixel3.y);
-            //meter calc
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              continue;
-            }
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            p2 = new Vector2D(pixel2.x, pixel2.y);
-            p3 = new Vector2D(pixel3.x, pixel3.y);
-            let miter2 = this.getMiter(p1, p2, p3, thickness);
-            if (miter2.x === 0 && miter2.y === 0) {
-              continue;
-            }
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-            let c = Vector2D.add(p2, miter2);
-            let d = Vector2D.subtract(p2,  miter2);
-            verts.push(a.x, a.y, r, g, blue);
-            verts.push(b.x, b.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue);
-            verts.push(c.x, c.y, r, g, blue);
-            verts.push(d.x, d.y, r, g, blue);
-            verts.push(b.x, b.y, r, g, blue);
+          verts.push(a.x, a.y, r, g, blue);
+          break;  
+          } else {
+          //console.log("middle");
+          const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
+          const pixel1 = {x: data[i][j].x, y: data[i][j].y};
+          const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
+          const pixel3 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
+          let p0 = new Vector2D(pixel0.x, pixel0.y);
+          let p1 = new Vector2D(pixel1.x, pixel1.y);
+          let p2 = new Vector2D(pixel2.x, pixel2.y);
+          let p3 = new Vector2D(pixel3.x, pixel3.y);
+          //meter calc
+          let miter1 = this.getMiter(p0, p1, p2, thickness);
+          if (miter1.x === 0 && miter1.y === 0) {
+            continue;
           }
+          p1 = new Vector2D(pixel1.x, pixel1.y);
+          p2 = new Vector2D(pixel2.x, pixel2.y);
+          p3 = new Vector2D(pixel3.x, pixel3.y);
+          let miter2 = this.getMiter(p1, p2, p3, thickness);
+          if (miter2.x === 0 && miter2.y === 0) {
+            continue;
+          }
+          let a = Vector2D.add(p1, miter1);
+          let b = Vector2D.subtract(p1,  miter1);
+          let c = Vector2D.add(p2, miter2);
+          let d = Vector2D.subtract(p2,  miter2);
+          verts.push(a.x, a.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue);
+          verts.push(c.x, c.y, r, g, blue);
+          verts.push(d.x, d.y, r, g, blue);
+          verts.push(b.x, b.y, r, g, blue);
         }
+      }
 
     }
   }
@@ -614,7 +620,7 @@ class App extends React.Component {
         }
         pointBefore += points.length;
         if (points.length > 2) {
-          pixelSegment = RDP(points, 0.0000000001);
+          pixelSegment = RDP(points, 0.00000001);
           lines.push(pixelSegment);
           pointAfter += pixelSegment.length;
         }  else {
@@ -623,7 +629,8 @@ class App extends React.Component {
         }           
       } 
       
-    }   
+    } 
+    this.setState({lineData: lines});  
     // //let staticData = [[-36.917365206, 174.643535046],[-36.917493086, 174.644253555],[-36.917500885, 174.644287904],[-36.917505374, 174.644315907],
     // //[-36.917509427, 174.644365589],[-36.91750806, 174.64442263],[-36.917501645, 174.644471941],[-36.917489289, 174.644523863]];
     // //let staticData = [[-36.917365206, 174.643535046],[-36.917509427, 174.644365589],[-36.917489289, 174.644523863]];
@@ -648,6 +655,9 @@ class App extends React.Component {
   onZoom(e) {
     this.setState({zoom: e.target.getZoom()});
     this.setState({bounds: e.target.getBounds()});
+    if (this.state.lineData != null) {
+      this.redraw(this.state.lineData);
+    }
   }
 
   /**
