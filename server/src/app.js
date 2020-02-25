@@ -166,7 +166,7 @@ app.post('/roads', async (req, res, next) => {
     var layer = req.body.menu;
     var geometry = await db.road(code);
     //console.log(geometry.rows);
-    res.set('Content-Type', 'application/json')
+    res.set('Content-Type', 'application/json');
     res.send(geometry.rows);
   } else {
     console.log("Resource unavailable")

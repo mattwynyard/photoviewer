@@ -7,68 +7,7 @@ import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import Vector2D from './Vector2D';
-import 'simplify-js'
-import simplify from 'simplify-js';
-
-const RDP = (l, eps) => {
-  const last = l.length - 1;
-  const p1 = l[0];
-  const p2 = l[last];
-  const x21 = p2.x - p1.x;
-  const y21 = p2.y - p1.y;
- 
-  const [dMax, x] = l.slice(1, last)
-      .map(p => Math.abs(y21 * p.x - x21 * p.y + p2.x * p1.y - p2.y * p1.x))
-      .reduce((p, c, i) => {
-        const v = Math.max(p[0], c);
-        return [v, v === p[0] ? p[1] : i + 1];
-      }, [-1, 0]);
- 
-  if (dMax > eps) {
-    return [...RDP(l.slice(0, x + 1), eps), ...RDP(l.slice(x), eps).slice(1)];
-  }
-  return [l[0], l[last]]
-};
-
-
-function LatLongToPixelXY(latitude, longitude) {
-  var pi_180 = Math.PI / 180.0;
-  var pi_4 = Math.PI * 4;
-  var sinLatitude = Math.sin(latitude * pi_180);
-  var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;
-  var pixelX = ((longitude + 180) / 360) * 256;
-
-  var pixel = { x: pixelX, y: pixelY };
-
-  return pixel;
-}
-
-function translateMatrix(matrix, tx, ty) {
-  // translation is in last column of matrix
-  matrix[12] += matrix[0] * tx + matrix[4] * ty;
-  matrix[13] += matrix[1] * tx + matrix[5] * ty;
-  matrix[14] += matrix[2] * tx + matrix[6] * ty;
-  matrix[15] += matrix[3] * tx + matrix[7] * ty;
-}
-
-function scaleMatrix(matrix, scaleX, scaleY) {
-  // scaling x and y, which is just scaling first two columns of matrix
-  matrix[0] *= scaleX;
-  matrix[1] *= scaleX;
-  matrix[2] *= scaleX;
-  matrix[3] *= scaleX;
-
-  matrix[4] *= scaleY;
-  matrix[5] *= scaleY;
-  matrix[6] *= scaleY;
-  matrix[7] *= scaleY;
-}
-
-// Returns a random integer from 0 to range - 1.
-function randomInt(range) {
-  return Math.floor(Math.random() * range);
-}
-
+import {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix} from  './util.js'
 
 class App extends React.Component {
 
@@ -130,11 +69,13 @@ class App extends React.Component {
       clearDisabled: true,
       message: "",
       lineData: null
-
-    };
-    
+    };   
   }
 
+  /**
+   * Gets the devlopment or production host 
+   * @return {string} the host name
+   */
   getHost() {
     if (process.env.NODE_ENV === "development") {
       return "localhost:8443";
@@ -145,14 +86,6 @@ class App extends React.Component {
     }
    }
 
-  //  getProtocol() {
-  //    console.log("secure: " + process.env.REACT_APP_SECURE);
-  //    if (process.env.REACT_APP_SECURE === true) {
-  //      return "https://";
-  //    } else {
-  //      return "http://";
-  //     }
-  //  }
   componentDidMount() {
     // Call our fetch function below once the component mounts
     this.customNav.current.setTitle(this.state.user);
@@ -183,6 +116,11 @@ class App extends React.Component {
   
   }
 
+  clickCanvas(e) {
+    console.log("x: "+ this.map.leafletElement.mouseEventToLatLng(e));
+    //L.mouseEventToLayerPoint(e);
+  }
+
   redraw(data) {
     const leafletMap = this.map.leafletElement;
     if (this.gl == null) {
@@ -190,12 +128,14 @@ class App extends React.Component {
       //.drawing(drawingOnCanvas)
       .addTo(leafletMap);
     this.canvas = this.glLayer.canvas();
+    
     this.glLayer.canvas.width = this.canvas.width;
     this.glLayer.canvas.height = this.canvas.height;
     this.gl = this.canvas.getContext('webgl', { antialias: true });
     }
   this.glLayer.drawing(drawingOnCanvas);
   this.addEventListeners(); //handle lost gl context
+  
   var pixelsToWebGLMatrix = new Float32Array(16);
   this.mapMatrix = new Float32Array(16);
       // -- WebGl setup
@@ -230,24 +170,79 @@ class App extends React.Component {
    
   let verts = [];
   let zoom = leafletMap.getZoom();
-  console.log(zoom);
-  let thickness = 0.0001;
-  //console.log(data);
+  let thickness = null;
+  //console.log(zoom);
+  thickness = (1 / zoom) * 0.005
+  if (zoom < 10) {
+    thickness = (1 / zoom) * 0.004;
+  } else if (zoom == 10) {
+    thickness =  (1 / zoom) * 0.0035;
+  } else if (zoom == 11) {
+    thickness =  (1 / zoom) * 0.003
+  } else if (zoom == 12) {
+    thickness =  (1 / zoom) * 0.0025
+  } else if (zoom == 13) {
+    thickness =  (1 / zoom) * 0.002
+  } else if (zoom == 14) {
+    thickness =  (1 / zoom) * 0.0015
+  } else if (zoom == 15) {
+    thickness =  (1 / zoom) * 0.001
+  } else {
+    thickness =  (1 / zoom) * 0.0008
+  }
+  let r = null;
+  let g = null;
+  let blue = null;
+  //console.log(thickness);
   for (var i = 0; i < data.length; i += 1) {
-    let r = Math.random();
-      let g = Math.random();
-      let blue = Math.random();
     
-    for (var j = 0; j < data[i].length; j += 1) {
+    if (data[i].class === "Access") { //blue
+      r = 0;
+      g = 0;
+      blue = 1;
+    } else if (data[i].class === "Arterial") { //red
+      r = 1;
+      g = 0;
+      blue = 0;
+    } else if (data[i].class === "Primary Collector") { //orange
+      r = 1;
+      g = 0.5;
+      blue = 0;
+    } else if (data[i].class === "Low Volume") { //green
+      r = 0;
+      g = 1;
+      blue = 0;
+    } else if (data[i].class === "Secondary Collector") { //yellow
+      r = 1;
+      g = 1;
+      blue = 0;
+    }
+    else if (data[i].class === "Regional") { //black
+      r = 0;
+      g = 0;
+      blue = 0;
+    }
+    else if (data[i].class === "National") { //white
+      r = 1;
+      g = 1;
+      blue = 1;
+    }
+    else { //null
+      r = 1;
+      g = 0;
+      blue = 1;
+    }
+    
+    for (var j = 0; j < data[i].segment.length; j += 1) {
       
-      if (data[i].length < 2) {
+      if (data[i].segment.length < 2) {
         console.log(data[i]);
         continue;
       }
-      if(data[i].length < 3 ) {
+      if(data[i].segment.length < 3 ) {
         //console.log(data[i]);
-        const pixel0 = {x: data[i][0].x, y: data[i][0].y};   
-        const pixel1 = {x: data[i][1].x, y: data[i][1].y};
+        const pixel0 = {x: data[i].segment[0].x, y: data[i].segment[0].y};   
+        const pixel1 = {x: data[i].segment[1].x, y: data[i].segment[1].y};
         if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
           //console.log(data[i]);
           continue;
@@ -257,28 +252,10 @@ class App extends React.Component {
         let line = Vector2D.subtract(p1, p0);
         let normal = new Vector2D(-line.y, line.x)
         let normalized = normal.normalize();
-        let a = p0.subtract(normalized.multiply(thickness));
-        normal = new Vector2D(-line.y, line.x);
-        normalized = normal.normalize();
-
-        p0 = new Vector2D(pixel0.x, pixel0.y);
-        let b = p0.add(normalized.multiply(thickness));
-
-        normal = new Vector2D(-line.y, line.x)
-        normalized = normal.normalize();
-        let c = p1.subtract(normalized.multiply(thickness));
-        normal = new Vector2D(-line.y, line.x);
-        normalized = normal.normalize();
-        p1 = new Vector2D(pixel1.x, pixel1.y);
-        let d = p1.add(normalized.multiply(thickness));
-        // let l = Vector2D.subtract(a, b).length();
-        // if (l > thickness) {
-        //   //console.log(l);
-        // }
-        // l = Vector2D.subtract(c, d).length();
-        // if (l > thickness) {
-        //   console.log(l);
-        // }
+        let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
+        let b = Vector2D.add(p0,  Vector2D.multiply(normalized,thickness));
+        let c = Vector2D.subtract(p1, Vector2D.multiply(normalized,thickness));
+        let d =  Vector2D.add(p1, Vector2D.multiply(normalized,thickness));
         let l = Vector2D.subtract(a, b).length();
         if (l > thickness * 2.1) {
           console.log(l);
@@ -292,51 +269,40 @@ class App extends React.Component {
         continue;
       } else {
         if (j === 0) {
-          const pixel0 = {x: data[i][j].x, y: data[i][j].y};
-          const pixel1 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-          const pixel2 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
+          const pixel0 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
+          const pixel1 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
+          const pixel2 = {x: data[i].segment[j + 2].x, y: data[i].segment[j + 2].y};
           let p0 = new Vector2D(pixel0.x, pixel0.y);
           let p1 = new Vector2D(pixel1.x, pixel1.y);
+          let p2 = new Vector2D(pixel2.x, pixel2.y);
+  
           let line = Vector2D.subtract(p1, p0);
           let normal = new Vector2D(-line.y, line.x)
           let normalized = normal.normalize();
-          let a = p0.subtract(normalized.multiply(thickness));
-          normal = new Vector2D(-line.y, line.x);
-          normalized = normal.normalize();
-          
-          p0 = new Vector2D(pixel0.x, pixel0.y);
-          let b = p0.add(normalized.multiply(thickness));
-  
-          p0 = new Vector2D(pixel0.x, pixel0.y);
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          let p2 = new Vector2D(pixel2.x, pixel2.y);
-  
+          let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
+          let b = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
+
           let miter = this.getMiter(p0, p1, p2, thickness);
           if (miter.x === 0 && miter.y === 0) {
             continue;
           }
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          let c = p1.subtract(miter);
-          //console.log(c);
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          let d = p1.add(miter);  
-          
+          let c = Vector2D.subtract(p1, miter);
+          let d = Vector2D.add(p1, miter);  
           let l = Vector2D.subtract(a, b).length();
           if (l > thickness * 2) {
             //console.log(l);
           }
-
           verts.push(a.x, a.y, r, g, blue);
           verts.push(b.x, b.y, r, g, blue);
           verts.push(c.x, c.y, r, g, blue);
           verts.push(c.x, c.y, r, g, blue); 
           verts.push(d.x, d.y, r, g, blue);
           verts.push(b.x, b.y, r, g, blue);
-          } else if (j === data[i].length - 2) {
-          const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
-          const pixel1 = {x: data[i][j].x, y: data[i][j].y};
-          const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-  
+
+          } else if (j === data[i].segment.length - 2) {
+          const pixel0 = {x: data[i].segment[j -1].x, y: data[i].segment[j -1].y};
+          const pixel1 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
+          const pixel2 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
           let p0 = new Vector2D(pixel0.x, pixel0.y);
           let p1 = new Vector2D(pixel1.x, pixel1.y);
           let p2 = new Vector2D(pixel2.x, pixel2.y);
@@ -344,22 +310,13 @@ class App extends React.Component {
           if (miter1.x === 0 && miter1.y === 0) {
             break;
           }
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          p2 = new Vector2D(pixel2.x, pixel2.y);
-    
           let a = Vector2D.add(p1, miter1);
           let b = Vector2D.subtract(p1,  miter1);
-  
-          p1 = p1 = new Vector2D(pixel1.x, pixel1.y);
-          p2 = p2 = new Vector2D(pixel2.x, pixel2.y);
           let line = Vector2D.subtract(p2, p1);
           let normal = new Vector2D(-line.y, line.x)
           let normalized = normal.normalize();
-          let c = p2.subtract(normalized.multiply(thickness));
-          normal = new Vector2D(-line.y, line.x);
-          normalized = normal.normalize();
-          p2= p2 = new Vector2D(pixel2.x, pixel2.y);
-          let d = p2.add(normalized.multiply(thickness));
+          let c = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
+          let d = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
           let l = Vector2D.subtract(c, d).length();
           if (l > thickness * 2.1) {
             console.log(l);
@@ -373,10 +330,10 @@ class App extends React.Component {
           break;  
           } else {
           //console.log("middle");
-          const pixel0 = {x: data[i][j -1].x, y: data[i][j -1].y};
-          const pixel1 = {x: data[i][j].x, y: data[i][j].y};
-          const pixel2 = {x: data[i][j + 1].x, y: data[i][j + 1].y};
-          const pixel3 = {x: data[i][j + 2].x, y: data[i][j + 2].y};
+          const pixel0 = {x: data[i].segment[j -1].x, y: data[i].segment[j -1].y};
+          const pixel1 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
+          const pixel2 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
+          const pixel3 = {x: data[i].segment[j + 2].x, y: data[i].segment[j + 2].y};
           let p0 = new Vector2D(pixel0.x, pixel0.y);
           let p1 = new Vector2D(pixel1.x, pixel1.y);
           let p2 = new Vector2D(pixel2.x, pixel2.y);
@@ -391,6 +348,7 @@ class App extends React.Component {
           p3 = new Vector2D(pixel3.x, pixel3.y);
           let miter2 = this.getMiter(p1, p2, p3, thickness);
           if (miter2.x === 0 && miter2.y === 0) {
+
             continue;
           }
           let a = Vector2D.add(p1, miter1);
@@ -446,15 +404,14 @@ class App extends React.Component {
       var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
+      var numPoints = 0;
       var pointer = 0;
       for (var i = 0; i < data.length; i += 1) {
         var numPoints = 0;
-        numPoints = (data[i].length - 1) * 6;
+        numPoints = (data[i].segment.length - 1) * 6;
         params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
         pointer += numPoints;
       }
-      //console.log(leafletMap.getZoom());
-      //console.log(pointer);
     }
   }
 
@@ -473,6 +430,9 @@ class App extends React.Component {
     "webglcontextrestored", function(event) {
     this.gl = this.canvas.getContext('webgl', { antialias: true });
     }, false);
+    this.canvas.addEventListener("click", (event) => {
+      this.clickCanvas(event)
+    });
   }
 
   callBackendAPI = async () => {
@@ -608,7 +568,8 @@ class App extends React.Component {
     let pointBefore = 0;
     let pointAfter = 0;
     for (var i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson); 
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      const rcClass = data[i].onrcclass; 
       if(linestring !== null) {       
         let segment = linestring.coordinates[0];
         var points = [];
@@ -620,32 +581,23 @@ class App extends React.Component {
         }
         pointBefore += points.length;
         if (points.length > 2) {
-          pixelSegment = RDP(points, 0.00000001);
-          lines.push(pixelSegment);
-          pointAfter += pixelSegment.length;
+          //pixelSegment = RDP(points, 0.00000000001); //Douglas-Peckam simplify line
+          let seg = {segment: points, class: rcClass};
+          lines.push(seg);
+          pointAfter += points.length;
         }  else {
-          lines.push(points);
+          let seg = {segment: points, class: rcClass};
+          lines.push(seg);
           pointAfter += points.length;
         }           
       } 
       
     } 
     this.setState({lineData: lines});  
-    // //let staticData = [[-36.917365206, 174.643535046],[-36.917493086, 174.644253555],[-36.917500885, 174.644287904],[-36.917505374, 174.644315907],
-    // //[-36.917509427, 174.644365589],[-36.91750806, 174.64442263],[-36.917501645, 174.644471941],[-36.917489289, 174.644523863]];
-    // //let staticData = [[-36.917365206, 174.643535046],[-36.917509427, 174.644365589],[-36.917489289, 174.644523863]];
-    // //console.log(lines);
-    //console.log(Math.floor(Math.random() * 1000));
-    //this.redraw([lines[Math.floor(Math.random() * 1000)]]);
     console.log("before: " + pointBefore);
     console.log("after: " + pointAfter);
     this.redraw(lines);
   }
-
-  /**
- * @param {!Array<pointType>} l
- * @param {number} eps
- */
 
   //EVENTS
   /**
@@ -895,7 +847,7 @@ async loadCentreline(e) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        code: "076",
+        code: "900",
         menu: e.target.id,
         user: this.state.login
       })
@@ -905,10 +857,8 @@ async loadCentreline(e) {
     } 
     const body = await response.json();
     //console.log(body);
-    await this.addCentrelines(body);
-  } else {
-    
-  }    
+    await this.addCentrelines(body);   
+  }
 }
 
   async loadFilters() {
