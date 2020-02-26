@@ -159,7 +159,7 @@ app.post('/layer', async (req, res, next) => {
 });
 
 app.post('/roads', async (req, res, next) => {
-  console.log(req.body);
+  //console.log(req.body);
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   const code = req.body.code;
   if (result) {
@@ -172,6 +172,12 @@ app.post('/roads', async (req, res, next) => {
     console.log("Resource unavailable")
     next();
   }  
+});
+
+app.post('/gps', (req, res, next) => {
+  console.log(req.body);
+  res.set('Content-Type', 'application/json');
+  res.send({ express: 'Server online' });
 });
 
 app.use(middlewares.notFound);

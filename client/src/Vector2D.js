@@ -50,10 +50,10 @@ export default class Vector2D {
 	}
 	divide(v) {
 		if (v instanceof Vector2D) {
-			if(v.x != 0) this.x /= v.x;
-			if(v.y != 0) this.y /= v.y;
+			if(v.x !== 0) this.x /= v.x;
+			if(v.y !== 0) this.y /= v.y;
 		} else {
-			if(v != 0) {
+			if(v !== 0) {
 				this.x /= v;
 				this.y /= v;
 			}
@@ -61,7 +61,7 @@ export default class Vector2D {
 		return this;
 	}
 	equals(v) {
-		return this.x == v.x && this.y == v.y;
+		return this.x === v.x && this.y === v.y;
 	}
 	dot(v) {
 		return this.x * v.x + this.y * v.y;
@@ -119,7 +119,7 @@ export default class Vector2D {
         else return new Vector2D(a.x / b, a.y / b);
     }
     static equals(a, b) {
-        return a.x == b.x && a.y == b.y;
+        return a.x === b.x && a.y === b.y;
     }
     static dot(a, b) {
         return a.x * b.x + a.y * b.y;
