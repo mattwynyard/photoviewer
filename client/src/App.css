@@ -121,21 +121,40 @@ body {
   width: 103px;
 }
 
-.photo {
-  height: 770px;
-  width: 1026px;
+.container {
+  float: right;
 }
 
-.prev {
+.text {
+  float: left;
+}
+
+.photo {
+  height: 648px;
+  width: 864px;
+}
+
+.photoModal {
+  height: 648px;
+  width: 1200px;
+}
+
+.photoBody {
+  height: 648px;
+  width: 900px;
+}
+
+/* .prev {
+  float: left;
   position:absolute;
   left: 450px;
   top: 880px;
-}
+} */
 
 .next {
-  position:absolute;
+  /* position:absolute;
   left: 550px;
-  top: 880px;
+  top: 880px; */
 }
 
 /* .footer {

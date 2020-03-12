@@ -56,4 +56,24 @@ const RDP = (l, eps) => {
     return Math.floor(Math.random() * range);
   }
 
-  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt}
+  /**
+   * 
+   * @param {the number to pad} n 
+   * @param {the amount of pading} width 
+   * @param {digit to pad out number with (default '0'} z 
+   * @return {the padded number (string)}
+   */
+  function pad(n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+    }
+
+  /**
+   * returns a random hex color
+   */
+  function getColor() {
+    return '#' +  Math.random().toString(16).substr(-6);
+  }
+
+  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor}

@@ -7,7 +7,7 @@ import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import Vector2D from './Vector2D';
-import {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix} from  './util.js'
+import {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getColor} from  './util.js'
 
 class App extends React.Component {
 
@@ -23,7 +23,7 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
-      priorities: [5, 4, 3], //todo fix for fulton hogan etc.
+      priorities: [1, 2, 3, 99], //todo fix for fulton hogan etc.
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -249,9 +249,7 @@ class App extends React.Component {
         red = ((i & 0x000000FF) >>>  0) / 255;
         green = ((i & 0x0000FF00) >>>  8) / 255;
         blue = ((i & 0x00FF0000) >>> 16) / 255;
-      }
-    
-      
+      }      
       for (var j = 0; j < data[i].segment.length; j += 1) {
         
         if (data[i].segment.length < 2) {
@@ -498,13 +496,13 @@ class App extends React.Component {
   getCustomIcon(data, zoom) {
     let icon = null;
     const size = this.getSize(zoom);
-    if (data === "5") {
+    if (data === "1") {
       icon = L.icon({
       iconUrl: 'CameraRed_16px.png',
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
       });
-    } else if (data === "4") {
+    } else if (data === "2") {
       icon = L.icon({
       iconUrl: 'CameraOrange_16px.png',
       iconSize: [size, size],
@@ -564,6 +562,8 @@ class App extends React.Component {
         carriage: data[i].carriagewa,
         location: data[i].location,
         fault: data[i].fault,
+        repair: data[i].repair,
+        comment: data[i].comment,
         size: data[i].size,
         priority: data[i].priority,
         photo: data[i].photoid,
@@ -666,7 +666,7 @@ class App extends React.Component {
     } else {
       n = intSuffix + 1;
     }
-    let newSuffix = this.pad(n, 5);
+    let newSuffix = pad(n, 5);
     let prefix = photo.slice(0, photo.length - 5);
     let newPhoto = prefix + newSuffix;
     this.setState({currentPhoto: newPhoto});
@@ -691,7 +691,7 @@ class App extends React.Component {
     let marker = e.target;
     const index = marker.options.index;
     this.setState({index: index});
-    this.setState({popover: true});
+    //this.setState({popover: true});
   }
 
   /**
@@ -865,7 +865,7 @@ async loadCentreline(e) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        code: "076",
+        code: "900",
         menu: e.target.id,
         user: this.state.login
       })
@@ -998,31 +998,38 @@ async loadCentreline(e) {
 
   clickPriority(e) {
     this.setState({index: null});
-    let priQuery = this.state.priorities
+    let priQuery = this.state.priorities;
+    console.log(priQuery);
     switch(e.target.id) {
-      case "5":
+      case "1":
         if (e.target.checked) {
-          priQuery.push(5);
+          priQuery.push(e.target.id);
         } else {      
-          priQuery.splice(priQuery.indexOf(5), 1 );
+          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
         }
         break;
-      case "4":
+      case "2":
         if (e.target.checked) {
-          priQuery.push(4);
+          priQuery.push(e.target.id);
         } else {      
-          priQuery.splice(priQuery.indexOf(4), 1 );
+          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
         }
         break;
       case "3":
         if (e.target.checked) {
-          priQuery.push(3);
+          priQuery.push(e.target.id);
         } else {      
-          priQuery.splice(priQuery.indexOf(3), 1 );
+          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
         }
         break;
-      default:
-        // code block
+      case "99":
+      if (e.target.checked) {
+        priQuery.push(e.target.id);
+      } else {      
+        priQuery.splice(priQuery.indexOf(e.target.id), 1 );
+      }
+      break;
+    default:
     }
     this.setState({priorities: priQuery})
     this.filterLayer(this.state.activeProject);
@@ -1037,25 +1044,7 @@ async loadCentreline(e) {
     this.setState({checkedFaults: []});
   }
 
-  /**
-   * 
-   * @param {the number to pad} n 
-   * @param {the amount of pading} width 
-   * @param {digit to pad out number with (default '0'} z 
-   * @return {the padded number (string)}
-   */
-  pad(n, width, z) {
-    z = z || '0';
-    n = n + '';
-    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-    }
-
-  /**
-   * returns a random hex color
-   */
-  getColor() {
-    return '#' +  Math.random().toString(16).substr(-6);
-  }
+  
 /**
  * gets the requested attribute from the fault object array
  * @param {the index of marker} index 
@@ -1077,6 +1066,10 @@ async loadCentreline(e) {
           return  this.state.objData[index].datetime;
         case "photo":
           return  this.state.objData[index].photo;
+        case "repair":
+            return  this.state.objData[index].repair;
+        case "comment":
+            return  this.state.objData[index].comment;
         default:
           return null;
       }
@@ -1090,7 +1083,6 @@ async loadCentreline(e) {
   }
 
   closePhotoModal(e) {
-   
     this.setState({show: false});
   }
 
@@ -1161,7 +1153,7 @@ async loadCentreline(e) {
               title={value.code}
               code={value.code}
               onClick={props.onClick}>
-                {value.description + " " + value.date}
+              {value.description + " " + value.date}
             </NavDropdown.Item>
           )}
           <NavDropdown.Divider />
@@ -1170,10 +1162,46 @@ async loadCentreline(e) {
       }
     }
 
+    const CustomTable = function(props) {
+      if(props.priority === "99") {
+        return (
+          <div className="container">
+            <div className="row">
+              <div className="col-md-6">
+                  <b>{"Type: "}</b> {props.fault} <br></br> 
+                  <b>{"Location: "} </b> {props.location}
+              </div>
+              <div className="col-md-6">
+                <b>{"Repair: "}</b>{props.repair}<br></br> 
+                <b>{"Sign Code: "}</b>{props.comment}<br></br> 
+                <b>{"DateTime: "} </b> {props.datetime}
+              </div>
+            </div>
+          </div>	 
+        );
+      } else {
+        return (
+          <div className="container">
+            <div className="row">
+              <div className="col-md-6">
+                  <b>{"Type: "}</b> {props.fault} <br></br> 
+                  <b>{"Priority: "} </b> {props.priority} <br></br>
+                  <b>{"Location: "} </b> {props.location}
+              </div>
+              <div className="col-md-6">
+                <b>{"Repair: "}</b>{props.repair} <br></br> 
+                <b>{"Size: "}</b> {props.size} m<br></br> 
+                <b>{"DateTime: "} </b> {props.datetime}
+              </div>
+            </div>
+          </div>	 
+        );
+      }
+     
+    }
     return (   
       <> 
         <div>
-
           <Navbar bg="light" expand="lg"> 
             <Navbar.Brand href="#home">
             <img
@@ -1225,9 +1253,11 @@ async loadCentreline(e) {
               </Accordion.Toggle>           
               <Accordion.Collapse eventKey="0">
                 <Card.Body>
-                  <input id="5" type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 5<br></br>
-                <input type="checkbox" id="4" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 4<br></br>
-                <input type="checkbox" id="3" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 3</Card.Body>
+                  <input id="1" type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 1<br></br>
+                  <input type="checkbox" id="2" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 2<br></br>
+                  <input type="checkbox" id="3" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 3<br></br>
+                  <input type="checkbox" id="99" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Signage
+                </Card.Body>  
               </Accordion.Collapse>
             </Card>
           </Accordion>
@@ -1240,8 +1270,8 @@ async loadCentreline(e) {
                 <Marker 
                   key={`${index}`}
                   index={index}
-                  data={fault}
-                  photo={photo}
+                  priority={obj.priority}
+                  photo={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
                   position={obj.latlng} 
                   icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
                   draggable={false} 
@@ -1249,19 +1279,20 @@ async loadCentreline(e) {
                   onClick={(e) => this.clickMarker(e)}				  
                   >
                   <Popup className="popup">
-                  <div>
-                    <p className="faulttext">
-                      <b>{"Type: "}</b> {this.getFault(index, 'fault')} <br></br> <b>{"Priority: "} </b> 
-                      {this.getFault(index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(index, 'location')}
-                    </p>
                     <div>
-                    <Image className="thumbnail" 
-                      src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
-                      photo={photo} 
-                      onClick={(e) => this.clickImage(e)} 
-                      thumbnail={true}></Image >
-                    </div>          
-                  </div>
+                      <p className="faulttext">
+                        <b>{"Type: "}</b>{obj.fault}<br></br>
+                        <b>{"Location: "}</b>{obj.location}<br></br>
+                        <b>{"Date: "}</b>{obj.datetime} 
+                      </p>
+                      <div>
+                        <Image className="thumbnail" 
+                          src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
+                          onClick={(e) => this.clickImage(e)} 
+                          thumbnail={true}>
+                        </Image >
+                      </div>          
+                    </div>
                   </Popup>  
                 </Marker>
                 )}     
@@ -1273,7 +1304,7 @@ async loadCentreline(e) {
           <Polyline 
             key={`${index}`}
             weight={2}
-            color={this.getColor()}
+            color={getColor()}
             smoothFactor={5}
             positions={latlngs}>
           </Polyline>
@@ -1386,34 +1417,33 @@ async loadCentreline(e) {
       </Modal>
 
       {/*photo modal */}    
-      <Modal show={this.state.show} size={'xl'} >
+      <Modal dialogClassName={"photoModal"} show={this.state.show} size='xl' centered={true}>
         <Modal.Body className="photoBody">	
-        <div className="container">
-              <div className="row">
-              <div className="col-md-6">
-                  <b>{"Type: "}</b> {this.getFault(this.state.index, 'fault')} <br></br> <b>{"Priority: "} </b> {this.getFault(this.state.index, 'priority')} <br></br><b>{"Location: "} </b> {this.getFault(this.state.index, 'priority')}
-              </div>
-              <div className="col-md-6">
-                <b>{"Size: "}</b> {this.getFault(this.state.index, 'size')} <br></br> <b>{"DateTime: "} </b> {this.getFault(this.state.index, 'datetime')}
-              </div>
-              </div>
-            </div>	
-		      <Image className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault} onClick={(e) => this.clickImage(e)} thumbnail></Image >		
+            <Image className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></Image >        
 		    </Modal.Body >
         <Modal.Footer>
-		      <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
-            Previous
+          <CustomTable fault={this.getFault(this.state.index, 'fault')}
+                        priority={this.getFault(this.state.index, 'priority')}
+                        location={this.getFault(this.state.index, 'location')}
+                        size={this.getFault(this.state.index, 'size')}
+                        datetime={this.getFault(this.state.index, 'datetime')}
+                        repair={this.getFault(this.state.index, 'repair')}
+                        comment={this.getFault(this.state.index, 'comment')}
+                        >
+
+          </CustomTable >
+          <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
+            Previous 
+          </Button>   
+          <Button className="next" variant="primary" onClick={(e) => this.clickNext(e)}>
+            Next  
           </Button>
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>
-          <Button className="next" variant="primary" onClick={(e) => this.clickNext(e)}>
-            Next
-          </Button>
         </Modal.Footer>
       </Modal>
-      <div className="footer">
-      </div> 
+
       </>
     );
   }

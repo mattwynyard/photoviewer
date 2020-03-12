@@ -116,7 +116,7 @@ module.exports = {
         return new Promise((resolve, reject) => {
             
             if (filter.length == 0) {
-                connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
+                connection.query("SELECT roadid, carriagewa, location, fault, repair, comment, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
                 + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -127,7 +127,7 @@ module.exports = {
             }); 
             } else {
                 let condition = buildQuery(filter);
-                connection.query("SELECT roadid, carriagewa, location, fault, size, priority, photoid, faulttime, ST_AsGeoJSON(geom) " 
+                connection.query("SELECT roadid, carriagewa, location, fault, repair, size, priority, comment, photoid, faulttime, ST_AsGeoJSON(geom) " 
                 + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -149,8 +149,9 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
+                console.log(results);
                 var p = resolve(results);
-                //console.log(results);
+                
                 return p;
             });
         });

@@ -60,14 +60,16 @@ app.post('/login', async (request, response, next) => {
   let succeded = null;
   const password = request.body.key;
   const user = request.body.user;
+  console.log(user);
   //uncomment to genrate password for new user
   //generatePassword(password, 10);
   
   let p = await db.password(user);
+  
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
     succeded = false;
-    //console.log("user doesn't exist");
+    console.log("user doesn't exist");
   } else {
     let count = await db.users(user);
     //console.log("users: " + count.rows[0].count);
@@ -76,6 +78,7 @@ app.post('/login', async (request, response, next) => {
       const seed  = user + count;
       if (err) throw err;     
       if (res) {
+        console.log("login")
           const token = jwt.sign({ seed }, jwtKey, {
           algorithm: 'HS256',
           expiresIn: jwtExpirySeconds
