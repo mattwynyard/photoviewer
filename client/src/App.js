@@ -999,34 +999,34 @@ async loadCentreline(e) {
   clickPriority(e) {
     this.setState({index: null});
     let priQuery = this.state.priorities;
-    console.log(priQuery);
+    //console.log(priQuery);
     switch(e.target.id) {
       case "1":
         if (e.target.checked) {
-          priQuery.push(e.target.id);
+          priQuery.push(1);
         } else {      
-          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
+          priQuery.splice(priQuery.indexOf(1), 1 );
         }
         break;
       case "2":
         if (e.target.checked) {
-          priQuery.push(e.target.id);
+          priQuery.push(2);
         } else {      
-          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
+          priQuery.splice(priQuery.indexOf(2), 1 );
         }
         break;
       case "3":
         if (e.target.checked) {
-          priQuery.push(e.target.id);
+          priQuery.push(3);
         } else {      
-          priQuery.splice(priQuery.indexOf(e.target.id), 1 );
+          priQuery.splice(priQuery.indexOf(3), 1 );
         }
         break;
       case "99":
       if (e.target.checked) {
-        priQuery.push(e.target.id);
+        priQuery.push(99);
       } else {      
-        priQuery.splice(priQuery.indexOf(e.target.id), 1 );
+        priQuery.splice(priQuery.indexOf(99), 1 );
       }
       break;
     default:
