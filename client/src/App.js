@@ -1050,7 +1050,14 @@ async loadCentreline(e) {
    * @param {the button} e 
    */
   selectAll(e) {
-    console.log(this.state.faultClass[this.state.pageActive]);
+    
+    let arr = []
+    this.state.faultTypes.map((value, index) => {
+      this.state.checkedFaults.push(value.fault);
+      console.log(value);
+    });
+    this.setState({checkedFaults: arr});
+    
   }
 
   
