@@ -112,6 +112,13 @@ body {
 
 }
 
+.select {
+  position:absolute;
+  left: 130px;
+  bottom: 18px;
+
+}
+
 .popup {
   width: 200px;
 }

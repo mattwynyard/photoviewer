@@ -851,6 +851,7 @@ class App extends React.Component {
 
 submitFilter(e) {
   this.setState({filterModal: false});
+  this.setState({pageActive: 0});
   this.filterLayer(this.state.activeProject);
 
 }
@@ -1044,6 +1045,14 @@ async loadCentreline(e) {
     this.setState({checkedFaults: []});
   }
 
+  /**
+   * clear checked fault array 
+   * @param {the button} e 
+   */
+  selectAll(e) {
+    console.log(this.state.faultClass[this.state.pageActive]);
+  }
+
   
 /**
  * gets the requested attribute from the fault object array
@@ -1233,8 +1242,6 @@ async loadCentreline(e) {
         <Map        
           ref={(ref) => { this.map = ref; }}
           className="map"
-          fault={fault}
-          photo={photo}
           worldCopyJump={true}
           boxZoom={true}
           center={centre}
@@ -1312,12 +1319,19 @@ async loadCentreline(e) {
       </Map >     
       </div>
       {/*filter modal */}
-      <Modal className="filterModal" show={this.state.filterModal} size={'lg'} centered={true}>
+      <Modal 
+        className="filterModal" 
+        show={this.state.filterModal} 
+        size={'lg'} centered={true}>
         <Modal.Header>
           <Modal.Title>Filter</Modal.Title><br></br>
           <Pagination size="sm">
             {this.state.faultClass.map((value, index) =>        
-              <Pagination.Item  key={`${index}`} className={"page-item"} active={index === this.state.pageActive} onClick={() => this.clickPage(index)}>{value.description}
+              <Pagination.Item  
+                key={`${index}`} 
+                id={value} className={"page-item"} 
+                active={index === this.state.pageActive} 
+                onClick={() => this.clickPage(index)}>{value.description}
               </Pagination.Item>          
             )}
           </Pagination>
@@ -1342,13 +1356,20 @@ async loadCentreline(e) {
           </Table>
 		    </Modal.Body>
         <Modal.Footer>
-        <div><Button className="clear" variant="primary" type="submit" onClick={(e) => this.clearFilter(e)}>
-            Clear Filter
-          </Button>
+          <div>
+            <Button className="clear" variant="primary" type="submit" onClick={(e) => this.clearFilter(e)}>
+              Clear Filter
+            </Button>
           </div>
-          <div><Button className="submit" variant="primary" type="submit" onClick={(e) => this.submitFilter(e)}>
-            Filter
-          </Button>
+          <div>
+            <Button className="select" variant="primary" type="submit" onClick={(e) => this.selectAll(e)}>
+              Select All
+            </Button>
+          </div>
+          <div>
+            <Button className="submit" variant="primary" type="submit" onClick={(e) => this.submitFilter(e)}>
+              Filter
+            </Button>
           </div>
           
         </Modal.Footer>

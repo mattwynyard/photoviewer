@@ -2,7 +2,7 @@
 
 /*.sql
 /model
-/.env
+./.env
 /*.pem
 /*.crt
 /*.cer

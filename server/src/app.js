@@ -10,7 +10,7 @@ const middlewares = require('./middlewares');
 const app = express();
 const users = require('./user.js');
 const jwt = require('jsonwebtoken');
-const jwtKey = 'onssuperSeCr_eTKKey?ffcafff';
+const jwtKey = process.env.KEY;
 //const jwtKey = process.env.KEY;
 const jwtExpirySeconds = 300;
 
