@@ -1049,18 +1049,16 @@ async loadCentreline(e) {
    * clear checked fault array 
    * @param {the button} e 
    */
-  selectAll(e) {
-    
+  selectAll() {
+    //console.log(faultClass);
     let arr = []
     this.state.faultTypes.map((value, index) => {
-      this.state.checkedFaults.push(value.fault);
-      console.log(value);
+      arr.push(value.fault);
+      //console.log(value);
     });
-    this.setState({checkedFaults: arr});
-    
-  }
-
-  
+    //console.log(arr);
+    this.setState({checkedFaults: arr});  
+  } 
 /**
  * gets the requested attribute from the fault object array
  * @param {the index of marker} index 
@@ -1369,7 +1367,7 @@ async loadCentreline(e) {
             </Button>
           </div>
           <div>
-            <Button className="select" variant="primary" type="submit" onClick={(e) => this.selectAll(e)}>
+            <Button className="select" variant="primary" type="submit" onClick={() => this.selectAll()}>
               Select All
             </Button>
           </div>
