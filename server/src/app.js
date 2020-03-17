@@ -127,8 +127,8 @@ app.post('/class', async (req, res, next) => {
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
+    res.send({error: "Invalid token"});
     console.log("invalid token");
-    res.send({success: false});
   }
 });
 
@@ -140,24 +140,25 @@ app.post('/faults', async (req, res, next) => {
     res.set('Content-Type', 'application/json')
     res.send(faults.rows);
   } else {
+    res.send({error: "Invalid token"});
     console.log("invalid token");
-    res.send({success: false});
   }
 });
 
 app.post('/layer', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    var layer = req.body.project;
-    var filter = req.body.filter;
-    var priority = req.body.priority;
+    let layer = req.body.project;
+    let filter = req.body.filter;
+    let priority = req.body.priority;
     console.log(req.body);
-    var geometry = await db.layer(layer, filter, priority);
+    let geometry = await db.layer(layer, filter, priority);
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
   } else {
-    console.log("Resource unavailable")
-    next();
+    res.send({error: "Invalid token"});
+    console.log("invalid token");
+
   } 
 });
 
@@ -173,7 +174,7 @@ app.post('/roads', async (req, res, next) => {
     res.send(geometry.rows);
   } else {
     console.log("Resource unavailable")
-    next();
+
   }  
 });
 

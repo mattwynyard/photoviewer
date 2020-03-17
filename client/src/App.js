@@ -1,13 +1,13 @@
 import React from 'react';
 import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Modal, Button, Dropdown, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import Vector2D from './Vector2D';
-import {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getColor} from  './util.js'
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getColor} from  './util.js'
 
 class App extends React.Component {
 
@@ -198,7 +198,7 @@ class App extends React.Component {
       thickness =  (1 / zoom) * 0.002
     } else if (zoom === 14) {
       thickness =  (1 / zoom) * 0.0015
-    } else if (zoom == 15) {
+    } else if (zoom === 15) {
       thickness =  (1 / zoom) * 0.001
     } else {
       thickness =  (1 / zoom) * 0.0008
@@ -427,11 +427,9 @@ class App extends React.Component {
           numPoints = (data[i].segment.length - 1) * 6;
           params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
           pointer += numPoints;
-        }
-        
+        }    
       }
     }
-
 
   componentDidUpdate() {   
   }
@@ -444,8 +442,7 @@ class App extends React.Component {
       event.preventDefault();
       console.log("CRASH--recovering GL")
     }, false);
-    this.canvas.addEventListener(
-    "webglcontextrestored", function(event) {
+    this.canvas.addEventListener("webglcontextrestored", function(event) {
     this.gl = this.canvas.getContext('webgl', { antialias: true });
     }, false);
     this.canvas.addEventListener("click", (event) => {
@@ -523,7 +520,6 @@ class App extends React.Component {
     }  
     return icon;
   }
-
   /**
    * returns the current icon size when zoom level changes
    * @param {the current zoom level} zoom 
@@ -541,7 +537,6 @@ class App extends React.Component {
       return 32;
     }
   }
-
   /**
    * Adds db data to various arrays and an object. Then sets state to point to arrays. 
    * @param {data retreived from database} data
@@ -592,7 +587,7 @@ class App extends React.Component {
       if(linestring !== null) {       
         let segment = linestring.coordinates[0];
         var points = [];
-        let pixelSegment = null; 
+        //let pixelSegment = null; 
         for (let j = 0; j < segment.length; j++) {
           let point = segment[j];
           let xy = LatLongToPixelXY(point[1], point[0]);     
@@ -727,7 +722,9 @@ class App extends React.Component {
     });
     const body = await response.json();
     if (response.status !== 200) {
-      throw Error(body.message) 
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);
+      
     } 
     this.reset();
    
@@ -750,7 +747,9 @@ class App extends React.Component {
     const body = await response.json();
     //console.log(body);
     if (response.status !== 200) {
-      throw Error(body.message) 
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);
+      
     } 
     
     if (body.result) {
@@ -789,13 +788,13 @@ class App extends React.Component {
    * @param {event} e 
    */
   loadLayer(e) {   
-    for(var i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
+    for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
     }
     this.setState({activeProject: e.target.attributes.code.value});
-    for (var i = 0; i < this.state.projectArr.length; i += 1) { //find project
+    for (let i = 0; i < this.state.projectArr.length; i += 1) { //find project
       if (this.state.projectArr[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: this.state.projectArr[i].code, description: this.state.projectArr[i].description, date: this.state.projectArr[i].date}
         this.setState({amazon: this.state.projectArr[i].amazon});
@@ -818,13 +817,13 @@ class App extends React.Component {
   }
 
 /**
- * 
+ * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
   async filterLayer(project) {
     //console.log(this.state.priorities);
     if (this.state.login !== "Login") {
-      const response = await fetch('https://' + this.state.host + '/layer', {
+      await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -837,51 +836,70 @@ class App extends React.Component {
         filter: this.state.checkedFaults,
         priority: this.state.priorities,
       })
-    }).catch(() => {
-      console.log("error");
+    }).then(async (response) => {
+      if(!response.ok) {
+        throw new Error(response.status);
+      }
+      else {
+        const body = await response.json(); 
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else {
+          await this.addMarkers(body);
+        }     
+      }
+    }).catch((error) => {
+      console.log("error: " + error);
+      alert(error);
       return;
-    });
-    if (typeof response !== "undefined" && response.status === 200) {
-      const body = await response.json();  
-      await this.addMarkers(body);
-    } else {     
-    }    
+    });   
   }    
 }
 
-submitFilter(e) {
-  this.setState({filterModal: false});
-  this.setState({pageActive: 0});
-  this.filterLayer(this.state.activeProject);
-
-}
-
-async loadCentreline(e) {
-  if (this.state.login !== "Login") {
-      const response = await fetch('https://' + this.state.host + '/roads', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        code: "900",
-        menu: e.target.id,
-        user: this.state.login
-      })
-    })
-    if (response.status !== 200) {
-      console.log(response.status);
-    } 
-    const body = await response.json();
-    await this.addCentrelines(body);   
+  submitFilter(e) {
+    this.setState({filterModal: false});
+    this.setState({pageActive: 0});
+    this.filterLayer(this.state.activeProject);
   }
-}
+
+  async loadCentreline(e) {
+    if (this.state.login !== "Login") {
+        await fetch('https://' + this.state.host + '/roads', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: "900",
+          menu: e.target.id,
+          user: this.state.login
+        })
+      })
+      .then(async(response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);  
+        } else {
+          await this.addCentrelines(body);   
+        }
+      })
+      .catch((error) => {
+      console.log("error: " + error);
+      alert(error);
+      return;
+    });   
+    }
+  }
 
   async loadFilters() {
     if (this.state.login !== "Login") {
-      const response = await fetch('https://' + this.state.host + '/class', {
+      await fetch('https://' + this.state.host + '/class', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,
@@ -891,19 +909,28 @@ async loadCentreline(e) {
         body: JSON.stringify({
           user: this.state.login
         })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else {
+          this.setState({faultClass: body});
+          this.getFaultTypes(this.state.faultClass[0].code);
+        }   
       })
-      if (response.status !== 200) {
-        console.log(response.status);
-      } 
-      const classes = await response.json();
-      this.setState({faultClass: classes});
-      this.getFaultTypes(this.state.faultClass[0].code);
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      }) 
     }
   }
 
   async getFaultTypes(cls) {
     if (this.state.login !== "Login") {
-      const response = await fetch('https://' + this.state.host + '/faults', {
+      await fetch('https://' + this.state.host + '/faults', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,
@@ -915,13 +942,22 @@ async loadCentreline(e) {
           type: cls
         })
       })
-      if (response.status !== 200) {
-        console.log(response.status);
-      } 
-      const faults = await response.json();
-      faults.map(obj => obj["type"] = cls)
-      //console.log(faults);
-      this.setState({faultTypes: faults});
+      .then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}'\n'Session may have expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else {
+          body.map(obj => obj["type"] = cls)
+          this.setState({faultTypes: body});
+        }  
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      })    
     }
   }
 
@@ -953,6 +989,10 @@ async loadCentreline(e) {
     this.getFaultTypes(this.state.faultClass[index].code);
   }
 
+  /**
+   * adds or removes fault to array  which keeps track of which faults are checked in the filter modal
+   * @param {the button click event} e 
+   */
   changeCheck(e) {
     //if checked true we are adding values to arr
     let arr = this.state.checkedFaults;
@@ -997,10 +1037,13 @@ async loadCentreline(e) {
     this.loadFilters();
   }
 
+  /**
+   * Adds or removes priorities to array for db query
+   * @param {the button clicked} e 
+   */
   clickPriority(e) {
     this.setState({index: null});
     let priQuery = this.state.priorities;
-    //console.log(priQuery);
     switch(e.target.id) {
       case "1":
         if (e.target.checked) {
@@ -1036,7 +1079,6 @@ async loadCentreline(e) {
     this.filterLayer(this.state.activeProject);
     //console.log(this.state.priorities)
   }
-
   /**
    * clear checked fault array 
    * @param {the button} e 
@@ -1044,19 +1086,14 @@ async loadCentreline(e) {
   clearFilter(e) {
     this.setState({checkedFaults: []});
   }
-
   /**
-   * clear checked fault array 
-   * @param {the button} e 
+   * select all faults on filter page
    */
   selectAll() {
-    //console.log(faultClass);
     let arr = []
-    this.state.faultTypes.map((value, index) => {
-      arr.push(value.fault);
-      //console.log(value);
+    this.state.faultTypes.map((value) => {
+      return arr.push(value.fault);
     });
-    //console.log(arr);
     this.setState({checkedFaults: arr});  
   } 
 /**
@@ -1065,7 +1102,6 @@ async loadCentreline(e) {
  * @param {the property of the fault} attribute 
  */
   getFault(index, attribute) {
-    //console.log(index);
     if (this.state.objData.length !== 0 && index !== null) {
       switch(attribute) {
         case "fault":
@@ -1093,7 +1129,7 @@ async loadCentreline(e) {
   }
 
   tableLoad(e) {
-    console.log(e.target);
+    //console.log(e.target);
   }
 
   closePhotoModal(e) {
@@ -1108,17 +1144,16 @@ async loadCentreline(e) {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
-    const { photo } = this.state.photos;  
     //const ref = React.createRef();
 
-    const CustomTile = function CustomTile (props) {
-        return (
-            <TileLayer className="mapLayer"
-            attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors and Chat location by Iconika from the Noun Project"
-            url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
-          />
-      );
-    }
+    // const CustomTile = function CustomTile (props) {
+    //     return (
+    //         <TileLayer className="mapLayer"
+    //         attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors and Chat location by Iconika from the Noun Project"
+    //         url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
+    //       />
+    //   );
+    // }
 
     const LayerNav = function LayerNav(props) {
       if (props.layers.length > 0) {
@@ -1456,7 +1491,6 @@ async loadCentreline(e) {
                         repair={this.getFault(this.state.index, 'repair')}
                         comment={this.getFault(this.state.index, 'comment')}
                         >
-
           </CustomTable >
           <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
             Previous 
@@ -1469,7 +1503,6 @@ async loadCentreline(e) {
           </Button>
         </Modal.Footer>
       </Modal>
-
       </>
     );
   }
