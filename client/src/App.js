@@ -29,8 +29,11 @@ class App extends React.Component {
       login: this.getUser(),
       loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
-      tileServer: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
+      key: "pk.eyJ1IjoibWp3eW55YXJkIiwiYSI6ImNrM3Q5cDB5ZDAwbG0zZW82enhnamFoN3cifQ.6tHRp0DztZanCDTnEuZJlg",
+      mapBoxUrl: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       mode: "map",
       zoom: 8,
       index: null,
@@ -69,7 +72,8 @@ class App extends React.Component {
       clearDisabled: true,
       message: "",
       lineData: null,
-      mouse: null
+      mouse: null,
+      coordinates: null //coordinates of clicked marker
     };   
   }
 
@@ -635,10 +639,14 @@ class App extends React.Component {
       this.setState({zIndex: 1000});
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
+      this.setState({url: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
+      this.setState({attribution: "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
       this.setState({zIndex: 900});
       this.setState({mode: "map"});
-      this.setState({osmThumbnail: "satellite64.png"})
+      this.setState({osmThumbnail: "satellite64.png"});
+      this.setState({url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"});
+      this.setState({attribution: '&copy; <a href="https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors'})
     }
   }
 
@@ -684,9 +692,10 @@ class App extends React.Component {
 
   clickMarker(e) {
     let marker = e.target;
+    console.log(marker);
     const index = marker.options.index;
     this.setState({index: index});
-    //this.setState({popover: true});
+    //this.setState({coordinates: true});
   }
 
   /**
@@ -1120,6 +1129,8 @@ class App extends React.Component {
             return  this.state.objData[index].repair;
         case "comment":
             return  this.state.objData[index].comment;
+        case "latlng":
+            return  this.state.objData[index].latlng;
         default:
           return null;
       }
@@ -1128,8 +1139,10 @@ class App extends React.Component {
     }
   }
 
-  tableLoad(e) {
-    //console.log(e.target);
+  copyToClipboard(e, latlng) {
+    e.preventDefault();
+    const position = latlng.lat + " " + latlng.lng
+    navigator.clipboard.writeText(position);
   }
 
   closePhotoModal(e) {
@@ -1144,17 +1157,6 @@ class App extends React.Component {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
-    //const ref = React.createRef();
-
-    // const CustomTile = function CustomTile (props) {
-    //     return (
-    //         <TileLayer className="mapLayer"
-    //         attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors and Chat location by Iconika from the Noun Project"
-    //         url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
-    //       />
-    //   );
-    // }
-
     const LayerNav = function LayerNav(props) {
       if (props.layers.length > 0) {
         return (
@@ -1162,8 +1164,6 @@ class App extends React.Component {
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
             <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={props.loadLayer}/>
             <NavDropdown.Divider />
-            {/* <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove Layer </NavDropdown.Item>
-            <NavDropdown.Divider /> */}
             <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={props.removeLayer}/>
             <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
@@ -1177,10 +1177,6 @@ class App extends React.Component {
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
             <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} layers={props.layers} onClick={props.loadLayer}/>
-            {/* <NavDropdown.Divider />
-            <NavDropdown.Item title="Remove Layer" className="navdropdownitem" href="#centreline" onClick={(e) => this.removeLayer(e)}>Remove layer</NavDropdown.Item> */}
-            {/* <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={(e) => this.clickFilter(e)}>Filter Layer</NavDropdown.Item> */}
           </NavDropdown>
         </Nav>
         );
@@ -1218,7 +1214,8 @@ class App extends React.Component {
             <div className="row">
               <div className="col-md-6">
                   <b>{"Type: "}</b> {props.fault} <br></br> 
-                  <b>{"Location: "} </b> {props.location}
+                  <b>{"Location: "} </b> {props.location}<br></br>
+                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.latlng.lng}
               </div>
               <div className="col-md-6">
                 <b>{"Repair: "}</b>{props.repair}<br></br> 
@@ -1229,13 +1226,21 @@ class App extends React.Component {
           </div>	 
         );
       } else {
+        //let lat = props.latLng.lat;
+        //let lng = props.latLng.lng;
         return (
           <div className="container">
             <div className="row">
               <div className="col-md-6">
                   <b>{"Type: "}</b> {props.fault} <br></br> 
                   <b>{"Priority: "} </b> {props.priority} <br></br>
-                  <b>{"Location: "} </b> {props.location}
+                  <b>{"Location: "} </b> {props.location}<br></br>
+                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.latlng.lng + "  "}  
+                  <Button variant="outline-secondary" 
+                   size="sm" 
+                   onClick={props.copy} 
+                   active >Copy
+                   </Button>
               </div>
               <div className="col-md-6">
                 <b>{"Repair: "}</b>{props.repair} <br></br> 
@@ -1288,8 +1293,8 @@ class App extends React.Component {
           zoom={this.state.zoom}
           onZoom={(e) => this.onZoom(e)}>
           <TileLayer className="mapLayer"
-            attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors and Chat location by Iconika from the Noun Project"
-            url={"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
+            attribution={this.state.attribution}
+            url={this.state.url}
             zIndex={998}
           />
           <ScaleControl/>
@@ -1483,13 +1488,15 @@ class App extends React.Component {
             <Image className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></Image >        
 		    </Modal.Body >
         <Modal.Footer>
-          <CustomTable fault={this.getFault(this.state.index, 'fault')}
+          <CustomTable  fault={this.getFault(this.state.index, 'fault')}
                         priority={this.getFault(this.state.index, 'priority')}
                         location={this.getFault(this.state.index, 'location')}
                         size={this.getFault(this.state.index, 'size')}
                         datetime={this.getFault(this.state.index, 'datetime')}
                         repair={this.getFault(this.state.index, 'repair')}
                         comment={this.getFault(this.state.index, 'comment')}
+                        latlng={this.getFault(this.state.index, 'latlng')}
+                        copy={(e) => this.copyToClipboard(e, this.getFault(this.state.index, 'latlng'))}
                         >
           </CustomTable >
           <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
