@@ -42,7 +42,8 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var project = resolve(result);
+                let project = resolve(result);
+               
                 return project;
             });
         });
@@ -63,6 +64,7 @@ module.exports = {
         });
     },
 
+    //DEPRECIATED
     faults: (code) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT fault FROM faults WHERE class = '" + code + "' GROUP BY fault";
@@ -72,8 +74,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var faults = resolve(result);
-                //console.log(project);
+                let faults = resolve(result);
                 return faults;
             });
         });
@@ -94,22 +95,43 @@ module.exports = {
         });
     },
 
-    // token: (token, user) => {
-    //     return new Promise((resolve, reject) => {
-    //         let sql = "INSERT INTO session(token, username, created) VALUES ('" + token + "','" + user + "', now())";
-    //         //console.log(sql);
-    //         connection.query(sql, (err, results) => {
-    //             if (err) {
-    //                 console.error('Error executing query', err.stack)
-    //                 return reject(err);
-    //             }
-    //             var p = resolve(results);
-    //             //console.log(results);
-    //             return p;
-    //         });
-    //     });
-    // },
+    updateLayerCount: (layer) => {
+        return new Promise((resolve, reject) => {
+    
+            try {
+                connection.query("UPDATE projects SET layercount = layercount +"   + 1 + ", layermodified = now() WHERE code = '" + layer + "'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack);
+                    return reject(err);
+                }
+                let results = resolve(result);
+                return results; 
+                });
+            } catch (error) {
+                return reject(error);
+            }
+             
+        });
+    },
 
+    updateFilterCount: (layer) => {
+        return new Promise((resolve, reject) => {
+    
+            try {
+                connection.query("UPDATE projects SET filtercount = filtercount + "   + 1 + ", lastfilter = now() WHERE code = '" + layer + "'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack);
+                    return reject(err);
+                }
+                let results = resolve(result);
+                return results; 
+                });
+            } catch (error) {
+                return reject(error);
+            }
+             
+        });
+    },
 
     layer: (layer, filter, priority) => { 
         let codes = buildQuery(priority);
@@ -122,7 +144,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var geometry = resolve(result);
+                let geometry = resolve(result);          
                 return geometry;
             }); 
             } else {
@@ -133,7 +155,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var geometry = resolve(result);
+                let geometry = resolve(result);
                 return geometry;
                 });
             }
@@ -150,7 +172,7 @@ module.exports = {
                     return reject(err);
                 }
                 console.log(results);
-                var p = resolve(results);
+                let p = resolve(results);
                 
                 return p;
             });
@@ -165,7 +187,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var p = resolve(results);
+                let p = resolve(results);
                 //console.log(results);
                 return p;
             });
@@ -181,7 +203,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var p = resolve(results);
+                let p = resolve(results);
                 //console.log(results);
                 return p;
             });

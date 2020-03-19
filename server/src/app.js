@@ -60,7 +60,6 @@ app.post('/login', async (request, response, next) => {
   let succeded = null;
   const password = request.body.key;
   const user = request.body.user;
-  console.log(user);
   //uncomment to genrate password for new user
   //generatePassword(password, 10);
   
@@ -78,11 +77,10 @@ app.post('/login', async (request, response, next) => {
       const seed  = user + count;
       if (err) throw err;     
       if (res) {
-        console.log("login")
           const token = jwt.sign({ seed }, jwtKey, {
           algorithm: 'HS256',
           expiresIn: jwtExpirySeconds
-        });
+      });
         succeded = true;
         count = count += 1;
         await db.updateCount(count, user);
@@ -100,7 +98,7 @@ app.post('/login', async (request, response, next) => {
           token: token,
           }
         );
-        users.printUsers();   
+        //users.printUsers();   
       } else {    
         console.log("Incorrect password");   
         response.send({ result: false, error: "incorrect password" });
@@ -110,7 +108,7 @@ app.post('/login', async (request, response, next) => {
 });
 
 app.post('/logout', (req, res, next) => {
-  console.log("logout"); 
+  //console.log("logout"); 
   if (req.headers.authorization === this.token) {
     users.deleteToken(req.body.token);
     users.printUsers();
@@ -120,6 +118,11 @@ app.post('/logout', (req, res, next) => {
   }
 });
 
+
+/**
+ * Gets fault classes from db
+ * i.e. user clicked filter from menu
+ */
 app.post('/class', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
@@ -132,6 +135,11 @@ app.post('/class', async (req, res, next) => {
   }
 });
 
+/**
+ * ****** DEPRECIATED ***********
+ * gets faults for specific class
+ * 
+ */
 app.post('/faults', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
@@ -145,14 +153,24 @@ app.post('/faults', async (req, res, next) => {
   }
 });
 
+/**
+ * gets faults for specfic filter (project - fault type - priority)
+ * from db
+ */
 app.post('/layer', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let layer = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
-    console.log(req.body);
+    //console.log(req.body);
     let geometry = await db.layer(layer, filter, priority);
+    if (filter.length === 0) {
+      await db.updateLayerCount(layer);
+    } else {
+      await db.updateFilterCount(layer);
+    }
+    
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
   } else {
@@ -162,6 +180,9 @@ app.post('/layer', async (req, res, next) => {
   } 
 });
 
+/**
+ * gets centrelines for specfic ta code
+ */
 app.post('/roads', async (req, res, next) => {
   //console.log(req.body);
   const result = users.findUserToken(req.headers.authorization, req.body.user);
