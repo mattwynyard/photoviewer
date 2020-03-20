@@ -29,8 +29,7 @@ class App extends React.Component {
       login: this.getUser(),
       loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
-      key: "pk.eyJ1IjoibWp3eW55YXJkIiwiYSI6ImNrM3Q5cDB5ZDAwbG0zZW82enhnamFoN3cifQ.6tHRp0DztZanCDTnEuZJlg",
-      mapBoxUrl: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + process.env.MAPBOX,
+      key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
@@ -625,9 +624,6 @@ class App extends React.Component {
   onZoom(e) {
     this.setState({zoom: e.target.getZoom()});
     this.setState({bounds: e.target.getBounds()});
-    // if (this.state.lineData != null) {
-    //   this.redraw(this.state.lineData);
-    // }
   }
 
   /**
@@ -635,11 +631,14 @@ class App extends React.Component {
    * @param {the control} e 
    */
   toogleMap(e) {
+    if (this.state.login === "Login") {
+      return;
+    }
     if (this.state.mode === "map") {
       this.setState({zIndex: 1000});
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
-      this.setState({url: "//api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
+      this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
       this.setState({attribution: "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
       this.setState({zIndex: 900});
@@ -692,10 +691,8 @@ class App extends React.Component {
 
   clickMarker(e) {
     let marker = e.target;
-    console.log(marker);
     const index = marker.options.index;
     this.setState({index: index});
-    //this.setState({coordinates: true});
   }
 
   /**
@@ -732,11 +729,9 @@ class App extends React.Component {
     const body = await response.json();
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
-      throw Error(body.message);
-      
+      throw Error(body.message);    
     } 
-    this.reset();
-   
+    this.reset();  
   }
 
   async login(e) {  
@@ -757,10 +752,8 @@ class App extends React.Component {
     //console.log(body);
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
-      throw Error(body.message);
-      
-    } 
-    
+      throw Error(body.message);   
+    }  
     if (body.result) {
       Cookies.set('token', body.token, { expires: 7 });
       Cookies.set('user', body.user, { expires: 7 });
@@ -773,10 +766,8 @@ class App extends React.Component {
       this.setState({message: ""})
     } else {
       this.setState({message: "Username or password is incorrect!"});
-    } 
-     
+    }      
   }
-
   /**
    * loops through project array received from db and sets
    * project array in the state. Sets project cookie
@@ -790,7 +781,6 @@ class App extends React.Component {
     Cookies.set('projects', JSON.stringify(prj), { expires: 7 })
     this.setState({projectArr: prj});
   }
-
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
@@ -1051,6 +1041,9 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
+    if (this.state.login !== "Login") {
+      return;
+    }
     this.setState({index: null});
     let priQuery = this.state.priorities;
     switch(e.target.id) {
@@ -1139,6 +1132,11 @@ class App extends React.Component {
     }
   }
 
+  /**
+   * Copies the lat lng from photo modal to users clipboard
+   * @param {*} e button lcick event
+   * @param {*} latlng Leaflet latlng object
+   */
   copyToClipboard(e, latlng) {
     e.preventDefault();
     const position = latlng.lat + " " + latlng.lng
@@ -1147,10 +1145,6 @@ class App extends React.Component {
 
   closePhotoModal(e) {
     this.setState({show: false});
-  }
-
-  clickGroup(e) {
-    console.log("click");
   }
 
   render() {
@@ -1226,8 +1220,6 @@ class App extends React.Component {
           </div>	 
         );
       } else {
-        //let lat = props.latLng.lat;
-        //let lng = props.latLng.lng;
         return (
           <div className="container">
             <div className="row">
@@ -1250,8 +1242,7 @@ class App extends React.Component {
             </div>
           </div>	 
         );
-      }
-     
+      }    
     }
     return (   
       <> 

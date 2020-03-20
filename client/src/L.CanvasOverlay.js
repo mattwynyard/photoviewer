@@ -136,10 +136,6 @@ L.CanvasOverlay = L.Layer.extend({
                                     options: this.options
                                });
         }
-       
-       
-        // console.timeEnd('process');
-        
         this._frame = null;
     },
 

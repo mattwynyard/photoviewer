@@ -14,6 +14,15 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Global Site Tag (gtag.js) - Google Analytics-->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-161437097-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-161437097-1');
+    </script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -32,14 +41,8 @@
       varying vec4 v_color;
 
       void main() {
-      // Set the size of the point
       gl_PointSize =  a_pointSize;
-
-      // multiply each vertex by a matrix.
       gl_Position = u_matrix * a_vertex;
-
-
-      // pass the color to the fragment shader
       v_color = a_color;
       }
   </script>

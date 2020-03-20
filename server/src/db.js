@@ -42,8 +42,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                let project = resolve(result);
-               
+                let project = resolve(result);         
                 return project;
             });
         });
@@ -58,17 +57,18 @@ module.exports = {
                     return reject(err);
                 }
                 var classes = resolve(result);
-                //console.log(project);
                 return classes;
             });
         });
     },
 
     //DEPRECIATED
+    /**
+     * used for getting statistics on fault types
+     */
     faults: (code) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT fault FROM faults WHERE class = '" + code + "' GROUP BY fault";
-            //console.log(sql)
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -82,13 +82,11 @@ module.exports = {
 
     road: (code) => { 
         return new Promise((resolve, reject) => {
-            //console.log("SELECT gid, assetroadi, carriagewa, fullroadna, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'");
             connection.query("SELECT gid, assetroadi, carriagewa, fullroadna, onrcclass, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                //console.log(result);
                 var geometry = resolve(result);
                 return geometry;
             });
@@ -109,8 +107,7 @@ module.exports = {
                 });
             } catch (error) {
                 return reject(error);
-            }
-             
+            }       
         });
     },
 
@@ -128,8 +125,7 @@ module.exports = {
                 });
             } catch (error) {
                 return reject(error);
-            }
-             
+            }           
         });
     },
 
@@ -171,9 +167,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                console.log(results);
-                let p = resolve(results);
-                
+                let p = resolve(results);   
                 return p;
             });
         });
@@ -188,7 +182,6 @@ module.exports = {
                     return reject(err);
                 }
                 let p = resolve(results);
-                //console.log(results);
                 return p;
             });
         });
@@ -204,7 +197,6 @@ module.exports = {
                     return reject(err);
                 }
                 let p = resolve(results);
-                //console.log(results);
                 return p;
             });
         });

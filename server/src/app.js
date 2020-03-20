@@ -11,7 +11,6 @@ const app = express();
 const users = require('./user.js');
 const jwt = require('jsonwebtoken');
 const jwtKey = process.env.KEY;
-//const jwtKey = process.env.KEY;
 const jwtExpirySeconds = 300;
 
 const fs = require('fs');
@@ -20,20 +19,21 @@ const http = require('http');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
-const token = null;
 
 app.use(cors());
 app.use(morgan('dev'));
 app.use(helmet());
+app.use(middlewares.notFound);
+app.use(middlewares.errorHandler);
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(bodyParser.urlencoded({ extended: false }))
 // Parse JSON bodies (as sent by API clients)
 app.use(express.json());
 
 app.use((req, res, next) => {
-  //res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   next();
 });
 if(environment === 'production') {
@@ -71,7 +71,6 @@ app.post('/login', async (request, response, next) => {
     console.log("user doesn't exist");
   } else {
     let count = await db.users(user);
-    //console.log("users: " + count.rows[0].count);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
       count = count.rows[0].count;
       const seed  = user + count;
@@ -98,7 +97,6 @@ app.post('/login', async (request, response, next) => {
           token: token,
           }
         );
-        //users.printUsers();   
       } else {    
         console.log("Incorrect password");   
         response.send({ result: false, error: "incorrect password" });
@@ -108,17 +106,13 @@ app.post('/login', async (request, response, next) => {
 });
 
 app.post('/logout', (req, res, next) => {
-  //console.log("logout"); 
   if (req.headers.authorization === this.token) {
     users.deleteToken(req.body.token);
-    users.printUsers();
     res.send({success: true});
   } else {
     res.send({success: false});
   }
 });
-
-
 /**
  * Gets fault classes from db
  * i.e. user clicked filter from menu
@@ -134,7 +128,6 @@ app.post('/class', async (req, res, next) => {
     console.log("invalid token");
   }
 });
-
 /**
  * ****** DEPRECIATED ***********
  * gets faults for specific class
@@ -152,7 +145,6 @@ app.post('/faults', async (req, res, next) => {
     console.log("invalid token");
   }
 });
-
 /**
  * gets faults for specfic filter (project - fault type - priority)
  * from db
@@ -169,17 +161,14 @@ app.post('/layer', async (req, res, next) => {
       await db.updateLayerCount(layer);
     } else {
       await db.updateFilterCount(layer);
-    }
-    
+    }  
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);
   } else {
     res.send({error: "Invalid token"});
     console.log("invalid token");
-
   } 
 });
-
 /**
  * gets centrelines for specfic ta code
  */
@@ -204,9 +193,6 @@ app.post('/gps', (req, res, next) => {
   res.set('Content-Type', 'application/json');
   res.send({ express: 'Server online' });
 });
-
-app.use(middlewares.notFound);
-app.use(middlewares.errorHandler);
 
 async function  generatePassword(password, rounds) {
   await bcrypt.genSalt(rounds, function(err, salt) {

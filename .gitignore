@@ -14,9 +14,11 @@ server/node_modules
 .pnp.js
 .pem
 server/.crt
+server/.cert
 server/.cer
 server/.pem
 server/.env
+client/.env
 
 
 # testing
