@@ -12,7 +12,6 @@ import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getColor} from  './
 class App extends React.Component {
 
   constructor(props) {
-    
     super(props);
     this.customNav = React.createRef();
     this.state = {
