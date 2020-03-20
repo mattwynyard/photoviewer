@@ -1040,7 +1040,7 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    if (this.state.login !== "Login") {
+    if (this.state.login === "Login") {
       return;
     }
     this.setState({index: null});

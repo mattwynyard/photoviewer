@@ -23,8 +23,8 @@ const environment = process.env.ENVIRONMENT;
 app.use(cors());
 app.use(morgan('dev'));
 app.use(helmet());
-app.use(middlewares.notFound);
-app.use(middlewares.errorHandler);
+//app.use(middlewares.notFound);
+//app.use(middlewares.errorHandler);
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(bodyParser.urlencoded({ extended: false }))
 // Parse JSON bodies (as sent by API clients)
