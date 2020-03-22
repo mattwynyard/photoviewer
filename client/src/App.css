@@ -146,6 +146,20 @@ body {
   width: 1037px;
 }
 
+.leftArrow {
+  position: absolute;
+  height: 64px;
+  width: 64px;
+  left: 55px;
+  bottom: 275px;
+}
+.rightArrow {
+  position: absolute;
+  height: 64px;
+  width: 64px;
+  right: 25px;
+  bottom: 275px;
+}
 /* .photoBodytr{
   height: 648x;
   width: 900px;

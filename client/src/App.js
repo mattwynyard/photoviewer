@@ -1475,7 +1475,16 @@ class App extends React.Component {
       {/*photo modal */}    
       <Modal dialogClassName={"photoModal"} show={this.state.show} size='xl' centered={true}>
         <Modal.Body className="photoBody">	
-            <Image className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></Image >        
+          <div className="container">
+          <img className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></img>
+          <img className="leftArrow" src={"leftArrow_128.png"} onClick={(e) => this.clickPrev(e)}/> 
+          <img className="rightArrow" src={"rightArrow_128.png"} onClick={(e) => this.clickNext(e)}/>
+
+          
+          </div>
+           
+              
+
 		    </Modal.Body >
         <Modal.Footer>
           <CustomTable  fault={this.getFault(this.state.index, 'fault')}
@@ -1489,12 +1498,12 @@ class App extends React.Component {
                         copy={(e) => this.copyToClipboard(e, this.getFault(this.state.index, 'latlng'))}
                         >
           </CustomTable >
-          <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
+          {/* <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
             Previous 
           </Button>   
           <Button className="next" variant="primary" onClick={(e) => this.clickNext(e)}>
             Next  
-          </Button>
+          </Button> */}
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>
