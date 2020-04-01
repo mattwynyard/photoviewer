@@ -59,14 +59,14 @@ class App extends React.Component {
       amazon: null,
       user: this.getUser(),
       password: null,
-      projectArr: this.getProjects(),
+      projects: this.getProjects(),
       faultClass: [],
       faultTypes: [],
       pageActive: 0,
       checkedFaults: [],
       checked: false,
       activeProject: null,
-      activeLayers: [],
+      activeLayers: [], //layers displayed on the
       clearDisabled: true,
       message: "",
       lineData: null,
@@ -459,6 +459,8 @@ class App extends React.Component {
     if (response.status !== 200) {
       alert(body);   
       throw Error(body.message) 
+    } else {
+      console.log(body.express);
     }
     return body;
   };
@@ -637,6 +639,7 @@ class App extends React.Component {
       this.setState({zIndex: 1000});
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
+      //this.setState({url: "https://api.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=" + this.state.key});
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
       this.setState({attribution: "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
@@ -704,7 +707,7 @@ class App extends React.Component {
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
     this.setState({activeProject: null})
-    this.setState({projectArr: []});
+    this.setState({projects: []});
     this.setState({checkedFaults: []});
     this.setState({objData: []});
     this.setState({activeLayers: []});
@@ -748,7 +751,6 @@ class App extends React.Component {
       })
     });
     const body = await response.json();
-    //console.log(body);
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);   
@@ -772,36 +774,53 @@ class App extends React.Component {
    * project array in the state. Sets project cookie
    * @param {Array} projects 
    */
-  buildProjects(projects) {    
-    let prj = []
+  buildProjects(projects) {   
+    let prj = []; 
+    let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
-      prj.push(projects[i]);
+      if (projects[i].surface === "road") {
+        obj.road.push(projects[i]);
+      } else {
+        obj.footpath.push(projects[i]);
+      }
     }
-    Cookies.set('projects', JSON.stringify(prj), { expires: 7 })
-    this.setState({projectArr: prj});
+    //console.log(obj);
+    Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
+    this.setState({projects: obj});
   }
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
    * @param {event} e 
+   * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  loadLayer(e) {   
+  loadLayer(e, type) {   
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
+    } 
+    let projects = null; 
+    if (type === 'road'){
+      projects = this.state.projects.road;
+    } else {
+      projects = this.state.projects.footpath;
+    }
+    for (let i = 0; i < this.state.projects.road.length; i += 1) { //find project
+      if (projects[i].code === e.target.attributes.code.value) {  //if found
+        let project = {code: projects[i].code, description: projects[i].description, date: projects[i].date}
+        this.setState({amazon: projects[i].amazon});
+        this.state.activeLayers.push(project);
+        }
     }
     this.setState({activeProject: e.target.attributes.code.value});
-    for (let i = 0; i < this.state.projectArr.length; i += 1) { //find project
-      if (this.state.projectArr[i].code === e.target.attributes.code.value) {  //if found
-        let project = {code: this.state.projectArr[i].code, description: this.state.projectArr[i].description, date: this.state.projectArr[i].date}
-        this.setState({amazon: this.state.projectArr[i].amazon});
-        this.state.activeLayers.push(project);
-      }
-    }
     this.filterLayer(e.target.attributes.code.value);     
   }
 
+  /**
+   * 
+   * @param {event} e  - the menu clicked
+   */
   removeLayer(e) {
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
@@ -1150,14 +1169,31 @@ class App extends React.Component {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
-    const LayerNav = function LayerNav(props) {
+    
+    const LayerNav = function LayerNav(props) { 
       if (props.layers.length > 0) {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} onClick={props.loadLayer}/>
+            <CustomMenu 
+              title="Add Roading Layer" 
+              className="navdropdownitem" 
+              type={'road'} 
+              projects={props.projects.road} 
+              onClick={props.loadLayer}/>
             <NavDropdown.Divider />
-            <CustomMenu title="Remove Layer" className="navdropdownitem" projects={props.layers} onClick={props.removeLayer}/>
+            <CustomMenu 
+              title="Add Footpath Layer" 
+              className="navdropdownitem" 
+              type={'footpath'} 
+              projects={props.projects.footpath} 
+              onClick={props.loadFootpathLayer}/>
+            <NavDropdown.Divider />
+            <CustomMenu 
+              title="Remove Layer" 
+              className="navdropdownitem" 
+              projects={props.layers} 
+              onClick={props.removeLayer}/>
             <NavDropdown.Divider />
             <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
             <NavDropdown.Divider />
@@ -1169,17 +1205,34 @@ class App extends React.Component {
         return (
           <Nav>          
           <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu title="Add Layer" className="navdropdownitem" projects={props.projects} layers={props.layers} onClick={props.loadLayer}/>
-          </NavDropdown>
+            <CustomMenu 
+              title="Add Roading Layer" 
+              className="navdropdownitem" 
+              type={'road'} 
+              projects={props.projects.road} 
+              layers={props.layers} 
+              onClick={props.loadRoadLayer}/>
+            <NavDropdown.Divider/>
+            <CustomMenu 
+              title="Add Footpath Layer" 
+              className="navdropdownitem" 
+              type={'footpath'}
+              projects={props.projects.footpath} 
+              layers={props.layers} 
+              onClick={props.loadFootpathLayer}/>
+          </NavDropdown>        
         </Nav>
         );
       }
     }
     const CustomMenu = function(props) {
       if (typeof props.projects === 'undefined' || props.projects.length === 0) {
-          return (    
-            <NavDropdown.Item title={props.title} className="dropdownitem">Add Layers
-            </NavDropdown.Item>
+          return (  
+            <div></div>  
+            // <NavDropdown.Item 
+            // //title={props.title} 
+            // className="dropdownitem">
+            // </NavDropdown.Item>
             );
       } else {  
         return (        
@@ -1192,9 +1245,9 @@ class App extends React.Component {
               code={value.code}
               onClick={props.onClick}>
               {value.description + " " + value.date}
+              <NavDropdown.Divider />
             </NavDropdown.Item>
           )}
-          <NavDropdown.Divider />
           </NavDropdown>
           );
       }
@@ -1256,9 +1309,16 @@ class App extends React.Component {
                 alt="logo"
               />
               </Navbar.Brand>
-              <LayerNav project={this.state.activeProject} projects={this.state.projectArr} layers={this.state.activeLayers} 
-                        removeLayer={(e) => this.removeLayer(e)} loadLayer={(e) => this.loadLayer(e)} 
-                        addCentreline={(e) => this.loadCentreline(e)} clickFilter={(e) => this.clickFilter(e)}></LayerNav>
+              <LayerNav 
+                project={this.state.activeProject} 
+                projects={this.state.projects} 
+                layers={this.state.activeLayers}
+                removeLayer={(e) => this.removeLayer(e)} 
+                loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
+                loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
+                addCentreline={(e) => this.loadCentreline(e)} 
+                clickFilter={(e) => this.clickFilter(e)}>
+              </LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
                 <NavDropdown.Item className="navdropdownitem" href="#terms" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
@@ -1405,8 +1465,7 @@ class App extends React.Component {
             <Button className="submit" variant="primary" type="submit" onClick={(e) => this.submitFilter(e)}>
               Filter
             </Button>
-          </div>
-          
+          </div>       
         </Modal.Footer>
       </Modal>
           {/*help nav */}
@@ -1420,12 +1479,18 @@ class App extends React.Component {
           <span >&copy; 2019 Onsite Developments Ltd. All rights reserved.</span><br></br>
 		    </Modal.Body>
         <Modal.Footer>
-          <Button variant="primary" type="submit" onClick={(e) => this.clickClose(e)}>
+          <Button 
+            variant="primary" 
+            type="submit" 
+            onClick={(e) => this.clickClose(e)}>
               Close
           </Button>
         </Modal.Footer>
       </Modal>
-      <Modal className="aboutModal" show={this.state.showAbout} size={'md'} centered={true}>
+      <Modal 
+        className="aboutModal" 
+        show={this.state.showAbout} 
+        size={'md'} centered={true}>
         <Modal.Header>
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
@@ -1445,7 +1510,6 @@ class App extends React.Component {
             Close
           </Button>
         </Modal.Footer>
-
       {/* login modal     */}
       </Modal>
       <Modal show={this.state.showLogin} size={'sm'} centered={true}>
@@ -1456,14 +1520,23 @@ class App extends React.Component {
         <Form>
           <Form.Group controlId="userName">
             <Form.Label>Username</Form.Label>
-            <Form.Control type="text" placeholder="Enter username" ref={user => this.userInput = user} />
+            <Form.Control 
+              type="text" 
+              placeholder="Enter username" 
+              ref={user => this.userInput = user} />
           </Form.Group>
           <Form.Text className= "message">{this.state.message}</Form.Text>
           <Form.Group controlId="formBasicPassword">
             <Form.Label>Password</Form.Label>           
-            <Form.Control type="password" placeholder="Password" ref={key=> this.passwordInput = key}/>
+            <Form.Control 
+              type="password" 
+              placeholder="Password" 
+              ref={key=> this.passwordInput = key}/>
           </Form.Group>
-          <Button variant="primary" type="submit" onClick={(e) => this.login(e)}>
+          <Button 
+            variant="primary" 
+            type="submit" 
+            onClick={(e) => this.login(e)}>
             Submit
           </Button>
         </Form>
@@ -1471,39 +1544,27 @@ class App extends React.Component {
         <Modal.Footer>
         </Modal.Footer>
       </Modal>
-
       {/*photo modal */}    
       <Modal dialogClassName={"photoModal"} show={this.state.show} size='xl' centered={true}>
         <Modal.Body className="photoBody">	
           <div className="container">
-          <img className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></img>
-          <img className="leftArrow" src={"leftArrow_128.png"} onClick={(e) => this.clickPrev(e)}/> 
-          <img className="rightArrow" src={"rightArrow_128.png"} onClick={(e) => this.clickNext(e)}/>
-
-          
+            <img className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></img>
+            <img className="leftArrow" src={"leftArrow_128.png"} onClick={(e) => this.clickPrev(e)}/> 
+            <img className="rightArrow" src={"rightArrow_128.png"} onClick={(e) => this.clickNext(e)}/>
           </div>
-           
-              
-
 		    </Modal.Body >
         <Modal.Footer>
-          <CustomTable  fault={this.getFault(this.state.index, 'fault')}
-                        priority={this.getFault(this.state.index, 'priority')}
-                        location={this.getFault(this.state.index, 'location')}
-                        size={this.getFault(this.state.index, 'size')}
-                        datetime={this.getFault(this.state.index, 'datetime')}
-                        repair={this.getFault(this.state.index, 'repair')}
-                        comment={this.getFault(this.state.index, 'comment')}
-                        latlng={this.getFault(this.state.index, 'latlng')}
-                        copy={(e) => this.copyToClipboard(e, this.getFault(this.state.index, 'latlng'))}
-                        >
+          <CustomTable  
+            fault={this.getFault(this.state.index, 'fault')}
+            priority={this.getFault(this.state.index, 'priority')}
+            location={this.getFault(this.state.index, 'location')}
+            size={this.getFault(this.state.index, 'size')}
+            datetime={this.getFault(this.state.index, 'datetime')}
+            repair={this.getFault(this.state.index, 'repair')}
+            comment={this.getFault(this.state.index, 'comment')}
+            latlng={this.getFault(this.state.index, 'latlng')}
+            copy={(e) => this.copyToClipboard(e, this.getFault(this.state.index, 'latlng'))}>
           </CustomTable >
-          {/* <Button className="prev" onClick={(e) => this.clickPrev(e)}> 
-            Previous 
-          </Button>   
-          <Button className="next" variant="primary" onClick={(e) => this.clickNext(e)}>
-            Next  
-          </Button> */}
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>

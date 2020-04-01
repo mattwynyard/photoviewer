@@ -6,7 +6,6 @@ const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
-const middlewares = require('./middlewares');
 const app = express();
 const users = require('./user.js');
 const jwt = require('jsonwebtoken');
@@ -20,22 +19,10 @@ const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 
-app.use(cors());
-app.use(morgan('dev'));
-app.use(helmet());
-//app.use(middlewares.notFound);
-//app.use(middlewares.errorHandler);
-// Parse URL-encoded bodies (as sent by HTML forms)
-app.use(bodyParser.urlencoded({ extended: false }))
-// Parse JSON bodies (as sent by API clients)
-app.use(express.json());
 
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-  next();
-});
+//comment out create server code below when deploying to server
+//server created in index.js
+console.log("mode: " + environment);
 if(environment === 'production') {
   let hostname = "localhost";
  http.createServer(function(req, res) {
@@ -52,6 +39,21 @@ if(environment === 'production') {
     });
 }
 
+app.use(cors());
+app.use(morgan('dev'));
+app.use(helmet());
+// Parse URL-encoded bodies (as sent by HTML forms)
+app.use(bodyParser.urlencoded({ extended: false }))
+// Parse JSON bodies (as sent by API clients)
+app.use(express.json());
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  next();
+});
+
 app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });
 });
@@ -62,7 +64,6 @@ app.post('/login', async (request, response, next) => {
   const user = request.body.user;
   //uncomment to genrate password for new user
   //generatePassword(password, 10);
-  
   let p = await db.password(user);
   
   if (p.rows.length == 0) { //user doesn't exist
@@ -85,6 +86,7 @@ app.post('/login', async (request, response, next) => {
         await db.updateCount(count, user);
         this.token = token;
         let projects = await db.projects(user);
+        //console.log(projects);
         let arr = []; //project arr
         for (var i = 0; i < projects.rows.length; i += 1) {
           arr.push(projects.rows[i]);
