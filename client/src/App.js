@@ -22,7 +22,8 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
-      priorities: [1, 2, 3, 99], //todo fix for fulton hogan etc.
+      priorities: null, //todo fix for fulton hogan etc.
+      checkboxes: [],
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -75,26 +76,13 @@ class App extends React.Component {
     };   
   }
 
-  /**
-   * Gets the devlopment or production host 
-   * @return {string} the host name
-   */
-  getHost() {
-    if (process.env.NODE_ENV === "development") {
-      return "localhost:8443";
-    } else if (process.env.NODE_ENV === "production") {
-      return "osmium.nz";
-    } else {
-      return "localhost:8443";
-    }
-   }
-
   componentDidMount() {
     // Call our fetch function below once the component mounts
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
+    this.setPriorities();
   }
 
   getMiter(p0, p1, p2, thickness) {
@@ -465,6 +453,30 @@ class App extends React.Component {
     return body;
   };
 
+  /**
+   * Gets the devlopment or production host 
+   * @return {string} the host name
+   */
+  getHost() {
+    if (process.env.NODE_ENV === "development") {
+      return "localhost:8443";
+    } else if (process.env.NODE_ENV === "production") {
+      return "osmium.nz";
+    } else {
+      return "localhost:8443";
+    }
+   }
+
+    setPriorities() {
+    if (this.getUser() === "downer") {
+      this.setState({priorities: [5, 4, 3, 99]});
+      this.setState({checkboxes: ["5", "4", "3"]});
+    } else {
+      this.setState({priorities: [1, 2, 3, 99]});
+      this.setState({checkboxes: ["1", "2", "3"]});
+    }
+   }
+
   getProjects() {
     let cookie = Cookies.get('projects');
     if (cookie === undefined) {
@@ -764,7 +776,9 @@ class App extends React.Component {
       this.customNav.current.setTitle(body.user);
       this.customNav.current.setOnClick((e) => this.logout(e));
       this.setState({showLogin: false});
-      this.setState({message: ""})
+      this.setState({message: ""});
+      this.setPriorities();
+      
     } else {
       this.setState({message: "Username or password is incorrect!"});
     }      
@@ -1063,39 +1077,14 @@ class App extends React.Component {
       return;
     }
     this.setState({index: null});
-    let priQuery = this.state.priorities;
-    switch(e.target.id) {
-      case "1":
-        if (e.target.checked) {
-          priQuery.push(1);
-        } else {      
-          priQuery.splice(priQuery.indexOf(1), 1 );
-        }
-        break;
-      case "2":
-        if (e.target.checked) {
-          priQuery.push(2);
-        } else {      
-          priQuery.splice(priQuery.indexOf(2), 1 );
-        }
-        break;
-      case "3":
-        if (e.target.checked) {
-          priQuery.push(3);
-        } else {      
-          priQuery.splice(priQuery.indexOf(3), 1 );
-        }
-        break;
-      case "99":
-      if (e.target.checked) {
-        priQuery.push(99);
-      } else {      
-        priQuery.splice(priQuery.indexOf(99), 1 );
-      }
-      break;
-    default:
+    let query = this.state.priorities;
+    let priority = parseInt(e.target.id);
+    if (e.target.checked) {
+      query.push(priority);
+    } else {      
+      query.splice(query.indexOf(priority), 1 );
     }
-    this.setState({priorities: priQuery})
+    this.setState({priorities: query})
     this.filterLayer(this.state.activeProject);
     //console.log(this.state.priorities)
   }
@@ -1355,10 +1344,14 @@ class App extends React.Component {
               </Accordion.Toggle>           
               <Accordion.Collapse eventKey="0">
                 <Card.Body>
-                  <input id="1" type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 1<br></br>
-                  <input type="checkbox" id="2" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 2<br></br>
-                  <input type="checkbox" id="3" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Priority 3<br></br>
-                  <input type="checkbox" id="99" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Signage
+                {this.state.checkboxes.map((value, index) =>
+                <div>
+                  <input id={value} type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}>
+                  </input>Priority {value}<br></br>
+                </div> 
+                )}
+                <input type="checkbox" id="99" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Signage
+
                 </Card.Body>  
               </Accordion.Collapse>
             </Card>
