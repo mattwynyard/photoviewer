@@ -15,6 +15,7 @@
 .shx
 .pdf
 .docx
+/server/*.env
 
 # dependencies
 client/node_modules
