@@ -3,10 +3,10 @@
 /*.sql
 /model
 /project
-./.env
-/*.pem
-/*.crt
-/*.cer
+.env
+.pem
+.crt
+.cer
 .csv
 .dbf
 .cpg
@@ -21,13 +21,7 @@ client/node_modules
 server/node_modules
 /.pnp
 .pnp.js
-.pem
-server/.crt
-server/.cert
-server/.cer
-server/.pem
-server/.env
-client/.env
+
 
 
 # testing
