@@ -6,6 +6,14 @@
 /*.pem
 /*.crt
 /*.cer
+./*.csv
+./*.dbf
+./*.cpg
+./*.qpj
+./*.shp
+./*.shx
+./*.pdf
+./*.docx
 
 # dependencies
 client/node_modules
