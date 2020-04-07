@@ -72,7 +72,9 @@ class App extends React.Component {
       message: "",
       lineData: null,
       mouse: null,
-      coordinates: null //coordinates of clicked marker
+      coordinates: null, //coordinates of clicked marker
+      glpoints: null,
+      selectedIndex: null
     };   
   }
 
@@ -103,37 +105,39 @@ class App extends React.Component {
       return new Vector2D(0, 0);
     }
     let l = miter.multiply(length);
-    return new Vector2D(l.x, l.y);
-  
+    return new Vector2D(l.x, l.y);  
   }
 
   clickCanvas(e) {
-    const position = this.map.leafletElement.mouseEventToLatLng(e);
-    let coordinate = LatLongToPixelXY(position.lat, position.lng);
-    //console.log(coordinate);
     if (this.state.lines !== null) {
-      this.redraw(this.state.lineData, coordinate);
+      this.redraw(this.state.glpoints, e);
     }
   }
+
+  getIndex(color) { 
+    return color[0] + color[1] * 256 + color[2] * 256 * 256;
+  }
+
+  delegate(index) {
+    console.log(index);
+    //this.setState({selectedIndex: index})
+  }
+
+
 
   redraw(data, mouseclick) {
     console.log("drawing")
     const leafletMap = this.map.leafletElement;
     if (this.gl == null) {
       this.glLayer = L.canvasOverlay()
-      //.drawing(drawingOnCanvas)
       .addTo(leafletMap);
-    this.canvas = this.glLayer.canvas();
-    
-    this.glLayer.canvas.width = this.canvas.width;
-    this.glLayer.canvas.height = this.canvas.height;
-    this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: true});
-    this.addEventListeners(); //handle lost gl context
+      this.canvas = this.glLayer.canvas();
+      this.glLayer.canvas.width = this.canvas.width;
+      this.glLayer.canvas.height = this.canvas.height;
+      this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
+      this.addEventListeners(); //handle lost gl context
     }
-    
-    this.glLayer.drawing(drawingOnCanvas);
-   
-    
+    this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);
         // -- WebGl setup
@@ -141,11 +145,13 @@ class App extends React.Component {
     this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
     this.gl.compileShader(vertexShader);
     var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+
     this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
     this.gl.compileShader(fragmentShader);
 
+    
     // link shaders to create our program
-    var program = this.gl.createProgram();
+    let program = this.gl.createProgram();
     this.gl.attachShader(program, vertexShader);
     this.gl.attachShader(program, fragmentShader);
     this.gl.linkProgram(program);
@@ -162,264 +168,82 @@ class App extends React.Component {
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    if (mouseclick !== null) {
-      let pixel = new Uint8Array(4);
-      console.log(mouseclick.y)
-      let mouseclick_y = this.canvas.height - mouseclick.y;
-      this.gl.readPixels(mouseclick.x, mouseclick_y, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
-      console.log(pixel);
-    }
-   
-    // -- data
     let verts = [];
-    let zoom = leafletMap.getZoom();
-    let thickness = null;
-    //console.log(zoom);
-    thickness = (1 / zoom) * 0.005
-    if (zoom < 10) {
-      thickness = (1 / zoom) * 0.004;
-    } else if (zoom === 10) {
-      thickness =  (1 / zoom) * 0.0035;
-    } else if (zoom === 11) {
-      thickness =  (1 / zoom) * 0.003
-    } else if (zoom === 12) {
-      thickness =  (1 / zoom) * 0.0025
-    } else if (zoom === 13) {
-      thickness =  (1 / zoom) * 0.002
-    } else if (zoom === 14) {
-      thickness =  (1 / zoom) * 0.0015
-    } else if (zoom === 15) {
-      thickness =  (1 / zoom) * 0.001
+    if (mouseclick === null) {
+      // for (let i = 0; i < data.length; i += 7) {
+      //   let index = data[i + 6];
+      //   let obj = this.state.objData[index];
+      //   console.log(obj);
+      // }
+      verts = data;
     } else {
-      thickness =  (1 / zoom) * 0.0008
+      for (let i = 0; i < data.length; i += 7) {
+        let index = data[i + 6];
+        let r = ((index & 0x000000FF) >>>  0) / 255;
+        let g = ((index & 0x0000FF00) >>>  8) / 255;
+        let b = ((index & 0x00FF0000) >>> 16) / 255;
+        data[i + 2] = r;
+        data[i + 3] = g;
+        data[i + 4] = b;
+      }
+      verts = data;
+
     }
-  //console.log(thickness);
-    for (let i = 0; i < data.length; i += 1) {
-      let red = null;
-      let green = null;
-      let blue = null;
-      if (mouseclick === null) {
-        if (data[i].class === "Access") { //blue
-        red = 0;
-        green = 0;
-        blue = 1;
-        } else if (data[i].class === "Arterial") { //red
-          red = 1;
-          green = 0;
-          blue = 0;
-        } else if (data[i].class === "Primary Collector") { //orange
-          red = 1;
-          green = 0.5;
-          blue = 0;
-        } else if (data[i].class === "Low Volume") { //green
-          red = 0;
-          green = 1;
-          blue = 0;
-        } else if (data[i].class === "Secondary Collector") { //yellow
-          red = 1;
-          green = 1;
-          blue = 0;
-        }
-        else if (data[i].class === "Regional") { //black
-          red = 0;
-          green = 0;
-          blue = 0;
-        }
-        else if (data[i].class === "National") { //white
-          red = 1;
-          green = 1;
-          blue = 1;
-        }
-        else { //null
-          red = 1;
-          green = 0;
-          blue = 1;
-        }
-      } else {
-        red = ((i & 0x000000FF) >>>  0) / 255;
-        green = ((i & 0x0000FF00) >>>  8) / 255;
-        blue = ((i & 0x00FF0000) >>> 16) / 255;
-      }      
-      for (var j = 0; j < data[i].segment.length; j += 1) {
-        
-        if (data[i].segment.length < 2) {
-          console.log(data[i]);
-          continue;
-        }
-        if(data[i].segment.length < 3 ) {
-          //console.log(data[i]);
-          const pixel0 = {x: data[i].segment[0].x, y: data[i].segment[0].y};   
-          const pixel1 = {x: data[i].segment[1].x, y: data[i].segment[1].y};
-          if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
-            //console.log(data[i]);
-            continue;
-          }
-          let p0 = new Vector2D(pixel0.x, pixel0.y);
-          let p1 = new Vector2D(pixel1.x, pixel1.y);
-          let line = Vector2D.subtract(p1, p0);
-          let normal = new Vector2D(-line.y, line.x)
-          let normalized = normal.normalize();
-          let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
-          let b = Vector2D.add(p0,  Vector2D.multiply(normalized,thickness));
-          let c = Vector2D.subtract(p1, Vector2D.multiply(normalized,thickness));
-          let d =  Vector2D.add(p1, Vector2D.multiply(normalized,thickness));
-          let l = Vector2D.subtract(a, b).length();
-          if (l > thickness * 2.1) {
-            console.log(l);
-          }
-          verts.push(a.x, a.y, red, green, blue);
-          verts.push(b.x, b.y, red, green, blue);
-          verts.push(c.x, c.y, red, green, blue);
-          verts.push(c.x, c.y, red, green, blue); 
-          verts.push(d.x, d.y, red, green, blue);
-          verts.push(b.x, b.y, red, green, blue);
-          continue;
-        } else {
-          if (j === 0) {
-            const pixel0 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
-            const pixel1 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
-            const pixel2 = {x: data[i].segment[j + 2].x, y: data[i].segment[j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
+    var numPoints = data.length / 7 ; //[lat, lng, r, g, b, a, id]
+    let vertBuffer = this.gl.createBuffer();
+    let vertArray = new Float32Array(verts);
+    let fsize = vertArray.BYTES_PER_ELEMENT;
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
+    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize*7, 0);
+    this.gl.enableVertexAttribArray(vertLoc);
+    // -- offset for color buffer
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, true, fsize*7, fsize*2);
+    this.gl.enableVertexAttribArray(colorLoc);
+    this.glLayer.gl = this.gl; //set gl in canvas
+    this.glLayer.mapMatrix = this.mapMatrix; //set matrix in canvas  
+    this.glLayer.delegate = this.delegate;
+    this.glLayer.glpoints = this.state.glpoints;
+    this.glLayer.refresh = this.redraw;
+    this.glLayer.redraw();
+    //console.log("index: " + this.glLayer.getIndex()); 
     
-            let line = Vector2D.subtract(p1, p0);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
-            let b = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
-
-            let miter = this.getMiter(p0, p1, p2, thickness);
-            if (miter.x === 0 && miter.y === 0) {
-              continue;
-            }
-            let c = Vector2D.subtract(p1, miter);
-            let d = Vector2D.add(p1, miter);  
-            let l = Vector2D.subtract(a, b).length();
-            if (l > thickness * 2) {
-              //console.log(l);
-            }
-            verts.push(a.x, a.y, red, green, blue);
-            verts.push(b.x, b.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue); 
-            verts.push(d.x, d.y, red, green, blue);
-            verts.push(b.x, b.y, red, green, blue);
-
-            } else if (j === data[i].segment.length - 2) {
-            const pixel0 = {x: data[i].segment[j -1].x, y: data[i].segment[j -1].y};
-            const pixel1 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
-            const pixel2 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              break;
-            }
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-            let line = Vector2D.subtract(p2, p1);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let c = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
-            let d = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
-            let l = Vector2D.subtract(c, d).length();
-            if (l > thickness * 2.1) {
-              console.log(l);
-            }
-            verts.push(a.x, a.y, red, green, blue);
-            verts.push(b.x, b.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue); 
-            verts.push(d.x, d.y, red, green, blue);
-            verts.push(a.x, a.y, red, green, blue);
-            break;  
-            } else {
-            //console.log("middle");
-            const pixel0 = {x: data[i].segment[j -1].x, y: data[i].segment[j -1].y};
-            const pixel1 = {x: data[i].segment[j].x, y: data[i].segment[j].y};
-            const pixel2 = {x: data[i].segment[j + 1].x, y: data[i].segment[j + 1].y};
-            const pixel3 = {x: data[i].segment[j + 2].x, y: data[i].segment[j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let p3 = new Vector2D(pixel3.x, pixel3.y);
-            //meter calc
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              continue;
-            }
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            p2 = new Vector2D(pixel2.x, pixel2.y);
-            p3 = new Vector2D(pixel3.x, pixel3.y);
-            let miter2 = this.getMiter(p1, p2, p3, thickness);
-            if (miter2.x === 0 && miter2.y === 0) {
-              continue;
-            }
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-            let c = Vector2D.add(p2, miter2);
-            let d = Vector2D.subtract(p2,  miter2);
-            verts.push(a.x, a.y, red, green, blue);
-            verts.push(b.x, b.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue);
-            verts.push(c.x, c.y, red, green, blue);
-            verts.push(d.x, d.y, red, green, blue);
-            verts.push(b.x, b.y, red, green, blue);
-          }
-        }
+    
+    function drawingOnCanvas(canvasOverlay, params) {
+      if (params.gl == null)  {
+        return;
       }
+      params.gl.clearColor(0, 0, 0, 0);
+      params.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      var pixelsToWebGLMatrix = new Float32Array(16);
+      pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+      params.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
+      var pointSize = Math.max(leafletMap.getZoom() - 6.0, 1.0);
+      params.gl.vertexAttrib1f(params.gl.aPointSize, pointSize);
+      // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
+      params.mapMatrix.set(pixelsToWebGLMatrix);
+      var bounds = leafletMap.getBounds();
+      var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
+      var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
+      // -- Scale to current zoom
+      var scale = Math.pow(2, leafletMap.getZoom());
+      scaleMatrix(params.mapMatrix, scale, scale);
+      translateMatrix(params.mapMatrix, -offset.x, -offset.y);
+      var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
+      // -- attach matrix value to 'mapMatrix' uniform in shader
+      params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
+      params.gl.drawArrays(params.gl.POINTS, 0, numPoints);
+      if (mouseclick !== null) {
+        let pixel = new Uint8Array(4);
+        console.log(mouseclick)
+        this.gl.readPixels(mouseclick.layerX, this.canvas.height - mouseclick.layerY, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
+        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+        this.setIndex(index);
+        this.delegate(index);
+        //this.refresh(this.glpoints, null);
+      } 
     }
-      //console.log(verts);
-      var vertBuffer = this.gl.createBuffer();
-      var vertArray = new Float32Array(verts);
-      var fsize = vertArray.BYTES_PER_ELEMENT;
-
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
-      this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize*5, 0);
-      this.gl.enableVertexAttribArray(vertLoc);
-      // -- offset for color buffer
-      this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, fsize*5, fsize*2);
-      this.gl.enableVertexAttribArray(colorLoc);
-      this.glLayer.gl = this.gl; //set gl in canvas
-      this.glLayer.mapMatrix = this.mapMatrix; //set matrix in canvas
-      
-      this.glLayer.redraw();
-      
-
-      function drawingOnCanvas(canvasOverlay, params) {
-        if (params.gl == null)  {
-          return;
-        }
-        params.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        var pixelsToWebGLMatrix = new Float32Array(16);
-        pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
-        params.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-        var pointSize = Math.max(leafletMap.getZoom() - 4.0, 1.0);
-        params.gl.vertexAttrib1f(params.gl.aPointSize, pointSize);
-        // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
-        params.mapMatrix.set(pixelsToWebGLMatrix);
-        var bounds = leafletMap.getBounds();
-        var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
-        var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
-        // -- Scale to current zoom
-        var scale = Math.pow(2, leafletMap.getZoom());
-        scaleMatrix(params.mapMatrix, scale, scale);
-        translateMatrix(params.mapMatrix, -offset.x, -offset.y);
-        var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
-        // -- attach matrix value to 'mapMatrix' uniform in shader
-        params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
-        let numPoints = 0;
-        let pointer = 0;
-        for (var i = 0; i < data.length; i += 1) {
-          numPoints = (data[i].segment.length - 1) * 6;
-          params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
-          pointer += numPoints;
-        }    
-      }
-    }
+  }
 
   componentDidUpdate() {   
   }
@@ -553,6 +377,55 @@ class App extends React.Component {
       return 32;
     }
   }
+
+  addGLMarkers(data) {
+    let obj = {};
+    let objData = [];
+    let latLngs = [];
+    let points = [];
+    for (var i = 0; i < data.length; i++) {
+      
+      const position = JSON.parse(data[i].st_asgeojson);
+      const lng = position.coordinates[0];
+      const lat = position.coordinates[1];
+      let latlng = L.latLng(lat, lng);
+      let point = LatLongToPixelXY(lat, lng);
+      if(data[i].grade === "5") {
+        points.push(point.x, point.y, 1.0, 0, 0, 1, i);
+      } else if (data[i].grade === "4") {
+        points.push(point.x, point.y, 1.0, 0.67, 0, 1, i);
+      } else {
+        points.push(point.x, point.y, 0, 1.0, 0, 1, i);
+      }
+      
+      latLngs.push(latlng);
+      obj = {
+        roadid: data[i].roadid,
+        footapthid: data[i].footpathid,
+        location: data[i].location,
+        fault: data[i].fault,
+        cause: data[i].cause,
+        size: data[i].size,
+        grade: data[i].grade,
+        photo: data[i].photoid,
+        datetime: data[i].faulttime,
+        latlng: latlng
+      };
+      objData.push(obj); 
+         
+    }
+    console.log("built object");
+    if (latLngs.length !== 0) {
+      let bounds = L.latLngBounds(latLngs);
+      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
+        const map = this.map.leafletElement;
+        map.fitBounds(bounds);
+      }    
+    }
+    //this.setState({objData: objData});
+    this.setState({glpoints: points});
+    this.redraw(points, null);
+  }
   /**
    * Adds db data to various arrays and an object. Then sets state to point to arrays. 
    * @param {data retreived from database} data
@@ -561,6 +434,7 @@ class App extends React.Component {
   async addMarkers(data) {
     let objData = [];
     let latLngs = [];
+
     for (var i = 0; i < data.length; i++) {
       let obj = {};
       const position = JSON.parse(data[i].st_asgeojson);
@@ -583,6 +457,7 @@ class App extends React.Component {
       };
       objData.push(obj);    
     }
+    console.log("built object")
     if (latLngs.length !== 0) {
       let bounds = L.latLngBounds(latLngs);
       if (bounds.getNorthEast() !== bounds.getSouthWest()) {
@@ -637,6 +512,8 @@ class App extends React.Component {
   onZoom(e) {
     this.setState({zoom: e.target.getZoom()});
     this.setState({bounds: e.target.getBounds()});
+    //let zoom = leafletMap.getZoom();
+    //console.log(e.target.getZoom());
   }
 
   /**
@@ -808,7 +685,7 @@ class App extends React.Component {
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  loadLayer(e, type) {   
+  loadLayer(e, type) { 
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
@@ -820,15 +697,19 @@ class App extends React.Component {
     } else {
       projects = this.state.projects.footpath;
     }
-    for (let i = 0; i < this.state.projects.road.length; i += 1) { //find project
+
+    for (let i = 0; i < projects.length; i += 1) { //find project
       if (projects[i].code === e.target.attributes.code.value) {  //if found
-        let project = {code: projects[i].code, description: projects[i].description, date: projects[i].date}
+        let project = {code: projects[i].code, description: projects[i].description, date: projects[i].date} //build project object
         this.setState({amazon: projects[i].amazon});
         this.state.activeLayers.push(project);
         }
     }
+    //console.log(projects);
     this.setState({activeProject: e.target.attributes.code.value});
-    this.filterLayer(e.target.attributes.code.value);     
+    //TODO rollback if fetch fails or do fetch first.
+    this.filterLayer(e.target.attributes.code.value, type); //fetch layer    
+
   }
 
   /**
@@ -851,8 +732,8 @@ class App extends React.Component {
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project) {
-    //console.log(this.state.priorities);
+  async filterLayer(project, type) {
+    //console.log(project);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -872,13 +753,18 @@ class App extends React.Component {
         throw new Error(response.status);
       }
       else {
-        const body = await response.json(); 
+        const body = await response.json();
+        console.log("received"); 
         if (body.error != null) {
-          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
-          await this.addMarkers(body);
+          if (type === "road") {
+            await this.addMarkers(body);
+          } else {
+            await this.addGLMarkers(body);
+          }
         }     
       }
     }).catch((error) => {
@@ -913,7 +799,7 @@ class App extends React.Component {
       .then(async(response) => {
         const body = await response.json();
         if (body.error != null) {
-          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
           await this.logout(e);  
         } else {
@@ -943,7 +829,7 @@ class App extends React.Component {
       }).then(async (response) => {
         const body = await response.json();
         if (body.error != null) {
-          alert(`Error: ${body.error}\nSession may have expired - user will have to login again`);
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
@@ -976,7 +862,7 @@ class App extends React.Component {
       .then(async (response) => {
         const body = await response.json();
         if (body.error != null) {
-          alert(`Error: ${body.error}'\n'Session may have expired - user will have to login again`);
+          alert(`Error: ${body.error}'\n'Session has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
@@ -1345,8 +1231,13 @@ class App extends React.Component {
               <Accordion.Collapse eventKey="0">
                 <Card.Body>
                 {this.state.checkboxes.map((value, index) =>
-                <div>
-                  <input id={value} type="checkbox" defaultChecked onClick={(e) => this.clickPriority(e)}>
+                <div key={`${index}`}>
+                  <input
+                    key={`${index}`} 
+                    id={value} 
+                    type="checkbox" 
+                    defaultChecked 
+                    onClick={(e) => this.clickPriority(e)}>
                   </input>Priority {value}<br></br>
                 </div> 
                 )}
@@ -1356,10 +1247,16 @@ class App extends React.Component {
               </Accordion.Collapse>
             </Card>
           </Accordion>
-          <Image className="satellite" src={this.state.osmThumbnail} onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
+          <Image 
+            className="satellite" 
+            src={this.state.osmThumbnail} 
+            onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
           <LayersControl position="topright">
           {this.state.activeLayers.map((layer, index) => 
-            <LayersControl.Overlay  key={`${index}`} checked name={layer.description + " " + layer.date}>
+            <LayersControl.Overlay  
+              key={`${index}`} 
+              checked 
+              name={layer.description + " " + layer.date}>
               <LayerGroup >
               {this.state.objData.map((obj, index) =>          
                 <Marker 

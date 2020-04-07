@@ -154,15 +154,24 @@ app.post('/faults', async (req, res, next) => {
 app.post('/layer', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    let layer = req.body.project;
+    let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
-    //console.log(req.body);
-    let geometry = await db.layer(layer, filter, priority);
-    if (filter.length === 0) {
-      await db.updateLayerCount(layer);
+    let geometry = null;
+    console.log(req.body);
+    let surface = await db.projecttype(project);
+    console.log(surface.rows[0].surface);
+    if (surface.rows[0].surface === "footpath") {
+      geometry = await db.footpath(project, filter, priority);
+    } else if (surface.rows[0].surface === "road") {
+      geometry = await db.layer(project, filter, priority);
     } else {
-      await db.updateFilterCount(layer);
+      res.send({error: "Layer not found"});
+    }
+    if (filter.length === 0) {
+      await db.updateLayerCount(project);
+    } else {
+      await db.updateFilterCount(project);
     }  
     res.set('Content-Type', 'application/json')
     res.send(geometry.rows);

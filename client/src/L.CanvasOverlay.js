@@ -45,6 +45,14 @@ L.CanvasOverlay = L.Layer.extend({
         return this._canvas;
     },
 
+    getIndex: function () {
+        return this._index;
+    },
+
+    setIndex: function (index) {
+        this._index = index;
+    },
+
     redraw: function () {
         if (!this._frame) {
             this._frame = L.Util.requestAnimFrame(this._redraw, this);
@@ -54,16 +62,20 @@ L.CanvasOverlay = L.Layer.extend({
 
     gl: function(gl) {
         this.gl = gl;
-        console.log(this.gl);
     },
 
     matrix: function(matrix) {
         this.mapMatrix = matrix;
-        //console.log(this.gl);
     },
 
-    
-  
+    delegate: function(delegate) {
+        this.delegate = delegate;
+    },
+
+    refresh: function(redraw) {
+        this.refresh = redraw// app.js redraw function
+    },
+
     onAdd: function (map) {
         this._map = map;
         this._canvas = L.DomUtil.create('canvas', 'gl-layer');
@@ -121,18 +133,17 @@ L.CanvasOverlay = L.Layer.extend({
         var bounds   = this._map.getBounds();
         var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
         var zoom = this._map.getZoom();
-        // console.time('process');
-
         if (this._userDrawFunc) {
             this._userDrawFunc(this,
                                 {
-                                    gl       :this.gl,
+                                    gl       : this.gl,
                                     mapMatrix : this.mapMatrix,
                                     canvas   :this._canvas,
                                     bounds   : bounds,
                                     size     : size,
                                     zoomScale: zoomScale,
                                     zoom : zoom,
+                                    delegate: this.delegate,
                                     options: this.options
                                });
         }

@@ -129,6 +129,39 @@ module.exports = {
         });
     },
 
+    projecttype: (project) => {
+        return new Promise((resolve, reject) => {
+            connection.query("SELECT surface FROM projects WHERE code = '" + project + "'", (err, result) => {
+            if (err) {
+                console.error('Error executing query', err.stack)
+                return reject(err);
+            }
+            let surface = resolve(result);          
+            return surface;
+            }); 
+        });
+
+    },
+
+    footpath: (project, filter, priority) => {
+        let codes = buildQuery(priority);
+        return new Promise((resolve, reject) => {
+            if (filter.length == 0) {
+                connection.query("SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
+                + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + codes + ")", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let geometry = resolve(result);          
+                return geometry;
+            });
+            } else {
+                let condition = buildQuery(filter);
+            }
+        });
+    },
+
     layer: (layer, filter, priority) => { 
         let codes = buildQuery(priority);
         return new Promise((resolve, reject) => {
