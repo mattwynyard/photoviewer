@@ -207,4 +207,25 @@
       //   numPoints = (data[i].segment.length - 1) * 6;
       //   params.gl.drawArrays(params.gl.TRIANGLES, pointer, numPoints);
       //   pointer += numPoints;
-      // }    
+      // }   
+
+        getMiter(p0, p1, p2, thickness) {
+    let p2p1 = Vector2D.subtract(p2, p1);
+    let p1p0 = Vector2D.subtract(p1, p0);
+    let y = p2p1.y * -1;
+    let normal = new Vector2D(y, p2p1.x);
+    let normalized = normal.normalize();
+    p2p1.normalize();
+    p1p0.normalize();
+    p2p1 = Vector2D.subtract(p2, p1);
+    let tangent = Vector2D.add(p2p1, p1p0);    
+    let nTangent = tangent.normalize();
+    y = nTangent.y * -1;
+    let miter = new Vector2D(-nTangent.y, nTangent.x);
+    let length = thickness / Vector2D.dot(miter, normalized);
+    if (length > thickness * 1.5 || length < thickness * 0.5) {
+      return new Vector2D(0, 0);
+    }
+    let l = miter.multiply(length);
+    return new Vector2D(l.x, l.y);  
+  } 

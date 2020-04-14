@@ -74,7 +74,10 @@ class App extends React.Component {
       mouse: null,
       coordinates: null, //coordinates of clicked marker
       glpoints: null,
-      selectedIndex: null
+      selectedIndex: null,
+      mouseclick: null,
+      objGLData: [],
+      selectedGLMarker: []
     };   
   }
 
@@ -85,61 +88,114 @@ class App extends React.Component {
     this.callBackendAPI()
     .catch(err => alert(err));
     this.setPriorities();
+    this.initializeGL();
   }
 
-  getMiter(p0, p1, p2, thickness) {
-    let p2p1 = Vector2D.subtract(p2, p1);
-    let p1p0 = Vector2D.subtract(p1, p0);
-    let y = p2p1.y * -1;
-    let normal = new Vector2D(y, p2p1.x);
-    let normalized = normal.normalize();
-    p2p1.normalize();
-    p1p0.normalize();
-    p2p1 = Vector2D.subtract(p2, p1);
-    let tangent = Vector2D.add(p2p1, p1p0);    
-    let nTangent = tangent.normalize();
-    y = nTangent.y * -1;
-    let miter = new Vector2D(-nTangent.y, nTangent.x);
-    let length = thickness / Vector2D.dot(miter, normalized);
-    if (length > thickness * 1.5 || length < thickness * 0.5) {
-      return new Vector2D(0, 0);
-    }
-    let l = miter.multiply(length);
-    return new Vector2D(l.x, l.y);  
-  }
-
-  clickCanvas(e) {
-    if (this.state.lines !== null) {
-      this.redraw(this.state.glpoints, e);
-    }
-  }
-
-  getIndex(color) { 
-    return color[0] + color[1] * 256 + color[2] * 256 * 256;
-  }
-
-  delegate(index) {
-    console.log(index);
-    //this.setState({selectedIndex: index})
-  }
-
-
-
-  redraw(data, mouseclick) {
-    console.log("drawing")
-    const leafletMap = this.map.leafletElement;
+  initializeGL() {
+    this.leafletMap = this.map.leafletElement;
     if (this.gl == null) {
       this.glLayer = L.canvasOverlay()
-      .addTo(leafletMap);
+      .addTo(this.leafletMap);
       this.canvas = this.glLayer.canvas();
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
       this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
       this.addEventListeners(); //handle lost gl context
+      this.glLayer.delegate = this;
     }
+    
+  }
+
+  /**
+   * Fires when user clicks on map.
+   * Redraws gl points when user selects point
+   * @param {event - the mouse event} e 
+   */
+  clickCanvas(e) {
+    //console.log(this.state.selectedIndex);
+    console.log(e);
+    if (this.state.glpoints !== null) {
+      this.setState({selectedIndex: null});
+      this.setState({selectedGLMarker: []});
+      this.setState({mouseclick: e})
+      this.redraw(this.state.glpoints);
+    }
+  }
+
+  clickMap(e) {
+    if (this.state.glpoints !== null) {
+      this.setState({selectedIndex: null});
+      this.setState({selectedGLMarker: []});
+      this.setState({mouseclick: e})
+      this.redraw(this.state.glpoints);
+    }
+  }
+
+  /**
+   * 
+   * @param {int - calculates the index from r,g,b color} color 
+   */
+  getIndex(color) { 
+    return color[0] + color[1] * 256 + color[2] * 256 * 256;
+  }
+
+  /**
+   * Called from drawing callback in L.CanvasOverlay by delegate
+   * Sets the selected point and redraw
+   * @param {the point the user selected} index 
+   */
+  setIndex(index) {
+    if (index !== 0) {
+      this.setState({selectedIndex: index});
+      this.setState({selectedGLMarker: [this.state.objGLData[index - 1]]}); //0 is black ie the screen
+      
+      
+    } else {//user selected screen only - no marker
+      this.setState({selectedIndex: 0});
+      this.setState({selectedGLMarker: []});
+    }
+    //this.setState({mouseclick: null})
+    this.redraw(this.state.glpoints);
+    console.log("set index: " + this.state.selectedIndex);  
+  }
+
+  reColorPoints(data) {
+    let verts = new Float32Array(data);
+    if (this.state.mouseclick === null) {
+      if (this.state.selectedIndex === null) {
+        return verts;
+      } else {
+        //TODO
+        for (let i = 0; i < verts.length; i += 7) {
+          if (verts[i + 6] === this.state.selectedIndex) {
+            verts[i + 2] = 1.0;
+            verts[i + 3] = 0;
+            verts[i + 4] = 0;
+          }
+        }
+      }
+      
+    } else {
+      for (let i = 0; i < verts.length; i += 7) {
+        let index = verts[i + 6];
+        //calculates r,g,b color from index
+        let r = ((index & 0x000000FF) >>>  0) / 255;
+        let g = ((index & 0x0000FF00) >>>  8) / 255;
+        let b = ((index & 0x00FF0000) >>> 16) / 255;
+        verts[i + 2] = r;
+        verts[i + 3] = g;
+        verts[i + 4] = b;
+      }
+    }
+    return verts;
+  }
+
+  redraw(data) {
+
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);
+    
         // -- WebGl setup
     var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
     this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
@@ -148,8 +204,6 @@ class App extends React.Component {
 
     this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
     this.gl.compileShader(fragmentShader);
-
-    
     // link shaders to create our program
     let program = this.gl.createProgram();
     this.gl.attachShader(program, vertexShader);
@@ -168,30 +222,11 @@ class App extends React.Component {
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    let verts = [];
-    if (mouseclick === null) {
-      // for (let i = 0; i < data.length; i += 7) {
-      //   let index = data[i + 6];
-      //   let obj = this.state.objData[index];
-      //   console.log(obj);
-      // }
-      verts = data;
-    } else {
-      for (let i = 0; i < data.length; i += 7) {
-        let index = data[i + 6];
-        let r = ((index & 0x000000FF) >>>  0) / 255;
-        let g = ((index & 0x0000FF00) >>>  8) / 255;
-        let b = ((index & 0x00FF0000) >>> 16) / 255;
-        data[i + 2] = r;
-        data[i + 3] = g;
-        data[i + 4] = b;
-      }
-      verts = data;
-
-    }
+ 
     var numPoints = data.length / 7 ; //[lat, lng, r, g, b, a, id]
     let vertBuffer = this.gl.createBuffer();
-    let vertArray = new Float32Array(verts);
+    //let vertArray = new Float32Array(verts);
+    let vertArray = this.reColorPoints(data);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
@@ -200,48 +235,41 @@ class App extends React.Component {
     // -- offset for color buffer
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, true, fsize*7, fsize*2);
     this.gl.enableVertexAttribArray(colorLoc);
-    this.glLayer.gl = this.gl; //set gl in canvas
-    this.glLayer.mapMatrix = this.mapMatrix; //set matrix in canvas  
-    this.glLayer.delegate = this.delegate;
-    this.glLayer.glpoints = this.state.glpoints;
-    this.glLayer.refresh = this.redraw;
     this.glLayer.redraw();
-    //console.log("index: " + this.glLayer.getIndex()); 
-    
-    
+
     function drawingOnCanvas(canvasOverlay, params) {
-      if (params.gl == null)  {
+      if (this.delegate.gl == null)  {
         return;
       }
-      params.gl.clearColor(0, 0, 0, 0);
-      params.gl.clear(this.gl.COLOR_BUFFER_BIT);
-      var pixelsToWebGLMatrix = new Float32Array(16);
+      this.delegate.gl.clearColor(0, 0, 0, 0);
+      this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
+      let pixelsToWebGLMatrix = new Float32Array(16);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
-      params.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      var pointSize = Math.max(leafletMap.getZoom() - 6.0, 1.0);
-      params.gl.vertexAttrib1f(params.gl.aPointSize, pointSize);
+      this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
+      var pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
+      this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
-      params.mapMatrix.set(pixelsToWebGLMatrix);
-      var bounds = leafletMap.getBounds();
+      this.delegate.mapMatrix.set(pixelsToWebGLMatrix);
+      var bounds = this._map.getBounds();
       var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
       var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
-      var scale = Math.pow(2, leafletMap.getZoom());
-      scaleMatrix(params.mapMatrix, scale, scale);
-      translateMatrix(params.mapMatrix, -offset.x, -offset.y);
-      var u_matLoc = params.gl.getUniformLocation(program, "u_matrix");
+      var scale = Math.pow(2, this._map.getZoom());
+      scaleMatrix(this.delegate.mapMatrix, scale, scale);
+      translateMatrix(this.delegate.mapMatrix, -offset.x, -offset.y);
+      let u_matLoc = this.delegate.gl.getUniformLocation(program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
-      params.gl.uniformMatrix4fv(u_matLoc, false, params.mapMatrix);
-      params.gl.drawArrays(params.gl.POINTS, 0, numPoints);
-      if (mouseclick !== null) {
+      this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numPoints);
+      if (this.delegate.state.mouseclick !== null) {
+        
         let pixel = new Uint8Array(4);
-        console.log(mouseclick)
-        this.gl.readPixels(mouseclick.layerX, this.canvas.height - mouseclick.layerY, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
+        this.delegate.gl.readPixels(this.delegate.state.mouseclick.originalEvent.layerX, this.canvas.height - this.delegate.state.mouseclick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
         let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-        this.setIndex(index);
-        this.delegate(index);
-        //this.refresh(this.glpoints, null);
-      } 
+        this.delegate.setState({mouseclick: null})
+        this.delegate.setIndex(index);
+        this._redraw();
+      }         
     }
   }
 
@@ -259,9 +287,9 @@ class App extends React.Component {
     this.canvas.addEventListener("webglcontextrestored", function(event) {
     this.gl = this.canvas.getContext('webgl', { antialias: true });
     }, false);
-    this.canvas.addEventListener("click", (event) => {
-      this.clickCanvas(event)
-    });
+    // this.canvas.addEventListener("click", (event) => {
+    //   this.clickCanvas(event)
+    // });
   }
 
   callBackendAPI = async () => {
@@ -378,52 +406,84 @@ class App extends React.Component {
     }
   }
 
-  addGLMarkers(data) {
+  /**
+   * 
+   * @param {array of late lngs} latlngs 
+   */
+  centreMap(latlngs) {
+    if (latlngs.length !== 0) {
+      let bounds = L.latLngBounds(latlngs);
+      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
+        const map = this.map.leafletElement;
+        map.fitBounds(bounds);
+      }    
+    } else {
+      return;
+    }
+  }
+/**
+ * Loops through json objects and extracts fault information
+ * Builds object containing fault information and calls redraw
+ * @param {JSON array of fault objects received from db} data 
+ * @param {String type of data ie. road or footpath} type
+ */
+  addGLMarkers(data, type) {
     let obj = {};
-    let objData = [];
-    let latLngs = [];
-    let points = [];
-    for (var i = 0; i < data.length; i++) {
-      
+    let faults = [];
+    let latlngs = [];
+    let points = []; //TODO change to Float32Array to make selection faster
+    for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(data[i].st_asgeojson);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       let latlng = L.latLng(lat, lng);
       let point = LatLongToPixelXY(lat, lng);
       if(data[i].grade === "5") {
-        points.push(point.x, point.y, 1.0, 0, 0, 1, i);
+        points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
       } else if (data[i].grade === "4") {
-        points.push(point.x, point.y, 1.0, 0.67, 0, 1, i);
+        points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
       } else {
-        points.push(point.x, point.y, 0, 1.0, 0, 1, i);
+        points.push(point.x, point.y, 0, 0.8, 0, 1, i);
       }
-      
-      latLngs.push(latlng);
-      obj = {
-        roadid: data[i].roadid,
-        footapthid: data[i].footpathid,
-        location: data[i].location,
-        fault: data[i].fault,
-        cause: data[i].cause,
-        size: data[i].size,
-        grade: data[i].grade,
-        photo: data[i].photoid,
-        datetime: data[i].faulttime,
-        latlng: latlng
-      };
-      objData.push(obj); 
-         
+      latlngs.push(latlng);
+      if (type === "footpath") {
+        obj = {
+          type: type,
+          roadid: data[i].roadid,
+          footapthid: data[i].footpathid,
+          roadname: data[i].roadname,
+          location: data[i].location,
+          asset:  data[i].asset,
+          fault: data[i].fault,
+          cause: data[i].cause,
+          size: data[i].size,
+          grade: data[i].grade,
+          photo: data[i].photoid,
+          datetime: data[i].faulttime,
+          latlng: latlng
+        };
+      } else {
+        obj = {
+          type: type,
+          roadid: data[i].roadid,
+          carriage: data[i].carriagewa,
+          location: data[i].location,
+          fault: data[i].fault,
+          repair: data[i].repair,
+          comment: data[i].comment,
+          size: data[i].size,
+          priority: data[i].priority,
+          photo: data[i].photoid,
+          datetime: data[i].faulttime,
+          latlng: latlng
+        };
+      }
+     
+      faults.push(obj);          
     }
-    console.log("built object");
-    if (latLngs.length !== 0) {
-      let bounds = L.latLngBounds(latLngs);
-      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
-        const map = this.map.leafletElement;
-        map.fitBounds(bounds);
-      }    
-    }
-    //this.setState({objData: objData});
-    this.setState({glpoints: points});
+    this.centreMap(latlngs);
+    this.setState({objGLData: faults});
+    this.setState({glpoints: points}); //Immutable reserve of original points
     this.redraw(points, null);
   }
   /**
@@ -495,8 +555,7 @@ class App extends React.Component {
           lines.push(seg);
           pointAfter += points.length;
         }           
-      } 
-      
+      }       
     } 
     this.setState({lineData: lines});  
     console.log("before: " + pointBefore);
@@ -540,13 +599,21 @@ class App extends React.Component {
     }
   }
 
+  closePopup(e) {
+    if (!this.state.show) {
+      this.state.selectedGLMarker = [];
+      this.setIndex(0); //simulate user click black screen
+    } 
+  }
+
   /**
    * Fired when user clciks photo on thumbnail
    * @param {event} e 
    */
-  clickImage(e) {    
+  clickImage(e) {   
     this.setState({show: true});
-    let photo = this.getFault(this.state.index, 'photo');
+    console.log(this.state.selectedIndex);
+    let photo = this.getGLFault(this.state.selectedIndex, 'photo');
     this.setState({currentPhoto: photo});
   }
 
@@ -754,7 +821,6 @@ class App extends React.Component {
       }
       else {
         const body = await response.json();
-        console.log("received"); 
         if (body.error != null) {
           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
@@ -763,7 +829,7 @@ class App extends React.Component {
           if (type === "road") {
             await this.addMarkers(body);
           } else {
-            await this.addGLMarkers(body);
+            await this.addGLMarkers(body, type);
           }
         }     
       }
@@ -1026,6 +1092,42 @@ class App extends React.Component {
   }
 
   /**
+ * gets the requested attribute from the fault object array
+ * @param {the index of marker} index 
+ * @param {the property of the fault} attribute 
+ */
+getGLFault(index, attribute) {
+  if (this.state.selectedGLMarker.length !== 0 && index !== null) {
+    switch(attribute) {
+      case "type":
+        return  this.state.objGLData[index].type;
+      case "fault":
+        return  this.state.objGLData[index].fault;
+      case "priority":        
+        return  this.state.objGLData[index].priority;
+      case "location":
+        return  this.state.objGLData[index].location;
+      case "size":
+        return  this.state.objGLData[index].size;
+      case "datetime":
+        return  this.state.objGLData[index].datetime;
+      case "photo":
+        return  this.state.objGLData[index].photo;
+      case "repair":
+          return  this.state.objGLData[index].repair;
+      case "comment":
+          return  this.state.objGLData[index].comment;
+      case "latlng":
+          return  this.state.objGLData[index].latlng;
+      default:
+        return this.state.objGLData[index]
+    }
+  } else {
+    return null;
+  }
+}
+
+  /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
    * @param {*} latlng Leaflet latlng object
@@ -1037,14 +1139,15 @@ class App extends React.Component {
   }
 
   closePhotoModal(e) {
+    //this.setIndex(0);
     this.setState({show: false});
+    
   }
 
   render() {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
-    
     const LayerNav = function LayerNav(props) { 
       if (props.layers.length > 0) {
         return (
@@ -1128,33 +1231,54 @@ class App extends React.Component {
       }
     }
 
+    const CustomPopup = function(props) {
+        return(
+        <Popup className="popup" position={props.position}>
+          <div>
+            <p className="faulttext">
+              <b>{"Type: "}</b>{props.data.fault}<br></br>
+              <b>{"Location: "}</b>{props.data.roadname}<br></br>
+              <b>{"Date: "}</b>{props.data.datetime} 
+            </p>
+            <div>
+              <Image className="thumbnail" 
+                src={props.src}
+                onClick={props.onClick} 
+                thumbnail={true}>
+              </Image >
+            </div>          
+          </div>
+      </Popup>  
+        );  
+    }
+
     const CustomTable = function(props) {
-      if(props.priority === "99") {
+      if(props.obj.type === "road") {
         return (
           <div className="container">
             <div className="row">
               <div className="col-md-6">
-                  <b>{"Type: "}</b> {props.fault} <br></br> 
-                  <b>{"Location: "} </b> {props.location}<br></br>
-                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.latlng.lng}
+                  <b>{"Type: "}</b> {props.obj.fault} <br></br> 
+                  <b>{"Location: "} </b> {props.obj.location}<br></br>
+                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
               </div>
               <div className="col-md-6">
-                <b>{"Repair: "}</b>{props.repair}<br></br> 
-                <b>{"Sign Code: "}</b>{props.comment}<br></br> 
-                <b>{"DateTime: "} </b> {props.datetime}
+                <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
+                <b>{"Sign Code: "}</b>{props.obj.comment}<br></br> 
+                <b>{"DateTime: "} </b> {props.obj.datetime}
               </div>
             </div>
           </div>	 
         );
-      } else {
+      } else if(props.obj.type === "footpath") {
         return (
           <div className="container">
             <div className="row">
               <div className="col-md-6">
-                  <b>{"Type: "}</b> {props.fault} <br></br> 
-                  <b>{"Priority: "} </b> {props.priority} <br></br>
-                  <b>{"Location: "} </b> {props.location}<br></br>
-                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.latlng.lng + "  "}  
+                  <b>{"Type: "}</b> {props.obj.fault} <br></br> 
+                  <b>{"Priority: "} </b> {props.obj.grade} <br></br>
+                  <b>{"Location: "} </b> {props.obj.roadname}<br></br>
+                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
                   <Button variant="outline-secondary" 
                    size="sm" 
                    onClick={props.copy} 
@@ -1162,9 +1286,9 @@ class App extends React.Component {
                    </Button>
               </div>
               <div className="col-md-6">
-                <b>{"Repair: "}</b>{props.repair} <br></br> 
-                <b>{"Size: "}</b> {props.size} m<br></br> 
-                <b>{"DateTime: "} </b> {props.datetime}
+                <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
+                <b>{"Size: "}</b> {props.obj.size} m<br></br> 
+                <b>{"DateTime: "} </b> {props.obj.datetime}
               </div>
             </div>
           </div>	 
@@ -1216,7 +1340,9 @@ class App extends React.Component {
           boxZoom={true}
           center={centre}
           zoom={this.state.zoom}
-          onZoom={(e) => this.onZoom(e)}>
+          onClick={(e) => this.clickMap(e)}
+          onZoom={(e) => this.onZoom(e)}
+          onPopupClose={(e) => this.closePopup(e)}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}
             url={this.state.url}
@@ -1250,7 +1376,8 @@ class App extends React.Component {
           <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 
-            onClick={(e) => this.toogleMap(e)} thumbnail={true}/>
+            onClick={(e) => this.toogleMap(e)} 
+            thumbnail={true}/>
           <LayersControl position="topright">
           {this.state.activeLayers.map((layer, index) => 
             <LayersControl.Overlay  
@@ -1258,7 +1385,16 @@ class App extends React.Component {
               checked 
               name={layer.description + " " + layer.date}>
               <LayerGroup >
-              {this.state.objData.map((obj, index) =>          
+              {this.state.selectedGLMarker.map((obj, index) =>  
+              <CustomPopup 
+                key={`${index}`} 
+                data={obj}
+                position={obj.latlng}
+                src={this.state.amazon + obj.photo + ".jpg"} 
+                onClick={(e) => this.clickImage(e)}>
+              </CustomPopup>
+              )}
+              {/* {this.state.objData.map((obj, index) =>          
                 <Marker 
                   key={`${index}`}
                   index={index}
@@ -1287,7 +1423,7 @@ class App extends React.Component {
                     </div>
                   </Popup>  
                 </Marker>
-                )}     
+                )}      */}
               </LayerGroup>
             </LayersControl.Overlay>
           )}
@@ -1390,9 +1526,10 @@ class App extends React.Component {
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
           <img src="logo192.png" alt="React logo"width="24" height="24"/> React: 16.12.0<br></br>
-          <img src="bootstrap.png" alt="Bottstrap logo" width="24" height="24"/> Bootstrap: 4.4.0<br></br>
-          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/>Leaflet: 1.6.0<br></br>
-          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/>React-bootstrap: 1.0.0-beta.16<br></br>
+          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL: 1.0<br></br>
+          <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap: 4.4.0<br></br>
+          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet: 1.6.0<br></br>
+          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap: 1.0.0-beta.16<br></br>
           React-leaflet: 2.6.0<br></br>
 		    </Modal.Body>
         <Modal.Footer>
@@ -1438,23 +1575,34 @@ class App extends React.Component {
       <Modal dialogClassName={"photoModal"} show={this.state.show} size='xl' centered={true}>
         <Modal.Body className="photoBody">	
           <div className="container">
-            <img className="photo" src={this.state.amazon + this.state.currentPhoto + ".jpg"} data={fault}></img>
-            <img className="leftArrow" src={"leftArrow_128.png"} onClick={(e) => this.clickPrev(e)}/> 
-            <img className="rightArrow" src={"rightArrow_128.png"} onClick={(e) => this.clickNext(e)}/>
+          {this.state.selectedGLMarker.map((obj, index) => 
+            <img
+              key={`${index}`}  
+              className="photo" 
+              src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
+              data={fault}>
+            </img>
+          )}
+            <img 
+              className="leftArrow" 
+              src={"leftArrow_128.png"} 
+              onClick={(e) => this.clickPrev(e)}/> 
+            <img 
+              className="rightArrow" 
+              src={"rightArrow_128.png"} 
+              onClick={(e) => this.clickNext(e)}/>
           </div>
 		    </Modal.Body >
         <Modal.Footer>
-          <CustomTable  
-            fault={this.getFault(this.state.index, 'fault')}
-            priority={this.getFault(this.state.index, 'priority')}
-            location={this.getFault(this.state.index, 'location')}
-            size={this.getFault(this.state.index, 'size')}
-            datetime={this.getFault(this.state.index, 'datetime')}
-            repair={this.getFault(this.state.index, 'repair')}
-            comment={this.getFault(this.state.index, 'comment')}
-            latlng={this.getFault(this.state.index, 'latlng')}
-            copy={(e) => this.copyToClipboard(e, this.getFault(this.state.index, 'latlng'))}>
+        {this.state.selectedGLMarker.map((obj, index) =>  
+          <CustomTable
+          key={`${index}`}  
+            obj={this.getGLFault(this.state.selectedIndex, null)}
+            //TODO copy not working
+            copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}> 
+          
           </CustomTable >
+          )}
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>

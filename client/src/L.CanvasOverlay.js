@@ -26,8 +26,6 @@ L.CanvasOverlay = L.Layer.extend({
 
     initialize: function (userDrawFunc, options) {
         this._userDrawFunc = userDrawFunc;
-        this.gl = null;
-        this.mapMatrix = null;
         L.setOptions(this, options);
     },
 
@@ -136,14 +134,11 @@ L.CanvasOverlay = L.Layer.extend({
         if (this._userDrawFunc) {
             this._userDrawFunc(this,
                                 {
-                                    gl       : this.gl,
-                                    mapMatrix : this.mapMatrix,
                                     canvas   :this._canvas,
                                     bounds   : bounds,
                                     size     : size,
                                     zoomScale: zoomScale,
                                     zoom : zoom,
-                                    delegate: this.delegate,
                                     options: this.options
                                });
         }
