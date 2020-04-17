@@ -147,7 +147,7 @@ app.post('/faults', async (req, res, next) => {
     console.log("invalid token");
   }
 });
-/**
+/**r
  * gets faults for specfic filter (project - fault type - priority)
  * from db
  */
@@ -158,9 +158,8 @@ app.post('/layer', async (req, res, next) => {
     let filter = req.body.filter;
     let priority = req.body.priority;
     let geometry = null;
-    console.log(req.body);
     let surface = await db.projecttype(project);
-    console.log(surface.rows[0].surface);
+    console.log(filter);
     if (surface.rows[0].surface === "footpath") {
       geometry = await db.footpath(project, filter, priority);
     } else if (surface.rows[0].surface === "road") {
@@ -174,7 +173,7 @@ app.post('/layer', async (req, res, next) => {
       await db.updateFilterCount(project);
     }  
     res.set('Content-Type', 'application/json')
-    res.send(geometry.rows);
+    res.send({type: surface.rows[0].surface, geometry: geometry.rows});
   } else {
     res.send({error: "Invalid token"});
     console.log("invalid token");

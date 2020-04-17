@@ -82,13 +82,11 @@ module.exports = {
 
     road: (code) => { 
         return new Promise((resolve, reject) => {
-            //console.log("SELECT gid, assetroadi, carriagewa, fullroadna, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'");
             connection.query("SELECT gid, assetroadi, carriagewa, fullroadna, onrcclass, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                //console.log(result);
                 var geometry = resolve(result);
                 return geometry;
             });
@@ -132,6 +130,20 @@ module.exports = {
     projecttype: (project) => {
         return new Promise((resolve, reject) => {
             connection.query("SELECT surface FROM projects WHERE code = '" + project + "'", (err, result) => {
+            if (err) {
+                console.error('Error executing query', err.stack)
+                return reject(err);
+            }
+            let surface = resolve(result);          
+            return surface;
+            }); 
+        });
+
+    },
+
+    client: (project) => {
+        return new Promise((resolve, reject) => {
+            connection.query("SELECT client FROM projects WHERE code = '" + project + "'", (err, result) => {
             if (err) {
                 console.error('Error executing query', err.stack)
                 return reject(err);
@@ -200,9 +212,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                console.log(results);
-                let p = resolve(results);
-                
+                let p = resolve(results);    
                 return p;
             });
         });

@@ -60,10 +60,10 @@ class App extends React.Component {
       amazon: null,
       user: this.getUser(),
       password: null,
-      projects: this.getProjects(),
+      projects: this.getProjects(), //all foootpath and road projects for the user
       faultClass: [],
       faultTypes: [],
-      pageActive: 0,
+      pageActive: 0, //tab on filter model selected
       checkedFaults: [],
       checked: false,
       activeProject: null,
@@ -77,7 +77,8 @@ class App extends React.Component {
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
-      selectedGLMarker: []
+      selectedGLMarker: [],
+      projectMode: null //the type of project being displayed footpath or road
     };   
   }
 
@@ -154,9 +155,7 @@ class App extends React.Component {
       this.setState({selectedIndex: 0});
       this.setState({selectedGLMarker: []});
     }
-    //this.setState({mouseclick: null})
     this.redraw(this.state.glpoints);
-    console.log("set index: " + this.state.selectedIndex);  
   }
 
   reColorPoints(data) {
@@ -319,7 +318,7 @@ class App extends React.Component {
     }
    }
 
-    setPriorities() {
+  setPriorities() {
     if (this.getUser() === "downer") {
       this.setState({priorities: [5, 4, 3, 99]});
       this.setState({checkboxes: ["5", "4", "3"]});
@@ -428,23 +427,48 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  */
   addGLMarkers(data, type) {
+    console.log("gLMarkers: " + type);
     let obj = {};
     let faults = [];
     let latlngs = [];
     let points = []; //TODO change to Float32Array to make selection faster
+    let high = null;
+    let med = null;
+    let low = null;
+    let priority = null;
+    if(this.state.login === "downer") {
+      high = "5";
+      med = "4";
+    } else {
+      high = "1";
+      med = "2";
+    }
     for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(data[i].st_asgeojson);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       let latlng = L.latLng(lat, lng);
       let point = LatLongToPixelXY(lat, lng);
-      if(data[i].grade === "5") {
-        points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
-      } else if (data[i].grade === "4") {
-        points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
+      if (type === "road") {
+        if(data[i].priority === high) {
+          points.push(point.x, point.y, 1.0, 0, 1.0, 1.0, i);
+        } else if (data[i].priority === med) {
+          points.push(point.x, point.y, 1.0, 0.5, 0, 1.0, i);
+        } else if (data[i].priority === "99") {
+          points.push(point.x, point.y, 0, 0, 1, 1.0, i);
+        } else {
+          points.push(point.x, point.y, 0, 0.8, 0, 1.0, i);
+        }
       } else {
-        points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+        if(data[i].grade === high) {
+          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
+        } else if (data[i].grade === med) {
+          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
+        } else {
+          points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+        }
       }
+      
       latlngs.push(latlng);
       if (type === "footpath") {
         obj = {
@@ -477,8 +501,7 @@ class App extends React.Component {
           datetime: data[i].faulttime,
           latlng: latlng
         };
-      }
-     
+      }   
       faults.push(obj);          
     }
     this.centreMap(latlngs);
@@ -486,47 +509,47 @@ class App extends React.Component {
     this.setState({glpoints: points}); //Immutable reserve of original points
     this.redraw(points, null);
   }
-  /**
-   * Adds db data to various arrays and an object. Then sets state to point to arrays. 
-   * @param {data retreived from database} data
-   */
+  // /**
+  //  * Adds db data to various arrays and an object. Then sets state to point to arrays. 
+  //  * @param {data retreived from database} data
+  //  */
 
-  async addMarkers(data) {
-    let objData = [];
-    let latLngs = [];
+  // async addMarkers(data) {
+  //   let objData = [];
+  //   let latLngs = [];
 
-    for (var i = 0; i < data.length; i++) {
-      let obj = {};
-      const position = JSON.parse(data[i].st_asgeojson);
-      const lng = position.coordinates[0];
-      const lat = position.coordinates[1];
-      let latlng = L.latLng(lat, lng);
-      latLngs.push(latlng);
-      obj = {
-        roadid: data[i].roadid,
-        carriage: data[i].carriagewa,
-        location: data[i].location,
-        fault: data[i].fault,
-        repair: data[i].repair,
-        comment: data[i].comment,
-        size: data[i].size,
-        priority: data[i].priority,
-        photo: data[i].photoid,
-        datetime: data[i].faulttime,
-        latlng: latlng
-      };
-      objData.push(obj);    
-    }
-    console.log("built object")
-    if (latLngs.length !== 0) {
-      let bounds = L.latLngBounds(latLngs);
-      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
-        const map = this.map.leafletElement;
-        map.fitBounds(bounds);
-      }    
-    }
-    this.setState({objData: objData});
-  }
+  //   for (var i = 0; i < data.length; i++) {
+  //     let obj = {};
+  //     const position = JSON.parse(data[i].st_asgeojson);
+  //     const lng = position.coordinates[0];
+  //     const lat = position.coordinates[1];
+  //     let latlng = L.latLng(lat, lng);
+  //     latLngs.push(latlng);
+  //     obj = {
+  //       roadid: data[i].roadid,
+  //       carriage: data[i].carriagewa,
+  //       location: data[i].location,
+  //       fault: data[i].fault,
+  //       repair: data[i].repair,
+  //       comment: data[i].comment,
+  //       size: data[i].size,
+  //       priority: data[i].priority,
+  //       photo: data[i].photoid,
+  //       datetime: data[i].faulttime,
+  //       latlng: latlng
+  //     };
+  //     objData.push(obj);    
+  //   }
+  //   console.log("built object")
+  //   if (latLngs.length !== 0) {
+  //     let bounds = L.latLngBounds(latLngs);
+  //     if (bounds.getNorthEast() !== bounds.getSouthWest()) {
+  //       const map = this.map.leafletElement;
+  //       map.fitBounds(bounds);
+  //     }    
+  //   }
+  //   this.setState({objData: objData});
+  // }
 
   addCentrelines(data) {
     let lines = [];
@@ -571,8 +594,6 @@ class App extends React.Component {
   onZoom(e) {
     this.setState({zoom: e.target.getZoom()});
     this.setState({bounds: e.target.getBounds()});
-    //let zoom = leafletMap.getZoom();
-    //console.log(e.target.getZoom());
   }
 
   /**
@@ -601,7 +622,7 @@ class App extends React.Component {
 
   closePopup(e) {
     if (!this.state.show) {
-      this.state.selectedGLMarker = [];
+      this.setState({selectedGLMarker: []});
       this.setIndex(0); //simulate user click black screen
     } 
   }
@@ -612,8 +633,9 @@ class App extends React.Component {
    */
   clickImage(e) {   
     this.setState({show: true});
-    console.log(this.state.selectedIndex);
+    
     let photo = this.getGLFault(this.state.selectedIndex, 'photo');
+    console.log(photo);
     this.setState({currentPhoto: photo});
   }
 
@@ -636,7 +658,8 @@ class App extends React.Component {
   clickPrev(e) {
   const newPhoto = this.getPhoto("prev");
   this.setState({currentPhoto: newPhoto});
-	const url = this.state.amazon + newPhoto + ".jpg";
+  const url = this.state.amazon + newPhoto + ".jpg";
+  console.log(url);
   this.setState({photourl: url});
   }
   
@@ -644,6 +667,7 @@ class App extends React.Component {
   const newPhoto = this.getPhoto("next");
   this.setState({currentPhoto: newPhoto});
   const url = this.state.amazon + newPhoto + ".jpg";
+  console.log(url);
 	this.setState({photourl: url});
   }
 
@@ -662,12 +686,14 @@ class App extends React.Component {
     Cookies.remove('projects');
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
-    this.setState({activeProject: null})
+    this.setState({activeProject: null});
     this.setState({projects: []});
     this.setState({checkedFaults: []});
     this.setState({objData: []});
     this.setState({activeLayers: []});
     this.setState({login: "Login"});
+    this.setState({priorites: []});
+    this.setState({checkboxes: []});
   }
 
   async logout(e) {
@@ -732,8 +758,7 @@ class App extends React.Component {
    * project array in the state. Sets project cookie
    * @param {Array} projects 
    */
-  buildProjects(projects) {   
-    let prj = []; 
+  buildProjects(projects) {    
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
       if (projects[i].surface === "road") {
@@ -753,29 +778,33 @@ class App extends React.Component {
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
   loadLayer(e, type) { 
+    console.log(type);
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
     } 
     let projects = null; 
-    if (type === 'road'){
+    if (type === "road") {
       projects = this.state.projects.road;
+      this.setState({projectMode: "road"})
     } else {
       projects = this.state.projects.footpath;
+      this.setState({projectMode: "footpath"})
     }
-
-    for (let i = 0; i < projects.length; i += 1) { //find project
+    let layers = this.state.activeLayers;
+    console.log(this.state.projects);
+    for (let i = 0; i < projects.length; i++) { //find project
       if (projects[i].code === e.target.attributes.code.value) {  //if found
-        let project = {code: projects[i].code, description: projects[i].description, date: projects[i].date} //build project object
+        let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, date: projects[i].date, surface: projects[i].surface} //build project object
         this.setState({amazon: projects[i].amazon});
-        this.state.activeLayers.push(project);
+        layers.push(project);
         }
     }
-    //console.log(projects);
+    this.setState({activeLayers: layers});
     this.setState({activeProject: e.target.attributes.code.value});
     //TODO rollback if fetch fails or do fetch first.
-    this.filterLayer(e.target.attributes.code.value, type); //fetch layer    
+    this.filterLayer(e.target.attributes.code.value); //fetch layer    
 
   }
 
@@ -793,14 +822,18 @@ class App extends React.Component {
     }
     //TODO clear the filter
     this.setState({activeLayers: layers});
+    this.setState({objGLData: null});
+    this.setState({glpoints: []});
+    this.redraw([])
   }
 
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project, type) {
-    //console.log(project);
+  async filterLayer(project) {
+    console.log("project: " + project);
+
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -818,18 +851,17 @@ class App extends React.Component {
     }).then(async (response) => {
       if(!response.ok) {
         throw new Error(response.status);
-      }
-      else {
+      } else {
         const body = await response.json();
         if (body.error != null) {
           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
-          if (type === "road") {
-            await this.addMarkers(body);
+          if (body.type === "road") {
+            await this.addGLMarkers(body.geometry, body.type);
           } else {
-            await this.addGLMarkers(body, type);
+            await this.addGLMarkers(body.geometry, body.type);
           }
         }     
       }
@@ -882,33 +914,38 @@ class App extends React.Component {
 
   async loadFilters() {
     if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/class', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.state.login
+      if (this.state.projectMode === "footpath") {
+
+      } else {
+        await fetch('https://' + this.state.host + '/class', {
+          method: 'POST',
+          headers: {
+            "authorization": this.state.token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user: this.state.login
+          })
+        }).then(async (response) => {
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            this.setState({faultClass: body});
+            this.getFaultTypes(this.state.faultClass[0].code);
+          }   
         })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-          let e = document.createEvent("MouseEvent");
-          await this.logout(e);
-        } else {
-          this.setState({faultClass: body});
-          this.getFaultTypes(this.state.faultClass[0].code);
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }) 
+        .catch((error) => {
+          console.log("error: " + error);
+          alert(error);
+          return;
+        }) 
+      }
     }
+      
   }
 
   async getFaultTypes(cls) {
@@ -1037,8 +1074,8 @@ class App extends React.Component {
       query.splice(query.indexOf(priority), 1 );
     }
     this.setState({priorities: query})
+    console.log(this.state.activeProject)
     this.filterLayer(this.state.activeProject);
-    //console.log(this.state.priorities)
   }
   /**
    * clear checked fault array 
@@ -1173,9 +1210,9 @@ getGLFault(index, attribute) {
               projects={props.layers} 
               onClick={props.removeLayer}/>
             <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#centreline" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
+            <NavDropdown.Item className="navdropdownitem" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" href="#filter"  onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
+            <NavDropdown.Item className="navdropdownitem" onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
           </NavDropdown>
         </Nav>
         );
@@ -1232,12 +1269,16 @@ getGLFault(index, attribute) {
     }
 
     const CustomPopup = function(props) {
-        return(
+      let location = props.data.location;
+      if (props.data.type === "footpath") {
+        location = props.data.roadname;
+      }
+      return (
         <Popup className="popup" position={props.position}>
           <div>
             <p className="faulttext">
               <b>{"Type: "}</b>{props.data.fault}<br></br>
-              <b>{"Location: "}</b>{props.data.roadname}<br></br>
+              <b>{"Location: "}</b>{location}<br></br>
               <b>{"Date: "}</b>{props.data.datetime} 
             </p>
             <div>
@@ -1248,11 +1289,12 @@ getGLFault(index, attribute) {
               </Image >
             </div>          
           </div>
-      </Popup>  
-        );  
+        </Popup>  
+      );      
     }
 
     const CustomTable = function(props) {
+      console.log(props);
       if(props.obj.type === "road") {
         return (
           <div className="container">
@@ -1260,7 +1302,7 @@ getGLFault(index, attribute) {
               <div className="col-md-6">
                   <b>{"Type: "}</b> {props.obj.fault} <br></br> 
                   <b>{"Location: "} </b> {props.obj.location}<br></br>
-                  <b>{"Lat: "}</b>{props.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
+                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
               </div>
               <div className="col-md-6">
                 <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
@@ -1394,36 +1436,6 @@ getGLFault(index, attribute) {
                 onClick={(e) => this.clickImage(e)}>
               </CustomPopup>
               )}
-              {/* {this.state.objData.map((obj, index) =>          
-                <Marker 
-                  key={`${index}`}
-                  index={index}
-                  priority={obj.priority}
-                  photo={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
-                  position={obj.latlng} 
-                  icon={this.getCustomIcon(this.getFault(index, 'priority'), this.state.zoom)}
-                  draggable={false} 
-                  riseOnHover={true}
-                  onClick={(e) => this.clickMarker(e)}				  
-                  >
-                  <Popup className="popup">
-                    <div>
-                      <p className="faulttext">
-                        <b>{"Type: "}</b>{obj.fault}<br></br>
-                        <b>{"Location: "}</b>{obj.location}<br></br>
-                        <b>{"Date: "}</b>{obj.datetime} 
-                      </p>
-                      <div>
-                        <Image className="thumbnail" 
-                          src={this.state.amazon + this.getFault(index, 'photo') + ".jpg"} 
-                          onClick={(e) => this.clickImage(e)} 
-                          thumbnail={true}>
-                        </Image >
-                      </div>          
-                    </div>
-                  </Popup>  
-                </Marker>
-                )}      */}
               </LayerGroup>
             </LayersControl.Overlay>
           )}
@@ -1599,8 +1611,7 @@ getGLFault(index, attribute) {
           key={`${index}`}  
             obj={this.getGLFault(this.state.selectedIndex, null)}
             //TODO copy not working
-            copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}> 
-          
+            copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}>       
           </CustomTable >
           )}
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
