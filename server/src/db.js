@@ -49,6 +49,62 @@ module.exports = {
         });
     },
 
+    grade: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT grade FROM footpath WHERE project = '" + project + "' GROUP BY grade";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var grade = resolve(result);
+                return grade;
+            });
+        });
+    },
+
+    asset: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT asset FROM footpath WHERE project = '" + project + "' GROUP BY asset";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var asset = resolve(result);
+                return asset;
+            });
+        });
+    },
+
+    zone: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT zone FROM footpath WHERE project = '" + project + "' GROUP BY zone";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var zone = resolve(result);
+                return zone;
+            });
+        });
+    },
+
+    type: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT type FROM footpath WHERE project = '" + project + "' GROUP BY type";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var type = resolve(result);
+                return type;
+            });
+        });
+    },
+
     class: () => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM faults GROUP BY class) ORDER BY priority';

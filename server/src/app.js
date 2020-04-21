@@ -147,11 +147,31 @@ app.post('/faults', async (req, res, next) => {
     console.log("invalid token");
   }
 });
-/**r
+
+app.post('/dropdown', async (req, res) => {
+  
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    let project = req.body.project;
+    let surface = await db.projecttype(project);
+    if (surface.rows[0].surface === "footpath") {
+      let grade = await db.grade(project);
+      let asset = await db.asset(project);
+      let zone = await db.zone(project);
+      let type = await db.type(project);
+      res.set('Content-Type', 'application/json');
+      res.send({priority: grade.rows, asset: asset.rows, zone: zone.rows, type: type.rows});
+    } else {
+
+    }
+       
+  }
+});
+/**
  * gets faults for specfic filter (project - fault type - priority)
  * from db
  */
-app.post('/layer', async (req, res, next) => {
+app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let project = req.body.project;
@@ -162,6 +182,7 @@ app.post('/layer', async (req, res, next) => {
     console.log(filter);
     if (surface.rows[0].surface === "footpath") {
       geometry = await db.footpath(project, filter, priority);
+
     } else if (surface.rows[0].surface === "road") {
       geometry = await db.layer(project, filter, priority);
     } else {

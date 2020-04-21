@@ -44,18 +44,68 @@ body {
   color: gray;
 }
 
-.priorityHeader {
+.Asset {
+  
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  top: 10px;
+  left: 150px;
+  z-index: 999;
+  color: gray;
+  /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); */
+}
 
+.Zone {
+  
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  top: 10px;
+  left: 230px;
+  z-index: 999;
+  color: gray;
+  /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); */
+}
+
+.Type {
+  
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  top: 10px;
+  left: 310px;
+  z-index: 999;
+  color: gray;
+  /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); */
+}
+
+.custommenu {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  z-index: 999;
+  color: gray;
+  width: auto;
+  color: gray;
+  padding: 10px;
+  font-size: 14px !important;
+}
+
+
+
+.priorityHeader {
   font-family: "Century Gothic", sans-serif;
 }
 
 .satellite {
-
   position: absolute;
   bottom: 50px;
   left: 50px;
   z-index: 999;
-
 }
 
 .displaytype {
@@ -159,23 +209,8 @@ body {
   width: 64px;
   right: 25px;
   bottom: 275px;
-}
-/* .photoBodytr{
-  height: 648x;
-  width: 900px;
-} */
 
-/* .prev {
-  float: left;
-  position:absolute;
-  left: 450px;
-  top: 880px;
-} */
 
-.next {
-  /* position:absolute;
-  left: 550px;
-  top: 880px; */
 }
 
 

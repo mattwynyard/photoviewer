@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, DropdownButton, Dropdown, Modal, Button, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -23,7 +23,11 @@ class App extends React.Component {
       med : true,
       low : true,
       priorities: null, //todo fix for fulton hogan etc.
-      checkboxes: [],
+      priorityCheckboxes: [],
+      assetCheckboxes: [],
+      zoneCheckboxes: [],
+      typeCheckboxes: [],
+      filterDropdowns: [],
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -321,10 +325,10 @@ class App extends React.Component {
   setPriorities() {
     if (this.getUser() === "downer") {
       this.setState({priorities: [5, 4, 3, 99]});
-      this.setState({checkboxes: ["5", "4", "3"]});
+      this.setState({priorityCheckboxes: ["5", "4", "3"]});
     } else {
       this.setState({priorities: [1, 2, 3, 99]});
-      this.setState({checkboxes: ["1", "2", "3"]});
+      this.setState({priorityCheckboxes: ["1", "2", "3"]});
     }
    }
 
@@ -779,6 +783,7 @@ class App extends React.Component {
    */
   loadLayer(e, type) { 
     console.log(type);
+    this.setState({projectMode: type})
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
@@ -787,10 +792,12 @@ class App extends React.Component {
     let projects = null; 
     if (type === "road") {
       projects = this.state.projects.road;
-      this.setState({projectMode: "road"})
+      //this.setState({projectMode: "road"})
+      this.setState({filterDropdowns: ["Priority"]})
     } else {
       projects = this.state.projects.footpath;
-      this.setState({projectMode: "footpath"})
+      //this.setState({projectMode: "footpath"})
+      this.setState({filterDropdowns: ["Asset", "Zone", "Type"]})
     }
     let layers = this.state.activeLayers;
     console.log(this.state.projects);
@@ -804,8 +811,61 @@ class App extends React.Component {
     this.setState({activeLayers: layers});
     this.setState({activeProject: e.target.attributes.code.value});
     //TODO rollback if fetch fails or do fetch first.
+    this.getDropdowns(e.target.attributes.code.value);
     this.filterLayer(e.target.attributes.code.value); //fetch layer    
 
+  }
+
+  async getDropdowns(project) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/dropdown', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      })
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            this.buildDropdowns(body.asset, body.zone, body.type);
+          }     
+        }
+      }).catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      }); 
+    }
+  }
+
+  buildDropdowns(asset, zone, type) {
+    let assets = [];
+    let zones = [];
+    let types = [];
+    for (let i = 0; i < asset.length; i++) {
+      assets.push(asset[i].asset);
+    }
+    for (let i = 0; i < zone.length; i++) {
+      zones.push(zone[i].zone);
+    }
+    for (let i = 0; i < type.length; i++) {
+      types.push(type[i].type);
+    }
+    this.setState({assetCheckboxes: assets});
+    this.setState({zoneCheckboxes: zones})
+    this.setState({typeCheckboxes: types})
   }
 
   /**
@@ -978,6 +1038,16 @@ class App extends React.Component {
         alert(error);
         return;
       })    
+    }
+  }
+
+  getArray(value) {
+    if (value === "Asset") {
+      return this.state.assetCheckboxes;
+    } else if (value === "Zone") {
+      return this.state.zoneCheckboxes;
+    } else {
+      return this.state.typeCheckboxes;
     }
   }
 
@@ -1293,8 +1363,26 @@ getGLFault(index, attribute) {
       );      
     }
 
+    const CustomCheckboxes = function(props) {
+      
+      let checkboxes = props.menu; //callback to get array
+      return(
+        <div>
+          {checkboxes.map((value, index) =>
+              <div key={`${index}`}>
+                <input
+                  key={`${index}`} 
+                  id={value} 
+                  type="checkbox" 
+                  onClick={(e) => this.clickPriority(e)}>
+                </input>{value}<br></br>
+              </div> 
+            )}
+        </div>
+      );
+    }
+
     const CustomTable = function(props) {
-      console.log(props);
       if(props.obj.type === "road") {
         return (
           <div className="container">
@@ -1398,7 +1486,7 @@ getGLFault(index, attribute) {
               </Accordion.Toggle>           
               <Accordion.Collapse eventKey="0">
                 <Card.Body>
-                {this.state.checkboxes.map((value, index) =>
+                {this.state.priorityCheckboxes.map((value, index) =>
                 <div key={`${index}`}>
                   <input
                     key={`${index}`} 
@@ -1412,9 +1500,38 @@ getGLFault(index, attribute) {
                 <input type="checkbox" id="99" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Signage
 
                 </Card.Body>  
+                
               </Accordion.Collapse>
             </Card>
           </Accordion>
+          {this.state.filterDropdowns.map((value, index) =>
+          <Dropdown 
+            className={value} 
+            key={`${index}`}
+            array={this.getArray(value)}>
+            <Dropdown.Toggle variant="light" size="sm">
+              {value}
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="custommenu">
+            {this.getArray(value).map((value, index) =>
+                <div key={`${index}`}>
+                  <input
+                    key={`${index}`} 
+                    id={value} 
+                    type="checkbox" 
+                    defaultChecked 
+                    onClick={(e) => this.clickPriority(e)}>
+                  </input>{value}<br></br>
+                </div> 
+                )}
+              {/* <CustomCheckboxes  menu={this.getArray(value)}>
+
+              </CustomCheckboxes> */}
+            </Dropdown.Menu>
+             
+
+          </Dropdown>
+          )}
           <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 
