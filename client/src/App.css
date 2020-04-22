@@ -32,7 +32,7 @@ body {
   color: #fff;
 }
 
-.priority {
+.Priority {
   
   position: absolute;
   font-family: "Century Gothic", sans-serif;
@@ -87,7 +87,7 @@ body {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
-  z-index: 999;
+  z-index: 1000;
   color: gray;
   width: auto;
   color: gray;

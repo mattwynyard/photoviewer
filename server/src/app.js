@@ -148,23 +148,25 @@ app.post('/faults', async (req, res, next) => {
   }
 });
 
-app.post('/dropdown', async (req, res) => {
-  
+app.post('/dropdown', async (req, res) => { 
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let project = req.body.project;
     let surface = await db.projecttype(project);
     if (surface.rows[0].surface === "footpath") {
       let grade = await db.grade(project);
+      console.log(grade.rows);
       let asset = await db.asset(project);
       let zone = await db.zone(project);
       let type = await db.type(project);
       res.set('Content-Type', 'application/json');
       res.send({priority: grade.rows, asset: asset.rows, zone: zone.rows, type: type.rows});
     } else {
-
-    }
-       
+      let priority = await db.priority(project);
+      console.log(priority.rows);
+      res.set('Content-Type', 'application/json');
+      res.send({priority: priority.rows});
+    }     
   }
 });
 /**
@@ -177,11 +179,14 @@ app.post('/layer', async (req, res) => {
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
+    let assets = req.body.assets;
+    let zones = req.body.zones;
+    let types = req.body.types;
     let geometry = null;
     let surface = await db.projecttype(project);
-    console.log(filter);
+    console.log(assets);
     if (surface.rows[0].surface === "footpath") {
-      geometry = await db.footpath(project, filter, priority);
+      geometry = await db.footpath(project, priority, assets, zones, types);
 
     } else if (surface.rows[0].surface === "road") {
       geometry = await db.layer(project, filter, priority);

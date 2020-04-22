@@ -14,6 +14,8 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.customNav = React.createRef();
+    this.menu = React.createRef();
+
     this.state = {
       location: {
         lat: -41.2728,
@@ -22,8 +24,12 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
-      priorities: null, //todo fix for fulton hogan etc.
-      priorityCheckboxes: [],
+      prioritiesIndexed: [], //immutable
+      priorities: [], 
+      assets: [], //these hold values for building dynamic query
+      zones: [],
+      types: [],
+      priorityCheckboxes: [], //these hold values for building menus
       assetCheckboxes: [],
       zoneCheckboxes: [],
       typeCheckboxes: [],
@@ -781,26 +787,25 @@ class App extends React.Component {
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  loadLayer(e, type) { 
-    console.log(type);
+  async loadLayer(e, type) { 
     this.setState({projectMode: type})
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
-    } 
-    let projects = null; 
+    }
+    let projects = null;
+    let project = e.target.attributes.code.value; 
     if (type === "road") {
       projects = this.state.projects.road;
       //this.setState({projectMode: "road"})
-      this.setState({filterDropdowns: ["Priority"]})
+      //this.setState({filterDropdowns: ["Priority"]})
     } else {
       projects = this.state.projects.footpath;
       //this.setState({projectMode: "footpath"})
       this.setState({filterDropdowns: ["Asset", "Zone", "Type"]})
     }
     let layers = this.state.activeLayers;
-    console.log(this.state.projects);
     for (let i = 0; i < projects.length; i++) { //find project
       if (projects[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, date: projects[i].date, surface: projects[i].surface} //build project object
@@ -810,13 +815,11 @@ class App extends React.Component {
     }
     this.setState({activeLayers: layers});
     this.setState({activeProject: e.target.attributes.code.value});
-    //TODO rollback if fetch fails or do fetch first.
-    this.getDropdowns(e.target.attributes.code.value);
-    this.filterLayer(e.target.attributes.code.value); //fetch layer    
-
+    await this.getDropdowns(project, type)
+    this.filterLayer(project); //fetch layer     
   }
 
-  async getDropdowns(project) {
+  async getDropdowns(project, type) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/dropdown', {
       method: 'POST',
@@ -839,7 +842,11 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.buildDropdowns(body.asset, body.zone, body.type);
+            if (type === "road") {
+              this.buildDropdowns(type, body.priority, null, null, null)
+            } else {
+              this.buildDropdowns(type, body.priority, body.asset, body.zone, body.type);
+            }           
           }     
         }
       }).catch((error) => {
@@ -850,22 +857,72 @@ class App extends React.Component {
     }
   }
 
-  buildDropdowns(asset, zone, type) {
-    let assets = [];
-    let zones = [];
-    let types = [];
-    for (let i = 0; i < asset.length; i++) {
-      assets.push(asset[i].asset);
+  buildDropdowns(projecttype, priority, asset, zone, type) {
+    if (projecttype === "road") {
+    let priorities = [];
+    let priorityBoxes = [];
+    let prioritiesIndexed = [];
+    for (let i = 0; i < priority.length; i++) {        
+      if (priority[i].priority === "99") {
+        priorityBoxes.push(" Signage");
+        priorities.push(priority[i].priority);
+        prioritiesIndexed.push(priority[i].priority);
+      } else {
+        priorityBoxes.push(" Priority " + priority[i].priority);
+        priorities.push(priority[i].priority);
+        prioritiesIndexed.push(priority[i].priority);
+      }
     }
-    for (let i = 0; i < zone.length; i++) {
-      zones.push(zone[i].zone);
+    priorityBoxes.sort();
+    prioritiesIndexed.sort();
+    this.setState({priorityCheckboxes: priorityBoxes});
+    this.setState({priorities: priorities});
+    this.setState({prioritiesIndexed: prioritiesIndexed});
+    } else {
+      let priorities = [];
+      let priorityBoxes = [];
+      let prioritiesIndexed = [];
+      for (let i = 0; i < priority.length; i++) {
+        if (priority[i].grade === "99") {
+          priorityBoxes.push(" Signage");
+          priorities.push(priority[i].grade);
+          prioritiesIndexed.push(priority[i].grade);
+        } else {
+          priorityBoxes.push(" Priority " + priority[i].grade);
+          priorities.push(priority[i].grade);
+          prioritiesIndexed.push(priority[i].grade);
+        }
+      }
+      priorityBoxes.sort();
+      prioritiesIndexed.sort();
+      this.setState({priorityCheckboxes: priorityBoxes});
+      this.setState({priorities: priorities});
+      this.setState({prioritiesIndexed: prioritiesIndexed});
+      let assets = [];
+      let zones = [];
+      let types = [];
+      let assetBoxes = [];
+      let zoneBoxes = [];
+      let typeBoxes = [];
+      for (let i = 0; i < asset.length; i++) {
+        assets.push(asset[i].asset);
+        assetBoxes.push(asset[i].asset);
+      }
+      for (let i = 0; i < zone.length; i++) {
+        zones.push(zone[i].zone);
+        zoneBoxes.push(zone[i].zone);
+      }
+      for (let i = 0; i < type.length; i++) {
+        types.push(type[i].type);
+        typeBoxes.push(type[i].type);
+      }
+      this.setState({assetCheckboxes: assetBoxes});
+      this.setState({assets: assets});
+      this.setState({zoneCheckboxes: zoneBoxes});
+      this.setState({zones: zones});
+      this.setState({typeCheckboxes: typeBoxes});
+      this.setState({types: types}); 
     }
-    for (let i = 0; i < type.length; i++) {
-      types.push(type[i].type);
-    }
-    this.setState({assetCheckboxes: assets});
-    this.setState({zoneCheckboxes: zones})
-    this.setState({typeCheckboxes: types})
   }
 
   /**
@@ -907,31 +964,34 @@ class App extends React.Component {
         project: project,
         filter: this.state.checkedFaults,
         priority: this.state.priorities,
+        assets: this.state.assets,
+        zones: this.state.zones,
+        types: this.state.types
       })
-    }).then(async (response) => {
-      if(!response.ok) {
-        throw new Error(response.status);
-      } else {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-          let e = document.createEvent("MouseEvent");
-          await this.logout(e);
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
         } else {
-          if (body.type === "road") {
-            await this.addGLMarkers(body.geometry, body.type);
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
           } else {
-            await this.addGLMarkers(body.geometry, body.type);
-          }
-        }     
-      }
-    }).catch((error) => {
-      console.log("error: " + error);
-      alert(error);
-      return;
-    });   
-  }    
-}
+            if (body.type === "road") {
+              await this.addGLMarkers(body.geometry, body.type);
+            } else {
+              await this.addGLMarkers(body.geometry, body.type);
+            }
+          }     
+        }
+      }).catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });   
+    }    
+  }
 
   submitFilter(e) {
     this.setState({filterModal: false});
@@ -1004,8 +1064,7 @@ class App extends React.Component {
           return;
         }) 
       }
-    }
-      
+    }      
   }
 
   async getFaultTypes(cls) {
@@ -1046,8 +1105,20 @@ class App extends React.Component {
       return this.state.assetCheckboxes;
     } else if (value === "Zone") {
       return this.state.zoneCheckboxes;
+    } else if (value === "Priority") {
+      return this.state.priorityCheckboxes;
     } else {
       return this.state.typeCheckboxes;
+    }
+  }
+
+  getQueryArray(value) {
+    if (value === 0) {
+      return this.state.assets;
+    } else if (value === 1) {
+      return this.state.zones;
+    } else {
+      return this.state.types;
     }
   }
 
@@ -1127,24 +1198,40 @@ class App extends React.Component {
     this.loadFilters();
   }
 
+  clickMenu(e, menu) {
+    if (this.state.login === "Login") {
+      return;
+    }
+    let checkbox = e.target;
+    if (checkbox.checked) {
+      menu.push(checkbox.id);
+    } else {      
+      menu.splice(menu.indexOf(checkbox.id), 1 );
+    }
+    console.log(menu);
+    this.filterLayer(this.state.activeProject);
+  }
+
   /**
    * Adds or removes priorities to array for db query
    * @param {the button clicked} e 
    */
   clickPriority(e) {
+   
     if (this.state.login === "Login") {
       return;
     }
     this.setState({index: null});
     let query = this.state.priorities;
-    let priority = parseInt(e.target.id);
+    console.log(query);
+    let priority = this.state.prioritiesIndexed[e.target.id];
     if (e.target.checked) {
       query.push(priority);
-    } else {      
+    } else {
+      console.log(query);      
       query.splice(query.indexOf(priority), 1 );
     }
     this.setState({priorities: query})
-    console.log(this.state.activeProject)
     this.filterLayer(this.state.activeProject);
   }
   /**
@@ -1246,7 +1333,7 @@ getGLFault(index, attribute) {
   }
 
   closePhotoModal(e) {
-    //this.setIndex(0);
+    e.preventDefault();
     this.setState({show: false});
     
   }
@@ -1363,25 +1450,6 @@ getGLFault(index, attribute) {
       );      
     }
 
-    const CustomCheckboxes = function(props) {
-      
-      let checkboxes = props.menu; //callback to get array
-      return(
-        <div>
-          {checkboxes.map((value, index) =>
-              <div key={`${index}`}>
-                <input
-                  key={`${index}`} 
-                  id={value} 
-                  type="checkbox" 
-                  onClick={(e) => this.clickPriority(e)}>
-                </input>{value}<br></br>
-              </div> 
-            )}
-        </div>
-      );
-    }
-
     const CustomTable = function(props) {
       if(props.obj.type === "road") {
         return (
@@ -1425,6 +1493,7 @@ getGLFault(index, attribute) {
         );
       }    
     }
+
     return (   
       <> 
         <div>
@@ -1479,57 +1548,48 @@ getGLFault(index, attribute) {
             zIndex={998}
           />
           <ScaleControl/>
-          <Accordion className="priority">
-            <Card>
-              <Accordion.Toggle className ="btn btn-secondary dropdown-toggle" as={Button} variant="light" eventKey="0">
-                Priority
-              </Accordion.Toggle>           
-              <Accordion.Collapse eventKey="0">
-                <Card.Body>
-                {this.state.priorityCheckboxes.map((value, index) =>
-                <div key={`${index}`}>
-                  <input
-                    key={`${index}`} 
-                    id={value} 
-                    type="checkbox" 
-                    defaultChecked 
-                    onClick={(e) => this.clickPriority(e)}>
-                  </input>Priority {value}<br></br>
-                </div> 
-                )}
-                <input type="checkbox" id="99" defaultChecked onClick={(e) => this.clickPriority(e)}></input> Signage
 
-                </Card.Body>  
-                
-              </Accordion.Collapse>
-            </Card>
-          </Accordion>
-          {this.state.filterDropdowns.map((value, index) =>
-          <Dropdown 
-            className={value} 
-            key={`${index}`}
-            array={this.getArray(value)}>
-            <Dropdown.Toggle variant="light" size="sm">
-              {value}
+          <Dropdown
+            className="Priority">
+          <Dropdown.Toggle variant="light" size="sm" >
+              Priority
             </Dropdown.Toggle>
             <Dropdown.Menu className="custommenu">
-            {this.getArray(value).map((value, index) =>
+            {this.getArray("Priority").map((value, index) =>
                 <div key={`${index}`}>
                   <input
                     key={`${index}`} 
-                    id={value} 
+                    id={index} 
                     type="checkbox" 
                     defaultChecked 
                     onClick={(e) => this.clickPriority(e)}>
                   </input>{value}<br></br>
                 </div> 
                 )}
-              {/* <CustomCheckboxes  menu={this.getArray(value)}>
-
-              </CustomCheckboxes> */}
             </Dropdown.Menu>
-             
+          </Dropdown>
 
+          {this.state.filterDropdowns.map((value, indexNo) =>
+          <Dropdown 
+            className={value} 
+            key={`${indexNo}`}
+            >
+            <Dropdown.Toggle variant="light" size="sm" >
+              {value}
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="custommenu">
+              {this.getArray(value).map((input, index) =>
+                <div key={`${index}`}>
+                  <input
+                    key={`${index}`} 
+                    id={input} 
+                    type="checkbox" 
+                    defaultChecked
+                    onClick={(e) => this.clickMenu(e, this.getQueryArray(indexNo))}>
+                  </input>{input}<br></br>
+                </div> 
+                )}
+            </Dropdown.Menu>
           </Dropdown>
           )}
           <Image 

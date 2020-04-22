@@ -63,6 +63,20 @@ module.exports = {
         });
     },
 
+    priority: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT priority FROM faults WHERE project = '" + project + "' GROUP BY priority";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var priority = resolve(result);
+                return priority;
+            });
+        });
+    },
+
     asset: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT asset FROM footpath WHERE project = '" + project + "' GROUP BY asset";
@@ -169,7 +183,7 @@ module.exports = {
     updateFilterCount: (layer) => {
         return new Promise((resolve, reject) => {
             try {
-                connection.query("UPDATE projects SET filtercount = filtercount + "   + 1 + ", lastfilter = now() WHERE code = '" + layer + "'", (err, result) => {
+                connection.query("UPDATE projects SET filtercount = filtercount + " + 1 + ", lastfilter = now() WHERE code = '" + layer + "'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack);
                     return reject(err);
@@ -211,12 +225,20 @@ module.exports = {
 
     },
 
-    footpath: (project, filter, priority) => {
-        let codes = buildQuery(priority);
+    footpath: (project, priority, assets, zones, types) => {
+        console.log(filter);
+        console.log(assets);
+        let _priority = buildQuery(priority);
+        let _assets = buildQuery(assets);
+        let _zones = buildQuery(zones);
+        let _types = buildQuery(types);
+        let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
+        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND zone IN (" + _zones + ") "
+        + "AND type IN (" + _types + ")";
+        console.log(sql);
         return new Promise((resolve, reject) => {
             if (filter.length == 0) {
-                connection.query("SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
-                + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + codes + ")", (err, result) => {
+                connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
