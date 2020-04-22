@@ -184,7 +184,7 @@ app.post('/layer', async (req, res) => {
     let types = req.body.types;
     let geometry = null;
     let surface = await db.projecttype(project);
-    console.log(assets);
+    console.log(req.body);
     if (surface.rows[0].surface === "footpath") {
       geometry = await db.footpath(project, priority, assets, zones, types);
 

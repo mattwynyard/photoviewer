@@ -1203,11 +1203,19 @@ class App extends React.Component {
       return;
     }
     let checkbox = e.target;
-    if (checkbox.checked) {
-      menu.push(checkbox.id);
-    } else {      
-      menu.splice(menu.indexOf(checkbox.id), 1 );
-    }
+    if (menu.length === 1) {
+      if (e.target.checked) {
+        menu.push(checkbox.id);
+      } else {
+        e.target.checked = true;      
+      }
+    } else {
+      if (checkbox.checked) {
+        menu.push(checkbox.id);
+      } else {      
+        menu.splice(menu.indexOf(checkbox.id), 1 );
+      }
+    }  
     console.log(menu);
     this.filterLayer(this.state.activeProject);
   }
@@ -1217,22 +1225,30 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-   
     if (this.state.login === "Login") {
       return;
     }
     this.setState({index: null});
     let query = this.state.priorities;
-    console.log(query);
     let priority = this.state.prioritiesIndexed[e.target.id];
-    if (e.target.checked) {
-      query.push(priority);
+    if (query.length === 1) {
+      if (e.target.checked) {
+        query.push(priority);
+      } else {
+        e.target.checked = true;      
+      }
     } else {
-      console.log(query);      
-      query.splice(query.indexOf(priority), 1 );
+      let priority = this.state.prioritiesIndexed[e.target.id];
+      if (e.target.checked) {
+        query.push(priority);
+      } else {     
+        query.splice(query.indexOf(priority), 1 );
+      }
     }
     this.setState({priorities: query})
     this.filterLayer(this.state.activeProject);
+    
+    
   }
   /**
    * clear checked fault array 

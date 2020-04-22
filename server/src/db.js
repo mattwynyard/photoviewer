@@ -226,7 +226,6 @@ module.exports = {
     },
 
     footpath: (project, priority, assets, zones, types) => {
-        console.log(filter);
         console.log(assets);
         let _priority = buildQuery(priority);
         let _assets = buildQuery(assets);
@@ -235,9 +234,7 @@ module.exports = {
         let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
         + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND zone IN (" + _zones + ") "
         + "AND type IN (" + _types + ")";
-        console.log(sql);
         return new Promise((resolve, reject) => {
-            if (filter.length == 0) {
                 connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -246,9 +243,6 @@ module.exports = {
                 let geometry = resolve(result);          
                 return geometry;
             });
-            } else {
-                let condition = buildQuery(filter);
-            }
         });
     },
 
