@@ -124,7 +124,7 @@ class App extends React.Component {
    */
   clickCanvas(e) {
     //console.log(this.state.selectedIndex);
-    console.log(e);
+    //console.log(e);
     if (this.state.glpoints !== null) {
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
@@ -134,6 +134,7 @@ class App extends React.Component {
   }
 
   clickMap(e) {
+    //console.log("Map " + e);
     if (this.state.glpoints !== null) {
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
@@ -162,7 +163,7 @@ class App extends React.Component {
       
       
     } else {//user selected screen only - no marker
-      this.setState({selectedIndex: 0});
+      this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
     }
     this.redraw(this.state.glpoints);
@@ -437,7 +438,6 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  */
   addGLMarkers(data, type) {
-    console.log("gLMarkers: " + type);
     let obj = {};
     let faults = [];
     let latlngs = [];
@@ -591,8 +591,8 @@ class App extends React.Component {
       }       
     } 
     this.setState({lineData: lines});  
-    console.log("before: " + pointBefore);
-    console.log("after: " + pointAfter);
+    //console.log("before: " + pointBefore);
+    //console.log("after: " + pointAfter);
     this.redraw(lines, null);
   }
 
@@ -643,9 +643,7 @@ class App extends React.Component {
    */
   clickImage(e) {   
     this.setState({show: true});
-    
-    let photo = this.getGLFault(this.state.selectedIndex, 'photo');
-    console.log(photo);
+    let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
   }
 
@@ -669,7 +667,7 @@ class App extends React.Component {
   const newPhoto = this.getPhoto("prev");
   this.setState({currentPhoto: newPhoto});
   const url = this.state.amazon + newPhoto + ".jpg";
-  console.log(url);
+  //console.log(url);
   this.setState({photourl: url});
   }
   
@@ -677,7 +675,6 @@ class App extends React.Component {
   const newPhoto = this.getPhoto("next");
   this.setState({currentPhoto: newPhoto});
   const url = this.state.amazon + newPhoto + ".jpg";
-  console.log(url);
 	this.setState({photourl: url});
   }
 
@@ -925,6 +922,23 @@ class App extends React.Component {
     }
   }
 
+  rebuildFilters() {
+    if (this.state.activeLayers.length === 0) {
+      this.setState({prioritiesIndexed: []}); //immutable
+      this.setState({priorities: []});
+      this.setState({assets: []});//these hold values for building dynamic query
+      this.setState({zones: []});
+      this.setState({types: []});
+      this.setState({priorityCheckboxes: []}); //these hold values for building menus
+      this.setState({assetCheckboxes: []});
+      this.setState({zoneCheckboxes: []});
+      this.setState({typeCheckboxes: []});
+      this.setState({filterDropdowns: []});
+    } else {
+
+    }
+  }
+
   /**
    * 
    * @param {event} e  - the menu clicked
@@ -941,7 +955,9 @@ class App extends React.Component {
     this.setState({activeLayers: layers});
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.redraw([])
+    this.rebuildFilters();
+    this.redraw([]);
+
   }
 
 /**
@@ -949,8 +965,6 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project) {
-    console.log("project: " + project);
-
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1216,7 +1230,7 @@ class App extends React.Component {
         menu.splice(menu.indexOf(checkbox.id), 1 );
       }
     }  
-    console.log(menu);
+    //console.log(menu);
     this.filterLayer(this.state.activeProject);
   }
 
@@ -1358,37 +1372,68 @@ getGLFault(index, attribute) {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
+    let mode = this.state.projectMode; 
     const LayerNav = function LayerNav(props) { 
       if (props.layers.length > 0) {
-        return (
-          <Nav>          
-          <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu 
-              title="Add Roading Layer" 
-              className="navdropdownitem" 
-              type={'road'} 
-              projects={props.projects.road} 
-              onClick={props.loadLayer}/>
-            <NavDropdown.Divider />
-            <CustomMenu 
-              title="Add Footpath Layer" 
-              className="navdropdownitem" 
-              type={'footpath'} 
-              projects={props.projects.footpath} 
-              onClick={props.loadFootpathLayer}/>
-            <NavDropdown.Divider />
-            <CustomMenu 
-              title="Remove Layer" 
-              className="navdropdownitem" 
-              projects={props.layers} 
-              onClick={props.removeLayer}/>
-            <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" onClick={props.addCentreline}>Add centreline </NavDropdown.Item>
-            <NavDropdown.Divider />
-            <NavDropdown.Item className="navdropdownitem" onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
-          </NavDropdown>
-        </Nav>
-        );
+        if(mode === "road") {
+          return (
+            <Nav>          
+            <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+              <CustomMenu 
+                title="Add Roading Layer" 
+                className="navdropdownitem" 
+                type={'road'} 
+                projects={props.projects.road} 
+                onClick={props.loadLayer}/>
+              <NavDropdown.Divider />
+              <CustomMenu 
+                title="Add Footpath Layer" 
+                className="navdropdownitem" 
+                type={'footpath'} 
+                projects={props.projects.footpath} 
+                onClick={props.loadFootpathLayer}/>
+              <NavDropdown.Divider />
+              <CustomMenu 
+                title="Remove Layer" 
+                className="navdropdownitem" 
+                projects={props.layers} 
+                onClick={props.removeLayer}/>
+              {/* <NavDropdown.Divider />
+              <NavDropdown.Item className="navdropdownitem" onClick={props.addCentreline}>Add centreline </NavDropdown.Item> */}
+              <NavDropdown.Divider />
+              <NavDropdown.Item className="navdropdownitem" onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
+            </NavDropdown>
+          </Nav>
+          );
+        } else {
+          return (
+            <Nav>          
+            <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+              <CustomMenu 
+                title="Add Roading Layer" 
+                className="navdropdownitem" 
+                type={'road'} 
+                projects={props.projects.road} 
+                onClick={props.loadLayer}/>
+              <NavDropdown.Divider />
+              <CustomMenu 
+                title="Add Footpath Layer" 
+                className="navdropdownitem" 
+                type={'footpath'} 
+                projects={props.projects.footpath} 
+                onClick={props.loadFootpathLayer}/>
+              <NavDropdown.Divider />
+              <CustomMenu 
+                title="Remove Layer" 
+                className="navdropdownitem" 
+                projects={props.layers} 
+                onClick={props.removeLayer}/>
+              <NavDropdown.Divider />
+            </NavDropdown>
+          </Nav>
+          );
+        }
+        
       } else {
         return (
           <Nav>          
@@ -1726,8 +1771,8 @@ getGLFault(index, attribute) {
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
         <Modal.Body >	
-          <b>Road Inspection Version 1.0</b><br></br>
-          Relased: 12/01/2020<br></br>
+          <b>Road Inspection Version 1.2</b><br></br>
+          Relased: 23/04/2020<br></br>
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
           <img src="logo192.png" alt="React logo"width="24" height="24"/> React: 16.12.0<br></br>
