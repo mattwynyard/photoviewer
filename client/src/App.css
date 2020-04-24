@@ -8,6 +8,10 @@ body {
   height: 100%;
 }
 
+.leaflet-container {
+  cursor: pointer !important;
+}
+
 .map {
   height: 100%;
   z-index: 1;
@@ -96,17 +100,32 @@ body {
 }
 
 
-
 .priorityHeader {
   font-family: "Century Gothic", sans-serif;
 }
 
+/* .latlng {
+  position: absolute;
+  font-family: "Arial", sans-serif;
+  left: 100px;
+} */
+
+
 .satellite {
   position: absolute;
-  bottom: 50px;
-  left: 50px;
+  bottom: 70px;
+  left: 10px;
   z-index: 999;
 }
+
+.position {
+  position: absolute;
+  bottom: 5px;
+  left: 110px;
+  z-index: 999;
+}
+
+
 
 .displaytype {
   font-size: 18px !important;

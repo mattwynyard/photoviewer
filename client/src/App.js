@@ -21,6 +21,8 @@ class App extends React.Component {
         lat: -41.2728,
         lng: 173.2995,
       },
+      latitude: null,
+      longtitude: null,
       high : true,
       med : true,
       low : true,
@@ -100,6 +102,8 @@ class App extends React.Component {
     .catch(err => alert(err));
     this.setPriorities();
     this.initializeGL();
+
+
   }
 
   initializeGL() {
@@ -111,10 +115,30 @@ class App extends React.Component {
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
       this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-      this.addEventListeners(); //handle lost gl context
+      
       this.glLayer.delegate = this;
-    }
-    
+
+        
+      let Position = L.Control.extend({ 
+        _latlng: null,
+        options: {
+          position: 'bottomleft'
+        },
+      
+        onAdd: function (map) {
+          var latlng = L.DomUtil.create('span', 'latlng', L.DomUtil.get('map'));
+          this._latlng = latlng
+          return latlng;
+        },
+
+        updateHTML: function(lat, lng) {
+          this._latlng.innerHTML = "Latitude: " + lat + "   Longitiude: " + lng;
+        }
+      });
+      this.position = new Position()
+      this.leafletMap.addControl(this.position);
+      this.addEventListeners(); //handle lost gl context 
+    }  
   }
 
   /**
@@ -300,7 +324,18 @@ class App extends React.Component {
     // this.canvas.addEventListener("click", (event) => {
     //   this.clickCanvas(event)
     // });
+    this.leafletMap.addEventListener('mousemove', (event) => {
+      this.onMouseMove(event);
+    });
   }
+
+  onMouseMove(e) {
+    let lat = Math.round(e.latlng.lat * 100000) / 100000;
+    let lng = Math.round(e.latlng.lng * 100000) / 100000;
+    this.position.updateHTML(lat, lng);
+  }
+
+ 
 
   callBackendAPI = async () => {
     //console.log("calling api...");
@@ -1608,7 +1643,7 @@ getGLFault(index, attribute) {
             url={this.state.url}
             zIndex={998}
           />
-          <ScaleControl/>
+          <ScaleControl className="scale"/>
 
           <Dropdown
             className="Priority">
@@ -1678,15 +1713,7 @@ getGLFault(index, attribute) {
             </LayersControl.Overlay>
           )}
           </LayersControl>
-          {this.state.centreData.map((latlngs, index) => 
-          <Polyline 
-            key={`${index}`}
-            weight={2}
-            color={getColor()}
-            smoothFactor={5}
-            positions={latlngs}>
-          </Polyline>
-          )}      
+         
       </Map >     
       </div>
       {/*filter modal */}
