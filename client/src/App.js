@@ -1,13 +1,14 @@
 import React from 'react';
-import { Map, TileLayer, Marker, Polyline, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, DropdownButton, Dropdown, Modal, Button, Image, Form, Accordion, Card, Table, Pagination}  from 'react-bootstrap';
+import { Map, TileLayer, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Table, Pagination}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
-import Vector2D from './Vector2D';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getColor} from  './util.js'
+import './PositionControl';
+//import Vector2D from './Vector2D';
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad} from  './util.js'
 
 class App extends React.Component {
 
@@ -114,30 +115,16 @@ class App extends React.Component {
       this.canvas = this.glLayer.canvas();
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
-      this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-      
-      this.glLayer.delegate = this;
-
-        
-      let Position = L.Control.extend({ 
-        _latlng: null,
-        options: {
-          position: 'bottomleft'
-        },
-      
-        onAdd: function (map) {
-          var latlng = L.DomUtil.create('span', 'latlng', L.DomUtil.get('map'));
-          this._latlng = latlng
-          return latlng;
-        },
-
-        updateHTML: function(lat, lng) {
-          this._latlng.innerHTML = "Latitude: " + lat + "   Longitiude: " + lng;
-        }
-      });
-      this.position = new Position()
+      this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false}); 
+      if (!this.gl) {
+        this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
+        console.log("Cannot load webgl1.0 using experimental-webgl instead");
+      }     
+      this.glLayer.delegate(this);
+ 
+      this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
-      this.addEventListeners(); //handle lost gl context 
+      this.addEventListeners();
     }  
   }
 
@@ -147,8 +134,6 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickCanvas(e) {
-    //console.log(this.state.selectedIndex);
-    //console.log(e);
     if (this.state.glpoints !== null) {
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
@@ -158,7 +143,6 @@ class App extends React.Component {
   }
 
   clickMap(e) {
-    //console.log("Map " + e);
     if (this.state.glpoints !== null) {
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
@@ -479,8 +463,6 @@ class App extends React.Component {
     let points = []; //TODO change to Float32Array to make selection faster
     let high = null;
     let med = null;
-    let low = null;
-    let priority = null;
     if(this.state.login === "downer") {
       high = "5";
       med = "4";
@@ -598,8 +580,8 @@ class App extends React.Component {
 
   addCentrelines(data) {
     let lines = [];
-    let pointBefore = 0;
-    let pointAfter = 0;
+    //let pointBefore = 0;
+    //let pointAfter = 0;
     for (var i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
       const rcClass = data[i].onrcclass; 
@@ -612,22 +594,20 @@ class App extends React.Component {
           let xy = LatLongToPixelXY(point[1], point[0]);     
           points.push(xy);
         }
-        pointBefore += points.length;
+        //pointBefore += points.length;
         if (points.length > 2) {
           //pixelSegment = RDP(points, 0.00000000001); //Douglas-Peckam simplify line
           let seg = {segment: points, class: rcClass};
           lines.push(seg);
-          pointAfter += points.length;
+          //pointAfter += points.length;
         }  else {
           let seg = {segment: points, class: rcClass};
           lines.push(seg);
-          pointAfter += points.length;
+          //pointAfter += points.length;
         }           
       }       
     } 
     this.setState({lineData: lines});  
-    //console.log("before: " + pointBefore);
-    //console.log("after: " + pointAfter);
     this.redraw(lines, null);
   }
 
@@ -736,6 +716,11 @@ class App extends React.Component {
     this.setState({login: "Login"});
     this.setState({priorites: []});
     this.setState({checkboxes: []});
+    this.setState({activeLayers: []});
+    this.setState({objGLData: null});
+    this.setState({glpoints: []});
+    this.rebuildFilters();
+    this.redraw([]);
   }
 
   async logout(e) {
@@ -1874,7 +1859,7 @@ getGLFault(index, attribute) {
         {this.state.selectedGLMarker.map((obj, index) =>  
           <CustomTable
           key={`${index}`}  
-            obj={this.getGLFault(this.state.selectedIndex, null)}
+          obj={this.getGLFault(this.state.selectedIndex - 1, null)}
             //TODO copy not working
             copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}>       
           </CustomTable >
