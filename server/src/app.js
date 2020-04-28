@@ -10,7 +10,7 @@ const app = express();
 const users = require('./user.js');
 const jwt = require('jsonwebtoken');
 const jwtKey = process.env.KEY;
-const jwtExpirySeconds = 300;
+const jwtExpirySeconds = 10000;
 
 const fs = require('fs');
 const https = require('https');
@@ -122,7 +122,7 @@ app.post('/logout', (req, res, next) => {
 app.post('/class', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    var fclass = await db.class();
+    let fclass = await db.class();
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
@@ -154,16 +154,17 @@ app.post('/dropdown', async (req, res) => {
     let project = req.body.project;
     let surface = await db.projecttype(project);
     if (surface.rows[0].surface === "footpath") {
-      let grade = await db.grade(project);
-      console.log(grade.rows);
-      let asset = await db.asset(project);
-      let zone = await db.zone(project);
-      let type = await db.type(project);
+      let grade = await db.filters(project, "grade");
+      let asset = await db.filters(project, "asset");
+      let zone = await db.filters(project, "zone");
+      let type = await db.filters(project, "type");
+      let cause = await db.filters(project, "cause");
+      //console.log(repairs.rows)
       res.set('Content-Type', 'application/json');
-      res.send({priority: grade.rows, asset: asset.rows, zone: zone.rows, type: type.rows});
+      res.send({priority: grade.rows, asset: asset.rows, zone: zone.rows, type: type.rows, cause: cause.rows});
     } else {
       let priority = await db.priority(project);
-      console.log(priority.rows);
+      let classes = await db.priority(project);
       res.set('Content-Type', 'application/json');
       res.send({priority: priority.rows});
     }     
@@ -182,11 +183,12 @@ app.post('/layer', async (req, res) => {
     let assets = req.body.assets;
     let zones = req.body.zones;
     let types = req.body.types;
+    let causes = req.body.causes;
     let geometry = null;
     let surface = await db.projecttype(project);
     console.log(req.body);
     if (surface.rows[0].surface === "footpath") {
-      geometry = await db.footpath(project, priority, assets, zones, types);
+      geometry = await db.footpath(project, priority, assets, zones, types, causes);
 
     } else if (surface.rows[0].surface === "road") {
       geometry = await db.layer(project, filter, priority);

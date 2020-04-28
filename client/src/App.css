@@ -48,6 +48,19 @@ body {
   color: gray;
 }
 
+.Cause {
+  
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  top: 10px;
+  left: 390px;
+  z-index: 999;
+  color: gray;
+  /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); */
+}
+
 .Asset {
   
   position: absolute;

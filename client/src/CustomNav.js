@@ -34,7 +34,7 @@ export default class CustomNav extends React.Component {
           } else {
             return (
             <Nav className="ml-auto"><NavDropdown className="navdropdown" title={this.state.title} id="basic-nav-dropdown">
-              <NavDropdown.Item className="navdropdownitem" href="#login"  onClick={this.state.onClick}>Logout</NavDropdown.Item>
+              <NavDropdown.Item className="navdropdownitem" onClick={this.state.onClick}>Logout</NavDropdown.Item>
             </NavDropdown></Nav>);
           }
     }

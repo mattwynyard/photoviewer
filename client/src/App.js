@@ -24,6 +24,7 @@ class App extends React.Component {
       },
       latitude: null,
       longtitude: null,
+      useGrade: false,
       high : true,
       med : true,
       low : true,
@@ -32,10 +33,12 @@ class App extends React.Component {
       assets: [], //these hold values for building dynamic query
       zones: [],
       types: [],
+      causes: [],
       priorityCheckboxes: [], //these hold values for building menus
       assetCheckboxes: [],
       zoneCheckboxes: [],
       typeCheckboxes: [],
+      causeCheckboxes: [],
       filterDropdowns: [],
       host: this.getHost(),
       token: Cookies.get('token'),
@@ -101,9 +104,11 @@ class App extends React.Component {
     this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
-    this.setPriorities();
+    //this.setPriorities();
     this.initializeGL();
+  }
 
+  componentDidUpdate() {   
 
   }
 
@@ -291,8 +296,7 @@ class App extends React.Component {
     }
   }
 
-  componentDidUpdate() {   
-  }
+  
 
   /**
    * adds various event listeners to the canvas
@@ -318,8 +322,6 @@ class App extends React.Component {
     let lng = Math.round(e.latlng.lng * 100000) / 100000;
     this.position.updateHTML(lat, lng);
   }
-
- 
 
   callBackendAPI = async () => {
     //console.log("calling api...");
@@ -348,15 +350,15 @@ class App extends React.Component {
     }
    }
 
-  setPriorities() {
-    if (this.getUser() === "downer") {
-      this.setState({priorities: [5, 4, 3, 99]});
-      this.setState({priorityCheckboxes: ["5", "4", "3"]});
-    } else {
-      this.setState({priorities: [1, 2, 3, 99]});
-      this.setState({priorityCheckboxes: ["1", "2", "3"]});
-    }
-   }
+  // setPriorities() {
+  //   if (this.getUser() === "downer" || this.getUser() === "odc") {
+  //     this.setState({priorities: [5, 4, 3, 99]});
+  //     this.setState({priorityCheckboxes: ["5", "4", "3"]});
+  //   } else {
+  //     this.setState({priorities: [1, 2, 3, 99]});
+  //     this.setState({priorityCheckboxes: ["1", "2", "3"]});
+  //   }
+  //  }
 
   getProjects() {
     let cookie = Cookies.get('projects');
@@ -456,14 +458,14 @@ class App extends React.Component {
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
  */
-  addGLMarkers(data, type) {
+  addGLMarkers(data, type, zoomTo) {
     let obj = {};
     let faults = [];
     let latlngs = [];
     let points = []; //TODO change to Float32Array to make selection faster
     let high = null;
     let med = null;
-    if(this.state.login === "downer") {
+    if(this.state.login === "downer" || this.state.login === "odc") {
       high = "5";
       med = "4";
     } else {
@@ -531,7 +533,9 @@ class App extends React.Component {
       }   
       faults.push(obj);          
     }
-    this.centreMap(latlngs);
+    if (zoomTo) {
+      this.centreMap(latlngs);
+    }
     this.setState({objGLData: faults});
     this.setState({glpoints: points}); //Immutable reserve of original points
     this.redraw(points, null);
@@ -774,8 +778,6 @@ class App extends React.Component {
       this.customNav.current.setOnClick((e) => this.logout(e));
       this.setState({showLogin: false});
       this.setState({message: ""});
-      this.setPriorities();
-      
     } else {
       this.setState({message: "Username or password is incorrect!"});
     }      
@@ -794,7 +796,6 @@ class App extends React.Component {
         obj.footpath.push(projects[i]);
       }
     }
-    //console.log(obj);
     Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
     this.setState({projects: obj});
   }
@@ -815,12 +816,9 @@ class App extends React.Component {
     let project = e.target.attributes.code.value; 
     if (type === "road") {
       projects = this.state.projects.road;
-      //this.setState({projectMode: "road"})
-      //this.setState({filterDropdowns: ["Priority"]})
     } else {
       projects = this.state.projects.footpath;
-      //this.setState({projectMode: "footpath"})
-      this.setState({filterDropdowns: ["Asset", "Zone", "Type"]})
+      this.setState({filterDropdowns: ["Asset", "Zone", "Type", "Cause"]})
     }
     let layers = this.state.activeLayers;
     for (let i = 0; i < projects.length; i++) { //find project
@@ -833,7 +831,7 @@ class App extends React.Component {
     this.setState({activeLayers: layers});
     this.setState({activeProject: e.target.attributes.code.value});
     await this.getDropdowns(project, type)
-    this.filterLayer(project); //fetch layer     
+    this.filterLayer(project, true); //fetch layer     
   }
 
   async getDropdowns(project, type) {
@@ -862,7 +860,7 @@ class App extends React.Component {
             if (type === "road") {
               this.buildDropdowns(type, body.priority, null, null, null)
             } else {
-              this.buildDropdowns(type, body.priority, body.asset, body.zone, body.type);
+              this.buildDropdowns(type, body.priority, body.asset, body.zone, body.type, body.cause);
             }           
           }     
         }
@@ -874,7 +872,7 @@ class App extends React.Component {
     }
   }
 
-  buildDropdowns(projecttype, priority, asset, zone, type) {
+  buildDropdowns(projecttype, priority, asset, zone, type, cause) {
     if (projecttype === "road") {
     let priorities = [];
     let priorityBoxes = [];
@@ -918,9 +916,11 @@ class App extends React.Component {
       let assets = [];
       let zones = [];
       let types = [];
+      let causes = [];
       let assetBoxes = [];
       let zoneBoxes = [];
       let typeBoxes = [];
+      let causeBoxes = [];
       for (let i = 0; i < asset.length; i++) {
         assets.push(asset[i].asset);
         assetBoxes.push(asset[i].asset);
@@ -933,12 +933,22 @@ class App extends React.Component {
         types.push(type[i].type);
         typeBoxes.push(type[i].type);
       }
+      for (let i = 0; i < cause.length; i++) {
+        causes.push(cause[i].cause);
+        causeBoxes.push(cause[i].cause);
+      }
+      assetBoxes.sort();
+      zoneBoxes.sort();
+      typeBoxes.sort();
+      causeBoxes.sort();
       this.setState({assetCheckboxes: assetBoxes});
       this.setState({assets: assets});
       this.setState({zoneCheckboxes: zoneBoxes});
       this.setState({zones: zones});
       this.setState({typeCheckboxes: typeBoxes});
       this.setState({types: types}); 
+      this.setState({causeCheckboxes: causeBoxes});
+      this.setState({causes: causes}); 
     }
   }
 
@@ -949,10 +959,12 @@ class App extends React.Component {
       this.setState({assets: []});//these hold values for building dynamic query
       this.setState({zones: []});
       this.setState({types: []});
+      this.setState({causes: []});
       this.setState({priorityCheckboxes: []}); //these hold values for building menus
       this.setState({assetCheckboxes: []});
       this.setState({zoneCheckboxes: []});
       this.setState({typeCheckboxes: []});
+      this.setState({causeCheckboxes: []});
       this.setState({filterDropdowns: []});
     } else {
 
@@ -977,14 +989,13 @@ class App extends React.Component {
     this.setState({glpoints: []});
     this.rebuildFilters();
     this.redraw([]);
-
   }
 
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project) {
+  async filterLayer(project, zoomTo) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1000,22 +1011,24 @@ class App extends React.Component {
         priority: this.state.priorities,
         assets: this.state.assets,
         zones: this.state.zones,
-        types: this.state.types
+        types: this.state.types,
+        causes: this.state.causes
       })
       }).then(async (response) => {
         if(!response.ok) {
           throw new Error(response.status);
         } else {
           const body = await response.json();
+          //console.log(body);
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
             if (body.type === "road") {
-              await this.addGLMarkers(body.geometry, body.type);
+              await this.addGLMarkers(body.geometry, body.type, zoomTo);
             } else {
-              await this.addGLMarkers(body.geometry, body.type);
+              await this.addGLMarkers(body.geometry, body.type, zoomTo);
             }
           }     
         }
@@ -1030,7 +1043,7 @@ class App extends React.Component {
   submitFilter(e) {
     this.setState({filterModal: false});
     this.setState({pageActive: 0});
-    this.filterLayer(this.state.activeProject);
+    this.filterLayer(this.state.activeProject, false);
   }
 
   async loadCentreline(e) {
@@ -1141,7 +1154,9 @@ class App extends React.Component {
       return this.state.zoneCheckboxes;
     } else if (value === "Priority") {
       return this.state.priorityCheckboxes;
-    } else {
+    } else if (value === "Cause") {
+      return this.state.causeCheckboxes;
+    } else { //type
       return this.state.typeCheckboxes;
     }
   }
@@ -1151,8 +1166,10 @@ class App extends React.Component {
       return this.state.assets;
     } else if (value === 1) {
       return this.state.zones;
-    } else {
+    } else if (value === 2) {
       return this.state.types;
+    } else {
+      return this.state.causes;
     }
   }
 
@@ -1236,6 +1253,7 @@ class App extends React.Component {
     if (this.state.login === "Login") {
       return;
     }
+    //console.log(menu);
     let checkbox = e.target;
     if (menu.length === 1) {
       if (e.target.checked) {
@@ -1251,7 +1269,7 @@ class App extends React.Component {
       }
     }  
     //console.log(menu);
-    this.filterLayer(this.state.activeProject);
+    this.filterLayer(this.state.activeProject, false);
   }
 
   /**
@@ -1280,9 +1298,7 @@ class App extends React.Component {
       }
     }
     this.setState({priorities: query})
-    this.filterLayer(this.state.activeProject);
-    
-    
+    this.filterLayer(this.state.activeProject, false);
   }
   /**
    * clear checked fault array 
@@ -1600,13 +1616,13 @@ getGLFault(index, attribute) {
               </LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-                <NavDropdown.Item className="navdropdownitem" href="#terms" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
+                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
                 <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" href="#contact" onClick={(e) => this.clickContact(e)} >Contact</NavDropdown.Item>
+                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickContact(e)} >Contact</NavDropdown.Item>
                 <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" id="Documentation" href="#documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
+                <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
                 <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" href="#about" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
+                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
               </NavDropdown>         
             </Nav>
             <CustomNav ref={this.customNav} className="navdropdown"/>

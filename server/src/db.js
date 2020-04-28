@@ -49,20 +49,6 @@ module.exports = {
         });
     },
 
-    grade: (project) => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT grade FROM footpath WHERE project = '" + project + "' GROUP BY grade";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                var grade = resolve(result);
-                return grade;
-            });
-        });
-    },
-
     priority: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT priority FROM faults WHERE project = '" + project + "' GROUP BY priority";
@@ -77,37 +63,9 @@ module.exports = {
         });
     },
 
-    asset: (project) => {
+    filters: (project, parameter) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT asset FROM footpath WHERE project = '" + project + "' GROUP BY asset";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                var asset = resolve(result);
-                return asset;
-            });
-        });
-    },
-
-    zone: (project) => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT zone FROM footpath WHERE project = '" + project + "' GROUP BY zone";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                var zone = resolve(result);
-                return zone;
-            });
-        });
-    },
-
-    type: (project) => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT type FROM footpath WHERE project = '" + project + "' GROUP BY type";
+            let sql = "SELECT " + parameter + " FROM footpath WHERE project = '" + project + "' GROUP BY " + parameter + "";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -118,6 +76,7 @@ module.exports = {
             });
         });
     },
+
 
     class: () => {
         return new Promise((resolve, reject) => {
@@ -225,15 +184,15 @@ module.exports = {
 
     },
 
-    footpath: (project, priority, assets, zones, types) => {
-        console.log(assets);
+    footpath: (project, priority, assets, zones, types, causes) => {
         let _priority = buildQuery(priority);
         let _assets = buildQuery(assets);
         let _zones = buildQuery(zones);
         let _types = buildQuery(types);
+        let _causes = buildQuery(causes);
         let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
         + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND zone IN (" + _zones + ") "
-        + "AND type IN (" + _types + ")";
+        + "AND type IN (" + _types + ") AND cause IN (" + _causes + ")";
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {
                 if (err) {
