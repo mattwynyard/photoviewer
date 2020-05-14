@@ -77,8 +77,7 @@ module.exports = {
         });
     },
 
-
-    class: () => {
+    classes: ()=> {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM faults GROUP BY class) ORDER BY priority';
             connection.query(sql, (err, result) => {
@@ -93,11 +92,25 @@ module.exports = {
         });
     },
 
-    //DEPRECIATED
-    faults: (code) => {
+    class: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT fault FROM faults WHERE class = '" + code + "' GROUP BY fault";
-            //console.log(sql)
+            let sql = "SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM faults WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var classes = resolve(result);
+                //console.log(project);
+                return classes;
+            });
+        });
+    },
+
+    //DEPRECIATED
+    faults: (project, code) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT fault FROM faults WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
