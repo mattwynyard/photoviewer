@@ -28,7 +28,7 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
-      notFilter: [], //filter for db request
+      filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Grade",
       priorities: [], 
@@ -63,7 +63,6 @@ class App extends React.Component {
       showAbout: false,
       modalPhoto: null,
       popover: false,
-      filterModal: false,
       activeSelection: "Fault Type",
       photourl: null,
       amazon: null,
@@ -71,10 +70,8 @@ class App extends React.Component {
       password: null,
       projects: this.getProjects(), //all foootpath and road projects for the user
       faultClass: [],
-      faultTypes: [],
-      pageActive: 0, //tab on filter model selected
-      checkedFaults: [],
-      checked: false,
+      // faultTypes: [],
+      // checked: false,
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
@@ -222,11 +219,12 @@ class App extends React.Component {
     this.gl.compileShader(vertexShader);
     let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
     let length = this.state.activeLayers.length - 1;
-    if (this.state.activeLayers[length].surface === "footpath") {
-      this.gl.shaderSource(fragmentShader, document.getElementById('fshader-square').text);
-    } else {
-      this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
-    }
+    // if (this.state.activeLayers[length].surface === "footpath") {
+    //   this.gl.shaderSource(fragmentShader, document.getElementById('fshader-square').text);
+    // } else {
+    //   this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
+    // }
+    this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
     this.gl.compileShader(fragmentShader);
     // link shaders to create our program
     let program = this.gl.createProgram();
@@ -638,7 +636,6 @@ class App extends React.Component {
     this.setState({checkboxes: []});
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.rebuildFilters();
     this.redraw([]);
     this.setState({activeLayers: []});
   }
@@ -734,31 +731,31 @@ class App extends React.Component {
     }
     let projects = null;
     let project = e.target.attributes.code.value; 
+    let dynamicDropdowns = [];
     if (type === "road") {
       projects = this.state.projects.road;
       await this.loadFilters(project);
-      let dynamicDropdowns = [];
+     
       for (let i = 0; i < this.state.faultClass.length; i++) {
         let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
         dropdown.setCode(this.state.faultClass[i].code);
         let result = await this.requestFaults(project, this.state.faultClass[i].code);
         dropdown.setData(result);
-        dropdown.setChecked();
-        console.log(result);
+        dropdown.initialiseFilter();     
         dynamicDropdowns.push(dropdown);
       }
-      this.setState({filterDropdowns: dynamicDropdowns});
+      this.rebuildFilter();
+      
     } else {
       projects = this.state.projects.footpath;
-      let dynamicDropdowns = [];
       let filters = ["Asset", "Zone", "Type", "Cause"];
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
         let result = await this.requestDropdown(project, filters[i]);
         dropdown.setData(result);
+        dropdown.initialiseFilter();    
         dynamicDropdowns.push(dropdown);
       }
-      this.setState({filterDropdowns: dynamicDropdowns});
     }
     let layers = this.state.activeLayers;
     for (let i = 0; i < projects.length; i++) { //find project
@@ -772,9 +769,14 @@ class App extends React.Component {
         }
     }
     await this.requestPriority(project);
-    this.setState({activeLayers: layers});
-    this.setState({activeProject: e.target.attributes.code.value});
-    this.filterLayer(project, true); //fetch layer  
+    this.setState(() => ({
+      filterDropdowns: dynamicDropdowns,
+      activeLayers: layers,
+      activeProject: e.target.attributes.code.value
+    }), function() {   
+      this.filterLayer(project, true); //fetch layer  
+    });
+    
   }
 
   async requestDropdown(project, code) {
@@ -904,23 +906,6 @@ class App extends React.Component {
     this.setState({priorities: arr});
   }
 
-  rebuildFilters() {
-    if (this.state.activeLayers.length === 0) {
-      this.setState({prioritiesIndexed: []}); //immutable
-      this.setState({priorities: []});
-      this.setState({assets: []});//these hold values for building dynamic query
-      this.setState({zones: []});
-      this.setState({types: []});
-      this.setState({causes: []});
-      this.setState({priorityCheckboxes: []}); //these hold values for building menus
-      this.setState({assetCheckboxes: []});
-      this.setState({zoneCheckboxes: []});
-      this.setState({typeCheckboxes: []});
-      this.setState({causeCheckboxes: []});
-      this.setState({filterDropdowns: []});
-    }
-  }
-
   /**
    * 
    * @param {event} e  - the menu clicked
@@ -928,7 +913,6 @@ class App extends React.Component {
   removeLayer(e) {
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.rebuildFilters();
     this.redraw([]);
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
@@ -938,6 +922,8 @@ class App extends React.Component {
       }
     }
     //TODO clear the filter
+    this.setState({filter: []});
+    this.setState({filterDropdowns: []})
     this.setState({activeLayers: layers});
     
   }
@@ -947,6 +933,7 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoomTo) {
+
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -958,8 +945,12 @@ class App extends React.Component {
       body: JSON.stringify({
         user: this.state.login,
         project: project,
-        filter: this.state.notFilter,
+        filter: this.state.filter,
         priority: this.state.filterPriorities,
+        assets: this.state.filterDropdowns[0].filter,
+        zones: this.state.filterDropdowns[1].filter,
+        types: this.state.filterDropdowns[2].filter,
+        causes: this.state.filterDropdowns[3].filter
       })
       }).then(async (response) => {
         if(!response.ok) {
@@ -985,12 +976,6 @@ class App extends React.Component {
         return;
       });   
     }    
-  }
-
-  submitFilter(e) {
-    this.setState({filterModal: false});
-    this.setState({pageActive: 0});
-    this.filterLayer(this.state.activeProject, false);
   }
 
   async loadCentreline(e) {
@@ -1119,27 +1104,27 @@ class App extends React.Component {
 
   /**
    * adds or removes fault to array  which keeps track of which faults are checked in the filter modal
-   * @param {the button click event} e 
+   * @param {event} e 
    */
   clickCheck(e, value) {
     //if checked true we are adding values to arr
-    console.log(value);
-    if (e.target.checked) {;
-      //arr.push(e.target.id);
-      value.setUnChecked(e.target.id);  
-    }              
-    // } else {
-    //   for (var i = 0; i < arr.length; i += 1) {
-    //     if (e.target.id === arr[i]) {
-    //       arr.splice(i, 1);
-    //       break;
-    //     }
-    //   }
-    // }  
+    if (value.filter.length <= 1 && e.target.checked) {
+      return;
+    }
+    value.updateFilter(e.target.id, e.target.checked); 
+    if (!e.target.checked) {
+      value.setActive(true);
+    }
+    this.rebuildFilter();
+  }
+
+  clickActive(e, index) {
+    e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
+
   }
 
   changeCheck(e) {
-
+    console.log("change")
   }
 
 /**
@@ -1148,8 +1133,16 @@ class App extends React.Component {
  * * @param {the index of the fault within the dropdown} index 
  * @return {}
  */
-  isUnChecked(value, index) {
-    return !value.isUnChecked(value.data.result[index]);
+  isChecked(value, index) {
+    return value.isChecked(value.data.result[index]);
+  }
+
+  isActive(value, index) {
+    return this.state.filterDropdowns[index].isActive();
+  }
+
+  changeActive(e, index) {
+    console.log(e.target);
   }
 
   /**
@@ -1160,51 +1153,90 @@ class App extends React.Component {
     this.setState({popover: false});
   }
 
-  clickFilter(e) {
-    this.setState({index: null});
-    this.setState({filterModal: true});
-    this.loadFilters();
+  
+  /**
+   * Copies the lat lng from photo modal to users clipboard
+   * @param {*} e button lcick event
+   * @param {*} latlng Leaflet latlng object
+   */
+  copyToClipboard(e, latlng) {
+    e.preventDefault();
+    const position = latlng.lat + " " + latlng.lng
+    navigator.clipboard.writeText(position);
   }
 
-  clickMenu(e, menu) {
-    if (this.state.login === "Login") {
-      return;
-    }
-    let checkbox = e.target;
-    if (menu.length === 1) {
-      if (e.target.checked) {
-        menu.push(checkbox.id);
-      } else {
-        e.target.checked = true;      
-      }
-    } else {
-      if (checkbox.checked) {
-        menu.push(checkbox.id);
-      } else {      
-        menu.splice(menu.indexOf(checkbox.id), 1 );
-      }
-    }  
-    //console.log(menu);
+  closePhotoModal(e) {
+    e.preventDefault();
+    this.setState({show: false});
+    
+  }
+
+  hideLayer(e, index) {
+    this.state.activeLayers[index].visible ? this.state.activeLayers[index].visible = false
+     : this.state.activeLayers[index].visible = true
+  }
+
+  changeLayer(e) {
+    console.log("redraw");
+  }
+
+  selectLayer(e, index) {
+    console.log(this.state.activeLayers[index]);
+    this.setState({activeLayer: this.state.activeLayers[index]});
+  }
+/**
+ * Clears all the checkboxes and filter for that dropdown
+ * @param {event} e 
+ * @param {DynmaicDropdown} value 
+ */
+  onClear(e, value) {
+    value.clearFilter();
+  }
+
+  /**
+   * Checks is dropdown box is checked or unchecked
+   * @param {DynmaicDropdown} value 
+   */
+  isInputActive(value) {
+    return value.active
+  }
+
+  /**
+ * Selects all the checkboxes and filter for that dropdown
+ * @param {event} e 
+ * @param {DynmaicDropdown} value 
+ */
+  onSelect(e, value) {
+    value.initialiseFilter();
+  }
+
+  /**
+   * Fires when user clicks apply button. 
+   * @param {event} e 
+   */
+  clickApply(e) {
     this.filterLayer(this.state.activeProject, false);
   }
 
-  clickDropdownInput(e) {
-    console.log("click")
+  clickSelect(e, value) {
+    if (e.target.checked) {
+      this.onClear(e, value);
+      value.setActive(false);
+    } else {
+      this.onSelect(e, value);
+      value.setActive(true);
+    }
+    this.rebuildFilter();
   }
 
-  clickFilterBox(e, index) {
-    let checkbox = e.target;
-    console.log(checkbox)
-    console.log(this.state.filterDropdowns[index].name);
-    let filter = this.state.notFilter
-    if (e.target.checked) {
-      filter.splice(filter.indexOf(checkbox.id), 1 );
-      
-    } else {
-      filter.push(checkbox.id);
+  rebuildFilter() {
+    let filter = [];
+    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
+      for (let j = 0; j < this.state.filterDropdowns[i].filter.length; j++) {
+        filter.push(this.state.filterDropdowns[i].filter[j]);
+      }
     }
-    this.setState({notFilter: filter});
-    console.log(this.state.notFilter);
+    this.setState({filter: filter})
   }
 
   /**
@@ -1237,56 +1269,6 @@ class App extends React.Component {
     }
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
-  }
-  /**
-   * clear checked fault array 
-   * @param {the button} e 
-   */
-  clearFilter(e) {
-    this.setState({checkedFaults: []});
-  }
-  /**
-   * select all faults on filter page
-   */
-  selectAll() {
-    let arr = []
-    this.state.faultTypes.map((value) => {
-      return arr.push(value.fault);
-    });
-    this.setState({checkedFaults: arr});  
-  } 
-/**
- * gets the requested attribute from the fault object array
- * @param {the index of marker} index 
- * @param {the property of the fault} attribute 
- */
-  getFault(index, attribute) {
-    if (this.state.objData.length !== 0 && index !== null) {
-      switch(attribute) {
-        case "fault":
-          return  this.state.objData[index].fault;
-        case "priority":        
-          return  this.state.objData[index].priority;
-        case "location":
-          return  this.state.objData[index].location;
-        case "size":
-          return  this.state.objData[index].size;
-        case "datetime":
-          return  this.state.objData[index].datetime;
-        case "photo":
-          return  this.state.objData[index].photo;
-        case "repair":
-            return  this.state.objData[index].repair;
-        case "comment":
-            return  this.state.objData[index].comment;
-        case "latlng":
-            return  this.state.objData[index].latlng;
-        default:
-          return null;
-      }
-    } else {
-      return null;
-    }
   }
 
   /**
@@ -1325,56 +1307,6 @@ getGLFault(index, attribute) {
   }
 }
 
-  /**
-   * Copies the lat lng from photo modal to users clipboard
-   * @param {*} e button lcick event
-   * @param {*} latlng Leaflet latlng object
-   */
-  copyToClipboard(e, latlng) {
-    e.preventDefault();
-    const position = latlng.lat + " " + latlng.lng
-    navigator.clipboard.writeText(position);
-  }
-
-  closePhotoModal(e) {
-    e.preventDefault();
-    this.setState({show: false});
-    
-  }
-
-  clickLayer() {
-
-    console.log("click");
-  }
-
-  hideLayer(e, index) {
-    this.state.activeLayers[index].visible ? this.state.activeLayers[index].visible = false: this.state.activeLayers[index].visible = true
-
-    //console.log(this.state.activeLayers[index]);
-  }
-
-  changeLayer(e) {
-    console.log("redraw");
-  }
-
-  selectLayer(e, index) {
-    console.log(this.state.activeLayers[index]);
-    this.setState({activeLayer: this.state.activeLayers[index]});
-  }
-
-  onClear(e) {
-    console.log("click");
-  }
-
-  onSelect(e, index) {
-
-    console.log(e);
-  }
-
-  testClick(e) {
-    console.log("click")
-  }
-
   render() {
 
     const centre = [this.state.location.lat, this.state.location.lng];
@@ -1405,10 +1337,7 @@ getGLFault(index, attribute) {
                 className="navdropdownitem" 
                 projects={props.layers} 
                 onClick={props.removeLayer}/>
-              {/* <NavDropdown.Divider />
-              <NavDropdown.Item className="navdropdownitem" onClick={props.addCentreline}>Add centreline </NavDropdown.Item> */}
               <NavDropdown.Divider />
-              <NavDropdown.Item className="navdropdownitem" onClick={props.clickFilter}>Filter Layer</NavDropdown.Item>
             </NavDropdown>
           </Nav>
           );
@@ -1597,7 +1526,7 @@ getGLFault(index, attribute) {
                 loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
                 loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
                 addCentreline={(e) => this.loadCentreline(e)} 
-                clickFilter={(e) => this.clickFilter(e)}>
+                >
               </LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
@@ -1657,7 +1586,16 @@ getGLFault(index, attribute) {
               key={`${indexNo}`}     
               >                
               <Dropdown.Toggle variant="light" size="sm">
-                {value.name}
+                <input
+                  key={`${indexNo}`} 
+                  id={value} 
+                  type="checkbox" 
+                  checked={this.isInputActive(value)} 
+                  onChange={(e) => this.changeActive(e, indexNo)}
+                  onClick={(e) => this.clickSelect(e, value)}
+                  >
+                </input>
+                {value.name}         
               </Dropdown.Toggle>
               <Dropdown.Menu className="custommenu">
                 {value.data.result.map((input, index) =>
@@ -1666,21 +1604,15 @@ getGLFault(index, attribute) {
                       key={`${index}`} 
                       id={input} 
                       type="checkbox" 
-                      checked={this.isUnChecked(value, index)} 
-                      onChange={(e) => this.changeCheck(e)}
+                      checked={this.isChecked(value, index)} 
+                      
                       onClick={(e) => this.clickCheck(e, value)}
+                      onChange={(e) => this.changeCheck(e)}
                       >
                     </input>{" " + input}<br></br>
                   </div> 
                   )}
                 <Dropdown.Divider />
-                <CustomButtons 
-                  length={value.data.result.length} 
-                  index={indexNo} 
-                  onClear={(e) => this.onClear(e)}
-                  onSelect={(e) => this.onSelect(e)}
-                  >
-                </CustomButtons>
               </Dropdown.Menu>
             </Dropdown>
           )}
@@ -1701,90 +1633,14 @@ getGLFault(index, attribute) {
             </CustomPopup>
             )}
             </LayerGroup>
-          <Dropdown 
-            className="layers" 
-            >
-            <Dropdown.Toggle variant="light" size="sm" >
-              Layers
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="layermenu">
-            {this.state.activeLayers.map((value, index) => 
-            //  <Dropdown.Item className="layermenu" key={`${index}`} >
-              <div className="layeritem" key={`${index}`}
-              onClick={(e) => this.selectLayer(e, index)}
-              >
-                <input
-                  key={`${index}`} 
-                  id={value.code} 
-                  type="checkbox"
-                  onClick={(e) => this.hideLayer(e, index)}
-                  onChange={(e) => this.changeLayer(e)}
-                  checked={value.visible}>
-                </input>{" " + value.description + " " + value.date}<br></br>
-              </div> 
-                // </Dropdown.Item>     
-            )}
-            </Dropdown.Menu>
-          </Dropdown>
-      </LMap >  
-      
+            <Button 
+              className="applyButton" 
+              variant="light" 
+              size="sm"
+              onClick={(e) => this.clickApply(e)}
+              >Apply Filter</Button>
+      </LMap >    
       </div>
-      {/*filter modal */}
-      <Modal 
-        className="filterModal" 
-        show={this.state.filterModal} 
-        size={'lg'} centered={true}>
-        <Modal.Header>
-          <Modal.Title>Filter</Modal.Title><br></br>
-          <Pagination size="sm">
-            {this.state.faultClass.map((value, index) =>        
-              <Pagination.Item  
-                key={`${index}`} 
-                id={value} className={"page-item"} 
-                active={index === this.state.pageActive} 
-                onClick={() => this.clickPage(index)}>{value.description}
-              </Pagination.Item>          
-            )}
-          </Pagination>
-        </Modal.Header>
-        <Modal.Body >	
-        <Table size="sm" striped bordered hover>
-          <thead>
-          </thead> 
-          <tbody>      
-          {this.state.faultTypes.map((value, index) => 
-            <tr className='tablerow' key={`${index}`}>
-              <td>                   
-              <input type="checkbox" id={value.fault} 
-              checked={this.isChecked(value.fault)} 
-              onChange={(e) => this.changeCheck(e)}/> {value.fault}        
-              </td>
-              <td>
-              </td>
-            </tr>
-          )}
-          </tbody>
-          </Table>
-		    </Modal.Body>
-        <Modal.Footer>
-          <div>
-            <Button className="clear" variant="primary" type="submit" onClick={(e) => this.clearFilter(e)}>
-              Clear Filter
-            </Button>
-          </div>
-          <div>
-            <Button className="select" variant="primary" type="submit" onClick={() => this.selectAll()}>
-              Select All
-            </Button>
-          </div>
-          <div>
-            <Button className="submit" variant="primary" type="submit" onClick={(e) => this.submitFilter(e)}>
-              Filter
-            </Button>
-          </div>       
-        </Modal.Footer>
-      </Modal>
-          {/*help nav */}
       <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
         <Modal.Header>
           <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>

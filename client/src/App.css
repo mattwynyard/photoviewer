@@ -47,7 +47,24 @@ body {
 }
 
 .button {
-  padding-left: 10px;
+  padding-left: 3px;
+  padding-right: 5px;
+}
+
+.applyButton {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 14px !important;
+  top: 10px;
+  right: 20px;
+  z-index: 999;
+  color: gray;
+}
+
+.toogle {
+  white-space: nowrap;
+  width: auto;
 }
 
 .layers {
