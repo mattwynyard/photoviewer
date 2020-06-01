@@ -20,8 +20,8 @@ const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 
 
-//comment out create server code below when deploying to server
-//server created in index.js
+// comment out create server code below when deploying to server
+// server created in index.js
 console.log("mode: " + environment);
 if(environment === 'production') {
   let hostname = "localhost";
@@ -69,7 +69,7 @@ app.post('/login', async (request, response, next) => {
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
     succeded = false;
-    console.log("user doesn't exist");
+    //console.log("user doesn't exist");
   } else {
     let count = await db.users(user);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
@@ -100,17 +100,99 @@ app.post('/login', async (request, response, next) => {
           }
         );
       } else {    
-        console.log("Incorrect password");   
+        //console.log("Incorrect password");   
         response.send({ result: false, error: "incorrect password" });
       }
     }); 
   }  
 });
 
-app.post('/logout', (req, res, next) => {
+app.post('/logout', (req, res) => {
   if (req.headers.authorization === this.token) {
     users.deleteToken(req.body.token);
     res.send({success: true});
+  } else {
+    res.send({success: false});
+  }
+});
+
+app.post('/user', async (req, res, next) => {
+    if (req.headers.authorization === this.token) {
+      try {
+        if (req.body.type === "insert") {
+          let salt = genSalt(req.body.password);
+          salt.then(function(result) {
+            let hash = genHash(req.body.password, result.salt);
+            hash.then(async function(result) {
+              try {
+                let q = await db.addUser(req.body.user, result);
+                if(q.rowCount === 1) {
+                  res.send({success: true})
+                } else {
+                  res.send({success: false})
+                }
+              } catch(err) {
+                res.send({error: err.err.detail})
+              }
+            })
+          });
+        } else if (req.body.type === "delete") {
+          try {
+            let q = await db.deleteUser(req.body.user);
+            if(q.rowCount === 1) {
+              res.send({success: true})
+            } else {
+              res.send({success: false})
+            }
+          } catch(err) {
+            res.send({error: err.err.detail})
+          }
+        } else {
+          try {
+            let q = await db.updateUser(req.body.user);
+            if(q.rowCount === 1) {
+              res.send({success: true})
+            } else {
+              res.send({success: false})
+            }
+          } catch(err) {
+            res.send({error: err.err.detail})
+          }
+        }
+        
+      } catch (err) {
+        res.send({error: err});
+        next(err);
+      }
+    } else {
+      res.send({success: false});
+    }
+});
+
+
+
+app.post('/project', async (req, res, next) => {
+  if (req.headers.authorization === this.token) {
+    try {
+      if (req.body.type === "insert") {
+        let q = await db.addProject(req.body);
+        if(q.rowCount === 1) {
+          res.send({success: true})
+        } else {
+          res.send({success: false})
+        }
+      } else {
+        let q = await db.deleteProject(req.body);
+        if(q.rowCount === 1) {
+          res.send({success: true})
+        } else {
+          res.send({success: false})
+        }
+      }
+    } catch (err) {
+      res.send({error: err});
+      next(err);
+    }
   } else {
     res.send({success: false});
   }
@@ -128,7 +210,7 @@ app.post('/class', async (req, res, next) => {
     res.send(fclass.rows);
   } else {
     res.send({error: "Invalid token"});
-    console.log("invalid token");
+    //console.log("invalid token");
   }
 });
 /**
@@ -148,7 +230,7 @@ app.post('/faults', async (req, res, next) => {
     res.send({result: result});
   } else {
     res.send({error: "Invalid token"});
-    console.log("invalid token");
+    //console.log("invalid token");
   }
 });
 
@@ -216,7 +298,7 @@ app.post('/layer', async (req, res) => {
     let causes = req.body.causes;
     let geometry = null;
     let surface = await db.projecttype(project);
-    console.log(req.body);
+    //console.log(req.body);
     if (surface.rows[0].surface === "footpath") {
       geometry = await db.footpath(project, priority, assets, zones, types, causes);
 
@@ -234,7 +316,7 @@ app.post('/layer', async (req, res) => {
     res.send({type: surface.rows[0].surface, geometry: geometry.rows});
   } else {
     res.send({error: "Invalid token"});
-    console.log("invalid token");
+    //console.log("invalid token");
   } 
 });
 /**
@@ -251,7 +333,7 @@ app.post('/roads', async (req, res, next) => {
     res.set('Content-Type', 'application/json');
     res.send(geometry.rows);
   } else {
-    console.log("Resource unavailable")
+    //console.log("Resource unavailable")
 
   }  
 });
@@ -262,14 +344,29 @@ app.post('/gps', (req, res, next) => {
   res.send({ express: 'Server online' });
 });
 
-
-
-async function  generatePassword(password, rounds) {
-  await bcrypt.genSalt(rounds, function(err, salt) {
-      if (err) throw err;
-      bcrypt.hash(password, salt, function(err, hash) {
-        console.log(hash);     
-      });
+function genSalt() {
+  return new Promise(async (resolve, reject) => {
+    await bcrypt.genSalt(10, function(err, salt) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({
+          salt: salt
+        });
+      }
     });
+  });
+}
+
+async function genHash(password, salt) {
+    return new Promise(async (resolve, reject) => {
+    await bcrypt.hash(password, salt, async function(err, hash) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(hash);
+        }
+      });
+  });
 }
 module.exports = app;

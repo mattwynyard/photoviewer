@@ -277,17 +277,62 @@ module.exports = {
         });
     },
 
+    addUser: (user, password) => {
+        return new Promise((resolve, reject) => {
+            let sql = "INSERT INTO users(username, password, created, count, lastlogin, filtercount, lastfilter) VALUES ('"
+             + user + "', '" + password + "', now(), 0, now(), 0, now())";
+
+            connection.query(sql, (err, results) => {
+                if (err) reject({ type: 'SQL', err});
+                resolve(results);
+            });
+        })
+    },
+
+    deleteUser: (user) => {
+        return new Promise((resolve, reject) => {
+            let sql = "DELETE FROM users WHERE username= '" + user + "'";
+            connection.query(sql, (err, results) => {
+                if (err) reject({ type: 'SQL', err});
+                resolve(results);
+            });
+        })
+    },
+
+    // deleteProject: (user) => {
+    //     return new Promise((resolve, reject) => {
+    //         let sql = "DELETE FROM users WHERE username= '" + user + "'";
+    //         connection.query(sql, (err, results) => {
+    //             if (err) reject({ type: 'SQL', err});
+    //             resolve(results);
+    //         });
+    //     })
+    // },
+
+    addProject: (body) => {
+        console.log(body);
+        return new Promise((resolve, reject) => {
+            let sql = "INSERT INTO projects(" +
+                "code, client, description, date, tacode, active, amazon, layercount, layermodified, filtercount, lastfilter, surface)" +
+                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date + "', '" + body.tacode + 
+                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "')";
+
+            connection.query(sql, (err, results) => {
+                if (err) reject({ type: 'SQL', err});
+                resolve(results);
+            });
+        })
+    },
+
     updateCount: (count, user) => {
         return new Promise((resolve, reject) => {
             let sql = "UPDATE users SET count = " + count + " WHERE username = '" + user + "'";
-            //console.log(sql);
             connection.query(sql, (err, results) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
                 let p = resolve(results);
-                //console.log(results);
                 return p;
             });
         });

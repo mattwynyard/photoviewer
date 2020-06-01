@@ -182,10 +182,20 @@ body {
 
 .navdropdown {
   font-size: 22px !important;
+  white-space: nowrap;
+  margin: 10x;
+
 }
 
 .navdropdownitem {
   font-size: 18px !important;
+  margin: 20x;
+}
+
+.adminitem .adminitem:hover{
+  font-size: 18px !important;
+  margin: 10x;
+  white-space: nowrap;
 }
 
 .dropdown{
@@ -206,6 +216,14 @@ body {
 .titleRight {
   flex-grow: 1;
  
+}
+
+.search {
+  float: left;
+}
+
+.dropdownproject {
+  float: right;
 }
 
 .clear {

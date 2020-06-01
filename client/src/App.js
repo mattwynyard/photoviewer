@@ -4,11 +4,11 @@ import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Table, P
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
-import CustomButtons from './CustomButtons.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
+import CustomModal from './CustomModal.js';
 //import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad} from  './util.js'
 
@@ -18,6 +18,7 @@ class App extends React.Component {
     super(props);
     this.customNav = React.createRef();
     this.menu = React.createRef();
+    this.customModal = React.createRef();
     this.state = {
       location: {
         lat: -41.2728,
@@ -28,6 +29,7 @@ class App extends React.Component {
       high : true,
       med : true,
       low : true,
+      admin : false,
       filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Grade",
@@ -61,6 +63,7 @@ class App extends React.Component {
       showContact: false,
       showTerms: false,
       showAbout: false,
+      showAdmin: false,
       modalPhoto: null,
       popover: false,
       activeSelection: "Fault Type",
@@ -70,8 +73,6 @@ class App extends React.Component {
       password: null,
       projects: this.getProjects(), //all foootpath and road projects for the user
       faultClass: [],
-      // faultTypes: [],
-      // checked: false,
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
@@ -87,7 +88,8 @@ class App extends React.Component {
       selectedGLMarker: [],
       projectMode: null, //the type of project being displayed footpath or road
       
-      
+      newUser: null,
+      newPassword: null,
     };   
   }
 
@@ -627,17 +629,37 @@ class App extends React.Component {
     Cookies.remove('projects');
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
-    this.setState({activeProject: null});
-    this.setState({projects: []});
-    this.setState({checkedFaults: []});
-    this.setState({objData: []});
-    this.setState({login: "Login"});
-    this.setState({priorites: []});
-    this.setState({checkboxes: []});
-    this.setState({objGLData: null});
-    this.setState({glpoints: []});
-    this.redraw([]);
-    this.setState({activeLayers: []});
+    this.setState({
+      activeProject: null,
+      projects: [],
+      objData: [],
+      login: "Login",
+      priorites: [],
+      objGLData: null,
+      glpoints: [],
+      activeLayers: [],
+      filterDropdowns: []
+    }, function() {
+      this.redraw([]);
+    })
+  }
+
+  /**
+   * loops through project array received from db and sets
+   * project array in the state. Sets project cookie
+   * @param {Array} projects 
+   */
+  buildProjects(projects) {    
+    let obj = {road : [], footpath: []}
+    for(var i = 0; i < projects.length; i += 1) {
+      if (projects[i].surface === "road") {
+        obj.road.push(projects[i]);
+      } else {
+        obj.footpath.push(projects[i]);
+      }
+    }
+    Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
+    this.setState({projects: obj});
   }
 
   async logout(e) {
@@ -691,6 +713,9 @@ class App extends React.Component {
       this.customNav.current.setOnClick((e) => this.logout(e));
       this.setState({showLogin: false});
       this.setState({message: ""});
+      if(this.state.login === 'admin') {
+        this.setState({admin: true});
+      }
       if (this.state.login === 'asm') {
         this.setState({priorityMode: "Priority"});
       }
@@ -698,23 +723,7 @@ class App extends React.Component {
       this.setState({message: "Username or password is incorrect!"});
     }      
   }
-  /**
-   * loops through project array received from db and sets
-   * project array in the state. Sets project cookie
-   * @param {Array} projects 
-   */
-  buildProjects(projects) {    
-    let obj = {road : [], footpath: []}
-    for(var i = 0; i < projects.length; i += 1) {
-      if (projects[i].surface === "road") {
-        obj.road.push(projects[i]);
-      } else {
-        obj.footpath.push(projects[i]);
-      }
-    }
-    Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
-    this.setState({projects: obj});
-  }
+  
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
@@ -877,7 +886,6 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            console.log(body);
             this.buildPriority(body.priority);      
           }     
         }
@@ -924,8 +932,29 @@ class App extends React.Component {
     //TODO clear the filter
     this.setState({filter: []});
     this.setState({filterDropdowns: []})
-    this.setState({activeLayers: layers});
-    
+    this.setState({activeLayers: layers});   
+  }
+
+  getBody(project) {
+    let body = null
+    if (this.state.projectMode === "road") {
+      return JSON.stringify({
+        user: this.state.login,
+        project: project,
+        filter: this.state.filter,
+        priority: this.state.filterPriorities})   
+    } else {
+      return JSON.stringify({
+        user: this.state.login,
+        project: project,
+        filter: this.state.filter,
+        //TODO temp hack should be dymnic array to hold footpath filters
+        priority: this.state.filterPriorities,
+        assets: this.state.filterDropdowns[0].filter,
+        zones: this.state.filterDropdowns[1].filter,
+        types: this.state.filterDropdowns[2].filter,
+        causes: this.state.filterDropdowns[3].filter})
+    }
   }
 
 /**
@@ -933,7 +962,7 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoomTo) {
-
+    let body = this.getBody(project);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -942,16 +971,7 @@ class App extends React.Component {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-        filter: this.state.filter,
-        priority: this.state.filterPriorities,
-        assets: this.state.filterDropdowns[0].filter,
-        zones: this.state.filterDropdowns[1].filter,
-        types: this.state.filterDropdowns[2].filter,
-        causes: this.state.filterDropdowns[3].filter
-      })
+      body: body
       }).then(async (response) => {
         if(!response.ok) {
           throw new Error(response.status);
@@ -1046,6 +1066,140 @@ class App extends React.Component {
        
       }
     }      
+  }
+
+  async addNewUser(user, password) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/user', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "insert",
+          user: user,
+          password: password
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+          //let e = document.createEvent("MouseEvent");
+          //await this.logout(e);
+        } else {
+          if (body.success) {
+            alert("New user created")
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
+  async deleteCurrentUser(user) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/user', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "delete",
+          user: user
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.success) {
+            alert("User deleted")
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
+  async deleteCurrentProject(project) {
+    console.log(project);
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/project', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "delete",
+          project: project
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.success) {
+            alert("Project deleted")
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
+  async addNewProject(code, client, description, date, tacode, amazon, surface) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/project', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "insert",
+          code: code,
+          client: client,
+          description: description,
+          date: date,
+          tacode: tacode,
+          amazon: amazon,
+          surface: surface
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.success) {
+            alert("New project created")
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
   }
 
   getArray(value) {
@@ -1307,40 +1461,145 @@ getGLFault(index, attribute) {
   }
 }
 
+// Admin
+
+addUser(e) {
+  this.customModal.current.setShow(true);
+  this.customModal.current.setState({name: 'user'});
+}
+
+addProject(e) {
+  this.customModal.current.setState({name: 'project'});
+  this.customModal.current.setShow(true);
+
+}
+
+importData(e) {
+  this.customModal.current.setState({name: 'import'});
+  this.customModal.current.setShow(true);
+
+}
+
+createUser = (name, password) => {
+  this.addNewUser(name, password);
+  this.customModal.current.setShow(false);
+
+}
+
+deleteUser = (name) => {
+  this.deleteCurrentUser(name);
+  this.customModal.current.setShow(false);
+
+}
+
+deleteProject = (project) => {
+  this.deleteCurrentProject(project);
+  this.customModal.current.setShow(false);
+
+}
+
+createProject = (code, client, description, date, tacode, amazon, surface) => {
+  this.addNewProject(code, client, description, date, tacode, amazon, surface);
+  this.customModal.current.setShow(false);
+
+}
+
+
   render() {
 
     const centre = [this.state.location.lat, this.state.location.lng];
     const { fault } = this.state.fault;
     let mode = this.state.projectMode; 
     const LayerNav = function LayerNav(props) { 
-      if (props.layers.length > 0) {
-        if(mode === "road") {
-          return (
-            <Nav>          
-            <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-              <CustomMenu 
-                title="Add Roading Layer" 
-                className="navdropdownitem" 
-                type={'road'} 
-                projects={props.projects.road} 
-                onClick={props.loadLayer}/>
+
+      if (props.user === 'admin') {
+        return (
+          <Nav>          
+          <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
+              <NavDropdown.Item  
+              className="adminitem" 
+                title="Add New User" 
+                onClick={props.addUser}>
+              Manage User     
+              </NavDropdown.Item>
               <NavDropdown.Divider />
-              <CustomMenu 
-                title="Add Footpath Layer" 
-                className="navdropdownitem" 
-                type={'footpath'} 
-                projects={props.projects.footpath} 
-                onClick={props.loadFootpathLayer}/>
-              <NavDropdown.Divider />
-              <CustomMenu 
-                title="Remove Layer" 
-                className="navdropdownitem" 
-                projects={props.layers} 
-                onClick={props.removeLayer}/>
-              <NavDropdown.Divider />
-            </NavDropdown>
-          </Nav>
-          );
+            <NavDropdown.Item
+              title="Add New Project" 
+              className="adminitem" 
+              onClick={props.addProject}>
+              Manage Projects 
+              </NavDropdown.Item>
+              <NavDropdown.Divider /> 
+            <NavDropdown.Item  
+              title="Import" 
+              className="adminitem" 
+              projects={props.layers} 
+              admin={props.admin}
+              onClick={props.importData}>
+              Import Data    
+            </NavDropdown.Item>
+            <NavDropdown.Divider />
+          </NavDropdown>
+        </Nav>
+        );
+      } else {
+        if (props.layers.length > 0) {
+          if(mode === "road") {
+            return (
+              <Nav>          
+              <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+                <CustomMenu 
+                  title="Add Roading Layer" 
+                  className="navdropdownitem" 
+                  type={'road'} 
+                  projects={props.projects.road} 
+                  onClick={props.loadLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Add Footpath Layer" 
+                  className="navdropdownitem" 
+                  type={'footpath'} 
+                  projects={props.projects.footpath} 
+                  onClick={props.loadFootpathLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Remove Layer" 
+                  className="navdropdownitem" 
+                  projects={props.layers} 
+                  onClick={props.removeLayer}/>
+                <NavDropdown.Divider />
+              </NavDropdown>
+            </Nav>
+            );
+          } else {
+            return (
+              <Nav>          
+              <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+                <CustomMenu 
+                  title="Add Roading Layer" 
+                  className="navdropdownitem" 
+                  type={'road'} 
+                  projects={props.projects.road} 
+                  onClick={props.loadLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Add Footpath Layer" 
+                  className="navdropdownitem" 
+                  type={'footpath'} 
+                  projects={props.projects.footpath} 
+                  onClick={props.loadFootpathLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Remove Layer" 
+                  className="navdropdownitem" 
+                  projects={props.layers} 
+                  onClick={props.removeLayer}/>
+                <NavDropdown.Divider />
+              </NavDropdown>
+            </Nav>
+            );
+          }
+          
         } else {
           return (
             <Nav>          
@@ -1350,49 +1609,22 @@ getGLFault(index, attribute) {
                 className="navdropdownitem" 
                 type={'road'} 
                 projects={props.projects.road} 
-                onClick={props.loadLayer}/>
-              <NavDropdown.Divider />
+                layers={props.layers} 
+                onClick={props.loadRoadLayer}/>
+              <NavDropdown.Divider/>
               <CustomMenu 
                 title="Add Footpath Layer" 
                 className="navdropdownitem" 
-                type={'footpath'} 
+                type={'footpath'}
                 projects={props.projects.footpath} 
+                layers={props.layers} 
                 onClick={props.loadFootpathLayer}/>
-              <NavDropdown.Divider />
-              <CustomMenu 
-                title="Remove Layer" 
-                className="navdropdownitem" 
-                projects={props.layers} 
-                onClick={props.removeLayer}/>
-              <NavDropdown.Divider />
-            </NavDropdown>
+            </NavDropdown>        
           </Nav>
           );
         }
-        
-      } else {
-        return (
-          <Nav>          
-          <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
-            <CustomMenu 
-              title="Add Roading Layer" 
-              className="navdropdownitem" 
-              type={'road'} 
-              projects={props.projects.road} 
-              layers={props.layers} 
-              onClick={props.loadRoadLayer}/>
-            <NavDropdown.Divider/>
-            <CustomMenu 
-              title="Add Footpath Layer" 
-              className="navdropdownitem" 
-              type={'footpath'}
-              projects={props.projects.footpath} 
-              layers={props.layers} 
-              onClick={props.loadFootpathLayer}/>
-          </NavDropdown>        
-        </Nav>
-        );
       }
+      
     }
     const CustomMenu = function(props) {
       if (typeof props.projects === 'undefined' || props.projects.length === 0) {
@@ -1517,17 +1749,21 @@ getGLFault(index, attribute) {
                 className="d-inline-block align-top"
                 alt="logo"
               />
-              </Navbar.Brand>
-              <LayerNav 
-                project={this.state.activeProject} 
-                projects={this.state.projects} 
-                layers={this.state.activeLayers}
-                removeLayer={(e) => this.removeLayer(e)} 
-                loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
-                loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
-                addCentreline={(e) => this.loadCentreline(e)} 
-                >
-              </LayerNav>
+            </Navbar.Brand>
+            <LayerNav 
+              project={this.state.activeProject} 
+              projects={this.state.projects} 
+              layers={this.state.activeLayers}
+              user={this.state.login}
+              removeLayer={(e) => this.removeLayer(e)} 
+              loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
+              loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
+              addCentreline={(e) => this.loadCentreline(e)} 
+              addUser={(e) => this.addUser(e)} 
+              addProject={(e) => this.addProject(e)} 
+              importData={(e) => this.importData(e)} 
+              >
+            </LayerNav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
                 <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
@@ -1641,6 +1877,24 @@ getGLFault(index, attribute) {
               >Apply Filter</Button>
       </LMap >    
       </div>
+       {/* admin modal     */}
+       <CustomModal 
+        name={'user'}
+        show={this.state.showAdmin} 
+        ref={this.customModal}
+        callbackUser={this.createUser} //insert user
+        callbackDeleteUser={this.deleteUser}
+        callbackProject={this.createProject}
+        callbackDeleteProject={this.deleteProject}
+        >
+        <CustomModal 
+        show={false} 
+        ref={this.customModal}
+        callbackProject={this.createProject}
+        ></CustomModal>
+          
+
+       </CustomModal>
       <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
         <Modal.Header>
           <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
@@ -1704,7 +1958,7 @@ getGLFault(index, attribute) {
             <Form.Control 
               type="password" 
               placeholder="Password" 
-              ref={key=> this.passwordInput = key}/>
+              ref={(key=> this.passwordInput = key)}/>
           </Form.Group>
           <Button 
             variant="primary" 
