@@ -100,9 +100,37 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var classes = resolve(result);
+                let classes = resolve(result);
                 //console.log(project);
                 return classes;
+            });
+        });
+    },
+
+    usernames: () => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT username FROM users";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let clients = resolve(result);
+                return clients;    
+            });
+        });
+    },
+
+    selectprojects: (client) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT * FROM projects WHERE client = '" + client + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let clients = resolve(result);
+                return clients;    
             });
         });
     },
@@ -129,7 +157,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var geometry = resolve(result);
+                let geometry = resolve(result);
                 return geometry;
             });
         });

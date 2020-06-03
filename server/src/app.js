@@ -169,6 +169,31 @@ app.post('/user', async (req, res, next) => {
     }
 });
 
+app.post('/usernames', async (req, res, next) => {
+ 
+  if (req.headers.authorization === this.token) {
+    
+    let result = await db.usernames(req.body.client);
+    //console.log(result.rows);
+    let arr = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      if(result.rows[i].username !== "admin") {
+        arr.push(result.rows[i].username);
+      }
+
+    }
+    res.send({success: true, usernames: arr})
+  }
+});
+
+app.post('/selectprojects', async (req, res, next) => {
+ 
+  if (req.headers.authorization === this.token) {
+    let result = await db.selectprojects(req.body.client);
+    res.send({success: true, projects: result.rows})
+  }
+});
+
 
 
 app.post('/project', async (req, res, next) => {

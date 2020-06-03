@@ -221,11 +221,6 @@ class App extends React.Component {
     this.gl.compileShader(vertexShader);
     let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
     let length = this.state.activeLayers.length - 1;
-    // if (this.state.activeLayers[length].surface === "footpath") {
-    //   this.gl.shaderSource(fragmentShader, document.getElementById('fshader-square').text);
-    // } else {
-    //   this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
-    // }
     this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
     this.gl.compileShader(fragmentShader);
     // link shaders to create our program
@@ -1102,6 +1097,71 @@ class App extends React.Component {
     }
   }
 
+  getClient = async () => {
+    console.log("get client")
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/usernames', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "select",
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.success) {
+            console.log(body);
+            this.customModal.current.setUsernames(body.usernames);
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
+  selectProjects = async (client) => {
+    console.log("get projects")
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/selectprojects', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "select",
+          client: client
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.success) {
+            console.log(body);
+            //this.customModal.current.setUsernames(body.usernames);
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
   async deleteCurrentUser(user) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
@@ -1325,10 +1385,11 @@ class App extends React.Component {
     
   }
 
-  hideLayer(e, index) {
-    this.state.activeLayers[index].visible ? this.state.activeLayers[index].visible = false
-     : this.state.activeLayers[index].visible = true
-  }
+  // hideLayer(e, index) {
+  //   this.state.activeLayers[index].visible ? this.state.activeLayers[index].visible = false
+  //    : this.state.activeLayers[index].visible = true
+
+  // }
 
   changeLayer(e) {
     console.log("redraw");
@@ -1477,8 +1538,8 @@ addProject(e) {
 importData(e) {
   this.customModal.current.setState({name: 'import'});
   this.customModal.current.setShow(true);
-
 }
+
 
 createUser = (name, password) => {
   this.addNewUser(name, password);
@@ -1503,7 +1564,6 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
   this.customModal.current.setShow(false);
 
 }
-
 
   render() {
 
@@ -1882,18 +1942,16 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
         name={'user'}
         show={this.state.showAdmin} 
         ref={this.customModal}
+        token={this.state.token}
+        host={this.state.host}
         callbackUser={this.createUser} //insert user
         callbackDeleteUser={this.deleteUser}
         callbackProject={this.createProject}
         callbackDeleteProject={this.deleteProject}
+        callbackImportData={this.importData}
+        callbackGetClient={this.getClient}
+        callbackGetProjects={this.selectProjects}
         >
-        <CustomModal 
-        show={false} 
-        ref={this.customModal}
-        callbackProject={this.createProject}
-        ></CustomModal>
-          
-
        </CustomModal>
       <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
         <Modal.Header>
@@ -1972,7 +2030,12 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
         </Modal.Footer>
       </Modal>
       {/*photo modal */}    
-      <Modal dialogClassName={"photoModal"} show={this.state.show} size='xl' centered={true}>
+      <Modal dialogClassName={"photoModal"} 
+        show={this.state.show} 
+        size='xl' 
+        centered={true}
+        onHide={() => this.setState({show: false})}
+        >
         <Modal.Body className="photoBody">	
           <div className="container">
           {this.state.selectedGLMarker.map((obj, index) => 

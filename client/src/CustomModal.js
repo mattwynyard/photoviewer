@@ -1,21 +1,31 @@
 import React from 'react';
-import {Modal, Button, Form, Table, Dropdown}  from 'react-bootstrap';
+import {Modal, Button, Form, Table, Dropdown, DropdownButton}  from 'react-bootstrap';
+import CSVReader from 'react-csv-reader';
+
 
 export default class CustomModal extends React.Component {
     constructor(props) {
         super(props);
+        this.inputRef = React.createRef();
         this.state = {
             name: props.name,
             show: props.show,
             user: null,
             password: null,
             project: null,
+            path: null,
             callbackUser: props.callbackUser, //insert user
             callbackDeleteUser: props.callbackDeleteUser,
             callbackProject: props.callbackProject,
             callbackDeleteProject: props.callbackDeleteProject,
-            mode: "Insert"
-        }
+            callbackImportData: props.callbackImportData,
+            callbackGetClient: props.callbackGetClient,
+            callbackGetProjects: props.callbackGetProjects,
+            mode: "Insert",
+            client: null,
+            usernames: [],
+            currentUser: "client"
+        } 
     }
 
     setShow(show) {
@@ -24,14 +34,16 @@ export default class CustomModal extends React.Component {
 
     setName(name) {
         this.setState({name: name});
-        console.log(this.state.name);
+    }
+
+    setUsernames(users) {
+        this.setState({usernames: users});
     }
 
     componentDidMount() {
     }
     
     componentWillUnmount() {
-
     }
 
     changeProject(e) {
@@ -90,18 +102,48 @@ export default class CustomModal extends React.Component {
         this.props.callbackDeleteProject(this.state.project);
     }
 
+    changePath(e) {
+        console.log(this.inputRef.current.files[0]);
+        this.setState({path: e.target.value});
+    }
+
+    importData(e) {
+        console.log(this.state.path)
+    }
+
+    fileLoaded(data, info) {
+        console.log(info);
+        console.log(data);
+    }
+
+    changeMode(mode) {
+        this.setState({mode: mode});
+        if (mode === "Delete") {
+            this.state.callbackGetClient();
+        }
+    }
+
+    changeUser(e, value) {
+        console.log(value);
+        this.setState({currentUser: value})
+        this.state.callbackGetProjects(value);
+    }
+
     render() {
         if (this.state.name === 'user') {
             if(this.state.mode === 'Insert') {
                 return (
-                    <Modal show={this.state.show} size={'md'} centered={true}>
+                    <Modal 
+                    show={this.state.show} 
+                    size={'md'} 
+                    centered={true}
+                    onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <Modal.Title>Add New User</Modal.Title>
                         <Dropdown>
                             <Dropdown.Toggle variant="success" id="dropdown-basic">
                                 {this.state.mode}
                             </Dropdown.Toggle>
-    
                             <Dropdown.Menu>
                             <Dropdown.Item
                                 onClick={(e) => this.setState({mode: "Delete"})}
@@ -109,7 +151,7 @@ export default class CustomModal extends React.Component {
                                 Delete
                             </Dropdown.Item>
                             </Dropdown.Menu>
-                            </Dropdown>
+                        </Dropdown>
                     </Modal.Header>
                     <Modal.Body >	
                         <Form>
@@ -143,7 +185,11 @@ export default class CustomModal extends React.Component {
                 );
             } else if (this.state.mode === "Delete") {
                 return (
-                    <Modal show={this.state.show} size={'md'} centered={true}>
+                    <Modal 
+                    show={this.state.show} 
+                    size={'md'} 
+                    centered={true}
+                    onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <Modal.Title>Delete User</Modal.Title>
                         <Dropdown>
@@ -184,7 +230,11 @@ export default class CustomModal extends React.Component {
                 );
             } else { //Update
                return (
-                    <Modal show={this.state.show} size={'md'} centered={true}>
+                    <Modal 
+                    show={this.state.show} 
+                    size={'md'} 
+                    centered={true}
+                    onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <Modal.Title>Update User</Modal.Title>
                         <Dropdown>
@@ -241,7 +291,11 @@ export default class CustomModal extends React.Component {
         } else if (this.state.name === 'project') {
             if(this.state.mode === 'Insert') {
                 return (
-                    <Modal show={this.state.show} size={'lg'} centered={true}>
+                    <Modal 
+                    show={this.state.show} 
+                    size={'lg'} 
+                    centered={true}
+                    onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <div>
                             <Modal.Title>Add New Project</Modal.Title>
@@ -252,7 +306,7 @@ export default class CustomModal extends React.Component {
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
                                 <Dropdown.Item
-                                    onClick={(e) => this.setState({mode: "Delete"})}
+                                    onClick={(e) => this.changeMode("Delete")}
                                     >
                                     Delete
                                 </Dropdown.Item>
@@ -261,14 +315,6 @@ export default class CustomModal extends React.Component {
                     </Modal.Header>
                     <Modal.Body >
                         <Form>
-                        {/* <Form.Group controlId="code">
-                            <Form.Label></Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Search" 
-                            onChange={(e) => this.changeSearch(e)}>
-                            </Form.Control>
-                        </Form.Group> */}
                         <Form.Group controlId="code">
                             <Form.Label>Code:</Form.Label>
                             <Form.Control 
@@ -341,26 +387,40 @@ export default class CustomModal extends React.Component {
                 );
             } else {
                 return (
-                    <Modal show={this.state.show} size={'lg'} centered={true}>
+                    <Modal 
+                    show={this.state.show} 
+                    size={'lg'} 
+                    centered={true}
+                    onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <div>
                             <Modal.Title>Delete Project</Modal.Title>
                         </div>     
                         <Dropdown className="dropdownproject">
-                                <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                    {this.state.mode}
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
-                                <Dropdown.Item
-                                    onClick={(e) => this.setState({mode: "Insert"})}
-                                    >
-                                    Insert
-                                </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>	
+                            <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                {this.state.mode}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                            <Dropdown.Item
+                                onClick={(e) => this.changeMode("Insert")}
+                                >
+                                Insert
+                            </Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>	
                     </Modal.Header>
                     <Modal.Body >
                         <Form>
+                        <DropdownButton className="dropdownclient" title={this.state.currentUser}>
+                            {this.state.usernames.map((value, index) =>
+                            <Dropdown.Item 
+                                key={`${index}`}
+                                onClick={(e) => this.changeUser(e, value)}
+                                >
+                                {value}
+                            </Dropdown.Item>
+                            )}
+                        </DropdownButton>	
                         <Form.Group controlId="code">
                             <Form.Label></Form.Label>
                             <Form.Control 
@@ -372,7 +432,7 @@ export default class CustomModal extends React.Component {
                         <Button 
                             variant="primary" 
                             onClick={(e) => this.deleteProject(e)}>
-                            Submit
+                            Import
                         </Button>
                         </Form>
                     </Modal.Body>
@@ -380,8 +440,27 @@ export default class CustomModal extends React.Component {
                     </Modal.Footer>
                 </Modal>
                 );
-
             }
+        } else {
+            return (
+                <Modal show={this.state.show} size={'md'} centered={true} onHide={() => this.setState({show: false})}>
+                <Modal.Header>
+                    <div>
+                        <Modal.Title>Import Data</Modal.Title>
+                    </div>     
+                </Modal.Header>
+                <Modal.Body >
+                    <CSVReader
+                        cssClass="csv-reader-input"
+                        label="Select CSV to import  "
+                        onFileLoaded={(data, fileInfo) => this.fileLoaded(data, fileInfo)}
+                        inputStyle={{color: 'black'}}
+                    />
+                </Modal.Body>
+                <Modal.Footer>
+                </Modal.Footer>
+            </Modal>
+            );
         }
     }
 }
