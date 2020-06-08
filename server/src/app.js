@@ -194,8 +194,6 @@ app.post('/selectprojects', async (req, res, next) => {
   }
 });
 
-
-
 app.post('/project', async (req, res, next) => {
   if (req.headers.authorization === this.token) {
     try {

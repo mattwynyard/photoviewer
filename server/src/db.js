@@ -33,6 +33,10 @@ connection.on('connect', () => {
     console.log("connected to database on port: " + process.env.PORT);
 });
 
+connection.on('error', error => {
+    console.log(error);
+});
+
 module.exports = { 
     projects : (user) => {
         return new Promise((resolve, reject) => {
