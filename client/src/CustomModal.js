@@ -123,10 +123,8 @@ export default class CustomModal extends React.Component {
         }
     }
 
-    changeUser(e, value) {
-        console.log(value);
-        this.setState({currentUser: value})
-        this.state.callbackGetProjects(value);
+    changeUser(e) {
+        this.setState({user: e.target.value})
     }
 
     render() {

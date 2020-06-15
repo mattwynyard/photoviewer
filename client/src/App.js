@@ -417,7 +417,7 @@ class App extends React.Component {
     let points = []; //TODO change to Float32Array to make selection faster
     let high = null;
     let med = null;
-    if(this.state.login === "downer" || this.state.login === "odc") {
+    if(this.state.login === "downer" || this.state.login === "odc" || this.state.login === "tdc") {
       high = "5";
       med = "4";
     } else {
@@ -1384,12 +1384,6 @@ class App extends React.Component {
     this.setState({show: false});
     
   }
-
-  // hideLayer(e, index) {
-  //   this.state.activeLayers[index].visible ? this.state.activeLayers[index].visible = false
-  //    : this.state.activeLayers[index].visible = true
-
-  // }
 
   changeLayer(e) {
     console.log("redraw");
