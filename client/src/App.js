@@ -134,15 +134,6 @@ class App extends React.Component {
    * Redraws gl points when user selects point
    * @param {event - the mouse event} e 
    */
-  clickCanvas(e) {
-    if (this.state.glpoints !== null) {
-      this.setState({selectedIndex: null});
-      this.setState({selectedGLMarker: []});
-      this.setState({mouseclick: e})
-      this.redraw(this.state.glpoints);
-    }
-  }
-
   clickMap(e) {
     if (this.state.glpoints !== null) {
       this.setState({selectedIndex: null});
@@ -157,7 +148,7 @@ class App extends React.Component {
    * @param {int - calculates the index from r,g,b color} color 
    */
   getIndex(color) { 
-    return color[0] + color[1] * 256 + color[2] * 256 * 256;
+    return color[0] + color[1] * 256 + color[2] * 256 * 256 + color[3] * 256 * 256 * 256;
   }
 
   /**
@@ -169,7 +160,15 @@ class App extends React.Component {
     if (index !== 0) {
       this.setState({selectedIndex: index});
       this.setState({selectedGLMarker: [this.state.objGLData[index - 1]]}); //0 is black ie the screen
-      
+      let bucket = this.getGLFault(index - 1, 'inspection');
+      if (bucket !== null) {
+        let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+        if (suffix != bucket) {
+          let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
+          console.log(prefix + bucket + "/")
+          this.setState({amazon: prefix + bucket + "/"});
+        }
+      }
       
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
@@ -190,6 +189,7 @@ class App extends React.Component {
             verts[i + 2] = 1.0;
             verts[i + 3] = 0;
             verts[i + 4] = 0;
+            verts[i + 5] = 1.0;
           }
         }
       }
@@ -198,12 +198,14 @@ class App extends React.Component {
       for (let i = 0; i < verts.length; i += 7) {
         let index = verts[i + 6];
         //calculates r,g,b color from index
-        let r = ((index & 0x000000FF) >>>  0) / 255;
-        let g = ((index & 0x0000FF00) >>>  8) / 255;
-        let b = ((index & 0x00FF0000) >>> 16) / 255;
+        let r = ((index & 0x000000FF) >>  0) / 255;
+        let g = ((index & 0x0000FF00) >>  8) / 255;
+        let b = ((index & 0x00FF0000) >> 16) / 255;
+        //let a = ((index & 0xFF000000) >> 24) / 255;
         verts[i + 2] = r;
         verts[i + 3] = g;
         verts[i + 4] = b;
+        verts[i + 5] = 1.0;
       }
     }
     return verts;
@@ -265,7 +267,10 @@ class App extends React.Component {
       let pixelsToWebGLMatrix = new Float32Array(16);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
       this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      var pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
+      let pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
+      if(this.delegate.state.login === "asm") {
+        pointSize = Math.max(this._map.getZoom() - 0.0, 1.0);
+      }
       this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
       this.delegate.mapMatrix.set(pixelsToWebGLMatrix);
@@ -285,8 +290,8 @@ class App extends React.Component {
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.state.mouseclick.originalEvent.layerX, 
           this.canvas.height - this.delegate.state.mouseclick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-        this.delegate.setState({mouseclick: null})
+        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256//  + pixel[3] * 256 * 256 * 256;
+        this.delegate.setState({mouseclick: null});
         this.delegate.setIndex(index);
         this._redraw();
       }         
@@ -411,6 +416,7 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  */
   addGLMarkers(project, data, type, zoomTo) {
+    //console.log(data);
     let obj = {};
     let faults = [];
     let latlngs = [];
@@ -430,15 +436,23 @@ class App extends React.Component {
       const lat = position.coordinates[1];
       let latlng = L.latLng(lat, lng);
       let point = LatLongToPixelXY(lat, lng);
+      let alpha = 0.9;
       if (type === "road") {
+        let bucket = data[i].inspection;
+        if (bucket != null) {
+          let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+          if (bucket != suffix) {
+            alpha = 0.55;
+          }
+        }
         if(data[i].priority === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, 1.0, i);
+          points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
         } else if (data[i].priority === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, 1.0, i);
+          points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i);
         } else if (data[i].priority === "99") {
-          points.push(point.x, point.y, 0, 0, 1, 1.0, i);
+          points.push(point.x, point.y, 0, 0, 1, alpha, i);
         } else {
-          points.push(point.x, point.y, 0, 0.8, 0, 1.0, i);
+          points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
         }
       } else {
         if(data[i].grade === high) {
@@ -455,7 +469,7 @@ class App extends React.Component {
           type: type,
           roadid: data[i].roadid,
           footapthid: data[i].footpathid,
-          roadname: data[i].roadname,
+          roadname: data[i].roadname,        
           location: data[i].location,
           asset:  data[i].asset,
           fault: data[i].fault,
@@ -471,6 +485,7 @@ class App extends React.Component {
           type: type,
           roadid: data[i].roadid,
           carriage: data[i].carriagewa,
+          inspection: data[i].inspection,
           location: data[i].location,
           fault: data[i].fault,
           repair: data[i].repair,
@@ -575,6 +590,8 @@ class App extends React.Component {
   clickImage(e) {   
     this.setState({show: true});
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
+    
+   
     this.setState({currentPhoto: photo});
   }
 
@@ -612,7 +629,18 @@ class App extends React.Component {
   clickMarker(e) {
     let marker = e.target;
     const index = marker.options.index;
+    // let bucket = this.getGLFault(index - 1, 'inspection');
+    // console.log(bucket);
+    // if (bucket !== null) {
+    //   let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+    //   if (suffix != bucket) {
+    //     let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
+    //     console.log(prefix + bucket + "/")
+    //     this.setState({amazon: prefix + bucket + "/"});
+    //   }
+    // }
     this.setState({index: index});
+    
   }
 
   /**
@@ -752,7 +780,7 @@ class App extends React.Component {
       
     } else {
       projects = this.state.projects.footpath;
-      let filters = ["Asset", "Zone", "Type", "Cause"];
+      let filters = ["Asset", "Fault", "Type", "Cause"];
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
         let result = await this.requestDropdown(project, filters[i]);
@@ -939,14 +967,23 @@ class App extends React.Component {
         filter: this.state.filter,
         priority: this.state.filterPriorities})   
     } else {
+      let filterObj = [];
+
+      for (let i = 0; i <  this.state.filterDropdowns.length; i++) {
+        let obj = {name: this.state.filterDropdowns[i].name, filter: this.state.filterDropdowns[i].filter}
+        filterObj.push(obj)
+      }
+      console.log(this.state.filterDropdowns[0].name);
+
       return JSON.stringify({
         user: this.state.login,
         project: project,
         filter: this.state.filter,
         //TODO temp hack should be dymnic array to hold footpath filters
         priority: this.state.filterPriorities,
+        filterObj: filterObj,
         assets: this.state.filterDropdowns[0].filter,
-        zones: this.state.filterDropdowns[1].filter,
+        faults: this.state.filterDropdowns[1].filter,
         types: this.state.filterDropdowns[2].filter,
         causes: this.state.filterDropdowns[3].filter})
     }
@@ -979,6 +1016,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {
             if (body.type === "road") {
+              
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
             } else {
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
@@ -1494,6 +1532,8 @@ getGLFault(index, attribute) {
         return  this.state.objGLData[index].fault;
       case "priority":        
         return  this.state.objGLData[index].priority;
+      case "inspection":        
+        return  this.state.objGLData[index].inspection;
       case "location":
         return  this.state.objGLData[index].location;
       case "size":
@@ -1740,8 +1780,8 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
                   <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
               </div>
               <div className="col-md-6">
+                <b>{"Priority: "} </b> {props.obj.priority} <br></br>
                 <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
-                <b>{"Sign Code: "}</b>{props.obj.comment}<br></br> 
                 <b>{"DateTime: "} </b> {props.obj.datetime}
               </div>
             </div>
