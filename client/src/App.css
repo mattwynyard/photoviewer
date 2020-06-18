@@ -151,6 +151,12 @@ body {
   left: 10px;
   z-index: 999;
 }
+.legend {
+  position: absolute;
+  bottom: 70px;
+  right: 10px;
+  z-index: 999;
+}
 
 .position {
   position: absolute;

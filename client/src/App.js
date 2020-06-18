@@ -953,8 +953,10 @@ class App extends React.Component {
       }
     }
     //TODO clear the filter
+    this.setState({priorities: []});
     this.setState({filter: []});
     this.setState({filterDropdowns: []})
+    this.setState({filterPriorities: []})
     this.setState({activeLayers: layers});   
   }
 
@@ -973,8 +975,7 @@ class App extends React.Component {
         let obj = {name: this.state.filterDropdowns[i].name, filter: this.state.filterDropdowns[i].filter}
         filterObj.push(obj)
       }
-      console.log(this.state.filterDropdowns[0].name);
-
+      //console.log(this.state.filterDropdowns[0].name);
       return JSON.stringify({
         user: this.state.login,
         project: project,
@@ -1947,12 +1948,21 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             </Dropdown>
           )}
           </div>
+          <Card className="legend">
+            <Card.Header>{this.state.priorityMode}</Card.Header>
+            <Card.Body>
+              <Card.Text>
+              </Card.Text>
+  
+            </Card.Body>
+          </Card>
           <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 
             onClick={(e) => this.toogleMap(e)} 
-            thumbnail={true}/>
-            <LayerGroup >
+            thumbnail={true}
+          />
+          <LayerGroup >
             {this.state.selectedGLMarker.map((obj, index) =>  
             <CustomPopup 
               key={`${index}`} 
@@ -1962,13 +1972,14 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}
-            </LayerGroup>
-            <Button 
-              className="applyButton" 
-              variant="light" 
-              size="sm"
-              onClick={(e) => this.clickApply(e)}
-              >Apply Filter</Button>
+          </LayerGroup>
+          <Button 
+            className="applyButton" 
+            variant="light" 
+            size="sm"
+            onClick={(e) => this.clickApply(e)}
+            >Apply Filter
+          </Button>
       </LMap >    
       </div>
        {/* admin modal     */}
