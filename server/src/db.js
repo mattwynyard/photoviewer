@@ -47,7 +47,6 @@ module.exports = {
                     return reject(err);
                 }
                 let project = resolve(result);
-               
                 return project;
             });
         });
@@ -56,6 +55,20 @@ module.exports = {
     priority: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT priority FROM faults WHERE project = '" + project + "' GROUP BY priority";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var priority = resolve(result);
+                return priority;
+            });
+        });
+    },
+
+    age: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT inspection FROM faults WHERE project = '" + project + "' GROUP BY inspection";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -229,14 +242,14 @@ module.exports = {
 
     },
 
-    footpath: (project, priority, assets, faults, types, causes, filter) => {
+    footpath: (project, priority, assets, zones, types, causes) => {
         let _priority = buildQuery(priority);
         let _assets = buildQuery(assets);
-        let _faults = buildQuery(faults);
+        let _zones = buildQuery(zones);
         let _types = buildQuery(types);
         let _causes = buildQuery(causes);
         let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
-        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
+        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND zone IN (" + _zones + ") "
         + "AND type IN (" + _types + ") AND cause IN (" + _causes + ")";
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {

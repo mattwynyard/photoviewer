@@ -1,6 +1,6 @@
 import React from 'react';
-import { Map as LMap, TileLayer, Popup, ScaleControl, LayersControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Table, Pagination, ListGroup, Card}  from 'react-bootstrap';
+import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -32,8 +32,9 @@ class App extends React.Component {
       admin : false,
       filter: [], //filter for db request
       priorityDropdown: null,
-      priorityMode: "Grade",
+      priorityMode: "Priority",
       priorities: [], 
+      ages: [],
       filterDropdowns: [],
       filterPriorities: [],
       host: this.getHost(),
@@ -163,7 +164,7 @@ class App extends React.Component {
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (bucket !== null) {
         let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        if (suffix != bucket) {
+        if (suffix !== bucket) {
           let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
           console.log(prefix + bucket + "/")
           this.setState({amazon: prefix + bucket + "/"});
@@ -222,7 +223,7 @@ class App extends React.Component {
     this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
     this.gl.compileShader(vertexShader);
     let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    let length = this.state.activeLayers.length - 1;
+    //let length = this.state.activeLayers.length - 1;
     this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
     this.gl.compileShader(fragmentShader);
     // link shaders to create our program
@@ -441,7 +442,7 @@ class App extends React.Component {
         let bucket = data[i].inspection;
         if (bucket != null) {
           let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-          if (bucket != suffix) {
+          if (bucket !== suffix) {
             alpha = 0.55;
           }
         }
@@ -777,7 +778,7 @@ class App extends React.Component {
         dynamicDropdowns.push(dropdown);
       }
       this.rebuildFilter();
-      
+      await this.requestAge(project);
     } else {
       projects = this.state.projects.footpath;
       let filters = ["Asset", "Fault", "Type", "Cause"];
@@ -886,6 +887,40 @@ class App extends React.Component {
     return result;
   }
 
+  async requestAge(project) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/age', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      })
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            this.buildAge(body.result);    
+          }     
+        }
+      }).catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      }); 
+    }
+  }
+
   async requestPriority(project) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/priority', {
@@ -918,6 +953,14 @@ class App extends React.Component {
         return;
       }); 
     }
+  }
+
+  buildAge(ages) {
+    let arr = [];
+    for (let i = 0; i < ages.length; i++) {
+      arr.push(ages[i].inspection);     
+    }
+    this.setState({ages: arr});
   }
 
   buildPriority(priority) {
@@ -961,7 +1004,6 @@ class App extends React.Component {
   }
 
   getBody(project) {
-    let body = null
     if (this.state.projectMode === "road") {
       return JSON.stringify({
         user: this.state.login,
@@ -1089,7 +1131,6 @@ class App extends React.Component {
             await this.logout(e);
           } else {
             this.setState({faultClass: body});
-            //this.getFaultTypes(this.state.faultClass[0].code);
           }   
         })
         .catch((error) => {
@@ -1814,22 +1855,38 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
       }    
     }
 
-    const CustomInput = function(props) {
-      if (props.mode === "road") {
+    const CustomSVG = function(props) {
+      if (props.value === "Grade 5" || props.value === "Priority 1") {
+        return ( 
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+          );
+      } else if (props.value === "Grade 4" || props.value === "Priority 2") {
+        return ( 
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+        );
+      } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+        return ( 
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+        );
+      } else if (props.value === "Signage") {
         return (
-          <input
-            key={`${props.index}`} 
-            id={props.value} 
-            type="checkbox" 
-            defaultChecked
-            onClick={props.onClick}
-          >
-          </input>
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
         );
       } else {
-        return(<div></div>)
-      }
-      
+      return (
+        <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" opacity="0.5" fill="blue">
+          <circle cx="5" cy="5" r="3" />
+        </svg>
+      );
+    }
     }
 
     return (   
@@ -1899,13 +1956,40 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             <Dropdown.Menu className="custommenu">
             {this.state.priorities.map((value, index) =>
                 <div key={`${index}`}>
+                 <CustomSVG 
+                 value={value}>
+                 </CustomSVG>
                   <input
                     key={`${index}`} 
                     id={value} 
                     type="checkbox" 
                     defaultChecked 
                     onClick={(e) => this.clickPriority(e)}>
-                  </input>{" " + value}<br></br>
+                  </input>{" " + value}
+                  <br></br>
+                </div> 
+                )}
+            </Dropdown.Menu>
+          </Dropdown>
+          <Dropdown
+            className="Age">
+          <Dropdown.Toggle variant="light" size="sm" >
+              Inspection Date
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="agemenu">
+            {this.state.ages.map((value, index) =>
+                <div key={`${index}`}>
+                 <CustomSVG 
+                 value={value}>
+                 </CustomSVG>
+                  <input
+                    key={`${index}`} 
+                    id={value} 
+                    type="checkbox" 
+                    defaultChecked 
+                    onClick={(e) => this.clickPriority(e)}>
+                  </input>{" " + value}
+                  <br></br>
                 </div> 
                 )}
             </Dropdown.Menu>
@@ -1948,14 +2032,6 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             </Dropdown>
           )}
           </div>
-          <Card className="legend">
-            <Card.Header>{this.state.priorityMode}</Card.Header>
-            <Card.Body>
-              <Card.Text>
-              </Card.Text>
-  
-            </Card.Body>
-          </Card>
           <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 

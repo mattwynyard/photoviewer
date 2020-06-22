@@ -35,16 +35,7 @@ body {
   color: #fff;
 }
 
-.btn-group {
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  font-size: 12px !important;
-  top: 10px;
-  left: 150px;
-  z-index: 999;
-  color: gray;
-}
+
 
 .button {
   padding-left: 3px;
@@ -104,6 +95,17 @@ body {
   color: gray;
 }
 
+.btn-group {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 12px !important;
+  top: 10px;
+  left: 290px;
+  z-index: 999;
+  color: gray;
+}
+
 .Priority {
   
   position: absolute;
@@ -126,6 +128,29 @@ body {
   padding: 10px;
   font-size: 14px !important;
   white-space: nowrap;
+}
+
+.agemenu {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  z-index: 1000;
+  color: gray;
+  width: auto;
+  padding: 10px;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.Age {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  top: 10px;
+  left: 140px;
+  z-index: 999;
+  color: gray;
 }
 
 

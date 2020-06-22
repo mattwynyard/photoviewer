@@ -257,6 +257,16 @@ app.post('/faults', async (req, res, next) => {
   }
 });
 
+app.post('/age', async (req, res) => { 
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    let project = req.body.project;
+    let result = await db.age(project);
+    res.set('Content-Type', 'application/json'); 
+    res.send({result: result.rows});  
+  }
+});
+
 app.post('/priority', async (req, res) => { 
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   let priority = null

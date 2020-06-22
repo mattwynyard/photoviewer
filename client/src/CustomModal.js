@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Button, Form, Table, Dropdown, DropdownButton}  from 'react-bootstrap';
+import {Modal, Button, Form, Dropdown, DropdownButton}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 
 
@@ -123,9 +123,6 @@ export default class CustomModal extends React.Component {
         }
     }
 
-    changeUser(e) {
-        this.setState({user: e.target.value})
-    }
 
     render() {
         if (this.state.name === 'user') {
