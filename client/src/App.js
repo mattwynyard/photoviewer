@@ -896,12 +896,7 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.setState({
-              filterAges: body.result
-            }, function() {
-              this.buildAge(body.result);  
-            })
-              
+            this.buildAge(body.result);              
           }     
         }
       }).catch((error) => {
@@ -949,6 +944,12 @@ addCentrelines(data) {
   buildAge(ages) {
     let arr = [];
     let arrb = [];
+    if (ages[0].inspection === null) {
+      console.log(this.state.bucket);
+      let filter = [this.state.bucket];
+      this.setState({filterAges: filter});
+      return;
+    }
     for (let i = 0; i < ages.length; i++) {
       let inspection = ages[i].inspection;
       arrb.push(inspection);
@@ -1062,6 +1063,7 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     let body = this.getBody(project);
+    console.log(body);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
