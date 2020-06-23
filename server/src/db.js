@@ -263,13 +263,17 @@ module.exports = {
         });
     },
 
-    layer: (layer, filter, priority) => { 
+    layer: (layer, filter, priority, inspection) => { 
         let codes = buildQuery(priority);
+        let qAge = buildQuery(inspection);
+        console.log(priority);
+        console.log(codes);
+        console.log(inspection);
         return new Promise((resolve, reject) => {
             
             if (filter.length == 0) {
                 connection.query("SELECT roadid, carriagewa, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
+                + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);

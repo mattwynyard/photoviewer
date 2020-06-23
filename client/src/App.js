@@ -896,7 +896,6 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            console.log(body)
             this.setState({
               filterAges: body.result
             }, function() {
@@ -950,7 +949,6 @@ addCentrelines(data) {
   buildAge(ages) {
     let arr = [];
     let arrb = [];
-    console.log(this.state.bucket);
     for (let i = 0; i < ages.length; i++) {
       let inspection = ages[i].inspection;
       arrb.push(inspection);
@@ -1555,7 +1553,6 @@ addCentrelines(data) {
   clickAges(e, value) {
     let query = this.state.filterAges;
     let date = null;
-    console.log(this.state.activeProject);
     if (e.target.id === "New") {
       date = this.state.bucket;
     } else {
@@ -1574,7 +1571,6 @@ addCentrelines(data) {
           query.splice(query.indexOf(date), 1 );
         }
       }
-    console.log(this.state.filterAges);
     this.filterLayer(this.state.activeProject, false); //fetch layer  
   }
 
