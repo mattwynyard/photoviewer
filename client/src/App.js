@@ -10,7 +10,7 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 //import Vector2D from './Vector2D';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad} from  './util.js'
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getMonth} from  './util.js'
 
 class App extends React.Component {
 
@@ -32,11 +32,12 @@ class App extends React.Component {
       admin : false,
       filter: [], //filter for db request
       priorityDropdown: null,
-      priorityMode: "Priority",
+      priorityMode: "Grade",
       priorities: [], 
       ages: [],
       filterDropdowns: [],
       filterPriorities: [],
+      filterAges: [],
       host: this.getHost(),
       token: Cookies.get('token'),
       login: this.getUser(),
@@ -77,6 +78,7 @@ class App extends React.Component {
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
+      bucket: null,
       clearDisabled: true,
       message: "",
       lineData: null,
@@ -122,11 +124,9 @@ class App extends React.Component {
         console.log("Cannot load webgl1.0 using experimental-webgl instead");
       }     
       this.glLayer.delegate(this);
- 
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
-      this.addEventListeners();
-      
+      this.addEventListeners();   
     }  
   }
 
@@ -202,11 +202,10 @@ class App extends React.Component {
         let r = ((index & 0x000000FF) >>  0) / 255;
         let g = ((index & 0x0000FF00) >>  8) / 255;
         let b = ((index & 0x00FF0000) >> 16) / 255;
-        //let a = ((index & 0xFF000000) >> 24) / 255;
         verts[i + 2] = r;
         verts[i + 3] = g;
         verts[i + 4] = b;
-        verts[i + 5] = 1.0;
+        verts[i + 5] = 1.0; //alpha
       }
     }
     return verts;
@@ -300,6 +299,138 @@ class App extends React.Component {
   }
 
   /**
+ * Loops through json objects and extracts fault information
+ * Builds object containing fault information and calls redraw
+ * @param {JSON array of fault objects received from db} data 
+ * @param {String type of data ie. road or footpath} type
+ */
+addGLMarkers(project, data, type, zoomTo) {
+  this.setState({amazon: this.state.activeLayer.amazon});
+  let obj = {};
+  let faults = [];
+  let latlngs = [];
+  let points = []; //TODO change to Float32Array to make selection faster
+  let high = null;
+  let med = null;
+  if(this.state.login === "downer" || this.state.login === "odc" || this.state.login === "tdc") {
+    high = "5";
+    med = "4";
+  } else {
+    high = "1";
+    med = "2";
+  }
+  for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
+    const position = JSON.parse(data[i].st_asgeojson);
+    const lng = position.coordinates[0];
+    const lat = position.coordinates[1];
+    let latlng = L.latLng(lat, lng);
+    let point = LatLongToPixelXY(lat, lng);
+    let alpha = 0.9;
+    if (type === "road") {
+      let bucket = data[i].inspection;
+      if (bucket != null) {
+        let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+        if (bucket !== suffix) {
+          alpha = 0.55;
+        }
+      }
+      if(data[i].priority === high) {
+        points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
+      } else if (data[i].priority === med) {
+        points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i);
+      } else if (data[i].priority === "99") {
+        points.push(point.x, point.y, 0, 0, 1, alpha, i);
+      } else {
+        points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
+      }
+    } else {
+      if(data[i].grade === high) {
+        points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
+      } else if (data[i].grade === med) {
+        points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
+      } else {
+        points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+      }
+    }    
+    latlngs.push(latlng);
+    if (type === "footpath") {
+      obj = {
+        type: type,
+        roadid: data[i].roadid,
+        footapthid: data[i].footpathid,
+        roadname: data[i].roadname,        
+        location: data[i].location,
+        asset:  data[i].asset,
+        fault: data[i].fault,
+        cause: data[i].cause,
+        size: data[i].size,
+        grade: data[i].grade,
+        photo: data[i].photoid,
+        datetime: data[i].faulttime,
+        latlng: latlng
+      };
+    } else {
+      obj = {
+        type: type,
+        roadid: data[i].roadid,
+        carriage: data[i].carriagewa,
+        inspection: data[i].inspection,
+        location: data[i].location,
+        fault: data[i].fault,
+        repair: data[i].repair,
+        comment: data[i].comment,
+        size: data[i].size,
+        priority: data[i].priority,
+        photo: data[i].photoid,
+        datetime: data[i].faulttime,
+        latlng: latlng
+      };
+    }   
+    faults.push(obj);          
+  }
+  if (zoomTo) {
+    this.centreMap(latlngs);
+  }
+
+  this.setState({objGLData: faults});
+  this.setState({glpoints: points}); //Immutable reserve of original points
+  this.redraw(points, null);
+}
+
+addCentrelines(data) {
+  let lines = [];
+  //let pointBefore = 0;
+  //let pointAfter = 0;
+  for (var i = 0; i < data.length; i++) {
+    const linestring = JSON.parse(data[i].st_asgeojson);
+    const rcClass = data[i].onrcclass; 
+    if(linestring !== null) {       
+      let segment = linestring.coordinates[0];
+      var points = [];
+      //let pixelSegment = null; 
+      for (let j = 0; j < segment.length; j++) {
+        let point = segment[j];
+        let xy = LatLongToPixelXY(point[1], point[0]);     
+        points.push(xy);
+      }
+      //pointBefore += points.length;
+      if (points.length > 2) {
+        //pixelSegment = RDP(points, 0.00000000001); //Douglas-Peckam simplify line
+        let seg = {segment: points, class: rcClass};
+        lines.push(seg);
+        //pointAfter += points.length;
+      }  else {
+        let seg = {segment: points, class: rcClass};
+        lines.push(seg);
+        //pointAfter += points.length;
+      }           
+    }       
+  } 
+  this.setState({lineData: lines});  
+  this.redraw(lines, null);
+}
+
+  /**
    * adds various event listeners to the canvas
    */
   addEventListeners() {
@@ -322,7 +453,6 @@ class App extends React.Component {
   }
 
   callBackendAPI = async () => {
-    //console.log("calling api...");
     const response = await fetch("https://" + this.state.host + '/api'); 
     const body = await response.json();
     if (response.status !== 200) {
@@ -410,137 +540,7 @@ class App extends React.Component {
       return;
     }
   }
-/**
- * Loops through json objects and extracts fault information
- * Builds object containing fault information and calls redraw
- * @param {JSON array of fault objects received from db} data 
- * @param {String type of data ie. road or footpath} type
- */
-  addGLMarkers(project, data, type, zoomTo) {
-    //console.log(data);
-    let obj = {};
-    let faults = [];
-    let latlngs = [];
-    let points = []; //TODO change to Float32Array to make selection faster
-    let high = null;
-    let med = null;
-    if(this.state.login === "downer" || this.state.login === "odc" || this.state.login === "tdc") {
-      high = "5";
-      med = "4";
-    } else {
-      high = "1";
-      med = "2";
-    }
-    for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
-      const position = JSON.parse(data[i].st_asgeojson);
-      const lng = position.coordinates[0];
-      const lat = position.coordinates[1];
-      let latlng = L.latLng(lat, lng);
-      let point = LatLongToPixelXY(lat, lng);
-      let alpha = 0.9;
-      if (type === "road") {
-        let bucket = data[i].inspection;
-        if (bucket != null) {
-          let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-          if (bucket !== suffix) {
-            alpha = 0.55;
-          }
-        }
-        if(data[i].priority === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
-        } else if (data[i].priority === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i);
-        } else if (data[i].priority === "99") {
-          points.push(point.x, point.y, 0, 0, 1, alpha, i);
-        } else {
-          points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
-        }
-      } else {
-        if(data[i].grade === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
-        } else if (data[i].grade === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
-        } else {
-          points.push(point.x, point.y, 0, 0.8, 0, 1, i);
-        }
-      }    
-      latlngs.push(latlng);
-      if (type === "footpath") {
-        obj = {
-          type: type,
-          roadid: data[i].roadid,
-          footapthid: data[i].footpathid,
-          roadname: data[i].roadname,        
-          location: data[i].location,
-          asset:  data[i].asset,
-          fault: data[i].fault,
-          cause: data[i].cause,
-          size: data[i].size,
-          grade: data[i].grade,
-          photo: data[i].photoid,
-          datetime: data[i].faulttime,
-          latlng: latlng
-        };
-      } else {
-        obj = {
-          type: type,
-          roadid: data[i].roadid,
-          carriage: data[i].carriagewa,
-          inspection: data[i].inspection,
-          location: data[i].location,
-          fault: data[i].fault,
-          repair: data[i].repair,
-          comment: data[i].comment,
-          size: data[i].size,
-          priority: data[i].priority,
-          photo: data[i].photoid,
-          datetime: data[i].faulttime,
-          latlng: latlng
-        };
-      }   
-      faults.push(obj);          
-    }
-    if (zoomTo) {
-      this.centreMap(latlngs);
-    }
 
-    this.setState({objGLData: faults});
-    this.setState({glpoints: points}); //Immutable reserve of original points
-    this.redraw(points, null);
-  }
-
-  addCentrelines(data) {
-    let lines = [];
-    //let pointBefore = 0;
-    //let pointAfter = 0;
-    for (var i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson);
-      const rcClass = data[i].onrcclass; 
-      if(linestring !== null) {       
-        let segment = linestring.coordinates[0];
-        var points = [];
-        //let pixelSegment = null; 
-        for (let j = 0; j < segment.length; j++) {
-          let point = segment[j];
-          let xy = LatLongToPixelXY(point[1], point[0]);     
-          points.push(xy);
-        }
-        //pointBefore += points.length;
-        if (points.length > 2) {
-          //pixelSegment = RDP(points, 0.00000000001); //Douglas-Peckam simplify line
-          let seg = {segment: points, class: rcClass};
-          lines.push(seg);
-          //pointAfter += points.length;
-        }  else {
-          let seg = {segment: points, class: rcClass};
-          lines.push(seg);
-          //pointAfter += points.length;
-        }           
-      }       
-    } 
-    this.setState({lineData: lines});  
-    this.redraw(lines, null);
-  }
 
   //EVENTS
   /**
@@ -591,8 +591,6 @@ class App extends React.Component {
   clickImage(e) {   
     this.setState({show: true});
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
-    
-   
     this.setState({currentPhoto: photo});
   }
 
@@ -625,23 +623,6 @@ class App extends React.Component {
   this.setState({currentPhoto: newPhoto});
   const url = this.state.amazon + newPhoto + ".jpg";
 	this.setState({photourl: url});
-  }
-
-  clickMarker(e) {
-    let marker = e.target;
-    const index = marker.options.index;
-    // let bucket = this.getGLFault(index - 1, 'inspection');
-    // console.log(bucket);
-    // if (bucket !== null) {
-    //   let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-    //   if (suffix != bucket) {
-    //     let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
-    //     console.log(prefix + bucket + "/")
-    //     this.setState({amazon: prefix + bucket + "/"});
-    //   }
-    // }
-    this.setState({index: index});
-    
   }
 
   /**
@@ -778,13 +759,14 @@ class App extends React.Component {
         dynamicDropdowns.push(dropdown);
       }
       this.rebuildFilter();
-      await this.requestAge(project);
+      
     } else {
       projects = this.state.projects.footpath;
       let filters = ["Asset", "Fault", "Type", "Cause"];
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
         let result = await this.requestDropdown(project, filters[i]);
+        console.log(result);
         dropdown.setData(result);
         dropdown.initialiseFilter();    
         dynamicDropdowns.push(dropdown);
@@ -801,15 +783,20 @@ class App extends React.Component {
         break;
         }
     }
-    await this.requestPriority(project);
+    
     this.setState(() => ({
       filterDropdowns: dynamicDropdowns,
       activeLayers: layers,
-      activeProject: e.target.attributes.code.value
-    }), function() {   
+      activeProject: e.target.attributes.code.value,
+      bucket: this.buildBucket(project)
+    }), async function() { 
+      await this.requestPriority(project);
+      if (type === "road") {
+        await this.requestAge(project); 
+      }
       this.filterLayer(project, true); //fetch layer  
     });
-    
+   
   }
 
   async requestDropdown(project, code) {
@@ -838,7 +825,6 @@ class App extends React.Component {
             await this.logout(e);
           } else {
             result = body;   
-
           }     
         }
       }).catch((error) => {
@@ -910,7 +896,13 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.buildAge(body.result);    
+            console.log(body)
+            this.setState({
+              filterAges: body.result
+            }, function() {
+              this.buildAge(body.result);  
+            })
+              
           }     
         }
       }).catch((error) => {
@@ -957,10 +949,42 @@ class App extends React.Component {
 
   buildAge(ages) {
     let arr = [];
+    let arrb = [];
+    console.log(this.state.bucket);
     for (let i = 0; i < ages.length; i++) {
-      arr.push(ages[i].inspection);     
+      let inspection = ages[i].inspection;
+      arrb.push(inspection);
+      if (inspection !== null) {
+        if(inspection === this.state.bucket ) {
+          arr.push("New")
+        } else {
+          let tokens = ages[i].inspection.split("_");
+          let month = getMonth(tokens[1]);
+          arr.push(month +" " + tokens[0]);  
+        }
+      }
+           
     }
+    this.setState({filterAges: arrb})
     this.setState({ages: arr});
+  }
+
+  
+
+  /**
+   * Sets default bucket suffix for the project
+   * @param {the current project} project 
+   */
+  buildBucket(project) {
+    let bucket = project.split("_")[2];
+    let month = bucket.substring(0, 2);
+    let year = null;
+    if (bucket.length === 4) {
+      year = "20" + bucket.substring(2, 4)
+    } else {
+      year = bucket.substring(2, bucket.length);
+    }
+    return year + "_" + month;
   }
 
   buildPriority(priority) {
@@ -1009,7 +1033,9 @@ class App extends React.Component {
         user: this.state.login,
         project: project,
         filter: this.state.filter,
-        priority: this.state.filterPriorities})   
+        priority: this.state.filterPriorities,
+        inspection: this.state.filterAges
+      })   
     } else {
       let filterObj = [];
 
@@ -1024,7 +1050,7 @@ class App extends React.Component {
         filter: this.state.filter,
         //TODO temp hack should be dymnic array to hold footpath filters
         priority: this.state.filterPriorities,
-        filterObj: filterObj,
+        //filterObj: filterObj,
         assets: this.state.filterDropdowns[0].filter,
         faults: this.state.filterDropdowns[1].filter,
         types: this.state.filterDropdowns[2].filter,
@@ -1052,14 +1078,12 @@ class App extends React.Component {
           throw new Error(response.status);
         } else {
           const body = await response.json();
-          //console.log(body);
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
             if (body.type === "road") {
-              
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
             } else {
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
@@ -1528,6 +1552,32 @@ class App extends React.Component {
     this.setState({filter: filter})
   }
 
+  clickAges(e, value) {
+    let query = this.state.filterAges;
+    let date = null;
+    console.log(this.state.activeProject);
+    if (e.target.id === "New") {
+      date = this.state.bucket;
+    } else {
+      date = "2020_02"
+    }
+      if (query.length === 1) {
+        if (e.target.checked) {
+          query.push(date);
+        } else {
+          e.target.checked = true; 
+        }
+      } else {
+        if (e.target.checked) {
+          query.push(date);
+        } else {
+          query.splice(query.indexOf(date), 1 );
+        }
+      }
+    console.log(this.state.filterAges);
+    this.filterLayer(this.state.activeProject, false); //fetch layer  
+  }
+
   /**
    * Adds or removes priorities to array for db query
    * @param {the button clicked} e 
@@ -1881,12 +1931,21 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           </svg>
         );
       } else {
-      return (
-        <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" opacity="0.5" fill="blue">
-          <circle cx="5" cy="5" r="3" />
-        </svg>
-      );
-    }
+        if (props.value === "New") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.5" fill={props.color}>
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        }
+        
+      }
     }
 
     return (   
@@ -1980,14 +2039,27 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             {this.state.ages.map((value, index) =>
                 <div key={`${index}`}>
                  <CustomSVG 
-                 value={value}>
+                  value={value}
+                  color={"magenta"}>
+                 </CustomSVG>
+                 <CustomSVG 
+                  value={value}
+                  color={"darkorange"}>
+                 </CustomSVG>
+                 <CustomSVG 
+                  value={value}
+                  color={"limegreen"}>
+                </CustomSVG>
+                <CustomSVG 
+                  value={value}
+                  color={"blue"}> 
                  </CustomSVG>
                   <input
                     key={`${index}`} 
                     id={value} 
                     type="checkbox" 
                     defaultChecked 
-                    onClick={(e) => this.clickPriority(e)}>
+                    onClick={(e) => this.clickAges(e, value)}>
                   </input>{" " + value}
                   <br></br>
                 </div> 

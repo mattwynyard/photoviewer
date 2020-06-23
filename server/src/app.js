@@ -322,11 +322,11 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    //console.log(req.body.filterObj);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
+    let inspection = req.body.inpsection;
     let assets = req.body.assets;
     let faults = req.body.faults;
     let types = req.body.types;
@@ -334,7 +334,7 @@ app.post('/layer', async (req, res) => {
     let geometry = null;
     let surface = await db.projecttype(project);
     if (surface.rows[0].surface === "footpath") {
-      geometry = await db.footpath(project, priority, assets, faults, types, causes, filterObj);
+      geometry = await db.footpath(project, priority, assets, faults, types, causes);
 
     } else if (surface.rows[0].surface === "road") {
       geometry = await db.layer(project, filter, priority);

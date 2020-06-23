@@ -242,14 +242,14 @@ module.exports = {
 
     },
 
-    footpath: (project, priority, assets, zones, types, causes) => {
+    footpath: (project, priority, assets, faults, types, causes) => {
         let _priority = buildQuery(priority);
         let _assets = buildQuery(assets);
-        let _zones = buildQuery(zones);
+        let _faults = buildQuery(faults);
         let _types = buildQuery(types);
         let _causes = buildQuery(causes);
         let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
-        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND zone IN (" + _zones + ") "
+        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
         + "AND type IN (" + _types + ") AND cause IN (" + _causes + ")";
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {
