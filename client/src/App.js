@@ -331,7 +331,7 @@ addGLMarkers(project, data, type, zoomTo) {
       if (bucket != null) {
         let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
         if (bucket !== suffix) {
-          alpha = 0.55;
+          alpha = 0.4;
         }
       }
       if(data[i].priority === high) {
@@ -643,7 +643,8 @@ addCentrelines(data) {
       objGLData: null,
       glpoints: [],
       activeLayers: [],
-      filterDropdowns: []
+      filterDropdowns: [],
+      ages: []
     }, function() {
       this.redraw([]);
     })
@@ -946,7 +947,7 @@ addCentrelines(data) {
     let arrb = [];
     if (ages[0].inspection === null) {
       console.log(this.state.bucket);
-      let filter = [this.state.bucket];
+      let filter = [];
       this.setState({filterAges: filter});
       return;
     }
@@ -964,6 +965,7 @@ addCentrelines(data) {
       }
            
     }
+    console.log(arrb);
     this.setState({filterAges: arrb})
     this.setState({ages: arr});
   }
@@ -1023,7 +1025,8 @@ addCentrelines(data) {
     this.setState({filter: []});
     this.setState({filterDropdowns: []})
     this.setState({filterPriorities: []})
-    this.setState({activeLayers: layers});   
+    this.setState({activeLayers: layers}); 
+    this.setState({ages: layers});    
   }
 
   getBody(project) {
