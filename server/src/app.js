@@ -43,9 +43,10 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(helmet());
 // Parse URL-encoded bodies (as sent by HTML forms)
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(express.json({limit: '50mb', extended: false}));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: false }))
 // Parse JSON bodies (as sent by API clients)
-app.use(express.json());
+
 
 app.use((req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
@@ -351,7 +352,6 @@ app.post('/layer', async (req, res) => {
     res.send({type: surface.rows[0].surface, geometry: geometry.rows});
   } else {
     res.send({error: "Invalid token"});
-    //console.log("invalid token");
   } 
 });
 /**
@@ -362,9 +362,8 @@ app.post('/roads', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   const code = req.body.code;
   if (result) {
-    var layer = req.body.menu;
-    var geometry = await db.road(code);
-    //console.log(geometry.rows);
+    let layer = req.body.menu;
+    let geometry = await db.road(code);
     res.set('Content-Type', 'application/json');
     res.send(geometry.rows);
   } else {
@@ -377,6 +376,17 @@ app.post('/gps', (req, res, next) => {
   console.log(req.body);
   res.set('Content-Type', 'application/json');
   res.send({ express: 'Server online' });
+});
+
+app.post('/import', async (req, res) => {
+  //console.log(req.body.data[0]);
+  let header = req.body.data[0];
+  let project = "TEST";
+  let surface = await db.projecttype(project);
+  if (surface.rows[0].surface === "road") {
+    for (let i = 1; i < 2; i++)
+    await db.import(project, req.body.data[i]);
+  }
 });
 
 function genSalt() {

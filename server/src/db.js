@@ -66,6 +66,24 @@ module.exports = {
         });
     },
 
+    import: (project, data) => {
+        console.log(data);
+        return new Promise((resolve, reject) => {
+            let sql = "INSERT INTO faults(gid, id, project, service, group, board, area, roadid, " 
+                + "carriagewa, location, erp, side, position, class, fault, repair, priority, comment, "
+                + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, inspection, seq, faultid, photoid, geom) "
+                + "VALUES (" + data[0] + "," + 
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                var priority = resolve(result);
+                return priority;
+            });
+        });
+    },
+
     age: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT inspection FROM faults WHERE project = '" + project + "' GROUP BY inspection";

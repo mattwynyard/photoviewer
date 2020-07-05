@@ -112,8 +112,11 @@ export default class CustomModal extends React.Component {
     }
 
     fileLoaded(data, info) {
-        console.log(info);
-        console.log(data);
+        this.delegate.fileLoaded(data, info);
+    }
+
+    delegate(parent) {
+        this.delegate = parent;
     }
 
     changeMode(mode) {
@@ -447,7 +450,7 @@ export default class CustomModal extends React.Component {
                 <Modal.Body >
                     <CSVReader
                         cssClass="csv-reader-input"
-                        label="Select CSV to import  "
+                        label="Select CSV to import.  "
                         onFileLoaded={(data, fileInfo) => this.fileLoaded(data, fileInfo)}
                         inputStyle={{color: 'black'}}
                     />

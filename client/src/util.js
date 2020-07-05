@@ -76,6 +76,12 @@ const RDP = (l, eps) => {
     return '#' +  Math.random().toString(16).substr(-6);
   }
 
+  function formatDate(date) {
+    let tokens = date.split("_");
+    let month = getMonth(tokens[1]);
+    return month + " " + tokens[0];
+  }
+
   function getMonth(month) {
     switch(month) {
       case "01":
@@ -107,4 +113,4 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth}
+  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate}

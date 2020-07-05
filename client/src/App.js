@@ -10,7 +10,7 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 //import Vector2D from './Vector2D';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getMonth} from  './util.js'
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getMonth, formatDate} from  './util.js'
 
 class App extends React.Component {
 
@@ -32,7 +32,7 @@ class App extends React.Component {
       admin : false,
       filter: [], //filter for db request
       priorityDropdown: null,
-      priorityMode: "Grade",
+      priorityMode: "Priority",
       priorities: [], 
       ages: [],
       filterDropdowns: [],
@@ -162,13 +162,16 @@ class App extends React.Component {
       this.setState({selectedIndex: index});
       this.setState({selectedGLMarker: [this.state.objGLData[index - 1]]}); //0 is black ie the screen
       let bucket = this.getGLFault(index - 1, 'inspection');
-      if (bucket !== null) {
-        let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        if (suffix !== bucket) {
-          let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
-          console.log(prefix + bucket + "/")
-          this.setState({amazon: prefix + bucket + "/"});
+      if (this.state.projectMode === "road") {
+        if (bucket !== null) {
+          let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+          if (suffix !== bucket) {
+            let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
+            console.log(prefix + bucket + "/")
+            this.setState({amazon: prefix + bucket + "/"});
+          }
         }
+      } else {
       }
       
     } else {//user selected screen only - no marker
@@ -319,6 +322,13 @@ addGLMarkers(project, data, type, zoomTo) {
     high = "1";
     med = "2";
   }
+  if(this.state.login === "asm") {
+    high = "1";
+    med = "2";
+  } else {
+    high = "5";
+    med = "4";
+  }
   for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
@@ -331,7 +341,7 @@ addGLMarkers(project, data, type, zoomTo) {
       if (bucket != null) {
         let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
         if (bucket !== suffix) {
-          alpha = 0.4;
+          alpha = 0.5;
         }
       }
       if(data[i].priority === high) {
@@ -508,24 +518,6 @@ addCentrelines(data) {
   }
 
   /**
-   * returns the current icon size when zoom level changes
-   * @param {the current zoom level} zoom 
-   */
-  getSize(zoom) {
-    if (zoom < 10) {
-      return 4;
-    } else if (zoom >= 10 && zoom <= 14) {
-      return 10;
-    } else if (zoom > 14 && zoom <= 16) {
-      return 16;
-    } else if  (zoom > 16 && zoom <= 18){
-      return 20;
-    } else {
-      return 32;
-    }
-  }
-
-  /**
    * 
    * @param {array of late lngs} latlngs 
    */
@@ -543,14 +535,6 @@ addCentrelines(data) {
 
 
   //EVENTS
-  /**
-   * fires when user scrolls mousewheel
-   * param - e the mouse event
-   **/
-  onZoom(e) {
-    this.setState({zoom: e.target.getZoom()});
-    this.setState({bounds: e.target.getBounds()});
-  }
 
   /**
    * toogles between satellite and map view by swapping z-index
@@ -724,6 +708,8 @@ addCentrelines(data) {
       }
       if (this.state.login === 'asm') {
         this.setState({priorityMode: "Priority"});
+      } else {
+        this.setState({priorityMode: "Grade"});
       }
     } else {
       this.setState({message: "Username or password is incorrect!"});
@@ -897,6 +883,7 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
+            console.log(body.result);
             this.buildAge(body.result);              
           }     
         }
@@ -943,6 +930,7 @@ addCentrelines(data) {
   }
 
   buildAge(ages) {
+    console.log(ages);
     let arr = [];
     let arrb = [];
     if (ages[0].inspection === null) {
@@ -952,25 +940,20 @@ addCentrelines(data) {
       return;
     }
     for (let i = 0; i < ages.length; i++) {
-      let inspection = ages[i].inspection;
-      arrb.push(inspection);
+      let inspection = ages[i].inspection; 
       if (inspection !== null) {
+        arrb.push(inspection);       
         if(inspection === this.state.bucket ) {
-          arr.push("New")
+          arr.push(formatDate(inspection));  
         } else {
-          let tokens = ages[i].inspection.split("_");
-          let month = getMonth(tokens[1]);
-          arr.push(month +" " + tokens[0]);  
+          arr.push("pre-" + formatDate(this.state.bucket));  
         }
-      }
-           
+      }          
     }
     console.log(arrb);
     this.setState({filterAges: arrb})
     this.setState({ages: arr});
   }
-
-  
 
   /**
    * Sets default bucket suffix for the project
@@ -1060,13 +1043,48 @@ addCentrelines(data) {
     }
   }
 
+  async sendData(data) {
+    //console.log(data);
+    let json = JSON.stringify({data: data});
+    //console.log(json);
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/import', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        data: data
+      })
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const response = await response.json();
+          if (response.error != null) {
+            alert(`Error: ${response.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            console.log(response);
+          }     
+        }
+      }).catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });   
+    }    
+  }
+
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoomTo) {
     let body = this.getBody(project);
-    console.log(body);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1555,27 +1573,29 @@ addCentrelines(data) {
     this.setState({filter: filter})
   }
 
-  clickAges(e, value) {
+  clickAges(e, index) {
     let query = this.state.filterAges;
     let date = null;
-    if (e.target.id === "New") {
+    if (index === 1) {
+      console.log(e.target.id);
       date = this.state.bucket;
     } else {
-      date = "2020_02"
+      date = '2020_02';
     }
-      if (query.length === 1) {
-        if (e.target.checked) {
-          query.push(date);
-        } else {
-          e.target.checked = true; 
-        }
+    if (query.length === 1) {
+      if (e.target.checked) {
+        query.push(date);
       } else {
-        if (e.target.checked) {
-          query.push(date);
-        } else {
-          query.splice(query.indexOf(date), 1 );
-        }
+        e.target.checked = true; 
       }
+    } else {
+      if (e.target.checked) {
+        query.push(date);
+      } else {
+        query.splice(query.indexOf(date), 1 );
+      }
+    }
+    console.log(this.state.filterAges);
     this.filterLayer(this.state.activeProject, false); //fetch layer  
   }
 
@@ -1665,6 +1685,14 @@ addProject(e) {
 importData(e) {
   this.customModal.current.setState({name: 'import'});
   this.customModal.current.setShow(true);
+  this.customModal.current.delegate(this);
+}
+
+fileLoaded(data, info) {
+  console.log(info);
+  console.log(data);
+  this.customModal.current.setShow(false);
+  this.sendData(data);
 }
 
 
@@ -1932,7 +1960,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           </svg>
         );
       } else {
-        if (props.value === "New") {
+        if (props.value === props.bucket) {
           return (
             <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
               <circle cx="5" cy="5" r="3" />
@@ -1940,7 +1968,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           );
         } else {
           return (
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.5" fill={props.color}>
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
@@ -1999,7 +2027,6 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           center={centre}
           zoom={this.state.zoom}
           onClick={(e) => this.clickMap(e)}
-          onZoom={(e) => this.onZoom(e)}
           onPopupClose={(e) => this.closePopup(e)}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}
@@ -2017,7 +2044,8 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             {this.state.priorities.map((value, index) =>
                 <div key={`${index}`}>
                  <CustomSVG 
-                 value={value}>
+                 value={value}
+                 >
                  </CustomSVG>
                   <input
                     key={`${index}`} 
@@ -2041,26 +2069,30 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
                 <div key={`${index}`}>
                  <CustomSVG 
                   value={value}
-                  color={"magenta"}>
+                  color={"magenta"}
+                  bucket={formatDate(this.state.bucket)}>
                  </CustomSVG>
                  <CustomSVG 
                   value={value}
-                  color={"darkorange"}>
+                  color={"darkorange"}
+                  bucket={formatDate(this.state.bucket)}>
                  </CustomSVG>
                  <CustomSVG 
                   value={value}
-                  color={"limegreen"}>
+                  color={"limegreen"}
+                  bucket={formatDate(this.state.bucket)}>
                 </CustomSVG>
                 <CustomSVG 
                   value={value}
-                  color={"blue"}> 
+                  color={"blue"}
+                  bucket={formatDate(this.state.bucket)}> 
                  </CustomSVG>
                   <input
                     key={`${index}`} 
                     id={value} 
                     type="checkbox" 
                     defaultChecked 
-                    onClick={(e) => this.clickAges(e, value)}>
+                    onClick={(e) => this.clickAges(e, index)}>
                   </input>{" " + value}
                   <br></br>
                 </div> 
