@@ -12,6 +12,19 @@ function buildQuery(arr) {
     }
     return query;
 }
+
+function parseInteger(x) {
+    let n = parseInt(x)
+    if (Number.isNaN(n)) {
+        return 'NULL';
+    } else {
+        return n;
+    }
+}
+
+function parseString(s) {
+
+}
 const { Pool } = require('pg');
 
 const connection = new Pool({
@@ -60,25 +73,69 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var priority = resolve(result);
+                let priority = resolve(result);
                 return priority;
             });
         });
     },
 
-    import: (project, data) => {
-        console.log(data);
+    gid: () => {
         return new Promise((resolve, reject) => {
-            let sql = "INSERT INTO faults(gid, id, project, service, group, board, area, roadid, " 
-                + "carriagewa, location, erp, side, position, class, fault, repair, priority, comment, "
-                + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, inspection, seq, faultid, photoid, geom) "
-                + "VALUES (" + data[0] + "," + 
+            let sql = "SELECT MAX(gid) from faults";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var priority = resolve(result);
+                let max = resolve(result);
+                return max;
+            });
+        });
+    },
+
+    import: (project, data) => {
+        return new Promise((resolve, reject) => {
+            data[1] = "'" + data[1] + "'"; //id
+            data[2] = "'" + data[2] + "'"; //project
+            data[3] = "'" + data[3] + "'"; //service
+            data[4] = "'" + data[4] + "'"; //group
+            data[5] = "'" + data[5] + "'"; //board
+            data[6] = parseInteger(data[6]); //area
+            data[7] = parseInteger(data[7]); //roadid
+            data[8] = parseInteger(data[8]); //carriagewa
+            data[9] = "'" + data[9] + "'"; //board
+            data[10] = parseInteger(data[10]); //erp
+            data[11] = "'" + data[11] + "'"; //side
+            data[12] = "'" + data[12] + "'"; //position
+            data[13] = "'" + data[13] + "'"; //class
+            data[14] = "'" + data[14] + "'"; //fault
+            data[15] = "'" + data[15] + "'"; //repair
+            data[16] = parseInteger(data[16]); //priority
+            data[17] = "'" + data[17] + "'"; //comment
+            data[18] = "'" + data[18] + "'"; //size
+            data[19] = parseInteger(data[19]); //length
+            data[20] = parseInteger(data[20]); //width
+            data[21] = parseInteger(data[21]); //total
+            data[22] = parseFloat(data[22]); //easting
+            data[23] = parseFloat(data[23]); //northing
+            data[24] = parseFloat(data[24]); //latitude
+            data[25] = parseFloat(data[25]); //longitude
+            data[26] = "'" + data[26] + "'"; //faultime
+            data[27] = "'" + data[27] + "'"; //inspector
+            data[28] = "'" + data[28] + "'"; //inspection
+            data[29] = parseInteger(data[29]); //seq
+            data[30] = parseInteger(data[30]); //faultid
+            data[31] = "'" + data[31] + "'"; //photoid
+            let sql = "INSERT INTO faults(gid, id, project, service," + '"group"' + ", board, area, roadid, " 
+                 + "carriagewa, location, erp, side, position, class, fault, repair, priority, comment, "
+                 + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, inspection, seq, faultid, photoid, geom) "
+                 + "VALUES (" + data + ", ST_MakePoint(" + data[25] + "," + data[24] + "));"
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let priority = resolve(result);
                 return priority;
             });
         });
@@ -92,7 +149,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var priority = resolve(result);
+                let priority = resolve(result);
                 return priority;
             });
         });
@@ -106,7 +163,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var type = resolve(result);
+                let type = resolve(result);
                 return type;
             });
         });
@@ -120,7 +177,7 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                var classes = resolve(result);
+                let classes = resolve(result);
                 //console.log(project);
                 return classes;
             });

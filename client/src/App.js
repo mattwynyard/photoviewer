@@ -1062,13 +1062,14 @@ addCentrelines(data) {
         if(!response.ok) {
           throw new Error(response.status);
         } else {
-          const response = await response.json();
+          const result = await response.json();
+          
           if (response.error != null) {
             alert(`Error: ${response.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            console.log(response);
+            alert(result.rows + '\n' + result.errors);
           }     
         }
       }).catch((error) => {
@@ -1689,8 +1690,6 @@ importData(e) {
 }
 
 fileLoaded(data, info) {
-  console.log(info);
-  console.log(data);
   this.customModal.current.setShow(false);
   this.sendData(data);
 }

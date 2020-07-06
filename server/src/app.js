@@ -379,13 +379,26 @@ app.post('/gps', (req, res, next) => {
 });
 
 app.post('/import', async (req, res) => {
-  //console.log(req.body.data[0]);
-  let header = req.body.data[0];
   let project = "TEST";
   let surface = await db.projecttype(project);
   if (surface.rows[0].surface === "road") {
-    for (let i = 1; i < 2; i++)
-    await db.import(project, req.body.data[i]);
+    let result = await db.gid();
+    let gid = result.rows[0].max + 1;
+    let rows = 0;
+    let errors = 0;
+    for (let i = 1; i < req.body.data.length - 1; i++) {  
+      let data =  req.body.data[i];
+      data.unshift(gid);
+      let result = await db.import(project, data);
+      if(result.rowCount === 1) {
+        rows++;
+      } else {
+        errors++
+      }
+      gid++
+    } 
+    console.log("Inserted " + (rows) + " rows");
+    res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
   }
 });
 
