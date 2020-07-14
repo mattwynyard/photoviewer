@@ -753,7 +753,7 @@ addCentrelines(data) {
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
         let result = await this.requestDropdown(project, filters[i]);
-        console.log(result);
+        //console.log(result);
         dropdown.setData(result);
         dropdown.initialiseFilter();    
         dynamicDropdowns.push(dropdown);

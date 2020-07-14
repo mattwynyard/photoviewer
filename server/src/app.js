@@ -323,7 +323,7 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    console.log(req.body.inspection);
+    console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
@@ -367,6 +367,8 @@ app.post('/roads', async (req, res, next) => {
     res.set('Content-Type', 'application/json');
     res.send(geometry.rows);
   } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error:"Resource unavailable"});
     //console.log("Resource unavailable")
 
   }  
