@@ -23,8 +23,16 @@ function parseInteger(x) {
 }
 
 function parseString(s) {
-
+    if (s.indexOf('\'') >= 0) {
+        let index = s.indexOf('\'');
+        let str = s.substring(0, index) + s.substring(index + 1, s.length);
+        console.log(str);
+        return parseString(str);
+    } else {
+        return "'" + s + "'";
+    }
 }
+
 const { Pool } = require('pg');
 
 const connection = new Pool({
@@ -90,6 +98,52 @@ module.exports = {
                 let max = resolve(result);
                 return max;
             });
+        });
+    },
+
+    importFootpath: (data) => {
+        //console.log(data);
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseInteger(data[2]); //footpathid
+        data[3] = parseString(data[3]); //roadname
+        data[4] = parseInteger(data[4]); //roadid
+        data[5] = parseString(data[5]); //area
+        data[6] = parseString(data[6]); //displacement
+        data[7] = parseString(data[7]); //position
+        data[8] = parseInteger(data[8]); //erp
+        data[9] = parseString(data[9]); //side
+        data[10] =parseString(data[10]); //asset
+        data[11] = parseString(data[11]);//zone
+        data[12] = parseString(data[12]); //type
+        data[13] = parseString(data[13]); //fault
+        data[14] = parseString(data[14]); //cause
+        data[15] = parseString(data[15]); //size
+        data[16] = parseFloat(data[16]); //length
+        data[17] = parseFloat(data[17]); //width
+        data[18] = parseInteger(data[18]); //grade
+        data[19] = parseString(data[19]); //comment
+        data[20] = parseString(data[20]); //date
+        data[21] = parseFloat(data[21]); //latitude
+        data[22] = parseFloat(data[22]); //longitude
+        data[23] = parseString(data[23]); //faulttime
+        data[24] = parseString(data[24]); //inspector
+        data[25] = parseInteger(data[25]); //seq
+        data[26] = parseString(data[26]); //photoid
+
+
+        return new Promise((resolve, reject) => {
+            let sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
+                        "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, geom) "
+                 + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let priority = resolve(result);
+                return priority;
+            }); 
         });
     },
 
@@ -178,7 +232,6 @@ module.exports = {
                     return reject(err);
                 }
                 let classes = resolve(result);
-                //console.log(project);
                 return classes;
             });
         });
@@ -323,8 +376,8 @@ module.exports = {
         let _faults = buildQuery(faults);
         let _types = buildQuery(types);
         let _causes = buildQuery(causes);
-        let sql = "SELECT footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, photoid, ST_AsGeoJSON(geom) " 
-        + "FROM footpath WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
+        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, notes, photoid, ST_AsGeoJSON(geom) " 
+        + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
         + "AND type IN (" + _types + ") AND cause IN (" + _causes + ")";
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {

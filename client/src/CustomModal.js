@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Button, Form, Dropdown, DropdownButton}  from 'react-bootstrap';
+import {Modal, Button, Form, Dropdown, DropdownButton, InputGroup, FormControl}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 
 
@@ -47,6 +47,7 @@ export default class CustomModal extends React.Component {
     }
 
     changeProject(e) {
+        console.log(e.target.value);
         this.setState({project: e.target.value});
     }
 
@@ -112,7 +113,8 @@ export default class CustomModal extends React.Component {
     }
 
     fileLoaded(data, info) {
-        this.delegate.fileLoaded(data, info);
+        let project = this.state.project;
+        this.delegate.fileLoaded(project, data, info);
     }
 
     delegate(parent) {
@@ -448,6 +450,16 @@ export default class CustomModal extends React.Component {
                     </div>     
                 </Modal.Header>
                 <Modal.Body >
+                    <Form>
+                        <Form.Group controlId="project">
+                            <Form.Label>Project</Form.Label>
+                            <Form.Control 
+                                type="text" 
+                                placeholder="Enter Project Code"
+                                onChange={(e) => this.changeProject(e)}>
+                            </Form.Control>
+                        </Form.Group>
+                    </Form>
                     <CSVReader
                         cssClass="csv-reader-input"
                         label="Select CSV to import.  "

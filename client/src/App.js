@@ -126,7 +126,12 @@ class App extends React.Component {
       this.glLayer.delegate(this);
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
-      this.addEventListeners();   
+      this.addEventListeners(); 
+      if (this.state.login === 'asm') {
+        this.setState({priorityMode: "Priority"});
+      } else {
+        this.setState({priorityMode: "Grade"});
+      }  
     }  
   }
 
@@ -308,6 +313,7 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  */
 addGLMarkers(project, data, type, zoomTo) {
+  console.log(data);
   this.setState({amazon: this.state.activeLayer.amazon});
   let obj = {};
   let faults = [];
@@ -315,20 +321,24 @@ addGLMarkers(project, data, type, zoomTo) {
   let points = []; //TODO change to Float32Array to make selection faster
   let high = null;
   let med = null;
-  if(this.state.login === "downer" || this.state.login === "odc" || this.state.login === "tdc") {
-    high = "5";
-    med = "4";
+  let low = null;
+
+  if (type === "footpath") {
+    high = 5;
+    med = 4;
+    low = 3;
   } else {
-    high = "1";
-    med = "2";
+    if(this.state.login === "asm") {
+      high = 5;
+      med = 4;
+      low = 3;
+    } else {
+      high = 1;
+      med = 2;
+      low = 3;
+    }
   }
-  if(this.state.login === "asm") {
-    high = "1";
-    med = "2";
-  } else {
-    high = "5";
-    med = "4";
-  }
+
   for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
@@ -358,14 +368,19 @@ addGLMarkers(project, data, type, zoomTo) {
         points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
       } else if (data[i].grade === med) {
         points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
-      } else {
+      } else if (data[i].grade === low) {
         points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+      } else {
+        points.push(point.x, point.y, 0, 0.8, 0.8, 1, i);
       }
     }    
     latlngs.push(latlng);
     if (type === "footpath") {
+      let id = data[i].id.split('_');
+      //console.log(id);
       obj = {
         type: type,
+        id: id[id.length - 1],
         roadid: data[i].roadid,
         footapthid: data[i].footpathid,
         roadname: data[i].roadname,        
@@ -377,7 +392,8 @@ addGLMarkers(project, data, type, zoomTo) {
         grade: data[i].grade,
         photo: data[i].photoid,
         datetime: data[i].faulttime,
-        latlng: latlng
+        latlng: latlng,
+        status: data[i].status
       };
     } else {
       obj = {
@@ -783,7 +799,6 @@ addCentrelines(data) {
       }
       this.filterLayer(project, true); //fetch layer  
     });
-   
   }
 
   async requestDropdown(project, code) {
@@ -1043,7 +1058,7 @@ addCentrelines(data) {
     }
   }
 
-  async sendData(data) {
+  async sendData(project, data) {
     //console.log(data);
     let json = JSON.stringify({data: data});
     //console.log(json);
@@ -1056,7 +1071,8 @@ addCentrelines(data) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        data: data
+        data: data,
+        project: project
       })
       }).then(async (response) => {
         if(!response.ok) {
@@ -1689,9 +1705,10 @@ importData(e) {
   this.customModal.current.delegate(this);
 }
 
-fileLoaded(data, info) {
+fileLoaded(project, data, info) {
+  console.log(project);
   this.customModal.current.setShow(false);
-  this.sendData(data);
+  this.sendData(project, data);
 }
 
 
@@ -1908,11 +1925,12 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           </div>	 
         );
       } else if(props.obj.type === "footpath") {
+        console.log(props.obj);
         return (
           <div className="container">
             <div className="row">
               <div className="col-md-6">
-                  <b>{"Type: "}</b> {props.obj.fault} <br></br> 
+              <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
                   <b>{"Priority: "} </b> {props.obj.grade} <br></br>
                   <b>{"Location: "} </b> {props.obj.roadname}<br></br>
                   <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
@@ -1923,6 +1941,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
                    </Button>
               </div>
               <div className="col-md-6">
+                <b>{"Type: "}</b> {props.obj.fault} <br></br> 
                 <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
                 <b>{"Size: "}</b> {props.obj.size} m<br></br> 
                 <b>{"DateTime: "} </b> {props.obj.datetime}
@@ -2279,9 +2298,14 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
               className="rightArrow" 
               src={"rightArrow_128.png"} 
               onClick={(e) => this.clickNext(e)}/>
+             
           </div>
 		    </Modal.Body >
         <Modal.Footer>
+        <label className="switch">
+      <input type="checkbox"></input>
+      <span className="slider round"></span>
+      </label>
         {this.state.selectedGLMarker.map((obj, index) =>  
           <CustomTable
           key={`${index}`}  
@@ -2293,6 +2317,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
           <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
             Close
           </Button>
+          
         </Modal.Footer>
       </Modal>
       </>

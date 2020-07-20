@@ -348,7 +348,7 @@ app.post('/layer', async (req, res) => {
     } else {
       await db.updateFilterCount(project);
     }  
-    res.set('Content-Type', 'application/json')
+    res.set('Content-Type', 'application/json');
     res.send({type: surface.rows[0].surface, geometry: geometry.rows});
   } else {
     res.send({error: "Invalid token"});
@@ -381,7 +381,9 @@ app.post('/gps', (req, res, next) => {
 });
 
 app.post('/import', async (req, res) => {
-  let project = "TEST";
+  //let project = "TEST";
+  let project = req.body.project;
+  console.log(project);
   let surface = await db.projecttype(project);
   if (surface.rows[0].surface === "road") {
     let result = await db.gid();
@@ -401,7 +403,22 @@ app.post('/import', async (req, res) => {
     } 
     console.log("Inserted " + (rows) + " rows");
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+  } else {
+    let rows = 0;
+    let errors = 0;
+    for (let i = 1; i < req.body.data.length - 1; i++) {  
+      let data =  req.body.data[i];
+      let result = await db.importFootpath(data);
+      if(result.rowCount === 1) {
+        rows++;
+      } else {
+        errors++
+      }
+     
   }
+  console.log("Inserted " + (rows) + " rows");
+  res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+}
 });
 
 function genSalt() {
