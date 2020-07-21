@@ -9,6 +9,7 @@ import './L.CanvasOverlay';
 import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
+import PhotoModal from './PhotoModal.js';
 //import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getMonth, formatDate} from  './util.js'
 
@@ -19,6 +20,7 @@ class App extends React.Component {
     this.customNav = React.createRef();
     this.menu = React.createRef();
     this.customModal = React.createRef();
+    this.photoModal = React.createRef();
     this.state = {
       location: {
         lat: -41.2728,
@@ -89,6 +91,7 @@ class App extends React.Component {
       mouseclick: null,
       objGLData: [],
       selectedGLMarker: [],
+      selectedStatus: null,
       projectMode: null, //the type of project being displayed footpath or road
       
       newUser: null,
@@ -313,7 +316,6 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  */
 addGLMarkers(project, data, type, zoomTo) {
-  console.log(data);
   this.setState({amazon: this.state.activeLayer.amazon});
   let obj = {};
   let faults = [];
@@ -354,6 +356,7 @@ addGLMarkers(project, data, type, zoomTo) {
           alpha = 0.5;
         }
       }
+      
       if(data[i].priority === high) {
         points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
       } else if (data[i].priority === med) {
@@ -364,15 +367,20 @@ addGLMarkers(project, data, type, zoomTo) {
         points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
       }
     } else {
-      if(data[i].grade === high) {
-        points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
-      } else if (data[i].grade === med) {
-        points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
-      } else if (data[i].grade === low) {
-        points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+      if (data[i].status === "active") {
+        if(data[i].grade === high) {
+          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
+        } else if (data[i].grade === med) {
+          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
+        } else if (data[i].grade === low) {
+          points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+        } else {
+          points.push(point.x, point.y, 0, 0.8, 0.8, 1, i);
+        }
       } else {
-        points.push(point.x, point.y, 0, 0.8, 0.8, 1, i);
+        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.5, i);
       }
+      
     }    
     latlngs.push(latlng);
     if (type === "footpath") {
@@ -589,9 +597,11 @@ addCentrelines(data) {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.setState({show: true});
+    
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
+    this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
+    //this.setState({show: true});
   }
 
   getPhoto(direction) {
@@ -610,21 +620,7 @@ addCentrelines(data) {
     return newPhoto;
   }
 
-  clickPrev(e) {
-  const newPhoto = this.getPhoto("prev");
-  this.setState({currentPhoto: newPhoto});
-  const url = this.state.amazon + newPhoto + ".jpg";
-  //console.log(url);
-  this.setState({photourl: url});
-  }
   
-  clickNext(e) {
-  const newPhoto = this.getPhoto("next");
-  this.setState({currentPhoto: newPhoto});
-  const url = this.state.amazon + newPhoto + ".jpg";
-	this.setState({photourl: url});
-  }
-
   /**
    * resets to null state when user logouts
    */
@@ -1121,6 +1117,7 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
+            //console.log(body)
             if (body.type === "road") {
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
             } else {
@@ -1521,11 +1518,7 @@ addCentrelines(data) {
     navigator.clipboard.writeText(position);
   }
 
-  closePhotoModal(e) {
-    e.preventDefault();
-    this.setState({show: false});
-    
-  }
+  
 
   changeLayer(e) {
     console.log("redraw");
@@ -1683,6 +1676,15 @@ getGLFault(index, attribute) {
     }
   } else {
     return null;
+  }
+}
+
+changeStatus(obj, e) {
+  console.log(obj);
+  if (obj.status === "active") {
+    obj.status = "completed";
+  } else {
+    obj.status = "active";
   }
 }
 
@@ -1906,51 +1908,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
       );      
     }
 
-    const CustomTable = function(props) {
-      if(props.obj.type === "road") {
-        return (
-          <div className="container">
-            <div className="row">
-              <div className="col-md-6">
-                  <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-                  <b>{"Location: "} </b> {props.obj.location}<br></br>
-                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
-              </div>
-              <div className="col-md-6">
-                <b>{"Priority: "} </b> {props.obj.priority} <br></br>
-                <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
-                <b>{"DateTime: "} </b> {props.obj.datetime}
-              </div>
-            </div>
-          </div>	 
-        );
-      } else if(props.obj.type === "footpath") {
-        console.log(props.obj);
-        return (
-          <div className="container">
-            <div className="row">
-              <div className="col-md-6">
-              <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
-                  <b>{"Priority: "} </b> {props.obj.grade} <br></br>
-                  <b>{"Location: "} </b> {props.obj.roadname}<br></br>
-                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
-                  <Button variant="outline-secondary" 
-                   size="sm" 
-                   onClick={props.copy} 
-                   active >Copy
-                   </Button>
-              </div>
-              <div className="col-md-6">
-                <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-                <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
-                <b>{"Size: "}</b> {props.obj.size} m<br></br> 
-                <b>{"DateTime: "} </b> {props.obj.datetime}
-              </div>
-            </div>
-          </div>	 
-        );
-      }    
-    }
+    
 
     const CustomSVG = function(props) {
       if (props.value === "Grade 5" || props.value === "Priority 1") {
@@ -2274,52 +2232,15 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
         </Modal.Footer>
       </Modal>
       {/*photo modal */}    
-      <Modal dialogClassName={"photoModal"} 
+      <PhotoModal
+        ref={this.photoModal}
         show={this.state.show} 
-        size='xl' 
-        centered={true}
-        onHide={() => this.setState({show: false})}
-        >
-        <Modal.Body className="photoBody">	
-          <div className="container">
-          {this.state.selectedGLMarker.map((obj, index) => 
-            <img
-              key={`${index}`}  
-              className="photo" 
-              src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
-              data={fault}>
-            </img>
-          )}
-            <img 
-              className="leftArrow" 
-              src={"leftArrow_128.png"} 
-              onClick={(e) => this.clickPrev(e)}/> 
-            <img 
-              className="rightArrow" 
-              src={"rightArrow_128.png"} 
-              onClick={(e) => this.clickNext(e)}/>
-             
-          </div>
-		    </Modal.Body >
-        <Modal.Footer>
-        <label className="switch">
-      <input type="checkbox"></input>
-      <span className="slider round"></span>
-      </label>
-        {this.state.selectedGLMarker.map((obj, index) =>  
-          <CustomTable
-          key={`${index}`}  
-          obj={this.getGLFault(this.state.selectedIndex - 1, null)}
-            //TODO copy not working
-            copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}>       
-          </CustomTable >
-          )}
-          <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
-            Close
-          </Button>
-          
-        </Modal.Footer>
-      </Modal>
+        marker={this.state.selectedGLMarker}
+        amazon={this.state.amazon}
+        currentPhoto={this.state.currentPhoto}
+      >
+
+      </PhotoModal>
       </>
     );
   }
