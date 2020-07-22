@@ -33,8 +33,8 @@ const CustomSlider = function(props) {
                 <input 
                   type="checkbox"
                   checked={false}
-                  onchange={props.callbackOnChange}
-                  onclick={props.onClick}
+                  onChange={props.callbackOnChange}
+                  onClick={props.onClick}
                 >
                 </input>
                 <span className="slider round"></span>
