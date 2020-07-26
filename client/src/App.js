@@ -107,6 +107,8 @@ class App extends React.Component {
     .catch(err => alert(err));
     //this.setPriorities();
     this.initializeGL();
+    this.customModal.current.delegate(this);
+    this.photoModal.current.delegate(this);
   }
 
   componentDidUpdate() {   
@@ -378,7 +380,7 @@ addGLMarkers(project, data, type, zoomTo) {
           points.push(point.x, point.y, 0, 0.8, 0.8, 1, i);
         }
       } else {
-        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.5, i);
+        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i);
       }
       
     }    
@@ -401,7 +403,8 @@ addGLMarkers(project, data, type, zoomTo) {
         photo: data[i].photoid,
         datetime: data[i].faulttime,
         latlng: latlng,
-        status: data[i].status
+        status: data[i].status,
+        datefixed: data[i].datefixed
       };
     } else {
       obj = {
@@ -600,6 +603,7 @@ addCentrelines(data) {
     
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
+    //this.photoModal.current.delegate(this);
     this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
     //this.setState({show: true});
   }
@@ -1117,7 +1121,7 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            //console.log(body)
+            console.log(body)
             if (body.type === "road") {
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
             } else {
@@ -1401,6 +1405,40 @@ addCentrelines(data) {
     }
   }
 
+  async updateStatusAsync(marker, status) {
+    if (this.state.login !== "Login") {
+      await fetch('https://' + this.state.host + '/status', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: this.state.login,
+          project: this.state.activeProject,
+          status: status,
+          marker: marker
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        console.log(body);
+        if (body.error != null) {
+          alert(`Error: ${body.error}\n`);
+        } else {
+          if (body.rows != null) {
+            this.filterLayer(this.state.activeProject, false);
+          }
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      });
+    }
+  }
+
   getArray(value) {
     if (value === "Asset") {
       return this.state.assetCheckboxes;
@@ -1477,7 +1515,7 @@ addCentrelines(data) {
   }
 
   changeCheck(e) {
-    console.log("change")
+    //console.log("change")
   }
 
 /**
@@ -1498,15 +1536,6 @@ addCentrelines(data) {
     console.log(e.target);
   }
 
-  /**
-   * called when photoviewer closed
-   */
-  closeModal() {
-    this.setState({show: false});
-    this.setState({popover: false});
-  }
-
-  
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1679,15 +1708,6 @@ getGLFault(index, attribute) {
   }
 }
 
-changeStatus(obj, e) {
-  console.log(obj);
-  if (obj.status === "active") {
-    obj.status = "completed";
-  } else {
-    obj.status = "active";
-  }
-}
-
 // Admin
 
 addUser(e) {
@@ -1704,7 +1724,7 @@ addProject(e) {
 importData(e) {
   this.customModal.current.setState({name: 'import'});
   this.customModal.current.setShow(true);
-  this.customModal.current.delegate(this);
+  //this.customModal.current.delegate(this);
 }
 
 fileLoaded(project, data, info) {
@@ -1736,6 +1756,10 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
   this.addNewProject(code, client, description, date, tacode, amazon, surface);
   this.customModal.current.setShow(false);
 
+}
+
+updateStatus(marker, status) {
+  this.updateStatusAsync(marker, status);
 }
 
   render() {
@@ -2008,6 +2032,8 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
             attribution={this.state.attribution}
             url={this.state.url}
             zIndex={998}
+            maxNativeZoom={19}
+            maxZoom={22}
           />
           <ScaleControl className="scale"/>
 
@@ -2238,6 +2264,7 @@ createProject = (code, client, description, date, tacode, amazon, surface) => {
         marker={this.state.selectedGLMarker}
         amazon={this.state.amazon}
         currentPhoto={this.state.currentPhoto}
+        callbackUpdateStatus={this.updateStatus}
       >
 
       </PhotoModal>

@@ -101,6 +101,23 @@ module.exports = {
         });
     },
 
+    updateStatus: (project, id, status) => {
+
+        let pid = project + "_" + id;
+        console.log(pid);
+        return new Promise((resolve, reject) => {
+            let sql = "UPDATE footpaths SET status= '" + status + "' WHERE id='" + pid + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let res = resolve(result);
+                return res;
+            });
+        });
+    },
+
     importFootpath: (data) => {
         //console.log(data);
         data[0] = parseString(data[0]); //id
@@ -211,7 +228,7 @@ module.exports = {
 
     filters: (project, parameter) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT " + parameter + " FROM footpath WHERE project = '" + project + "' GROUP BY " + parameter + "";
+            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

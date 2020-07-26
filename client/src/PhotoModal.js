@@ -2,97 +2,8 @@ import React from 'react';
 import {Modal, Button}  from 'react-bootstrap';
 import {pad} from  './util.js'
 
-<<<<<<< HEAD
-const CustomSlider = function(props) {
-    if (props.status === "active") {
-      return (
-        <div>
-          <label className="lbstatus">
-            Status: {props.status}
-          </label>
-          <label 
-            className="switch">
-            <input 
-              type="checkbox"
-              checked={true}
-              onChange={props.callbackOnChange}
-              onClick={props.onClick}
-            >
-            </input>
-            <span className="slider round"></span>
-          </label>
-        </div>
-      );
-    } else {
-        return (
-            <div>
-              <label className="lbstatus">
-                Status: {props.status}
-              </label>
-              <label 
-                className="switch">
-                <input 
-                  type="checkbox"
-                  checked={false}
-                  onChange={props.callbackOnChange}
-                  onClick={props.onClick}
-                >
-                </input>
-                <span className="slider round"></span>
-              </label>
-            </div>
-          );
-    }
-}
 
-const CustomTable = function(props) {
-    if(props.obj.type === "road") {
-      return (
-        <div className="container">
-          <div className="row">
-            <div className="col-md-6">
-                <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-                <b>{"Location: "} </b> {props.obj.location}<br></br>
-                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
-            </div>
-            <div className="col-md-6">
-              <b>{"Priority: "} </b> {props.obj.priority} <br></br>
-              <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
-              <b>{"DateTime: "} </b> {props.obj.datetime}
-            </div>
-          </div>
-        </div>	 
-      );
-    } else if(props.obj.type === "footpath") {
-      
-      return (
-        <div className="container">
-          <div className="row">
-            <div className="col-md-6">
-            <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
-                <b>{"Priority: "} </b> {props.obj.grade} <br></br>
-                <b>{"Location: "} </b> {props.obj.roadname}<br></br>
-                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
-                <Button variant="outline-secondary" 
-                 size="sm" 
-                 onClick={props.copy} 
-                 active >Copy
-                 </Button>
-            </div>
-            <div className="col-md-6">
-              <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-              <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
-              <b>{"Size: "}</b> {props.obj.size} m<br></br> 
-              <b>{"DateTime: "} </b> {props.obj.datetime}
-            </div>
-          </div>
-        </div>	 
-      );
-    }    
-  }
 
-=======
->>>>>>> 3001dc08609730d0ccaa5f63a5a9a42e3eb4b221
 export default class PhotoModal extends React.Component {
     constructor(props) {
         super(props);
@@ -103,23 +14,29 @@ export default class PhotoModal extends React.Component {
             type: null,
             show: props.show,
             status: null,
-            checked: null
+            checked: null,
+            repaired: null,
+            callbackUpdateStatus: props.callbackUpdateStatus,
         }
     }
 
+   
+
     setModal(show, marker, amazon, currentPhoto, type) {
-        console.log(marker);
         this.setState({show: show});
         this.setState({type: marker[0].type});
         this.setState({status: marker[0].status});
+        this.setState({repaired:  marker[0].datefixed});
         this.setState({amazon: amazon});
         this.setState({currentPhoto: currentPhoto});
         this.setState({selectedGLMarker: marker});
 
         if (marker[0].status === "active") {
           this.setState({checked: true});
+          this.setState({repaired:  ""});
         } else {
           this.setState({checked: false});
+          this.setState({repaired:  marker[0].datefixed});
         }
     
     }
@@ -156,32 +73,98 @@ export default class PhotoModal extends React.Component {
         this.setState({photourl: url});
     }
 
-    changeSlider(e) {
-      console.log(e.target.checked)
-      console.log("state" + this.state.checked) 
+    changeSlider = (e) => {
+      
+    }
+
+    changeDate = (e) => {
+      this.setState({repaired: e.target.value});
     }
 
     clickSlider(e) {
-        e.preventDefault();
-        console.log(this.state.checked);
-        
         if (!this.state.checked) {
-          this.setState({status: "active", checked: true});  
+          this.setState(() => ({
+            status: "active", 
+            checked: true
+          }));  
           console.log("click");
         } else {
-          this.setState({status: "completed", checked: false});    
+          this.setState(() => ({
+            status: "completed", 
+            checked: false
+          }));    
         } 
-        console.log("state" + this.state.checked)  
     }
       
     closePhotoModal(e) {
-        e.preventDefault();
+        this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status);
         this.setState({show: false});     
     }
 
+    delegate(parent) {
+      this.delegate = parent;
+    }
+
+      /**
+     * Copies the lat lng from photo modal to users clipboard
+     * @param {*} e button lcick event
+     * @param {*} latlng Leaflet latlng object
+     */
+    copyToClipboard(e, latlng) {
+      e.preventDefault();
+      const position = latlng.lat + " " + latlng.lng
+      navigator.clipboard.writeText(position);
+    }
+
+    
     render() {
-      console.log("state-render " + this.state.checked);
-      let checked = this.state.checked;
+
+      const DateBox = function(props) {
+        if (props.status === "active") {
+          return (
+            <div>
+              <label><b>{"Date Repaired: "} </b></label>
+              <input
+                value={props.repaired}
+                type="date" 
+                id="daterepaired"
+                onChange={props.onChange}
+                >
+              </input>
+            </div>     
+          );
+        } else {
+          return (
+            <div>
+              <label><b>{"Date Repaired: "}</b> {props.repaired}</label>
+            </div>     
+          );
+        }
+        
+      }
+
+      const Slider = function(props) {
+        return (
+          <div>
+            <label className="lbstatus">
+              <b>Status:</b> {props.status}
+            </label>
+            <label 
+              className="switch">
+              <input 
+                type="checkbox"
+                checked={props.checked}
+                onClick={props.onClick}
+                onChange={props.onChange}
+
+              >
+              </input>
+              <span className="slider round"></span>
+            </label>
+          </div>
+        );
+      }
+  
       const CustomTable = function(props) {
         if(props.obj.type === "road") {
           return (
@@ -200,12 +183,11 @@ export default class PhotoModal extends React.Component {
               </div>
             </div>	 
           );
-        } else if(props.obj.type === "footpath") {
-          
+        } else if(props.obj.type === "footpath") {      
           return (
             <div className="container">
               <div className="row">
-                <div className="col-md-6">
+                <div className="col-md-4">
                 <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
                     <b>{"Priority: "} </b> {props.obj.grade} <br></br>
                     <b>{"Location: "} </b> {props.obj.roadname}<br></br>
@@ -216,23 +198,38 @@ export default class PhotoModal extends React.Component {
                      active >Copy
                      </Button>
                 </div>
-                <div className="col-md-6">
+                <div className="col-md-4">
                   <b>{"Type: "}</b> {props.obj.fault} <br></br> 
                   <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
                   <b>{"Size: "}</b> {props.obj.size} m<br></br> 
                   <b>{"DateTime: "} </b> {props.obj.datetime}
                 </div>
+                <div className="col-md-4">
+                <Slider
+                  status={props.status}
+                  checked={props.checked}
+                  onClick={props.onClick}
+                  onChange={props.onChange}              
+                  >
+                </Slider>
+                <DateBox 
+                  repaired={props.repaired}
+                  onChange={props.onDateChange}
+                  status={props.status}
+                >
+                </DateBox>
+                </div>
               </div>
             </div>	 
           );
-        }    
+        }      
       }
         return (
         <Modal dialogClassName={"photoModal"} 
             show={this.state.show} 
             size='xl' 
             centered={true}
-            onHide={() => this.setState({show: false})}
+            onHide={(e) => this.closePhotoModal(e)}
         >
         <Modal.Body className="photoBody">	
           <div className="container">
@@ -251,44 +248,24 @@ export default class PhotoModal extends React.Component {
             <img 
               className="rightArrow" 
               src={"rightArrow_128.png"} 
-              onClick={(e) => this.clickNext(e)}/>
-             
+              onClick={(e) => this.clickNext(e)}/>         
           </div>
 		    </Modal.Body >
         <Modal.Footer>
-        {this.state.selectedGLMarker.map((obj, index) =>  
-          <div key={`${index}`}>
-            <label className="lbstatus">
-              Status: {this.state.status}
-            </label>
-            <label 
-              className="switch">
-              <input 
-                type="checkbox"
-                checked={checked}
-                onClick={(e) => this.clickSlider(e)}
-                onChange={(e) => this.changeSlider(e)}
-              >
-              </input>
-              <span className="slider round"></span>
-            </label>
-        </div>
-        )}
-        {this.state.selectedGLMarker.map((obj, index) =>  
-          <CustomTable
-            key={`${index}`}  
-            obj={obj}
+          <CustomTable 
+            obj={this.state.selectedGLMarker[0]}
+            status={this.state.status}
+            repaired={this.state.repaired}
+            checked={this.state.checked}
+            onClick={(e) => this.clickSlider(e)}
+            onChange={(e) => this.changeSlider(e)}
+            onDateChange={(e) => this.changeDate(e)}
             //TODO copy not working
             // copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}
-            >       
+            >      
           </CustomTable >
-          )}
-          <Button variant="primary" onClick={(e) => this.closePhotoModal(e)}>
-            Close
-          </Button>
-          
         </Modal.Footer>
       </Modal>
     );
-    }
+  }
 }

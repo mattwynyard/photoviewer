@@ -323,7 +323,7 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    console.log(req.body);
+    //console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
@@ -374,8 +374,26 @@ app.post('/roads', async (req, res, next) => {
   }  
 });
 
-app.post('/gps', (req, res, next) => {
-  console.log(req.body);
+app.post('/status', async (req, res) => {
+  const token = users.findUserToken(req.headers.authorization, req.body.user);
+  const id = req.body.marker[0].id;
+  const project = req.body.project;
+  const status = req.body.status;
+  if (token) {
+    let result = await db.updateStatus(project, id, status);
+    if(result.rowCount === 1) {
+      res.set('Content-Type', 'application/json');
+      res.send({rows: "Updated 1 row"});
+    } else {
+      console.log(result);
+      res.set('Content-Type', 'application/json');
+      res.send({error: "failed to update"});
+    }
+  }
+});
+
+app.post('/gps', (req, res) => {
+  //console.log(req.body.marker[0].id);
   res.set('Content-Type', 'application/json');
   res.send({ express: 'Server online' });
 });
