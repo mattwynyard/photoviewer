@@ -1121,7 +1121,7 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            console.log(body)
+            //console.log(body)
             if (body.type === "road") {
               await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
             } else {
@@ -1405,7 +1405,7 @@ addCentrelines(data) {
     }
   }
 
-  async updateStatusAsync(marker, status) {
+  async updateStatusAsync(marker, status, date) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/status', {
         method: 'POST',
@@ -1418,7 +1418,8 @@ addCentrelines(data) {
           user: this.state.login,
           project: this.state.activeProject,
           status: status,
-          marker: marker
+          marker: marker,
+          date: date
         })
       }).then(async (response) => {
         const body = await response.json();

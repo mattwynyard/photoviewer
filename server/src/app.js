@@ -22,22 +22,22 @@ const environment = process.env.ENVIRONMENT;
 
 // comment out create server code below when deploying to server
 // server created in index.js
-console.log("mode: " + environment);
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
-} else {
-  const options = {
-    key: fs.readFileSync('./server.key', 'utf8'),
-    cert: fs.readFileSync('./server.cert', 'utf8')
-  }
-  https.createServer(options, app).listen(port, () => {
-    console.log(`Listening: https://${host}:${port}`);
-    });
-}
+// console.log("mode: " + environment);
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       console.log(`Listening: http://${hostname}:${port}`);
+//    });
+// } else {
+//   const options = {
+//     key: fs.readFileSync('./server.key', 'utf8'),
+//     cert: fs.readFileSync('./server.cert', 'utf8')
+//   }
+//   https.createServer(options, app).listen(port, () => {
+//     console.log(`Listening: https://${host}:${port}`);
+//     });
+// }
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -376,11 +376,14 @@ app.post('/roads', async (req, res, next) => {
 
 app.post('/status', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
-  const id = req.body.marker[0].id;
-  const project = req.body.project;
-  const status = req.body.status;
+ 
   if (token) {
-    let result = await db.updateStatus(project, id, status);
+    const id = req.body.marker[0].id;
+    const project = req.body.project;
+    const status = req.body.status;
+    const date = req.body.date;
+    console.log(date);
+    let result = await db.updateStatus(project, id, status, date);
     if(result.rowCount === 1) {
       res.set('Content-Type', 'application/json');
       res.send({rows: "Updated 1 row"});

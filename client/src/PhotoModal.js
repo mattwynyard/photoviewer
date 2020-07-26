@@ -87,7 +87,6 @@ export default class PhotoModal extends React.Component {
             status: "active", 
             checked: true
           }));  
-          console.log("click");
         } else {
           this.setState(() => ({
             status: "completed", 
@@ -97,7 +96,7 @@ export default class PhotoModal extends React.Component {
     }
       
     closePhotoModal(e) {
-        this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status);
+        this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status, this.state.repaired);
         this.setState({show: false});     
     }
 
