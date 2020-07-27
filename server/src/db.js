@@ -75,7 +75,7 @@ module.exports = {
 
     priority: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT priority FROM faults WHERE project = '" + project + "' GROUP BY priority";
+            let sql = "SELECT priority FROM carriageways WHERE project = '" + project + "' GROUP BY priority";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -89,7 +89,7 @@ module.exports = {
 
     gid: () => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT MAX(gid) from faults";
+            let sql = "SELECT MAX(gid) from carriageways";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -197,7 +197,7 @@ module.exports = {
             data[29] = parseInteger(data[29]); //seq
             data[30] = parseInteger(data[30]); //faultid
             data[31] = "'" + data[31] + "'"; //photoid
-            let sql = "INSERT INTO faults(gid, id, project, service," + '"group"' + ", board, area, roadid, " 
+            let sql = "INSERT INTO carriageways(gid, id, project, service," + '"group"' + ", board, area, roadid, " 
                  + "carriagewa, location, erp, side, position, class, fault, repair, priority, comment, "
                  + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, inspection, seq, faultid, photoid, geom) "
                  + "VALUES (" + data + ", ST_MakePoint(" + data[25] + "," + data[24] + "));"
@@ -214,7 +214,7 @@ module.exports = {
 
     age: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT inspection FROM faults WHERE project = '" + project + "' GROUP BY inspection";
+            let sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -242,7 +242,7 @@ module.exports = {
 
     classes: ()=> {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM faults GROUP BY class) ORDER BY priority';
+            let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -256,7 +256,7 @@ module.exports = {
 
     class: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM faults WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+            let sql = "SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -300,7 +300,7 @@ module.exports = {
     //DEPRECIATED
     faults: (project, code) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT fault FROM faults WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
+            let sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -414,8 +414,8 @@ module.exports = {
         console.log(inspection);
         return new Promise((resolve, reject) => {
             if (inspection.length === 0) {
-                connection.query("SELECT roadid, carriagewa, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -424,8 +424,8 @@ module.exports = {
                 return geometry;
                 }); 
             }  else if (filter.length == 0) {
-                connection.query("SELECT roadid, carriagewa, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -435,8 +435,8 @@ module.exports = {
                 }); 
             } else {
                 let condition = buildQuery(filter);
-                connection.query("SELECT roadid, carriagewa, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, ST_AsGeoJSON(geom) " 
-                + "FROM faults WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);

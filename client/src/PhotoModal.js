@@ -30,7 +30,7 @@ export default class PhotoModal extends React.Component {
         this.setState({amazon: amazon});
         this.setState({currentPhoto: currentPhoto});
         this.setState({selectedGLMarker: marker});
-
+        console.log(marker)
         if (marker[0].status === "active") {
           this.setState({checked: true});
           this.setState({repaired:  ""});
@@ -169,15 +169,30 @@ export default class PhotoModal extends React.Component {
           return (
             <div className="container">
               <div className="row">
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <b>{"Type: "}</b> {props.obj.fault} <br></br> 
                     <b>{"Location: "} </b> {props.obj.location}<br></br>
                     <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
                 </div>
-                <div className="col-md-6">
-                  <b>{"Priority: "} </b> {props.obj.priority} <br></br>
+                <div className="col-md-4">
+                  <b>{"Grade: "} </b> {props.obj.priority} <br></br>
                   <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
                   <b>{"DateTime: "} </b> {props.obj.datetime}
+                </div>
+                <div className="col-md-4">
+                <Slider
+                  status={props.status}
+                  checked={props.checked}
+                  onClick={props.onClick}
+                  onChange={props.onChange}              
+                  >
+                </Slider>
+                <DateBox 
+                  repaired={props.repaired}
+                  onChange={props.onDateChange}
+                  status={props.status}
+                >
+                </DateBox>
                 </div>
               </div>
             </div>	 
@@ -187,15 +202,15 @@ export default class PhotoModal extends React.Component {
             <div className="container">
               <div className="row">
                 <div className="col-md-4">
-                <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
-                    <b>{"Priority: "} </b> {props.obj.grade} <br></br>
-                    <b>{"Location: "} </b> {props.obj.roadname}<br></br>
-                    <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
-                    <Button variant="outline-secondary" 
-                     size="sm" 
-                     onClick={props.copy} 
-                     active >Copy
-                     </Button>
+                  <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
+                  <b>{"Grade: "} </b> {props.obj.grade} <br></br>
+                  <b>{"Location: "} </b> {props.obj.roadname}<br></br>
+                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
+                  <Button variant="outline-secondary" 
+                    size="sm" 
+                    onClick={props.copy} 
+                    active >Copy
+                  </Button>
                 </div>
                 <div className="col-md-4">
                   <b>{"Type: "}</b> {props.obj.fault} <br></br> 

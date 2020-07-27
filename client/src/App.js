@@ -11,7 +11,7 @@ import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 //import Vector2D from './Vector2D';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, getMonth, formatDate} from  './util.js'
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js'
 
 class App extends React.Component {
 
@@ -92,8 +92,7 @@ class App extends React.Component {
       objGLData: [],
       selectedGLMarker: [],
       selectedStatus: null,
-      projectMode: null, //the type of project being displayed footpath or road
-      
+      projectMode: null, //the type of project being displayed footpath or road     
       newUser: null,
       newPassword: null,
     };   
@@ -139,7 +138,6 @@ class App extends React.Component {
       }  
     }  
   }
-
   /**
    * Fires when user clicks on map.
    * Redraws gl points when user selects point
@@ -153,7 +151,6 @@ class App extends React.Component {
       this.redraw(this.state.glpoints);
     }
   }
-
   /**
    * 
    * @param {int - calculates the index from r,g,b color} color 
@@ -228,8 +225,7 @@ class App extends React.Component {
 
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
-    this.mapMatrix = new Float32Array(16);
-    
+    this.mapMatrix = new Float32Array(16);  
         // -- WebGl setup
     let vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
     this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
@@ -303,7 +299,7 @@ class App extends React.Component {
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.state.mouseclick.originalEvent.layerX, 
           this.canvas.height - this.delegate.state.mouseclick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256//  + pixel[3] * 256 * 256 * 256;
+        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
         this.delegate.setState({mouseclick: null});
         this.delegate.setIndex(index);
         this._redraw();
@@ -327,22 +323,15 @@ addGLMarkers(project, data, type, zoomTo) {
   let med = null;
   let low = null;
 
-  if (type === "footpath") {
+  if(this.state.login === "asm") {    
+    high = 1;
+    med = 2;
+    low = 3;
+  } else {
     high = 5;
     med = 4;
     low = 3;
-  } else {
-    if(this.state.login === "asm") {
-      high = 5;
-      med = 4;
-      low = 3;
-    } else {
-      high = 1;
-      med = 2;
-      low = 3;
-    }
   }
-
   for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
@@ -363,7 +352,7 @@ addGLMarkers(project, data, type, zoomTo) {
         points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
       } else if (data[i].priority === med) {
         points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i);
-      } else if (data[i].priority === "99") {
+      } else if (data[i].priority === 99) {
         points.push(point.x, point.y, 0, 0, 1, alpha, i);
       } else {
         points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
@@ -387,7 +376,6 @@ addGLMarkers(project, data, type, zoomTo) {
     latlngs.push(latlng);
     if (type === "footpath") {
       let id = data[i].id.split('_');
-      //console.log(id);
       obj = {
         type: type,
         id: id[id.length - 1],
@@ -407,8 +395,10 @@ addGLMarkers(project, data, type, zoomTo) {
         datefixed: data[i].datefixed
       };
     } else {
+      let id = data[i].id.split('_');
       obj = {
         type: type,
+        id: id[id.length - 1],
         roadid: data[i].roadid,
         carriage: data[i].carriagewa,
         inspection: data[i].inspection,
@@ -420,7 +410,9 @@ addGLMarkers(project, data, type, zoomTo) {
         priority: data[i].priority,
         photo: data[i].photoid,
         datetime: data[i].faulttime,
-        latlng: latlng
+        latlng: latlng,
+        status: data[i].status,
+        datefixed: data[i].datefixed
       };
     }   
     faults.push(obj);          
@@ -436,8 +428,6 @@ addGLMarkers(project, data, type, zoomTo) {
 
 addCentrelines(data) {
   let lines = [];
-  //let pointBefore = 0;
-  //let pointAfter = 0;
   for (var i = 0; i < data.length; i++) {
     const linestring = JSON.parse(data[i].st_asgeojson);
     const rcClass = data[i].onrcclass; 
@@ -502,7 +492,7 @@ addCentrelines(data) {
   };
 
   /**
-   * Gets the devlopment or production host 
+   * Gets the development or production host 
    * @return {string} the host name
    */
   getHost() {
@@ -543,7 +533,6 @@ addCentrelines(data) {
       return (e) => this.logout(e);
     }
   }
-
   /**
    * 
    * @param {array of late lngs} latlngs 
@@ -559,10 +548,6 @@ addCentrelines(data) {
       return;
     }
   }
-
-
-  //EVENTS
-
   /**
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
@@ -990,15 +975,17 @@ addCentrelines(data) {
     let arr = [];
     let arrb = [];
     for (let i = 0; i < priority.length; i++) {
-      if (priority[i] === "99") {
+      if (priority[i] === 99) {
         arr.push("Signage");
-        arrb.push("99");
+        arrb.push(99);
       } else {
         arr.push(this.state.priorityMode + " " + priority[i]);
         arrb.push(priority[i]);
       }
     }
     arr.sort();
+    arr.push("Completed");
+    arrb.push(98);
     this.setState({filterPriorities: arrb});
     this.setState({priorities: arr});
   }
@@ -1050,7 +1037,6 @@ addCentrelines(data) {
         filter: this.state.filter,
         //TODO temp hack should be dymnic array to hold footpath filters
         priority: this.state.filterPriorities,
-        //filterObj: filterObj,
         assets: this.state.filterDropdowns[0].filter,
         faults: this.state.filterDropdowns[1].filter,
         types: this.state.filterDropdowns[2].filter,
@@ -1102,6 +1088,7 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     let body = this.getBody(project);
+    console.log(body);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1224,8 +1211,6 @@ addCentrelines(data) {
         const body = await response.json();
         if (body.error != null) {
           alert(`Error: ${body.error}\n`);
-          //let e = document.createEvent("MouseEvent");
-          //await this.logout(e);
         } else {
           if (body.success) {
             alert("New user created")
@@ -1423,7 +1408,7 @@ addCentrelines(data) {
         })
       }).then(async (response) => {
         const body = await response.json();
-        console.log(body);
+        //console.log(body);
         if (body.error != null) {
           alert(`Error: ${body.error}\n`);
         } else {
@@ -1650,9 +1635,12 @@ addCentrelines(data) {
     let query = this.state.filterPriorities;
     let priority = null;
     if (e.target.id === "Signage") {
-      priority = "99"
+      priority = 99;
+    } else if (e.target.id === "Completed") {
+      priority = 98;
     } else {
-      priority = e.target.id.substring(e.target.id.length - 1, e.target.id.length);
+      let p = e.target.id.substring(e.target.id.length - 1, e.target.id.length)
+      priority = parseInt(p);
     }
     if (query.length === 1) {
       if (e.target.checked) {
@@ -1917,6 +1905,7 @@ updateStatus(marker, status) {
         <Popup className="popup" position={props.position}>
           <div>
             <p className="faulttext">
+            <b>{"ID: "}</b>{props.data.id}<br></br>
               <b>{"Type: "}</b>{props.data.fault}<br></br>
               <b>{"Location: "}</b>{location}<br></br>
               <b>{"Date: "}</b>{props.data.datetime} 
@@ -1932,8 +1921,6 @@ updateStatus(marker, status) {
         </Popup>  
       );      
     }
-
-    
 
     const CustomSVG = function(props) {
       if (props.value === "Grade 5" || props.value === "Priority 1") {
@@ -1957,6 +1944,12 @@ updateStatus(marker, status) {
       } else if (props.value === "Signage") {
         return (
           <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+        );
+      } else if (props.value === "Completed") {
+        return (
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
@@ -2267,7 +2260,6 @@ updateStatus(marker, status) {
         currentPhoto={this.state.currentPhoto}
         callbackUpdateStatus={this.updateStatus}
       >
-
       </PhotoModal>
       </>
     );
