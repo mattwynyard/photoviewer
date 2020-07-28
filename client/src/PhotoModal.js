@@ -2,8 +2,6 @@ import React from 'react';
 import {Modal, Button}  from 'react-bootstrap';
 import {pad} from  './util.js'
 
-
-
 export default class PhotoModal extends React.Component {
     constructor(props) {
         super(props);
@@ -30,7 +28,6 @@ export default class PhotoModal extends React.Component {
         this.setState({amazon: amazon});
         this.setState({currentPhoto: currentPhoto});
         this.setState({selectedGLMarker: marker});
-        console.log(marker)
         if (marker[0].status === "active") {
           this.setState({checked: true});
           this.setState({repaired:  ""});
@@ -77,22 +74,28 @@ export default class PhotoModal extends React.Component {
       
     }
 
-    changeDate = (e) => {
+    changeDate(e) {
+      e.preventDefault();
+      console.log(e.target.value);
       this.setState({repaired: e.target.value});
     }
 
+
     clickSlider(e) {
-        if (!this.state.checked) {
-          this.setState(() => ({
-            status: "active", 
-            checked: true
-          }));  
-        } else {
-          this.setState(() => ({
-            status: "completed", 
-            checked: false
-          }));    
-        } 
+      if (this.state.repaired === "") {
+        return;
+      }
+      if (!this.state.checked) {
+        this.setState(() => ({
+          status: "active", 
+          checked: true
+        }));  
+      } else {
+        this.setState(() => ({
+          status: "completed", 
+          checked: false
+        }));    
+      } 
     }
       
     closePhotoModal(e) {
@@ -110,7 +113,7 @@ export default class PhotoModal extends React.Component {
      * @param {*} latlng Leaflet latlng object
      */
     copyToClipboard(e, latlng) {
-      e.preventDefault();
+      //e.preventDefault();
       const position = latlng.lat + " " + latlng.lng
       navigator.clipboard.writeText(position);
     }
@@ -226,6 +229,11 @@ export default class PhotoModal extends React.Component {
                   onChange={props.onChange}              
                   >
                 </Slider>
+                {/* <DatePicker
+                  selected={props.repaired}
+                  onChange={props.onDateChange}
+                  status={props.status}
+                /> */}
                 <DateBox 
                   repaired={props.repaired}
                   onChange={props.onDateChange}

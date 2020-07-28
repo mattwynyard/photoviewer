@@ -1088,7 +1088,7 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     let body = this.getBody(project);
-    console.log(body);
+    //console.log(body);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1391,6 +1391,10 @@ addCentrelines(data) {
   }
 
   async updateStatusAsync(marker, status, date) {
+    
+    if (date === "null" || date === "") {
+      date = null;
+    }
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/status', {
         method: 'POST',

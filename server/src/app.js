@@ -61,8 +61,8 @@ app.get('/api', (req, res) => {
 
 app.post('/login', async (request, response, next) => {
   let succeded = null;
-  const password = request.body.key;
-  const user = request.body.user;
+  let password = request.body.key;
+  let user = request.body.user;
   //uncomment to genrate password for new user
   //generatePassword(password, 10);
   let p = await db.password(user);
@@ -360,7 +360,7 @@ app.post('/layer', async (req, res) => {
 app.post('/roads', async (req, res, next) => {
   //console.log(req.body);
   const result = users.findUserToken(req.headers.authorization, req.body.user);
-  const code = req.body.code;
+  let code = req.body.code;
   if (result) {
     let layer = req.body.menu;
     let geometry = await db.road(code);
@@ -378,11 +378,11 @@ app.post('/status', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
  
   if (token) {
-    const id = req.body.marker[0].id;
-    const project = req.body.project;
-    const status = req.body.status;
-    const date = req.body.date;
-    if (date === "") {
+    let id = req.body.marker[0].id;
+    let project = req.body.project;
+    let status = req.body.status;
+    let date = req.body.date;
+    if (date === "" || date === "null") {
       date = null;
     }
     let result = await db.updateStatus(project, id, status, date);
