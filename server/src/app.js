@@ -382,9 +382,6 @@ app.post('/status', async (req, res) => {
     let project = req.body.project;
     let status = req.body.status;
     let date = req.body.date;
-    if (date === "" || date === "null") {
-      date = null;
-    }
     let result = await db.updateStatus(project, id, status, date);
     if(result.rowCount === 1) {
       res.set('Content-Type', 'application/json');
