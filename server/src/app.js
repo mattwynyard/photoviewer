@@ -323,7 +323,6 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    //console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
@@ -333,13 +332,36 @@ app.post('/layer', async (req, res) => {
     let faults = req.body.faults;
     let types = req.body.types;
     let causes = req.body.causes;
-    let geometry = null;
+    let isCompleted = false;
+    let finalGeometry = null;
+    let dbPriority = [];
     let surface = await db.projecttype(project);
+    for (let i = 0; i < priority.length; i++) {
+      if (priority[i] === 98) {
+        isCompleted = true
+      } else {
+        dbPriority.push(priority[i])
+      }
+    }
+    console.log(isCompleted);
+    console.log(dbPriority);
     if (surface.rows[0].surface === "footpath") {
-      geometry = await db.footpath(project, priority, assets, faults, types, causes);
-
+      let activeGeom = [];
+      let completedGeom = [];
+      if (dbPriority.length !== 0) {
+        let geometry = await db.footpath(project, dbPriority, assets, faults, types, causes);
+        activeGeom = geometry.rows;
+      }
+      
+      if (isCompleted) {
+        let geometry = await db.footpathCompleted(project, assets, faults, types, causes);
+        completedGeom = geometry.rows;
+      }
+      finalGeometry = activeGeom.concat(completedGeom);
+    
     } else if (surface.rows[0].surface === "road") {
-      geometry = await db.layer(project, filter, priority, inspection);
+      let geometry = await db.layer(project, filter, priority, inspection);
+      finalGeometry = geometry.rows;
     } else {
       res.send({error: "Layer not found"});
     }
@@ -349,7 +371,7 @@ app.post('/layer', async (req, res) => {
       await db.updateFilterCount(project);
     }  
     res.set('Content-Type', 'application/json');
-    res.send({type: surface.rows[0].surface, geometry: geometry.rows});
+    res.send({type: surface.rows[0].surface, geometry: finalGeometry});
   } else {
     res.send({error: "Invalid token"});
   } 

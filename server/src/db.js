@@ -394,8 +394,30 @@ module.exports = {
         let _types = buildQuery(types);
         let _causes = buildQuery(causes);
         let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, notes, photoid, ST_AsGeoJSON(geom) " 
-        + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
-        + "AND type IN (" + _types + ") AND cause IN (" + _causes + ")";
+                + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
+                + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
+            
+        return new Promise((resolve, reject) => {
+                connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let geometry = resolve(result);          
+                return geometry;
+            });
+        });
+    },
+
+    footpathCompleted: (project, assets, faults, types, causes) => {
+        let _assets = buildQuery(assets);
+        let _faults = buildQuery(faults);
+        let _types = buildQuery(types);
+        let _causes = buildQuery(causes);
+        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, notes, photoid, ST_AsGeoJSON(geom) " 
+                + "FROM footpaths WHERE project = '" + project + "' AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
+                + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'completed'";
+            
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {
                 if (err) {
