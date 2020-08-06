@@ -10,7 +10,7 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
-//import Vector2D from './Vector2D';
+import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js'
 
 class App extends React.Component {
@@ -1391,10 +1391,14 @@ addCentrelines(data) {
   }
 
   async updateStatusAsync(marker, status, date) {
-    
-    if (date === "null" || date === "") {
+    if (date === "") {
       date = null;
     }
+
+    if (status === "active") {
+      date = null;
+    }
+    
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/status', {
         method: 'POST',
@@ -2205,7 +2209,7 @@ updateStatus(marker, status) {
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
         <Modal.Body >	
-          <b>Road Inspection Version 1.2</b><br></br>
+          <b>Road Inspection Version 1.3</b><br></br>
           Relased: 23/04/2020<br></br>
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>

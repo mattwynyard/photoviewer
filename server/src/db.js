@@ -104,9 +104,14 @@ module.exports = {
     updateStatus: (project, id, status, date) => {
 
         let pid = project + "_" + id;
-        //console.log(pid);
+        let sql = null
+        if (date === null) {
+            sql = "UPDATE footpaths SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
+        } else {
+            sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
+        }
+        
         return new Promise((resolve, reject) => {
-            let sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
