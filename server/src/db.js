@@ -101,26 +101,48 @@ module.exports = {
         });
     },
 
-    updateStatus: (project, id, status, date) => {
+    updateStatus: (project, surface, id, status, date) => {
 
         let pid = project + "_" + id;
         let sql = null
-        if (date === null) {
-            sql = "UPDATE footpaths SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
+        console.log(surface)
+        if (surface === "road") {
+            console.log(pid);
+            if (date === null) {
+                sql = "UPDATE carriageways SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
+            } else {
+                sql = "UPDATE carriageways SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
+            }
+            
+            return new Promise((resolve, reject) => {
+                connection.query(sql, (err, result) => {
+                    if (err) {
+                        console.error('Error executing query', err.stack)
+                        return reject(err);
+                    }
+                    let res = resolve(result);
+                    return res;
+                });
+            });
         } else {
-            sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
+            if (date === null) {
+                sql = "UPDATE footpaths SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
+            } else {
+                sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
+            }
+            
+            return new Promise((resolve, reject) => {
+                connection.query(sql, (err, result) => {
+                    if (err) {
+                        console.error('Error executing query', err.stack)
+                        return reject(err);
+                    }
+                    let res = resolve(result);
+                    return res;
+                });
+            });
         }
         
-        return new Promise((resolve, reject) => {
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let res = resolve(result);
-                return res;
-            });
-        });
     },
 
     importFootpath: (data) => {
@@ -438,11 +460,10 @@ module.exports = {
     layer: (layer, filter, priority, inspection) => { 
         let codes = buildQuery(priority);
         let qAge = buildQuery(inspection);
-        console.log(inspection);
         return new Promise((resolve, reject) => {
             if (inspection.length === 0) {
                 connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ")", (err, result) => {
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND  status = 'active'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -452,7 +473,7 @@ module.exports = {
                 }); 
             }  else if (filter.length == 0) {
                 connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ") AND  status = 'active'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -463,7 +484,7 @@ module.exports = {
             } else {
                 let condition = buildQuery(filter);
                 connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ") AND inspection IN (" + qAge + ")", (err, result) => {
+                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ") AND inspection IN (" + qAge + ") AND  status = 'active'", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -474,6 +495,47 @@ module.exports = {
             }            
         });
     },
+
+    layerCompleted: (layer, filter, inspection) => { 
+        //let codes = buildQuery(priority);
+        let qAge = buildQuery(inspection);
+        return new Promise((resolve, reject) => {
+            if (inspection.length === 0) {
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND  status = 'completed'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let geometry = resolve(result);          
+                return geometry;
+                }); 
+            }  else if (filter.length == 0) {
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND inspection IN (" + qAge + ") AND  status = 'completed'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let geometry = resolve(result);          
+                return geometry;
+                }); 
+            } else {
+                let condition = buildQuery(filter);
+                connection.query("SELECT id, roadid, carriageway, location, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND inspection IN (" + qAge + ") AND  status = 'completed'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let geometry = resolve(result);
+                return geometry;
+                });
+            }            
+        });
+    },
+
+
 
     password: (username) => {
         return new Promise((resolve, reject) => {

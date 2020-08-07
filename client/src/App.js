@@ -122,11 +122,16 @@ class App extends React.Component {
       this.canvas = this.glLayer.canvas();
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
-      this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false}); 
+      this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
+      if (!this.gl) {
+        this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
+        console.log("Cannot load webgl2.0 using webgl instead");
+      }  
       if (!this.gl) {
         this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
         console.log("Cannot load webgl1.0 using experimental-webgl instead");
-      }     
+      } 
+      //console.log(this.gl)    
       this.glLayer.delegate(this);
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
@@ -332,7 +337,7 @@ addGLMarkers(project, data, type, zoomTo) {
     med = 4;
     low = 3;
   }
-  for (var i = 1; i < data.length; i++) { //start at one index 0 will be black
+  for (var i = 0; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
     const lat = position.coordinates[1];
@@ -347,29 +352,32 @@ addGLMarkers(project, data, type, zoomTo) {
           alpha = 0.5;
         }
       }
-      
-      if(data[i].priority === high) {
-        points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i);
-      } else if (data[i].priority === med) {
-        points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i);
-      } else if (data[i].priority === 99) {
-        points.push(point.x, point.y, 0, 0, 1, alpha, i);
+      if (data[i].status === "active") {
+        if(data[i].priority === high) {
+          points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
+        } else if (data[i].priority === med) {
+          points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i + 1);
+        } else if (data[i].priority === 99) {
+          points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
+        } else {
+          points.push(point.x, point.y, 0, 0.8, 0, alpha, i + 1);
+        }
       } else {
-        points.push(point.x, point.y, 0, 0.8, 0, alpha, i);
+        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
       }
     } else {
       if (data[i].status === "active") {
         if(data[i].grade === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i);
+          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i + 1);
         } else if (data[i].grade === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i);
+          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i + 1);
         } else if (data[i].grade === low) {
-          points.push(point.x, point.y, 0, 0.8, 0, 1, i);
+          points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
         } else {
-          points.push(point.x, point.y, 0, 0.8, 0.8, 1, i);
+          points.push(point.x, point.y, 0, 0.8, 0.8, 1, i + 1);
         }
       } else {
-        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i);
+        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
       }
       
     }    
@@ -883,7 +891,6 @@ addCentrelines(data) {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            console.log(body.result);
             this.buildAge(body.result);              
           }     
         }
@@ -930,11 +937,9 @@ addCentrelines(data) {
   }
 
   buildAge(ages) {
-    console.log(ages);
     let arr = [];
     let arrb = [];
     if (ages[0].inspection === null) {
-      console.log(this.state.bucket);
       let filter = [];
       this.setState({filterAges: filter});
       return;
@@ -950,7 +955,6 @@ addCentrelines(data) {
         }
       }          
     }
-    console.log(arrb);
     this.setState({filterAges: arrb})
     this.setState({ages: arr});
   }
@@ -1088,7 +1092,6 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     let body = this.getBody(project);
-    //console.log(body);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/layer', {
       method: 'POST',
@@ -1103,6 +1106,7 @@ addCentrelines(data) {
           throw new Error(response.status);
         } else {
           const body = await response.json();
+          //console.log(body);
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");

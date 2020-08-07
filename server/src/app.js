@@ -336,6 +336,7 @@ app.post('/layer', async (req, res) => {
     let finalGeometry = null;
     let dbPriority = [];
     let surface = await db.projecttype(project);
+    console.log(priority);
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
         isCompleted = true
@@ -343,25 +344,30 @@ app.post('/layer', async (req, res) => {
         dbPriority.push(priority[i])
       }
     }
-    console.log(isCompleted);
-    console.log(dbPriority);
+    let activeGeom = [];
+    let completedGeom = [];
     if (surface.rows[0].surface === "footpath") {
-      let activeGeom = [];
-      let completedGeom = [];
+      
       if (dbPriority.length !== 0) {
         let geometry = await db.footpath(project, dbPriority, assets, faults, types, causes);
         activeGeom = geometry.rows;
-      }
-      
+      } 
       if (isCompleted) {
         let geometry = await db.footpathCompleted(project, assets, faults, types, causes);
         completedGeom = geometry.rows;
       }
       finalGeometry = activeGeom.concat(completedGeom);
-    
     } else if (surface.rows[0].surface === "road") {
-      let geometry = await db.layer(project, filter, priority, inspection);
-      finalGeometry = geometry.rows;
+
+      if (dbPriority.length !== 0) {
+        let geometry = await db.layer(project, filter, dbPriority, inspection);
+        activeGeom = geometry.rows;
+      } 
+      if (isCompleted) {
+        let geometry = await db.layerCompleted(project, filter, inspection);
+        completedGeom = geometry.rows;
+      }
+      finalGeometry = activeGeom.concat(completedGeom);
     } else {
       res.send({error: "Layer not found"});
     }
@@ -404,12 +410,16 @@ app.post('/status', async (req, res) => {
     let project = req.body.project;
     let status = req.body.status;
     let date = req.body.date;
-    let result = await db.updateStatus(project, id, status, date);
+    //console.log(req.body)
+
+    let result = await db.projecttype(project);
+    let surface = result.rows[0].surface;
+    result = await db.updateStatus(project, surface, id, status, date);
     if(result.rowCount === 1) {
       res.set('Content-Type', 'application/json');
       res.send({rows: "Updated 1 row"});
     } else {
-      console.log(result);
+      //console.log(result);
       res.set('Content-Type', 'application/json');
       res.send({error: "failed to update"});
     }
