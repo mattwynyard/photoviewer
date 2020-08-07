@@ -42,6 +42,18 @@ body {
   padding-right: 5px;
 }
 
+.rulerButton {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 14px !important;
+  top: 80px;
+  left: 20px;
+  z-index: 999;
+  padding: 0px;
+  color: gray;
+}
+
 .applyButton {
   position: absolute;
   font-family: "Century Gothic", sans-serif;

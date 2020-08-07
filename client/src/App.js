@@ -32,6 +32,8 @@ class App extends React.Component {
       med : true,
       low : true,
       admin : false,
+      ruler: false,
+      rulerPoints: [],
       filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Priority",
@@ -143,19 +145,7 @@ class App extends React.Component {
       }  
     }  
   }
-  /**
-   * Fires when user clicks on map.
-   * Redraws gl points when user selects point
-   * @param {event - the mouse event} e 
-   */
-  clickMap(e) {
-    if (this.state.glpoints !== null) {
-      this.setState({selectedIndex: null});
-      this.setState({selectedGLMarker: []});
-      this.setState({mouseclick: e})
-      this.redraw(this.state.glpoints);
-    }
-  }
+  
   /**
    * 
    * @param {int - calculates the index from r,g,b color} color 
@@ -476,15 +466,103 @@ addCentrelines(data) {
     this.canvas.addEventListener("webglcontextrestored", function(event) {
     this.gl = this.canvas.getContext('webgl', { antialias: true });
     }, false);
+    this.leafletMap.addEventListener('click', (event) => {
+      this.clickLeafletMap(event);
+    })
+    this.leafletMap.addEventListener('dblclick', (event) => {
+      this.dblClickLeafletMap(event);
+    });
     this.leafletMap.addEventListener('mousemove', (event) => {
       this.onMouseMove(event);
     });
+   
+  }
+
+  /**
+   * Fires when user clicks on map.
+   * Redraws gl points when user selects point
+   * @param {event - the mouse event} e 
+   */
+  // clickMap(e) {
+  //   if (this.state.ruler) {
+  //     console.log(e.latlng);
+  //     let points = this.state.rulerPoints;
+  //     points.push(e.latlng);
+  //     if (points.length > 1) {
+  //       let firstpolyline = new L.polyline(points, {
+  //         color: 'red',
+  //         weight: 2,
+  //         opacity: 0.5 
+  //         });
+  //         firstpolyline.addTo(this.leafletMap);
+  
+  //     }
+  //   } else {
+  //     if (this.state.glpoints !== null) {
+  //       this.setState({selectedIndex: null});
+  //       this.setState({selectedGLMarker: []});
+  //       this.setState({mouseclick: e})
+  //       this.redraw(this.state.glpoints);
+  //     }
+  //   }
+    
+  // }
+
+  clickLeafletMap(e) {
+    if (this.state.ruler) {
+      console.log(e.latlng);
+      let points = this.state.rulerPoints;
+      points.push(e.latlng);
+      // if (points.length > 1) {
+      //   let firstpolyline = new L.polyline(points, {
+      //     color: 'red',
+      //     weight: 2,
+      //     opacity: 0.5 
+      //     });
+      //     firstpolyline.addTo(this.leafletMap);
+  
+      // }
+    } else {
+      if (this.state.glpoints !== null) {
+        this.setState({selectedIndex: null});
+        this.setState({selectedGLMarker: []});
+        this.setState({mouseclick: e})
+        this.redraw(this.state.glpoints);
+      }
+    }
+  }
+
+  dblClickLeafletMap(e) {
+    console.log(e)
   }
 
   onMouseMove(e) {
     let lat = Math.round(e.latlng.lat * 100000) / 100000;
     let lng = Math.round(e.latlng.lng * 100000) / 100000;
     this.position.updateHTML(lat, lng);
+    if (this.state.ruler) {
+      let points = this.state.rulerPoints;
+      console.log(points);
+      points.push(e.latlng);
+      if (points.length > 1) {
+        
+        let firstpolyline = new L.polyline(points, {
+          color: 'red',
+          weight: 2,
+          opacity: 0.5 
+          });
+          firstpolyline.addTo(this.leafletMap);
+         
+        }
+     
+    } else {
+      if (this.state.glpoints !== null) {
+        this.setState({selectedIndex: null});
+        this.setState({selectedGLMarker: []});
+        this.setState({mouseclick: e})
+        this.redraw(this.state.glpoints);
+      }
+    }
   }
 
   callBackendAPI = async () => {
@@ -1671,6 +1749,11 @@ addCentrelines(data) {
     this.filterLayer(this.state.activeProject, false);
   }
 
+  clickRuler(e) {
+    console.log("ruler")
+    this.setState({ruler: true});
+  }
+
   /**
  * gets the requested attribute from the fault object array
  * @param {the index of marker} index 
@@ -2032,7 +2115,7 @@ updateStatus(marker, status) {
           boxZoom={true}
           center={centre}
           zoom={this.state.zoom}
-          onClick={(e) => this.clickMap(e)}
+          // onClick={(e) => this.clickMap(e)}
           onPopupClose={(e) => this.closePopup(e)}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}
@@ -2168,6 +2251,14 @@ updateStatus(marker, status) {
             size="sm"
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
+          </Button>
+          <Button 
+            className="rulerButton" 
+            variant="light" 
+            size="sm"
+            onClick={(e) => this.clickRuler(e)}
+            >
+              <img src="ruler-200.png" alt="my image"></img>
           </Button>
       </LMap >    
       </div>
