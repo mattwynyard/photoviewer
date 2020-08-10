@@ -33,7 +33,9 @@ class App extends React.Component {
       low : true,
       admin : false,
       ruler: false,
-      rulerPoints: [],
+      rulerOrigin: null,
+      rulerPolyline: null,
+      rulerDistance: null,
       filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Priority",
@@ -65,6 +67,7 @@ class App extends React.Component {
       layers: [],
       bounds: {},
       show: false,
+      showRuler: false,
       showLogin: false,
       showContact: false,
       showTerms: false,
@@ -110,6 +113,7 @@ class App extends React.Component {
     this.initializeGL();
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
+    this.rulerPolyline = null;
   }
 
   componentDidUpdate() {   
@@ -483,45 +487,27 @@ addCentrelines(data) {
    * Redraws gl points when user selects point
    * @param {event - the mouse event} e 
    */
-  // clickMap(e) {
-  //   if (this.state.ruler) {
-  //     console.log(e.latlng);
-  //     let points = this.state.rulerPoints;
-  //     points.push(e.latlng);
-  //     if (points.length > 1) {
-  //       let firstpolyline = new L.polyline(points, {
-  //         color: 'red',
-  //         weight: 2,
-  //         opacity: 0.5 
-  //         });
-  //         firstpolyline.addTo(this.leafletMap);
-  
-  //     }
-  //   } else {
-  //     if (this.state.glpoints !== null) {
-  //       this.setState({selectedIndex: null});
-  //       this.setState({selectedGLMarker: []});
-  //       this.setState({mouseclick: e})
-  //       this.redraw(this.state.glpoints);
-  //     }
-  //   }
-    
-  // }
 
   clickLeafletMap(e) {
+    console.log("click")
     if (this.state.ruler) {
-      console.log(e.latlng);
-      let points = this.state.rulerPoints;
-      points.push(e.latlng);
-      // if (points.length > 1) {
-      //   let firstpolyline = new L.polyline(points, {
-      //     color: 'red',
-      //     weight: 2,
-      //     opacity: 0.5 
-      //     });
-      //     firstpolyline.addTo(this.leafletMap);
-  
-      // }
+      let polyline = this.state.rulerPolyline;
+      if (polyline == null) {
+        let points = [];
+        points.push(e.latlng);
+        polyline = new L.polyline(points, {
+          color: 'blue',
+          weight: 2,
+          opacity: 0.5 
+          });
+        polyline.addTo(this.leafletMap);
+        this.setState({rulerPolyline: polyline});
+ 
+      } else {
+        let points = polyline.getLatLngs();
+        points.push(e.latlng);
+        polyline.setLatLngs(points);
+      }
     } else {
       if (this.state.glpoints !== null) {
         this.setState({selectedIndex: null});
@@ -533,7 +519,18 @@ addCentrelines(data) {
   }
 
   dblClickLeafletMap(e) {
-    console.log(e)
+    console.log("dblclick")
+    this.setState({ruler: false});
+    let polyline = this.state.rulerPolyline;
+    if (polyline !== null) {
+      let points = polyline.getLatLngs();
+      points.pop();
+      points.pop();
+      this.calculateDistance(points);
+      polyline.removeFrom(this.leafletMap);
+      this.setState({rulerPolyline: null});
+     
+    }
   }
 
   onMouseMove(e) {
@@ -541,28 +538,43 @@ addCentrelines(data) {
     let lng = Math.round(e.latlng.lng * 100000) / 100000;
     this.position.updateHTML(lat, lng);
     if (this.state.ruler) {
-      let points = this.state.rulerPoints;
-      console.log(points);
-      points.push(e.latlng);
-      if (points.length > 1) {
+      let polyline = this.state.rulerPolyline
+      if (polyline !== null) {
+        let points = polyline.getLatLngs();
         
-        let firstpolyline = new L.polyline(points, {
-          color: 'red',
-          weight: 2,
-          opacity: 0.5 
-          });
-          firstpolyline.addTo(this.leafletMap);
-         
+        if (points.length === 1) {
+          points.push(e.latlng);
+          polyline.setLatLngs(points);
+        } else {
+          points[points.length - 1] = e.latlng;
+          polyline.setLatLngs(points);
         }
-     
-    } else {
-      if (this.state.glpoints !== null) {
-        this.setState({selectedIndex: null});
-        this.setState({selectedGLMarker: []});
-        this.setState({mouseclick: e})
-        this.redraw(this.state.glpoints);
-      }
+      }   
     }
+  }
+
+  calculateDistance(points) {
+    console.log(points);
+    const R = 6371 * 1000; // metres
+    let metres = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      let lat1 = points[i].lat * Math.PI/180; // φ, λ in radians
+      let lat2 = points[i + 1].lat * Math.PI/180;
+      let lng1 = points[i].lng * Math.PI/180; // φ, λ in radians
+      let lng2 = points[i + 1].lng * Math.PI/180;
+      let deltaLat = (lat2-lat1);
+      let deltaLng = (lng2-lng1);
+      let a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+              Math.cos(lat1) * Math.cos(lat2) *
+              Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+      let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      let d = R * c; // in metres
+      metres += d;
+    }
+    let total = Number((metres).toFixed(0));
+    this.setState({rulerDistance: total});
+    this.setState({showRuler: true});
+    //console.log(total);
   }
 
   callBackendAPI = async () => {
@@ -715,7 +727,12 @@ addCentrelines(data) {
       glpoints: [],
       activeLayers: [],
       filterDropdowns: [],
-      ages: []
+      ages: [],
+      rulerPoints: [],
+      filter: [], //filter for db request
+      priorityDropdown: null, 
+      filterPriorities: [],
+      filterAges: [],
     }, function() {
       this.redraw([]);
     })
@@ -1754,6 +1771,11 @@ addCentrelines(data) {
     this.setState({ruler: true});
   }
 
+  hideRuler(e) {
+    this.setState({showRuler: false});
+    this.setState({rulerDistance: null});
+  }
+
   /**
  * gets the requested attribute from the fault object array
  * @param {the index of marker} index 
@@ -2364,6 +2386,15 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
+      <Modal
+        show={this.state.showRuler}
+        size={'sm'} 
+        centered={true}
+        onHide={(e) => this.hideRuler(e)}>
+          <Modal.Body >	
+            Total distance measured = {this.state.rulerDistance} metres
+          </Modal.Body>
+      </Modal>
       </>
     );
   }
