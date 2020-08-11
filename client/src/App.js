@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, DropdownButton, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -35,7 +35,7 @@ class App extends React.Component {
       ruler: false,
       rulerOrigin: null,
       rulerPolyline: null,
-      rulerDistance: null,
+      rulerDistance: 0,
       filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Priority",
@@ -114,6 +114,7 @@ class App extends React.Component {
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.rulerPolyline = null;
+    this.distance = 0;
   }
 
   componentDidUpdate() {   
@@ -473,23 +474,26 @@ addCentrelines(data) {
     this.leafletMap.addEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
-    this.leafletMap.addEventListener('dblclick', (event) => {
-      this.dblClickLeafletMap(event);
-    });
+    // this.leafletMap.addEventListener('dblclick', (event) => {
+    //   this.dblClickLeafletMap(event);
+    // });
     this.leafletMap.addEventListener('mousemove', (event) => {
       this.onMouseMove(event);
+    });
+    this.leafletMap.addEventListener('keydown', (event) => {
+      this.onKeyPress(event.originalEvent);
     });
    
   }
 
-  /**
+  /**o
    * Fires when user clicks on map.
    * Redraws gl points when user selects point
    * @param {event - the mouse event} e 
    */
 
   clickLeafletMap(e) {
-    console.log("click")
+    //console.log("click")
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
       if (polyline == null) {
@@ -518,20 +522,19 @@ addCentrelines(data) {
     }
   }
 
-  dblClickLeafletMap(e) {
-    console.log("dblclick")
-    this.setState({ruler: false});
-    let polyline = this.state.rulerPolyline;
-    if (polyline !== null) {
-      let points = polyline.getLatLngs();
-      points.pop();
-      points.pop();
-      this.calculateDistance(points);
-      polyline.removeFrom(this.leafletMap);
-      this.setState({rulerPolyline: null});
+  // dblClickLeafletMap(e) {
+  //   console.log("dblclick")
+  //   this.setState({ruler: false});
+  //   let polyline = this.state.rulerPolyline;
+  //   // if (polyline !== null) {
+  //   //   let points = polyline.getLatLngs();
+  //   //   points.pop();
+  //   //   points.pop();
+  //   //   this.calculateDistance(points);
+  //     polyline.removeFrom(this.leafletMap);
+  //     this.setState({rulerPolyline: null});
      
-    }
-  }
+  // }
 
   onMouseMove(e) {
     let lat = Math.round(e.latlng.lat * 100000) / 100000;
@@ -545,16 +548,52 @@ addCentrelines(data) {
         if (points.length === 1) {
           points.push(e.latlng);
           polyline.setLatLngs(points);
+          this.calculateDistance(points);
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
+          this.calculateDistance(points);
         }
       }   
     }
   }
+  
+  onKeyPress(e) {
+    if (e.key === "x" || e.key === "X") {
+      this.setState({ruler: false});
+      let polyline = this.state.rulerPolyline;
+      if (polyline !== null) {
+        let points = polyline.getLatLngs();
+        //console.log(points);
+        points.pop();
+        //console.log(points);
+        polyline.setLatLngs(points);
+        this.calculateDistance(points);
+      }
+    } else if (e.key === "Delete") {
+      let polyline = this.state.rulerPolyline;
+      if (polyline !== null) {
+        let points = polyline.getLatLngs();
+        if (points.length > 2) {
+          points.splice(points.length - 2, 1);
+        }
+        polyline.setLatLngs(points);
+      }
+    } else if (e.key === "Escape") {
+      let polyline = this.state.rulerPolyline;
+      if (polyline !== null) {
+        polyline.removeFrom(this.leafletMap);
+        this.setState({rulerPolyline: null});
+        this.setState({rulerDistance: 0});
+      }
+      
+      
+    } else {
+      //console.log(e.key);
+    }
+  }
 
   calculateDistance(points) {
-    console.log(points);
     const R = 6371 * 1000; // metres
     let metres = 0;
     for (let i = 0; i < points.length - 1; i++) {
@@ -573,8 +612,12 @@ addCentrelines(data) {
     }
     let total = Number((metres).toFixed(0));
     this.setState({rulerDistance: total});
-    this.setState({showRuler: true});
+    //this.setState({showRuler: true});
     //console.log(total);
+  }
+
+  getDistance() {
+    return this.distance
   }
 
   callBackendAPI = async () => {
@@ -1727,7 +1770,6 @@ addCentrelines(data) {
         query.splice(query.indexOf(date), 1 );
       }
     }
-    console.log(this.state.filterAges);
     this.filterLayer(this.state.activeProject, false); //fetch layer  
   }
 
@@ -1767,13 +1809,21 @@ addCentrelines(data) {
   }
 
   clickRuler(e) {
-    console.log("ruler")
     this.setState({ruler: true});
   }
 
-  hideRuler(e) {
-    this.setState({showRuler: false});
-    this.setState({rulerDistance: null});
+  clickTools(e) {
+    let polyline = this.state.rulerPolyline;
+    if (polyline != null) {
+      polyline.removeFrom(this.leafletMap);
+      this.setState({rulerPolyline: null});
+      this.setState({showRuler: false});
+      this.setState({rulerDistance: 0});
+      this.setState({ruler: false});
+    } else {
+      //console.log(e.target)
+    }
+    
   }
 
   /**
@@ -2148,6 +2198,31 @@ updateStatus(marker, status) {
           />
           <ScaleControl className="scale"/>
 
+          <Dropdown className="tools" 
+            onClick={(e) => this.clickTools(e)}>
+          <Dropdown.Toggle
+            title="Tools"
+            variant="light" 
+            size="sm"
+            >
+              Tools
+          </Dropdown.Toggle>
+            <Dropdown.Menu 
+              rootCloseEvent="dblclick"
+              className="toolsmmenu"     
+              >
+              <Button
+                className="rulerButton"
+                id="ruler"
+                variant="outline-secondary" 
+                size="sm"
+                onClick={(e) => this.clickRuler(e)}>
+              <img src="ruler-200.png" alt="my image"></img>
+                
+              </Button>
+              {"\u0020"}Distance: {this.state.rulerDistance} m
+            </Dropdown.Menu>
+          </Dropdown>
           <Dropdown
             className="Priority">
           <Dropdown.Toggle variant="light" size="sm" >
@@ -2274,14 +2349,14 @@ updateStatus(marker, status) {
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
           </Button>
-          <Button 
+          {/* <Button 
             className="rulerButton" 
             variant="light" 
             size="sm"
             onClick={(e) => this.clickRuler(e)}
             >
               <img src="ruler-200.png" alt="my image"></img>
-          </Button>
+          </Button> */}
       </LMap >    
       </div>
        {/* admin modal     */}
@@ -2386,7 +2461,7 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
-      <Modal
+      {/* <Modal
         show={this.state.showRuler}
         size={'sm'} 
         centered={true}
@@ -2394,7 +2469,7 @@ updateStatus(marker, status) {
           <Modal.Body >	
             Total distance measured = {this.state.rulerDistance} metres
           </Modal.Body>
-      </Modal>
+      </Modal> */}
       </>
     );
   }
