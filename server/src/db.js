@@ -239,6 +239,20 @@ module.exports = {
         });
     },
 
+    district: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT description FROM tacode where code = (select tacode from projects where code = '" + project + "')";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                } 
+                let district = resolve(result);
+                return district;
+            });
+        });  
+    },
+
     age: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";

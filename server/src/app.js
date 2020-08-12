@@ -66,7 +66,6 @@ app.post('/login', async (request, response, next) => {
   //uncomment to genrate password for new user
   //generatePassword(password, 10);
   let p = await db.password(user);
-  
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
     succeded = false;
@@ -98,6 +97,7 @@ app.post('/login', async (request, response, next) => {
         users.addUser({
           name: user,
           token: token,
+         
           }
         );
       } else {    
@@ -221,11 +221,25 @@ app.post('/project', async (req, res, next) => {
     res.send({success: false});
   }
 });
+
+app.post('/district', async (req, res) => {
+
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    let result = await db.district(req.body.project);
+    let district = result.rows[0].description;
+    res.set('Content-Type', 'application/json');
+    res.send({success: true, district: district})
+  } else {
+    res.send({error: "Invalid token"});
+
+  }
+});
 /**
  * Gets fault classes from db
  * i.e. user clicked filter from menu
  */
-app.post('/class', async (req, res, next) => {
+app.post('/class', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let fclass = await db.class(req.body.project);

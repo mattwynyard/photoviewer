@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, DropdownButton, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -100,6 +100,8 @@ class App extends React.Component {
       projectMode: null, //the type of project being displayed footpath or road     
       newUser: null,
       newPassword: null,
+      search: null,
+      district: null,
     };   
   }
 
@@ -675,20 +677,25 @@ addCentrelines(data) {
     }
   }
   /**
-   * 
+   * Called when data layer is loaded
    * @param {array of late lngs} latlngs 
    */
   centreMap(latlngs) {
-    if (latlngs.length !== 0) {
-      let bounds = L.latLngBounds(latlngs);
-      if (bounds.getNorthEast() !== bounds.getSouthWest()) {
+      if (latlngs.length !== 0) {
+        let bounds = L.latLngBounds(latlngs);
         const map = this.map.leafletElement;
         map.fitBounds(bounds);
-      }    
-    } else {
-      return;
-    }
+      } else {
+        return;
+      }
+      let textbox = document.getElementById("search");
+      if (this.state.search !== null) {
+        textbox.value = "";
+        this.setState({search: null});
+      }
   }
+
+  
   /**
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
@@ -863,6 +870,40 @@ addCentrelines(data) {
     }      
   }
   
+
+  async getDistrict(project) {  
+    const response = await fetch('https://' + this.state.host + '/district', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project
+      })
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const body = await response.json(); 
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            //console.log(body.district);   
+            this.setState({district: body.district})
+          }     
+        }
+      }).catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      }); 
+  }
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
@@ -893,9 +934,10 @@ addCentrelines(data) {
         dynamicDropdowns.push(dropdown);
       }
       this.rebuildFilter();
-      
+      await this.getDistrict(project);
     } else {
       projects = this.state.projects.footpath;
+      
       let filters = ["Asset", "Fault", "Type", "Cause"];
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
@@ -905,6 +947,7 @@ addCentrelines(data) {
         dropdown.initialiseFilter();    
         dynamicDropdowns.push(dropdown);
       }
+      await this.getDistrict(project);
     }
     let layers = this.state.activeLayers;
     for (let i = 0; i < projects.length; i++) { //find project
@@ -1153,7 +1196,8 @@ addCentrelines(data) {
     this.setState({filterDropdowns: []})
     this.setState({filterPriorities: []})
     this.setState({activeLayers: layers}); 
-    this.setState({ages: layers});    
+    this.setState({ages: layers}); 
+    this.setState({district: null});    
   }
 
   getBody(project) {
@@ -1823,8 +1867,63 @@ addCentrelines(data) {
     } else {
       //console.log(e.target)
     }
+  }
+
+  /**
+   * Updates the string to searched
+   * @param {event} e 
+   */
+  changeSearch(e) {
+    this.setState({search: e.target.value});
+  }
+
+  /**
+   * Breaks user input string into tokens on space character
+   * Sends get request to nominatim server. Centres map on bounding box from response
+   * @param {event} e - search button click
+   */
+  async clickSearch(e) {
+    e.preventDefault();
+    let tokens = null
+    if (this.state.search !== null) {
+      tokens = this.state.search.split(" ");
+    }
+
+    let searchString = "";
+    for (let i = 0; i < tokens.length; i++) {
+      if (i !== tokens.length - 1) {
+        searchString += tokens[i] + "+";
+      } else {
+        searchString += tokens[i];
+      }
+    }
+    if (this.state.district !== null) {
+      searchString += "," + this.state.district
+    }
+    
+    const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);    
+    } 
+    if (body.length != 0) {
+      if (body[0] != "undefined" || body[0] != "") {
+        let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
+        let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
+        this.centreMap([latlng1, latlng2])
+      }
+    }
     
   }
+
 
   /**
  * gets the requested attribute from the fault object array
@@ -2349,14 +2448,35 @@ updateStatus(marker, status) {
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
           </Button>
-          {/* <Button 
-            className="rulerButton" 
-            variant="light" 
-            size="sm"
-            onClick={(e) => this.clickRuler(e)}
-            >
-              <img src="ruler-200.png" alt="my image"></img>
-          </Button> */}
+          {/* <div className="search">
+            <input type="text" placeholder="Search">
+           
+            </input>
+            <Button variant="light" size="sm">Button</Button>
+          </div> */}
+          <div >
+          <InputGroup className="search">
+            <FormControl 
+              className="search"
+              id="search"
+              placeholder="Search"
+              onChange={(e) => this.changeSearch(e)}
+            />
+            <InputGroup.Append>
+              <Button className="searchButton" variant="light">
+                <img 
+                  className="searchicon" 
+                  src="search.png" 
+                  alt="magnifying glass" 
+                  width="24" 
+                  height="24"
+                  onClick={(e) => this.clickSearch(e)}>
+                </img>
+              </Button>
+            </InputGroup.Append>
+          </InputGroup>
+          </div>
+
       </LMap >    
       </div>
        {/* admin modal     */}

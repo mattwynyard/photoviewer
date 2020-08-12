@@ -48,7 +48,7 @@ body {
   letter-spacing: 1px;
   font-size: 14px !important;
   top: 80px;
-  left: 20px;
+  left: 10px;
   z-index: 999;
   padding: 0px;
   color: gray;
@@ -60,8 +60,25 @@ body {
   white-space: nowrap;
 }
 
-.rulerButton {
-  
+.searchButton {
+  top: 5px;
+  right: 10px;
+  padding: 0px;
+  height: 30px;
+  background-color: white;
+}
+
+.search {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 14px !important;
+  width: 250px;
+  height: 30px;
+  top: 5px;
+  right: 10px;
+  z-index: 999;
+  color: gray;
 }
 
 .applyButton {
@@ -70,7 +87,7 @@ body {
   letter-spacing: 1px;
   font-size: 14px !important;
   top: 10px;
-  right: 20px;
+  right: 290px;
   z-index: 999;
   color: gray;
 }
@@ -282,9 +299,7 @@ body {
  
 }
 
-.search {
-  float: left;
-}
+
 
 .dropdownproject {
   float: right;
