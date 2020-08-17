@@ -334,12 +334,21 @@ addGLMarkers(project, data, type, zoomTo) {
     med = 4;
     low = 3;
   }
+  let set = new Set();
   for (var i = 0; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
     const lat = position.coordinates[1];
     let latlng = L.latLng(lat, lng);
-    let point = LatLongToPixelXY(lat, lng);
+    if (set.has(latlng.lat.toString()+latlng.lng.toString())) {
+      //console.log("duplicate")
+      //console.log(latlng);
+      latlng.lng += 0.00002;
+    } else {
+      set.add(latlng.lat.toString()+latlng.lng.toString());
+    }
+   
+    let point = LatLongToPixelXY(latlng.lat, latlng.lng);
     let alpha = 0.9;
     if (type === "road") {
       let bucket = data[i].inspection;
