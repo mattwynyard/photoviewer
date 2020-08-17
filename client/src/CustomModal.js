@@ -24,12 +24,20 @@ export default class CustomModal extends React.Component {
             mode: "Insert",
             client: null,
             usernames: [],
-            currentUser: "client"
+            currentUser: "client",
+            disabled: false,
+            status: false //set to true if updating fault status false if db data import
         } 
     }
 
     setShow(show) {
-        this.setState({show: show})
+        this.setState({show: show});
+    }
+
+    setProject(project) {
+        this.setState({project: project});
+        this.setState({disabled: true});
+        this.setState({status: true});
     }
 
     setName(name) {
@@ -47,7 +55,6 @@ export default class CustomModal extends React.Component {
     }
 
     changeProject(e) {
-        console.log(e.target.value);
         this.setState({project: e.target.value});
     }
 
@@ -109,12 +116,14 @@ export default class CustomModal extends React.Component {
     }
 
     importData(e) {
-        console.log(this.state.path)
+        //console.log(this.state.path)
     }
 
     fileLoaded(data, info) {
         let project = this.state.project;
-        this.delegate.fileLoaded(project, data, info);
+        if (this.state.status) {
+            this.delegate.fileLoaded(project, data, this.state.status);
+        }
     }
 
     delegate(parent) {
@@ -442,7 +451,11 @@ export default class CustomModal extends React.Component {
             }
         } else {
             return (
-                <Modal show={this.state.show} size={'md'} centered={true} onHide={() => this.setState({show: false})}>
+                <Modal 
+                    show={this.state.show} 
+                    size={'md'} 
+                    centered={true} 
+                    onHide={() => this.setState({show: false})}>
                 <Modal.Header>
                     <div>
                         <Modal.Title>Import Data</Modal.Title>
@@ -455,7 +468,9 @@ export default class CustomModal extends React.Component {
                             <Form.Control 
                                 type="text" 
                                 placeholder="Enter Project Code"
-                                onChange={(e) => this.changeProject(e)}>
+                                onChange={(e) => this.changeProject(e)}
+                                disabled={this.state.disabled}
+                                value={this.state.project}>
                             </Form.Control>
                         </Form.Group>
                     </Form>

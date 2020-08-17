@@ -102,6 +102,7 @@ class App extends React.Component {
       newPassword: null,
       search: null,
       district: null,
+      //markerSet: new Set()
     };   
   }
 
@@ -139,8 +140,7 @@ class App extends React.Component {
       if (!this.gl) {
         this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
         console.log("Cannot load webgl1.0 using experimental-webgl instead");
-      } 
-      //console.log(this.gl)    
+      }   
       this.glLayer.delegate(this);
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
@@ -893,8 +893,7 @@ addCentrelines(data) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
-          } else {
-            //console.log(body.district);   
+          } else { 
             this.setState({district: body.district})
           }     
         }
@@ -1216,26 +1215,25 @@ addCentrelines(data) {
         let obj = {name: this.state.filterDropdowns[i].name, filter: this.state.filterDropdowns[i].filter}
         filterObj.push(obj)
       }
-      //console.log(this.state.filterDropdowns[0].name);
-      return JSON.stringify({
-        user: this.state.login,
-        project: project,
-        filter: this.state.filter,
-        //TODO temp hack should be dymnic array to hold footpath filters
-        priority: this.state.filterPriorities,
-        assets: this.state.filterDropdowns[0].filter,
-        faults: this.state.filterDropdowns[1].filter,
-        types: this.state.filterDropdowns[2].filter,
-        causes: this.state.filterDropdowns[3].filter})
+      if (filterObj.length !==0) {
+        return JSON.stringify({
+          user: this.state.login,
+          project: project,
+          filter: this.state.filter,
+          //TODO temp hack should be dymnic array to hold footpath filters
+          priority: this.state.filterPriorities,
+          assets: this.state.filterDropdowns[0].filter,
+          faults: this.state.filterDropdowns[1].filter,
+          types: this.state.filterDropdowns[2].filter,
+          causes: this.state.filterDropdowns[3].filter})
+      }
     }
+      
   }
 
-  async sendData(project, data) {
-    //console.log(data);
-    let json = JSON.stringify({data: data});
-    //console.log(json);
+  async sendData(project, data, endpoint) {
     if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/import', {
+      await fetch('https://' + this.state.host + endpoint, {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -1243,6 +1241,7 @@ addCentrelines(data) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        user: this.state.login,
         data: data,
         project: project
       })
@@ -1251,12 +1250,14 @@ addCentrelines(data) {
           throw new Error(response.status);
         } else {
           const result = await response.json();
-          
           if (response.error != null) {
             alert(`Error: ${response.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
-          } else {
+          } else {    
+            if (endpoint === '/update') {
+              this.filterLayer(this.state.activeProject, false);
+            }
             alert(result.rows + '\n' + result.errors);
           }     
         }
@@ -1273,41 +1274,45 @@ addCentrelines(data) {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoomTo) {
-    let body = this.getBody(project);
+    
     if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/layer', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: body
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          //console.log(body);
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            //console.log(body)
-            if (body.type === "road") {
-              await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+      let body = this.getBody(project);
+      if (typeof body !== 'undefined') {
+        await fetch('https://' + this.state.host + '/layer', {
+          method: 'POST',
+          headers: {
+            "authorization": this.state.token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: body
+          }).then(async (response) => {
+            if(!response.ok) {
+              throw new Error(response.status);
             } else {
-              await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+              const body = await response.json();
+              //console.log(body);
+              if (body.error != null) {
+                alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+                let e = document.createEvent("MouseEvent");
+                await this.logout(e);
+              } else {
+                //console.log(body)
+                if (body.type === "road") {
+                  await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+                } else {
+                  await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+                }
+              }     
             }
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });   
-    }    
+          }).catch((error) => {
+            console.log("error: " + error);
+            alert(error);
+            return;
+          });   
+        }    
+      }
+      
   }
 
   async loadCentreline(e) {
@@ -1602,7 +1607,6 @@ addCentrelines(data) {
         })
       }).then(async (response) => {
         const body = await response.json();
-        //console.log(body);
         if (body.error != null) {
           alert(`Error: ${body.error}\n`);
         } else {
@@ -1619,30 +1623,16 @@ addCentrelines(data) {
     }
   }
 
-  getArray(value) {
-    if (value === "Asset") {
-      return this.state.assetCheckboxes;
-    } else if (value === "Zone") {
-      return this.state.zoneCheckboxes;
-    } else if (value === "Priority") {
-      return this.state.priorityCheckboxes;
-    } else if (value === "Cause") {
-      return this.state.causeCheckboxes;
-    } else { //type
-      return this.state.typeCheckboxes;
-    }
-  }
-
-  getQueryArray(value) {
-    if (value === 0) {
-      return this.state.assets;
-    } else if (value === 1) {
-      return this.state.zones;
-    } else if (value === 2) {
-      return this.state.types;
+  clickUpdateFaultStatus(e) {
+    
+    if (this.state.activeLayers.length > 0) {
+      this.customModal.current.setState({name: 'import'});
+      this.customModal.current.setProject(this.state.activeLayers[0].code);
+      this.customModal.current.setShow(true);
     } else {
-      return this.state.causes;
+      //Todo add alert
     }
+    
   }
 
   clickLogin(e) {
@@ -1914,8 +1904,8 @@ addCentrelines(data) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);    
     } 
-    if (body.length != 0) {
-      if (body[0] != "undefined" || body[0] != "") {
+    if (body.length !== 0) {
+      if (body[0] !== "undefined" || body[0] !== "") {
         let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
         let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
         this.centreMap([latlng1, latlng2])
@@ -1977,15 +1967,19 @@ addProject(e) {
 }
 
 importData(e) {
+  console.log(e.target.attributes)
   this.customModal.current.setState({name: 'import'});
   this.customModal.current.setShow(true);
   //this.customModal.current.delegate(this);
 }
 
-fileLoaded(project, data, info) {
-  console.log(project);
+fileLoaded(project, data, status) {
   this.customModal.current.setShow(false);
-  this.sendData(project, data);
+  if (status) {
+    this.sendData(project, data, '/update');
+  } else {
+    this.sendData(project, data, '/import');
+  }
 }
 
 
@@ -2265,6 +2259,16 @@ updateStatus(marker, status) {
               >
             </LayerNav>
             <Nav>
+              <NavDropdown className="navdropdown" title="Data" id="basic-nav-dropdown">
+                <NavDropdown.Item 
+                  className="navdropdownitem" 
+                  title="Update Fault Status"
+                  onClick={(e) => this.clickUpdateFaultStatus(e)} 
+                  >Update Status</NavDropdown.Item>
+                <NavDropdown.Divider />         
+              </NavDropdown>         
+            </Nav>
+            <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
                 <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
                 <NavDropdown.Divider />
@@ -2286,7 +2290,6 @@ updateStatus(marker, status) {
           boxZoom={true}
           center={centre}
           zoom={this.state.zoom}
-          // onClick={(e) => this.clickMap(e)}
           onPopupClose={(e) => this.closePopup(e)}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}

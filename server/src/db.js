@@ -87,21 +87,21 @@ module.exports = {
         });
     },
 
-    gid: () => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT MAX(gid) from carriageways";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let max = resolve(result);
-                return max;
-            });
-        });
-    },
+    // gid: () => {
+    //     return new Promise((resolve, reject) => {
+    //         let sql = "SELECT MAX(gid) from carriageways";
+    //         connection.query(sql, (err, result) => {
+    //             if (err) {
+    //                 console.error('Error executing query', err.stack)
+    //                 return reject(err);
+    //             }
+    //             let max = resolve(result);
+    //             return max;
+    //         });
+    //     });
+    // },
 
-    updateStatus: (project, surface, id, status, date) => {
+    updateStatus: (project, surface, id, status, date, notes) => {
 
         let pid = project + "_" + id;
         let sql = null
@@ -128,7 +128,7 @@ module.exports = {
             if (date === null) {
                 sql = "UPDATE footpaths SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
             } else {
-                sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "' WHERE id='" + pid + "'";
+                sql = "UPDATE footpaths SET status= '" + status + "', datefixed= '" + date + "', notes= '" + notes + "'WHERE id='" + pid + "'";
             }
             
             return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ module.exports = {
         data[7] = parseString(data[7]); //position
         data[8] = parseInteger(data[8]); //erp
         data[9] = parseString(data[9]); //side
-        data[10] =parseString(data[10]); //asset
+        data[10] = parseString(data[10]); //asset
         data[11] = parseString(data[11]);//zone
         data[12] = parseString(data[12]); //type
         data[13] = parseString(data[13]); //fault
@@ -174,11 +174,14 @@ module.exports = {
         data[24] = parseString(data[24]); //inspector
         data[25] = parseInteger(data[25]); //seq
         data[26] = parseString(data[26]); //photoid
-
+        data[27] = parseString(data[27]); //status
+        // data[28] = parseString(data[28]); //datefixed
+        // data[29] = parseString(data[29]); //notes
 
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
-                        "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, geom) "
+                        "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
+                        + "status, geom) "
                  + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -198,10 +201,10 @@ module.exports = {
             data[3] = "'" + data[3] + "'"; //service
             data[4] = "'" + data[4] + "'"; //group
             data[5] = "'" + data[5] + "'"; //board
-            data[6] = parseInteger(data[6]); //area
+            data[6] = "'" + data[6] + "'"; //area
             data[7] = parseInteger(data[7]); //roadid
             data[8] = parseInteger(data[8]); //carriagewa
-            data[9] = "'" + data[9] + "'"; //board
+            data[9] = "'" + data[9] + "'"; //location
             data[10] = parseInteger(data[10]); //erp
             data[11] = "'" + data[11] + "'"; //side
             data[12] = "'" + data[12] + "'"; //position
@@ -214,8 +217,6 @@ module.exports = {
             data[19] = parseInteger(data[19]); //length
             data[20] = parseInteger(data[20]); //width
             data[21] = parseInteger(data[21]); //total
-            data[22] = parseFloat(data[22]); //easting
-            data[23] = parseFloat(data[23]); //northing
             data[24] = parseFloat(data[24]); //latitude
             data[25] = parseFloat(data[25]); //longitude
             data[26] = "'" + data[26] + "'"; //faultime
@@ -224,9 +225,13 @@ module.exports = {
             data[29] = parseInteger(data[29]); //seq
             data[30] = parseInteger(data[30]); //faultid
             data[31] = "'" + data[31] + "'"; //photoid
+            data[32] = "'" + data[32] + "'"; //status
+            data[33] = "'" + data[33] + "'"; //date fixed
+            data[33] = "'" + data[33] + "'"; //notes
             let sql = "INSERT INTO carriageways(gid, id, project, service," + '"group"' + ", board, area, roadid, " 
                  + "carriagewa, location, erp, side, position, class, fault, repair, priority, comment, "
-                 + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, inspection, seq, faultid, photoid, geom) "
+                 + "size, length, width, total, easting, northing, latitude, longitude, faulttime, inspector, "
+                 + "inspection, seq, faultid, photoid, status, datefixed, notes, geom) "
                  + "VALUES (" + data + ", ST_MakePoint(" + data[25] + "," + data[24] + "));"
             connection.query(sql, (err, result) => {
                 if (err) {

@@ -15,6 +15,7 @@ const jwtExpirySeconds = 10000;
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const { Console } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
@@ -69,7 +70,6 @@ app.post('/login', async (request, response, next) => {
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
     succeded = false;
-    //console.log("user doesn't exist");
   } else {
     let count = await db.users(user);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
@@ -86,7 +86,6 @@ app.post('/login', async (request, response, next) => {
         await db.updateCount(count, user);
         this.token = token;
         let projects = await db.projects(user);
-        //console.log(projects);
         let arr = []; //project arr
         for (var i = 0; i < projects.rows.length; i += 1) {
           arr.push(projects.rows[i]);
@@ -100,8 +99,7 @@ app.post('/login', async (request, response, next) => {
          
           }
         );
-      } else {    
-        //console.log("Incorrect password");   
+      } else {      
         response.send({ result: false, error: "incorrect password" });
       }
     }); 
@@ -175,7 +173,6 @@ app.post('/usernames', async (req, res, next) => {
   if (req.headers.authorization === this.token) {
     
     let result = await db.usernames(req.body.client);
-    //console.log(result.rows);
     let arr = [];
     for (let i = 0; i < result.rows.length; i++) {
       if(result.rows[i].username !== "admin") {
@@ -243,12 +240,10 @@ app.post('/class', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let fclass = await db.class(req.body.project);
-    //console.log(fclass);
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
     res.send({error: "Invalid token"});
-    //console.log("invalid token");
   }
 });
 /**
@@ -260,7 +255,6 @@ app.post('/faults', async (req, res, next) => {
   if (result) {
     let faults = await db.faults(req.body.project, req.body.code);
     let result = [];
-    //console.log(faults.rows);
     for (let i = 0; i < faults.rows.length; i++) {
       result.push(faults.rows[i].fault)
     }
@@ -268,7 +262,6 @@ app.post('/faults', async (req, res, next) => {
     res.send({result: result});
   } else {
     res.send({error: "Invalid token"});
-    //console.log("invalid token");
   }
 });
 
@@ -325,7 +318,6 @@ app.post('/dropdown', async (req, res) => {
       let value = Object.values(data.rows[i]);
       result.push(value[0]);
     }
-    //console.log(result);
     res.set('Content-Type', 'application/json');
     res.send({result: result});   
   }
@@ -350,7 +342,6 @@ app.post('/layer', async (req, res) => {
     let finalGeometry = null;
     let dbPriority = [];
     let surface = await db.projecttype(project);
-    console.log(priority);
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
         isCompleted = true
@@ -400,7 +391,6 @@ app.post('/layer', async (req, res) => {
  * gets centrelines for specfic ta code
  */
 app.post('/roads', async (req, res, next) => {
-  //console.log(req.body);
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   let code = req.body.code;
   if (result) {
@@ -411,9 +401,36 @@ app.post('/roads', async (req, res, next) => {
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error:"Resource unavailable"});
-    //console.log("Resource unavailable")
-
   }  
+});
+
+app.post('/update', async (req, res) => {
+  const token = users.findUserToken(req.headers.authorization, req.body.user);
+  if (token) {
+    let result = await db.projecttype(req.body.project);
+    let surface = result.rows[0].surface;
+    let rows = 0;
+    let errors = 0;
+    for (let i = 1; i < req.body.data.length; i++) { //skip header
+      let id = req.body.data[i][0];
+      let status = "completed"
+      let date = req.body.data[i][1];
+      let notes = req.body.data[i][2];
+      let newDate = formatDate(date);
+      if (newDate === 'error') {
+        errors++;
+        break;
+      } else {
+        result = await db.updateStatus(req.body.project, surface, id, status, newDate, notes);
+        if(result.rowCount === 1) {
+          rows += result.rowCount;
+        } else {
+          errors++;
+        }
+      }  
+    }  
+    res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+  }
 });
 
 app.post('/status', async (req, res) => {
@@ -424,8 +441,6 @@ app.post('/status', async (req, res) => {
     let project = req.body.project;
     let status = req.body.status;
     let date = req.body.date;
-    //console.log(req.body)
-
     let result = await db.projecttype(project);
     let surface = result.rows[0].surface;
     result = await db.updateStatus(project, surface, id, status, date);
@@ -433,7 +448,6 @@ app.post('/status', async (req, res) => {
       res.set('Content-Type', 'application/json');
       res.send({rows: "Updated 1 row"});
     } else {
-      //console.log(result);
       res.set('Content-Type', 'application/json');
       res.send({error: "failed to update"});
     }
@@ -441,7 +455,6 @@ app.post('/status', async (req, res) => {
 });
 
 app.post('/gps', (req, res) => {
-  //console.log(req.body.marker[0].id);
   res.set('Content-Type', 'application/json');
   res.send({ express: 'Server online' });
 });
@@ -449,7 +462,6 @@ app.post('/gps', (req, res) => {
 app.post('/import', async (req, res) => {
   //let project = "TEST";
   let project = req.body.project;
-  console.log(project);
   let surface = await db.projecttype(project);
   if (surface.rows[0].surface === "road") {
     let result = await db.gid();
@@ -467,7 +479,6 @@ app.post('/import', async (req, res) => {
       }
       gid++
     } 
-    console.log("Inserted " + (rows) + " rows");
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
   } else {
     let rows = 0;
@@ -482,10 +493,20 @@ app.post('/import', async (req, res) => {
       }
      
   }
-  console.log("Inserted " + (rows) + " rows");
   res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
 }
 });
+
+function formatDate(date) {
+  let tokens = null;
+    try {
+      tokens = date.split('/');
+    } catch (err) {
+        return 'error'; 
+      }
+  return tokens[2] + '-' + tokens[1] + '-' + tokens[0];
+
+}
 
 function genSalt() {
   return new Promise(async (resolve, reject) => {
