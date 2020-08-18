@@ -13,6 +13,8 @@ import PhotoModal from './PhotoModal.js';
 import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js'
 
+const DUPLICATE_OFFSET = 0.00002;
+
 class App extends React.Component {
 
   constructor(props) {
@@ -21,6 +23,7 @@ class App extends React.Component {
     this.menu = React.createRef();
     this.customModal = React.createRef();
     this.photoModal = React.createRef();
+   
     this.state = {
       location: {
         lat: -41.2728,
@@ -102,7 +105,6 @@ class App extends React.Component {
       newPassword: null,
       search: null,
       district: null,
-      //markerSet: new Set()
     };   
   }
 
@@ -340,12 +342,25 @@ addGLMarkers(project, data, type, zoomTo) {
     const lng = position.coordinates[0];
     const lat = position.coordinates[1];
     let latlng = L.latLng(lat, lng);
-    if (set.has(latlng.lat.toString()+latlng.lng.toString())) {
-      //console.log("duplicate")
-      //console.log(latlng);
-      latlng.lng += 0.00002;
+    if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
+      let randomLat = Math.random() >= 0.5;
+      let randomPlus = Math.random() >= 0.5;
+      if (randomLat) {
+        if (randomPlus) {
+          latlng.lat += DUPLICATE_OFFSET;
+        } else {
+          latlng.lat -= DUPLICATE_OFFSET;
+        }
+      } else {
+        if (randomPlus) {
+          latlng.lng += DUPLICATE_OFFSET;
+        } else {
+          latlng.lng -= DUPLICATE_OFFSET;
+        }
+      }
+      set.add(latlng.lat.toString() + latlng.lng.toString());
     } else {
-      set.add(latlng.lat.toString()+latlng.lng.toString());
+      set.add(latlng.lat.toString() + latlng.lng.toString());
     }
    
     let point = LatLongToPixelXY(latlng.lat, latlng.lng);
