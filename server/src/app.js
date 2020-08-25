@@ -23,22 +23,22 @@ const environment = process.env.ENVIRONMENT;
 
 // comment out create server code below when deploying to server
 // server created in index.js
-// console.log("mode: " + environment);
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function(req, res) {
-//   }).listen(port, hostname, () => {
-//       console.log(`Listening: http://${hostname}:${port}`);
-//    });
-// } else {
-//   const options = {
-//     key: fs.readFileSync('./server.key', 'utf8'),
-//     cert: fs.readFileSync('./server.cert', 'utf8')
-//   }
-//   https.createServer(options, app).listen(port, () => {
-//     console.log(`Listening: https://${host}:${port}`);
-//     });
-// }
+console.log("mode: " + environment);
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  const options = {
+    key: fs.readFileSync('./server.key', 'utf8'),
+    cert: fs.readFileSync('./server.cert', 'utf8')
+  }
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 app.use(cors());
 app.use(morgan('dev'));

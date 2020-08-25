@@ -1,6 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import CustomNav from './CustomNav.js';
@@ -104,6 +104,7 @@ class App extends React.Component {
       newPassword: null,
       search: null,
       district: null,
+      spinner: false
     };   
   }
 
@@ -452,6 +453,7 @@ addGLMarkers(project, data, type, zoomTo) {
   this.setState({objGLData: faults});
   this.setState({glpoints: points}); //Immutable reserve of original points
   this.redraw(points, null);
+  this.setState({spinner: false});
 }
 
 addCentrelines(data) {
@@ -547,20 +549,6 @@ addCentrelines(data) {
     }
   }
 
-  // dblClickLeafletMap(e) {
-  //   console.log("dblclick")
-  //   this.setState({ruler: false});
-  //   let polyline = this.state.rulerPolyline;
-  //   // if (polyline !== null) {
-  //   //   let points = polyline.getLatLngs();
-  //   //   points.pop();
-  //   //   points.pop();
-  //   //   this.calculateDistance(points);
-  //     polyline.removeFrom(this.leafletMap);
-  //     this.setState({rulerPolyline: null});
-     
-  // }
-
   onMouseMove(e) {
     let lat = Math.round(e.latlng.lat * 100000) / 100000;
     let lng = Math.round(e.latlng.lng * 100000) / 100000;
@@ -610,9 +598,7 @@ addCentrelines(data) {
         polyline.removeFrom(this.leafletMap);
         this.setState({rulerPolyline: null});
         this.setState({rulerDistance: 0});
-      }
-      
-      
+      }   
     } else {
       //console.log(e.key);
     }
@@ -637,8 +623,6 @@ addCentrelines(data) {
     }
     let total = Number((metres).toFixed(0));
     this.setState({rulerDistance: total});
-    //this.setState({showRuler: true});
-    //console.log(total);
   }
 
   getDistance() {
@@ -1297,7 +1281,7 @@ addCentrelines(data) {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoomTo) {
-    
+    this.setState({spinner: true});
     if (this.state.login !== "Login") {
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -2272,6 +2256,27 @@ updateStatus(marker, status) {
       }
     }
 
+    const CustomSpinner = function(props) {
+
+      if (props.show) {
+        return(
+          <Spinner
+          className="spinner"
+          as="span"
+          animation="border"
+          variant="secondary"
+          size="lg"
+          role="status"
+          >
+          </Spinner>
+        );
+      } else {
+        return(
+          <span></span>
+        );    
+      }  
+    }
+
     return (   
       <> 
         <div>
@@ -2340,7 +2345,8 @@ updateStatus(marker, status) {
             maxZoom={22}
           />
           <ScaleControl className="scale"/>
-
+          <CustomSpinner show={this.state.spinner}>
+          </CustomSpinner>;
           <Dropdown className="tools" 
             onClick={(e) => this.clickTools(e)}>
           <Dropdown.Toggle
@@ -2520,7 +2526,7 @@ updateStatus(marker, status) {
             </InputGroup.Append>
           </InputGroup>
           </div>
-
+        
       </LMap >    
       </div>
        {/* admin modal     */}
