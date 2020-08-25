@@ -23,22 +23,22 @@ const environment = process.env.ENVIRONMENT;
 
 // comment out create server code below when deploying to server
 // server created in index.js
-console.log("mode: " + environment);
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
-} else {
-  const options = {
-    key: fs.readFileSync('./server.key', 'utf8'),
-    cert: fs.readFileSync('./server.cert', 'utf8')
-  }
-  https.createServer(options, app).listen(port, () => {
-    console.log(`Listening: https://${host}:${port}`);
-    });
-}
+// console.log("mode: " + environment);
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       console.log(`Listening: http://${hostname}:${port}`);
+//    });
+// } else {
+//   const options = {
+//     key: fs.readFileSync('./server.key', 'utf8'),
+//     cert: fs.readFileSync('./server.cert', 'utf8')
+//   }
+//   https.createServer(options, app).listen(port, () => {
+//     console.log(`Listening: https://${host}:${port}`);
+//     });
+// }
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -60,7 +60,7 @@ app.get('/api', (req, res) => {
   res.send({ express: 'Server online' });
 });
 
-app.post('/login', async (request, response, next) => {
+app.post('/login', async (request, response) => {
   let succeded = null;
   let password = request.body.key;
   let user = request.body.user;
@@ -107,16 +107,21 @@ app.post('/login', async (request, response, next) => {
 });
 
 app.post('/logout', (req, res) => {
-  if (req.headers.authorization === this.token) {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
     users.deleteToken(req.body.token);
     res.send({success: true});
   } else {
+    res.set('Content-Type', 'application/json');
     res.send({success: false});
+    
+    //res.send({error: "Invalid token"});
   }
 });
 
 app.post('/user', async (req, res, next) => {
-    if (req.headers.authorization === this.token) {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+    if (result) {
       try {
         if (req.body.type === "insert") {
           let salt = genSalt(req.body.password);
@@ -124,11 +129,11 @@ app.post('/user', async (req, res, next) => {
             let hash = genHash(req.body.password, result.salt);
             hash.then(async function(result) {
               try {
-                let q = await db.addUser(req.body.user, result);
+                let q = await db.addUser(req.body.client, result);
                 if(q.rowCount === 1) {
                   res.send({success: true})
                 } else {
-                  res.send({success: false})
+                  res.send({success: false, error: q})
                 }
               } catch(err) {
                 res.send({error: err.err.detail})
@@ -137,7 +142,7 @@ app.post('/user', async (req, res, next) => {
           });
         } else if (req.body.type === "delete") {
           try {
-            let q = await db.deleteUser(req.body.user);
+            let q = await db.deleteUser(req.body.client);
             if(q.rowCount === 1) {
               res.send({success: true})
             } else {
@@ -148,7 +153,7 @@ app.post('/user', async (req, res, next) => {
           }
         } else {
           try {
-            let q = await db.updateUser(req.body.user);
+            let q = await db.updateUser(req.body.client);
             if(q.rowCount === 1) {
               res.send({success: true})
             } else {
@@ -164,14 +169,15 @@ app.post('/user', async (req, res, next) => {
         next(err);
       }
     } else {
-      res.send({success: false});
+      res.set('Content-Type', 'application/json');
+      res.send({error: "Invalid token"});
     }
 });
 
-app.post('/usernames', async (req, res, next) => {
+app.post('/usernames', async (req, res) => {
  
-  if (req.headers.authorization === this.token) {
-    
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if(result) {
     let result = await db.usernames(req.body.client);
     let arr = [];
     for (let i = 0; i < result.rows.length; i++) {
@@ -181,55 +187,85 @@ app.post('/usernames', async (req, res, next) => {
 
     }
     res.send({success: true, usernames: arr})
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
   }
 });
 
 app.post('/selectprojects', async (req, res, next) => {
- 
-  if (req.headers.authorization === this.token) {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
     let result = await db.selectprojects(req.body.client);
     res.send({success: true, projects: result.rows})
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
   }
 });
 
-app.post('/project', async (req, res, next) => {
-  if (req.headers.authorization === this.token) {
-    try {
+app.post('/project', async (req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if(result) {
       if (req.body.type === "insert") {
-        let q = await db.addProject(req.body);
-        if(q.rowCount === 1) {
-          res.send({success: true})
-        } else {
-          res.send({success: false})
+        try {
+          let q = await db.addProject(req.body);    
+          if(q.rowCount === 1) {
+            res.send({success: true})
+          } else {
+            res.send({success: false})
+          }
+        } catch (err) {
+          res.set('Content-Type', 'application/json');
+          res.send({error: err.err.detail});
         }
       } else {
-        let q = await db.deleteProject(req.body);
-        if(q.rowCount === 1) {
-          res.send({success: true})
-        } else {
-          res.send({success: false})
+        try {
+          let surface = await db.projecttype(req.body.project);
+          if (surface.rowCount === 1) {
+            let result = await db.deleteProjectData (req.body.project, surface.rows[0].surface);
+            let parent = false;
+            if (req.body.parent) {
+              let q = await db.deleteProject(req.body.project);
+              if(q.rowCount === 1) {
+                parent = true;
+              } 
+            }
+            res.set('Content-Type', 'application/json');
+            res.send({rows: "Deleted " + result.rowCount + " rows", parent: parent});
+            
+          } else {
+            res.set('Content-Type', 'application/json');
+            res.send({rows: "Project not found", parent: false});
+          }
+        } catch (err) {
+          console.log(err)
+          res.set('Content-Type', 'application/json');
+          res.send({error: err.err.detail});
         }
-      }
-    } catch (err) {
-      res.send({error: err});
-      next(err);
-    }
+      }     
   } else {
-    res.send({success: false});
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
   }
+    
 });
 
 app.post('/district', async (req, res) => {
-
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    let result = await db.district(req.body.project);
-    let district = result.rows[0].description;
-    res.set('Content-Type', 'application/json');
-    res.send({success: true, district: district})
+    try {
+      let result = await db.district(req.body.project);
+      let district = result.rows[0].description;
+      res.set('Content-Type', 'application/json');
+      res.send({success: true, district: district});
+    } catch (err) {
+      res.set('Content-Type', 'application/json');
+      res.send({success: false});
+    }
   } else {
+    res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
-
   }
 });
 /**
@@ -243,14 +279,15 @@ app.post('/class', async (req, res) => {
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
+    res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
-  }
+  } 
 });
 /**
  * gets faults for specific class
  * 
  */
-app.post('/faults', async (req, res, next) => {
+app.post('/faults', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let faults = await db.faults(req.body.project, req.body.code);
@@ -261,8 +298,9 @@ app.post('/faults', async (req, res, next) => {
     res.set('Content-Type', 'application/json')
     res.send({result: result});
   } else {
+    res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
-  }
+  } 
 });
 
 app.post('/age', async (req, res) => { 
@@ -272,7 +310,10 @@ app.post('/age', async (req, res) => {
     let result = await db.age(project);
     res.set('Content-Type', 'application/json'); 
     res.send({result: result.rows});  
-  }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+} 
 });
 
 app.post('/priority', async (req, res) => { 
@@ -304,7 +345,10 @@ app.post('/priority', async (req, res) => {
       res.set('Content-Type', 'application/json'); 
       res.send({priority: priority});        
     }    
-  }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+} 
 });
 
 app.post('/dropdown', async (req, res) => { 
@@ -320,7 +364,10 @@ app.post('/dropdown', async (req, res) => {
     }
     res.set('Content-Type', 'application/json');
     res.send({result: result});   
-  }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+} 
 });
 /**
  * gets faults for specfic filter (project - fault type - priority)
@@ -390,7 +437,7 @@ app.post('/layer', async (req, res) => {
 /**
  * gets centrelines for specfic ta code
  */
-app.post('/roads', async (req, res, next) => {
+app.post('/roads', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   let code = req.body.code;
   if (result) {
@@ -400,8 +447,8 @@ app.post('/roads', async (req, res, next) => {
     res.send(geometry.rows);
   } else {
     res.set('Content-Type', 'application/json');
-    res.send({error:"Resource unavailable"});
-  }  
+    res.send({error: "Invalid token"});
+} 
 });
 
 app.post('/update', async (req, res) => {
@@ -430,12 +477,14 @@ app.post('/update', async (req, res) => {
       }  
     }  
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
-  }
+  }else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+} 
 });
 
 app.post('/status', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
- 
   if (token) {
     let id = req.body.marker[0].id;
     let project = req.body.project;
@@ -451,7 +500,10 @@ app.post('/status', async (req, res) => {
       res.set('Content-Type', 'application/json');
       res.send({error: "failed to update"});
     }
-  }
+  }else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  } 
 });
 
 app.post('/gps', (req, res) => {
@@ -460,41 +512,55 @@ app.post('/gps', (req, res) => {
 });
 
 app.post('/import', async (req, res) => {
-  //let project = "TEST";
-  let project = req.body.project;
-  let surface = await db.projecttype(project);
-  if (surface.rows[0].surface === "road") {
-    let result = await db.gid();
-    let gid = result.rows[0].max + 1;
-    let rows = 0;
-    let errors = 0;
-    for (let i = 1; i < req.body.data.length - 1; i++) {  
-      let data =  req.body.data[i];
-      data.unshift(gid);
-      let result = await db.import(project, data);
-      if(result.rowCount === 1) {
-        rows++;
-      } else {
+  const token = users.findUserToken(req.headers.authorization, req.body.user);
+  if(token) {
+    let project = req.body.project;
+    let surface = await db.projecttype(project);
+    if (surface.rows[0].surface === "road") {
+      let rows = 0;
+      let errors = 0;
+      for (let i = 1; i < req.body.data.length; i++) {  
+        let data =  req.body.data[i];
+        if (data[0] === '') {
+          continue;
+        }
+        try {
+          let result = await db.import(data);
+          if(result.rowCount === 1) {
+            rows++;
+          } else {
+            errors++
+          }
+        } catch(err) {
+          errors++
+          console.log(err);
+        }
+      } 
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+    } else {
+      let rows = 0;
+      let errors = 0;
+      for (let i = 1; i < req.body.data.length - 1; i++) {  
+        let data =  req.body.data[i];
+        try {
+        let result = await db.importFootpath(data);
+        if(result.rowCount === 1) {
+          rows++;
+        } else {
+          errors++
+        }
+      } catch(err) {
         errors++
-      }
-      gid++
-    } 
+        console.log(err);
+      }   
+    }
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
-  } else {
-    let rows = 0;
-    let errors = 0;
-    for (let i = 1; i < req.body.data.length - 1; i++) {  
-      let data =  req.body.data[i];
-      let result = await db.importFootpath(data);
-      if(result.rowCount === 1) {
-        rows++;
-      } else {
-        errors++
-      }
-     
   }
-  res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
-}
+ 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
 });
 
 function formatDate(date) {

@@ -12,7 +12,7 @@ export default class CustomModal extends React.Component {
             show: props.show,
             user: null,
             password: null,
-            project: null,
+            project: "",
             path: null,
             callbackUser: props.callbackUser, //insert user
             callbackDeleteUser: props.callbackDeleteUser,
@@ -26,7 +26,8 @@ export default class CustomModal extends React.Component {
             usernames: [],
             currentUser: "client",
             disabled: false,
-            status: false //set to true if updating fault status false if db data import
+            status: false, //set to true if updating fault status false if db data import
+            cascade: false //cascade delete project deletes project and its data if true
         } 
     }
 
@@ -107,7 +108,7 @@ export default class CustomModal extends React.Component {
     }
 
     deleteProject(e) {
-        this.props.callbackDeleteProject(this.state.project);
+        this.props.callbackDeleteProject(this.state.project, this.state.cascade);
     }
 
     changePath(e) {
@@ -121,9 +122,7 @@ export default class CustomModal extends React.Component {
 
     fileLoaded(data, info) {
         let project = this.state.project;
-        if (this.state.status) {
-            this.delegate.fileLoaded(project, data, this.state.status);
-        }
+        this.delegate.fileLoaded(project, data, this.state.status);
     }
 
     delegate(parent) {
@@ -137,7 +136,47 @@ export default class CustomModal extends React.Component {
         }
     }
 
+    clickCascade(e) {
+        if (this.state.cascade) {
+            this.setState(() => ({
+                
+              cascade: false, 
+            }));  
+          } else {
+            this.setState(() => ({
+                cascade: true, 
+            })); 
+        }   
+    }
+
+    changeCascade(e) {
+
+    }
+    
+
     render() {
+
+        const Slider = function(props) {
+            return (
+              <div>
+                <label className="lbstatus">
+                  <b>Delete parent project:</b> {props.status}
+                </label>
+                <label 
+                  className="switch">
+                  <input 
+                    type="checkbox"
+                    checked={props.checked}
+                    onChange={props.onChange}
+                    onClick={props.onClick}
+                  >
+                  </input>
+                  <span className="slider round"></span>
+                </label>
+              </div>
+            );
+          }
+
         if (this.state.name === 'user') {
             if(this.state.mode === 'Insert') {
                 return (
@@ -364,7 +403,7 @@ export default class CustomModal extends React.Component {
                             onChange={(e) => this.changeTA(e)}>
                             </Form.Control>
                         </Form.Group>
-                        <Form.Group controlId="description">
+                        <Form.Group controlId="surface">
                             <Form.Label>Surface:</Form.Label>
                             <Form.Control 
                             type="text" 
@@ -372,8 +411,7 @@ export default class CustomModal extends React.Component {
                             onChange={(e) => this.changeSurface(e)}>
                             </Form.Control>
                         </Form.Group>
-
-                        <Form.Group controlId="description">
+                        <Form.Group controlId="amazon">
                             <Form.Label>Amazon URL:</Form.Label>
                             <Form.Control 
                             type="text" 
@@ -381,7 +419,6 @@ export default class CustomModal extends React.Component {
                             onChange={(e) => this.changeAmazon(e)}>
                             </Form.Control>
                         </Form.Group>
-
                         <Button 
                             variant="primary" 
                             onClick={(e) => this.createProject(e)}>
@@ -402,7 +439,7 @@ export default class CustomModal extends React.Component {
                     onHide={() => this.setState({show: false})}>
                     <Modal.Header>
                         <div>
-                            <Modal.Title>Delete Project</Modal.Title>
+                            <Modal.Title>Delete Project Data</Modal.Title>
                         </div>     
                         <Dropdown className="dropdownproject">
                             <Dropdown.Toggle variant="success" id="dropdown-basic">
@@ -437,10 +474,16 @@ export default class CustomModal extends React.Component {
                             onChange={(e) => this.changeProject(e)}>
                             </Form.Control>
                         </Form.Group>
+                        <Slider
+                            checked={this.state.cascade}
+                            onClick={(e) => this.clickCascade(e)} 
+                            onChange={(e) => this.changeCascade(e)}              
+                        >
+                        </Slider>
                         <Button 
                             variant="primary" 
                             onClick={(e) => this.deleteProject(e)}>
-                            Import
+                            Delete
                         </Button>
                         </Form>
                     </Modal.Body>

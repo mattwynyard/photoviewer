@@ -10,7 +10,6 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
-import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js'
 
 const DUPLICATE_OFFSET = 0.00002;
@@ -896,7 +895,7 @@ addCentrelines(data) {
   
 
   async getDistrict(project) {  
-    const response = await fetch('https://' + this.state.host + '/district', {
+    await fetch('https://' + this.state.host + '/district', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1408,7 +1407,7 @@ addCentrelines(data) {
     }      
   }
 
-  async addNewUser(user, password) {
+  async addNewUser(client, password) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
@@ -1419,7 +1418,8 @@ addCentrelines(data) {
         },
         body: JSON.stringify({
           type: "insert",
-          user: user,
+          user: this.state.login,
+          client: client,
           password: password
         })
       }).then(async (response) => {
@@ -1428,7 +1428,9 @@ addCentrelines(data) {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.success) {
-            alert("New user created")
+            alert("User: " + client + " created")
+          } else {
+            alert("User: " + client + " failed to create")
           }
         }   
       })
@@ -1452,6 +1454,7 @@ addCentrelines(data) {
         },
         body: JSON.stringify({
           type: "select",
+          user: this.state.login,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1484,7 +1487,8 @@ addCentrelines(data) {
         },
         body: JSON.stringify({
           type: "select",
-          client: client
+          client: client,
+          user: this.state.login,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1505,7 +1509,7 @@ addCentrelines(data) {
     }
   }
 
-  async deleteCurrentUser(user) {
+  async deleteCurrentUser(client) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
@@ -1516,7 +1520,8 @@ addCentrelines(data) {
         },
         body: JSON.stringify({
           type: "delete",
-          user: user
+          user: this.state.login,
+          client: client,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1524,7 +1529,9 @@ addCentrelines(data) {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.success) {
-            alert("User deleted")
+            alert("User: " + client + " deleted")
+          } else {
+            alert("User: " + client + " not found")
           }
         }   
       })
@@ -1536,7 +1543,7 @@ addCentrelines(data) {
     }
   }
 
-  async deleteCurrentProject(project) {
+  async deleteCurrentProject(project, parent) {
     console.log(project);
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
@@ -1547,17 +1554,20 @@ addCentrelines(data) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          user: this.state.login,
           type: "delete",
-          project: project
+          project: project,
+          parent: parent
         })
       }).then(async (response) => {
         const body = await response.json();
         if (body.error != null) {
           alert(`Error: ${body.error}\n`);
         } else {
-          if (body.success) {
-            alert("Project deleted")
+          if (body.parent) {
+            alert(body.rows +  '\n Parent project deleted')
           }
+            alert(body.rows)
         }   
       })
       .catch((error) => {
@@ -1578,6 +1588,7 @@ addCentrelines(data) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          user: this.state.login,
           type: "insert",
           code: code,
           client: client,
@@ -1593,7 +1604,9 @@ addCentrelines(data) {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.success) {
-            alert("New project created")
+            alert("Project: " + code + " created")
+          } else {
+            alert("Project: " + code + "  failed to create")
           }
         }   
       })
@@ -1991,10 +2004,8 @@ addProject(e) {
 }
 
 importData(e) {
-  console.log(e.target.attributes)
   this.customModal.current.setState({name: 'import'});
   this.customModal.current.setShow(true);
-  //this.customModal.current.delegate(this);
 }
 
 fileLoaded(project, data, status) {
@@ -2019,8 +2030,9 @@ deleteUser = (name) => {
 
 }
 
-deleteProject = (project) => {
-  this.deleteCurrentProject(project);
+deleteProject = (project, parent) => {
+  console.log("delete")
+  this.deleteCurrentProject(project, parent);
   this.customModal.current.setShow(false);
 
 }
@@ -2038,7 +2050,6 @@ updateStatus(marker, status) {
   render() {
 
     const centre = [this.state.location.lat, this.state.location.lng];
-    const { fault } = this.state.fault;
     let mode = this.state.projectMode; 
     const LayerNav = function LayerNav(props) { 
 
@@ -2225,6 +2236,12 @@ updateStatus(marker, status) {
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
+      } else if (props.value === "Grade 1" || props.value === "Priority 5") {
+        return ( 
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+        );
       } else if (props.value === "Signage") {
         return (
           <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
@@ -2343,7 +2360,7 @@ updateStatus(marker, status) {
                 variant="outline-secondary" 
                 size="sm"
                 onClick={(e) => this.clickRuler(e)}>
-              <img src="ruler-200.png" alt="my image"></img>
+              <img src="ruler-200.png" alt="ruler"></img>
                 
               </Button>
               {"\u0020"}Distance: {this.state.rulerDistance} m
@@ -2553,10 +2570,10 @@ updateStatus(marker, status) {
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
           <img src="logo192.png" alt="React logo"width="24" height="24"/> React: 16.12.0<br></br>
-          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL: 1.0<br></br>
+          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL: 2.0<br></br>
           <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap: 4.4.0<br></br>
           <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet: 1.6.0<br></br>
-          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap: 1.0.0-beta.16<br></br>
+          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap: 1.3.0<br></br>
           React-leaflet: 2.6.0<br></br>
 		    </Modal.Body>
         <Modal.Footer>
@@ -2608,15 +2625,6 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
-      {/* <Modal
-        show={this.state.showRuler}
-        size={'sm'} 
-        centered={true}
-        onHide={(e) => this.hideRuler(e)}>
-          <Modal.Body >	
-            Total distance measured = {this.state.rulerDistance} metres
-          </Modal.Body>
-      </Modal> */}
       </>
     );
   }

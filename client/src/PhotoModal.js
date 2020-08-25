@@ -259,6 +259,7 @@ export default class PhotoModal extends React.Component {
             <img
               key={`${index}`}  
               className="photo" 
+              alt="fault"
               src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
                 >
             </img>
@@ -266,10 +267,12 @@ export default class PhotoModal extends React.Component {
             <img 
               className="leftArrow" 
               src={"leftArrow_128.png"} 
+              alt="left arrow"
               onClick={(e) => this.clickPrev(e)}/> 
             <img 
               className="rightArrow" 
               src={"rightArrow_128.png"} 
+              alt="right arrow"
               onClick={(e) => this.clickNext(e)}/>         
           </div>
 		    </Modal.Body >
