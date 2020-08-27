@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -2072,7 +2072,7 @@ updateStatus(marker, status) {
           if(mode === "road") {
             return (
               <Nav>          
-              <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+              <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
                 <CustomMenu 
                   title="Add Roading Layer" 
                   className="navdropdownitem" 
@@ -2099,7 +2099,7 @@ updateStatus(marker, status) {
           } else {
             return (
               <Nav>          
-              <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+              <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
                 <CustomMenu 
                   title="Add Roading Layer" 
                   className="navdropdownitem" 
@@ -2128,7 +2128,7 @@ updateStatus(marker, status) {
         } else {
           return (
             <Nav>          
-            <NavDropdown className="navdropdown" title="Layers" id="basic-nav-dropdown">
+            <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
               <CustomMenu 
                 title="Add Roading Layer" 
                 className="navdropdownitem" 
@@ -2257,18 +2257,18 @@ updateStatus(marker, status) {
     }
 
     const CustomSpinner = function(props) {
-
       if (props.show) {
         return(
+          <div className="spinner">
           <Spinner
-          className="spinner"
           as="span"
           animation="border"
           variant="secondary"
           size="lg"
           role="status"
-          >
-          </Spinner>
+          ></Spinner>
+          <p>Loading...</p>
+          </div>
         );
       } else {
         return(
@@ -2330,7 +2330,7 @@ updateStatus(marker, status) {
         </div>      
         <div className="map">
         <LMap        
-          ref={(ref) => { this.map = ref; }}
+          ref={(ref) => {this.map = ref;}}
           className="map"
           worldCopyJump={true}
           boxZoom={true}
@@ -2498,12 +2498,6 @@ updateStatus(marker, status) {
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
           </Button>
-          {/* <div className="search">
-            <input type="text" placeholder="Search">
-           
-            </input>
-            <Button variant="light" size="sm">Button</Button>
-          </div> */}
           <div >
           <InputGroup className="search">
             <FormControl 
@@ -2525,8 +2519,7 @@ updateStatus(marker, status) {
               </Button>
             </InputGroup.Append>
           </InputGroup>
-          </div>
-        
+          </div>    
       </LMap >    
       </div>
        {/* admin modal     */}
