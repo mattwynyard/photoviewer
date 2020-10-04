@@ -1,0 +1,21 @@
+body {
+    margin: 0px;
+    width: 100vw;
+    height: 90vh;
+  }
+  
+  #root {
+    height: 100%;
+  }
+
+  .priorityChart {
+    position: relative;
+    width:360px;
+    height:360px;
+  }
+
+  .faultChart {
+    position: relative;
+    width:360px;
+    height:360px;
+  }

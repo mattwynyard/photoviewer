@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from "react-router-dom";
+
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -10,7 +12,8 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js'
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js';
+
 
 const DUPLICATE_OFFSET = 0.00002;
 
@@ -147,7 +150,7 @@ class App extends React.Component {
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
       this.addEventListeners(); 
-      if (this.state.login === 'asm') {
+      if (this.state.login === 'asm' || this.state.login === 'pcc') {
         this.setState({priorityMode: "Priority"});
       } else {
         this.setState({priorityMode: "Grade"});
@@ -175,6 +178,7 @@ class App extends React.Component {
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
+          console.log(this.state.amazon);
           let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
           if (suffix !== bucket) {
             let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
@@ -327,15 +331,22 @@ addGLMarkers(project, data, type, zoomTo) {
   let med = null;
   let low = null;
 
-  if(this.state.login === "asm") {    
-    high = 1;
-    med = 2;
-    low = 3;
+  if (this.state.projectMode === "road") {
+    if(this.state.login === "asm" || this.state.login === "pcc") {    
+      high = 1;
+      med = 2;
+      low = 3;
+    } else {
+      high = 5;
+      med = 4;
+      low = 3;
+    }
   } else {
     high = 5;
     med = 4;
     low = 3;
   }
+    
   let set = new Set();
   for (var i = 0; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
@@ -368,7 +379,9 @@ addGLMarkers(project, data, type, zoomTo) {
     if (type === "road") {
       let bucket = data[i].inspection;
       if (bucket != null) {
+        //console.log(this.state.amazon);
         let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+        //console.log(suffix);
         if (bucket !== suffix) {
           alpha = 0.5;
         }
@@ -429,9 +442,10 @@ addGLMarkers(project, data, type, zoomTo) {
         type: type,
         id: id[id.length - 1],
         roadid: data[i].roadid,
-        carriage: data[i].carriagewa,
+        carriage: data[i].carriageway,
         inspection: data[i].inspection,
         location: data[i].location,
+        class: data[i].class,
         fault: data[i].fault,
         repair: data[i].repair,
         comment: data[i].comment,
@@ -804,6 +818,7 @@ addCentrelines(data) {
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
       if (projects[i].surface === "road") {
+        //console.log(projects[i])
         obj.road.push(projects[i]);
       } else {
         obj.footpath.push(projects[i]);
@@ -867,7 +882,7 @@ addCentrelines(data) {
       if(this.state.login === 'admin') {
         this.setState({admin: true});
       }
-      if (this.state.login === 'asm') {
+      if (this.state.login === 'asm' || this.state.login === 'pcc') {
         this.setState({priorityMode: "Priority"});
       } else {
         this.setState({priorityMode: "Grade"});
@@ -918,7 +933,8 @@ addCentrelines(data) {
    */
   async loadLayer(e, type) { 
     e.persist();
-    this.setState({projectMode: type})
+    this.setState({projectMode: type});
+    console.log(type);
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
@@ -928,6 +944,9 @@ addCentrelines(data) {
     let project = e.target.attributes.code.value; 
     let dynamicDropdowns = [];
     if (type === "road") {
+        if (this.state.login === 'asm' || this.state.login === 'pcc') {
+        this.setState({priorityMode: "Priority"});
+        }
       projects = this.state.projects.road;
       await this.loadFilters(project);
      
@@ -943,7 +962,7 @@ addCentrelines(data) {
       await this.getDistrict(project);
     } else {
       projects = this.state.projects.footpath;
-      
+      this.setState({priorityMode: "Grade"});
       let filters = ["Asset", "Fault", "Type", "Cause"];
       for (let i = 0; i < filters.length; i++) {
         let dropdown = new DynamicDropdown(filters[i]);
@@ -1240,6 +1259,7 @@ addCentrelines(data) {
 
   async sendData(project, data, endpoint) {
     if (this.state.login !== "Login") {
+      console.log('https://' + this.state.host + endpoint);
       await fetch('https://' + this.state.host + endpoint, {
       method: 'POST',
       headers: {
@@ -1298,7 +1318,7 @@ addCentrelines(data) {
               throw new Error(response.status);
             } else {
               const body = await response.json();
-              //console.log(body);
+              console.log(body);
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
@@ -2032,14 +2052,14 @@ updateStatus(marker, status) {
 }
 
   render() {
-
     const centre = [this.state.location.lat, this.state.location.lng];
     let mode = this.state.projectMode; 
     const LayerNav = function LayerNav(props) { 
-
+     
       if (props.user === 'admin') {
         return (
-          <Nav>          
+          <Nav>  
+            
           <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
               <NavDropdown.Item  
               className="adminitem" 
@@ -2277,10 +2297,12 @@ updateStatus(marker, status) {
       }  
     }
 
-    return (   
+    return ( 
       <> 
         <div>
+        
           <Navbar bg="light" expand="lg"> 
+          
             <Navbar.Brand href="#home">
             <img
                 src="logo.png"
@@ -2305,14 +2327,36 @@ updateStatus(marker, status) {
               >
             </LayerNav>
             <Nav>
+               
               <NavDropdown className="navdropdown" title="Data" id="basic-nav-dropdown">
+              
                 <NavDropdown.Item 
                   className="navdropdownitem" 
                   title="Update Fault Status"
                   onClick={(e) => this.clickUpdateFaultStatus(e)} 
                   >Update Status</NavDropdown.Item>
-                <NavDropdown.Divider />         
+                   <NavDropdown.Divider />         
               </NavDropdown>         
+            </Nav>
+            <Nav>
+            <NavDropdown className="navdropdown"   title="Report" id="basic-nav-dropdown">  
+              <NavDropdown.Item
+              className="navdropdownitem" >
+                <Link 
+                  className="dropdownlink" 
+                  to={{
+                    pathname: '/statistics',
+                    login: this.customNav.current,
+                    user: this.state.user,
+                    data: this.state.objGLData
+
+                  }}
+                  style={{ textDecoration: 'none' }}
+                  >Create Report
+                 </Link>
+                </NavDropdown.Item> 
+                <NavDropdown.Divider />         
+                </NavDropdown>   
             </Nav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
@@ -2627,6 +2671,7 @@ updateStatus(marker, status) {
       </>
     );
   }
+  
 }
 export default App;
 

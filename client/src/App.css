@@ -35,7 +35,13 @@ body {
   color: #fff;
 }
 
-
+.dropdownlink {
+  color: gray;
+  font-family: "Century Gothic", sans-serif;
+  border-radius: 0;
+  letter-spacing: 4px;
+  font-size: 18px !important;
+}
 
 .button {
   padding-left: 3px;

@@ -533,7 +533,7 @@ app.post('/import', async (req, res) => {
           }
         } catch(err) {
           errors++
-          console.log(err);
+          //console.log(err);
         }
       } 
       res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
@@ -551,7 +551,7 @@ app.post('/import', async (req, res) => {
         }
       } catch(err) {
         errors++
-        console.log(err);
+        //console.log(err);
       }   
     }
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
