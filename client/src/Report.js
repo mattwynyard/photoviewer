@@ -17,7 +17,6 @@ class Report extends React.Component {
         } else {
             if (data !== 0) {
                 map.set(data, 1); 
-                console.log(data);
             }   
         }
         return map;

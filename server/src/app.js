@@ -376,6 +376,7 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
+    console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
@@ -429,6 +430,7 @@ app.post('/layer', async (req, res) => {
       await db.updateFilterCount(project);
     }  
     res.set('Content-Type', 'application/json');
+    console.log(finalGeometry);
     res.send({type: surface.rows[0].surface, geometry: finalGeometry});
   } else {
     res.send({error: "Invalid token"});

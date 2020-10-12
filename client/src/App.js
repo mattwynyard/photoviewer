@@ -25,7 +25,7 @@ class App extends React.Component {
     this.menu = React.createRef();
     this.customModal = React.createRef();
     this.photoModal = React.createRef();
-   
+    this.glpoints = null;
     this.state = {
       location: {
         lat: -41.2728,
@@ -123,10 +123,27 @@ class App extends React.Component {
     this.photoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
+    if(this.glpoints !== null) {
+      console.log(this.glpoints.length)
+      this.redraw(this.glpoints);
+    } else {
+      console.log("not null");
+    }
   }
 
   componentDidUpdate() {   
 
+  }
+
+  componentWillUnmount() {
+    console.log("unmount");
+    if(this.state.glpoints === null) {
+      console.log("null");
+    } else {
+      console.log("not null");
+      this.glpoints = this.state.glpoints;
+    }
+   
   }
 
   initializeGL() {
@@ -150,7 +167,7 @@ class App extends React.Component {
       this.position = L.positionControl();
       this.leafletMap.addControl(this.position);
       this.addEventListeners(); 
-      if (this.state.login === 'asm' || this.state.login === 'pcc') {
+      if (this.state.login === 'asm' || this.state.login === 'pcc' || this.state.login === 'wda') {
         this.setState({priorityMode: "Priority"});
       } else {
         this.setState({priorityMode: "Grade"});
@@ -332,7 +349,7 @@ addGLMarkers(project, data, type, zoomTo) {
   let low = null;
 
   if (this.state.projectMode === "road") {
-    if(this.state.login === "asm" || this.state.login === "pcc") {    
+    if(this.state.login === "asm" || this.state.login === "pcc" || this.state.login === "wda") {    
       high = 1;
       med = 2;
       low = 3;
@@ -342,9 +359,15 @@ addGLMarkers(project, data, type, zoomTo) {
       low = 3;
     }
   } else {
-    high = 5;
-    med = 4;
-    low = 3;
+    if(this.state.login === "cdc") { 
+      high = 1;
+      med = 2;
+      low = 3;
+    } else {
+      high = 5;
+      med = 4;
+      low = 3;
+    }   
   }
     
   let set = new Set();
@@ -934,7 +957,7 @@ addCentrelines(data) {
   async loadLayer(e, type) { 
     e.persist();
     this.setState({projectMode: type});
-    console.log(type);
+    //console.log(type);
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
@@ -1318,7 +1341,7 @@ addCentrelines(data) {
               throw new Error(response.status);
             } else {
               const body = await response.json();
-              console.log(body);
+              //console.log(body);
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
@@ -2222,58 +2245,110 @@ updateStatus(marker, status) {
     }
 
     const CustomSVG = function(props) {
-      if (props.value === "Grade 5" || props.value === "Priority 1") {
-        return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
+      //console.log(props.login);
+      if (props.login === 'cdc') {
+        if (props.value === "Grade 1") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+            );
+        } else if (props.value === "Grade 2") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
           );
-      } else if (props.value === "Grade 4" || props.value === "Priority 2") {
-        return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
-        );
-      } else if (props.value === "Grade 3" || props.value === "Priority 3") {
-        return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
-        );
-      } else if (props.value === "Grade 1" || props.value === "Priority 5") {
-        return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
-        );
-      } else if (props.value === "Signage") {
-        return (
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
-        );
-      } else if (props.value === "Completed") {
-        return (
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
-            <circle cx="5" cy="5" r="3" />
-          </svg>
-        );
-      } else {
-        if (props.value === props.bucket) {
+        } else if (props.value === "Grade 3") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Grade 5") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Completed") {
           return (
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
         } else {
-          return (
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
+          if (props.value === props.bucket) {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
+        }
+
+      } else {
+        if (props.value === "Grade 5" || props.value === "Priority 1") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+            );
+        } else if (props.value === "Grade 4" || props.value === "Priority 2") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
+        } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Grade 1" || props.value === "Priority 5") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Signage") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Completed") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else {
+          if (props.value === props.bucket) {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
         }
-        
       }
+      
     }
 
     const CustomSpinner = function(props) {
@@ -2339,7 +2414,7 @@ updateStatus(marker, status) {
               </NavDropdown>         
             </Nav>
             <Nav>
-            <NavDropdown className="navdropdown"   title="Report" id="basic-nav-dropdown">  
+            <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">  
               <NavDropdown.Item
               className="navdropdownitem" >
                 <Link 
@@ -2426,6 +2501,7 @@ updateStatus(marker, status) {
                 <div key={`${index}`}>
                  <CustomSVG 
                  value={value}
+                 login={this.state.login}
                  >
                  </CustomSVG>
                   <input

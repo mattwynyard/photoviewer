@@ -467,6 +467,9 @@ module.exports = {
     },
 
     layer: (layer, filter, priority, inspection) => { 
+        console.log(layer);
+        console.log(priority)
+        console.log(inspection)
         let codes = buildQuery(priority);
         let qAge = buildQuery(inspection);
         return new Promise((resolve, reject) => {
