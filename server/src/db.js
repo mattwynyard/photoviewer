@@ -25,10 +25,10 @@ function parseInteger(x) {
 function parseString(s) {
    
     if (s.indexOf('\'') >= 0) {
-        console.log(s);
+        //console.log(s);
         let index = s.indexOf('\'');
         let str = s.substring(0, index) + s.substring(index + 1, s.length);
-        console.log(str);
+        //console.log(str);
         return parseString(str);
     } else {
         return "'" + s + "'";
@@ -59,6 +59,18 @@ connection.on('connect', () => {
 connection.on('error', error => {
     console.log(error);
 });
+
+// process.on('SIGTERM', () => {
+//     console.log("SIGTERM: " + process.env.PORT);
+// });
+
+// process.on('SIGINT', () => {
+//     console.log("SIGINT: " + process.env.PORT);
+// });
+
+// process.on('SIGINT', () => {
+//     console.log("SIGKILL: " + process.env.PORT);
+// });
 
 module.exports = { 
     projects : (user) => {
@@ -93,9 +105,9 @@ module.exports = {
 
         let pid = project + "_" + id;
         let sql = null
-        console.log(surface)
+        //console.log(surface)
         if (surface === "road") {
-            console.log(pid);
+            //console.log(pid);
             if (date === null) {
                 sql = "UPDATE carriageways SET status= '" + status + "', datefixed= NULL WHERE id='" + pid + "'"; 
             } else {
@@ -467,9 +479,9 @@ module.exports = {
     },
 
     layer: (layer, filter, priority, inspection) => { 
-        console.log(layer);
-        console.log(priority)
-        console.log(inspection)
+        //console.log(layer);
+        //console.log(priority)
+        //console.log(inspection)
         let codes = buildQuery(priority);
         let qAge = buildQuery(inspection);
         return new Promise((resolve, reject) => {
@@ -618,7 +630,7 @@ module.exports = {
     deleteProjectData: (project, surface) => {
         return new Promise((resolve, reject) => {
             let sql = null;
-            console.log(surface)
+            //console.log(surface)
             if (surface === "road") {
                 sql = "DELETE FROM carriageways WHERE project= '" + project + "'";
             } else if (surface === "footpath") {
@@ -639,7 +651,7 @@ module.exports = {
     },
 
     addProject: (body) => {
-        console.log(body);
+        //console.log(body);
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO projects(" +
                 "code, client, description, date, tacode, active, amazon, layercount, layermodified, filtercount, lastfilter, surface)" +
