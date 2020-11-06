@@ -1,21 +1,57 @@
 body {
     margin: 0px;
     width: 100vw;
-    height: 90vh;
-  }
-  
-  #root {
-    height: 100%;
+    height: 100vh;
   }
 
-  .priorityChart {
-    position: relative;
+  .chartParent {
+    width: 100vw;
+    height: 100vh;
+  }
+ 
+  .g1div {
+    position: absolute;
+    width:480px;
+    height:480px;
+  }
+
+  .g2div {
+    position: absolute;
+    left: 50%;
+    width:480px;
+    height:480px;
+  }
+
+  .g3div {
+    position: absolute;
+    bottom: 0px;
+    width:480px;
+    height:480px;
+  }
+
+  .gradediv {
+    position: absolute;
+    bottom: 0px;
+    left: 50%;
     width:360px;
     height:360px;
   }
 
-  .faultChart {
-    position: relative;
-    width:360px;
-    height:360px;
+
+  .g1Chart {
+    position: absolute;
+    left: 20px;
+  }
+
+  .g2Chart {
+    position: absolute;
+  }
+
+  .g3Chart {
+    position: absolute;
+    left: 20px;
+  } */
+
+  .gradeChart {
+    position: absolute;
   }
