@@ -107,7 +107,8 @@ class App extends React.Component {
       newPassword: null,
       search: null,
       district: null,
-      spinner: false
+      spinner: false,
+      isArchive: false //true when doing full photo search
     };   
   }
 
@@ -557,7 +558,7 @@ addCentrelines(data) {
    */
 
   clickLeafletMap(e) {
-    //console.log("click")
+    console.log("click")
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
       if (polyline == null) {
@@ -573,16 +574,23 @@ addCentrelines(data) {
  
       } else {
         let points = polyline.getLatLngs();
-        points.push(e.latlng);
+        points.push(e.latlng.lat);
         polyline.setLatLngs(points);
       }
     } else {
-      if (this.state.glpoints !== null) {
-        this.setState({selectedIndex: null});
-        this.setState({selectedGLMarker: []});
-        this.setState({mouseclick: e})
-        this.redraw(this.state.glpoints);
+      if (this.state.isArchive) {
+        console.log(e.latlng.lat);
+        this.getArhivePhoto(e);
+
+      } else {
+        if (this.state.glpoints !== null) {
+          this.setState({selectedIndex: null});
+          this.setState({selectedGLMarker: []});
+          this.setState({mouseclick: e})
+          this.redraw(this.state.glpoints);
+        }
       }
+      
     }
   }
 
@@ -849,6 +857,29 @@ addCentrelines(data) {
     }
     Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
     this.setState({projects: obj});
+  }
+
+  async getArhivePhoto(e) {
+    const response = await fetch("https://" + this.state.host + '/archive', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: this.state.activeLayer,
+        lat: e.latlng.lat,
+        lng: e.latlng.lng
+      })
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);    
+    } 
   }
 
   async logout(e) {
@@ -1910,6 +1941,14 @@ addCentrelines(data) {
     this.setState({ruler: true});
   }
 
+  clickArchive(e) {
+    if (this.state.isArchive) {
+      this.setState({isArchive: false});
+    } else {
+      this.setState({isArchive: true});
+    }
+  }
+
   clickTools(e) {
     let polyline = this.state.rulerPolyline;
     if (polyline != null) {
@@ -2218,6 +2257,27 @@ updateStatus(marker, status) {
       }
     }
 
+    const Slider = function(props) {
+      return (
+        <div>
+          <label>
+            <b>Search Arhive:</b> 
+          </label>
+          <label 
+            className="switch">
+            <input 
+              type="checkbox"
+              checked={props.checked}
+              onClick={props.onClick}
+              onChange={props.onChange}
+            >
+            </input>
+            <span className="slider round"></span>
+          </label>
+        </div>
+      );
+    }
+
     const CustomPopup = function(props) {
       let location = props.data.location;
       if (props.data.type === "footpath") {
@@ -2354,7 +2414,7 @@ updateStatus(marker, status) {
     const CustomSpinner = function(props) {
       if (props.show) {
         return(
-          <div className="spinner">
+          <div className="spinnerArhive">
           <Spinner
           as="span"
           animation="border"
@@ -2600,6 +2660,12 @@ updateStatus(marker, status) {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
+           <Button className="photoMode"
+            variant="light" 
+            type="button" 
+            onClick={(e) => this.clickArchive(e)}>
+              {this.state.isArchive ? 'Archive' : "Not Archive" }
+          </Button>
           <LayerGroup >
             {this.state.selectedGLMarker.map((obj, index) =>  
             <CustomPopup 

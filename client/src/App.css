@@ -55,6 +55,13 @@ body {
   z-index: 999;
 }
 
+.photoMode {
+  position: absolute;
+  top: 80px;
+  left: 80px;
+  z-index: 999;
+}
+
 .tools {
   position: absolute;
   font-family: "Century Gothic", sans-serif;

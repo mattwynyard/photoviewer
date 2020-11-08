@@ -251,8 +251,16 @@ app.post('/project', async (req, res) => {
     
 });
 
+app.post('/archive', async(req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    console.log(req.body);
+  }
+});
+
 app.post('/district', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
+
   if (result) {
     try {
       let result = await db.district(req.body.project);
