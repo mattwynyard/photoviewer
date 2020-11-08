@@ -362,7 +362,7 @@ module.exports = {
 
     archivePhoto: (project, lat, lng) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT photo FROM photo ORDER BY geom <-> point '(" + lat + "," + lng + ")'" +  " LIMIT 1";
+            let sql = "SELECT photo, geom <-> ST_MakePoint(" + lng + "," + lat + ") AS dist FROM photo ORDER BY dist LIMIT 1";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
