@@ -360,6 +360,20 @@ module.exports = {
         });
     },
 
+    archivePhoto: (project, lat, lng) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo FROM photo ORDER BY geom <-> point '(" + lat + "," + lng + ")'" +  " LIMIT 1";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let photo = resolve(result);
+                return photo;
+            });
+        });
+    },
+
     road: (code) => { 
         return new Promise((resolve, reject) => {
             connection.query("SELECT gid, assetroadi, carriagewa, fullroadna, onrcclass, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'", (err, result) => {

@@ -255,6 +255,8 @@ app.post('/archive', async(req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     console.log(req.body);
+    let photo = await db.archivePhoto(req.body.project, req.body.lat, req.body.lng);
+    console.log(photo);
   }
 });
 
