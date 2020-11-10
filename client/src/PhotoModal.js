@@ -38,6 +38,16 @@ export default class PhotoModal extends React.Component {
     
     }
 
+    setArchiveModal(show, obj, amazon) {
+      
+      this.setState({show: show});
+      this.setState({amazon: amazon});
+      this.setState({type: 'archive'});
+      this.setState({currentPhoto: obj[0].photo});
+      this.setState({selectedGLMarker: obj});
+      console.log(this.state.selectedGLMarker);
+    }
+
     getPhoto(direction) {
         let photo = this.state.currentPhoto;
         let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
@@ -120,7 +130,6 @@ export default class PhotoModal extends React.Component {
 
     
     render() {
-
       const DateBox = function(props) {
         if (props.status === "active") {
           return (
@@ -244,53 +253,58 @@ export default class PhotoModal extends React.Component {
               </div>
             </div>	 
           );
-        }      
+      
+        } else {
+          return (
+            <div></div>
+          );
+        }     
       }
-        return (
-        <Modal dialogClassName={"photoModal"} 
-            show={this.state.show} 
-            size='xl' 
-            centered={true}
-            onHide={(e) => this.closePhotoModal(e)}
-        >
-        <Modal.Body className="photoBody">	
-          <div className="container">
-          {this.state.selectedGLMarker.map((obj, index) => 
-            <img
-              key={`${index}`}  
-              className="photo" 
-              alt="fault"
-              src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
-                >
-            </img>
-          )}
-            <img 
-              className="leftArrow" 
-              src={"leftArrow_128.png"} 
-              alt="left arrow"
-              onClick={(e) => this.clickPrev(e)}/> 
-            <img 
-              className="rightArrow" 
-              src={"rightArrow_128.png"} 
-              alt="right arrow"
-              onClick={(e) => this.clickNext(e)}/>         
-          </div>
-		    </Modal.Body >
-        <Modal.Footer>
-          <CustomTable 
-            obj={this.state.selectedGLMarker[0]}
-            status={this.state.status}
-            repaired={this.state.repaired}
-            checked={this.state.checked}
-            onClick={(e) => this.clickSlider(e)}
-            onChange={(e) => this.changeSlider(e)}
-            onDateChange={(e) => this.changeDate(e)}
-            //TODO copy not working
-            // copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}
-            >      
-          </CustomTable >
-        </Modal.Footer>
-      </Modal>
+      return (
+      <Modal dialogClassName={"photoModal"} 
+          show={this.state.show} 
+          size='xl' 
+          centered={true}
+          onHide={(e) => this.closePhotoModal(e)}
+      >
+      <Modal.Body className="photoBody">	
+        <div className="container">
+        {this.state.selectedGLMarker.map((obj, index) => 
+          <img
+            key={`${index}`}  
+            className="photo" 
+            alt="fault"
+            src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
+              >
+          </img>
+        )}
+          <img 
+            className="leftArrow" 
+            src={"leftArrow_128.png"} 
+            alt="left arrow"
+            onClick={(e) => this.clickPrev(e)}/> 
+          <img 
+            className="rightArrow" 
+            src={"rightArrow_128.png"} 
+            alt="right arrow"
+            onClick={(e) => this.clickNext(e)}/>         
+        </div>
+      </Modal.Body >
+      <Modal.Footer>
+        <CustomTable 
+          obj={this.state.selectedGLMarker[0]}
+          status={this.state.status}
+          repaired={this.state.repaired}
+          checked={this.state.checked}
+          onClick={(e) => this.clickSlider(e)}
+          onChange={(e) => this.changeSlider(e)}
+          onDateChange={(e) => this.changeDate(e)}
+          //TODO copy not working
+          // copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}
+          >      
+        </CustomTable >
+      </Modal.Footer>
+    </Modal>
     );
   }
 }

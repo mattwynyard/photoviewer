@@ -254,9 +254,26 @@ app.post('/project', async (req, res) => {
 app.post('/archive', async(req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    console.log(req.body);
-    let photo = await db.archivePhoto(req.body.project, req.body.lat, req.body.lng);
-    console.log(photo);
+    res.set('Content-Type', 'application/json');
+    try {
+      
+      console.log(req.body);
+      let result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
+      let data = result.rows[0];
+      
+      if (result.rowCount != 0) {
+        res.send({success: true, data: data});
+      } else {
+        res.send({success: false, data: null});
+      }
+    } catch (err) {
+      console.log(err);
+      res.send({error: err});
+    }
+    
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
   }
 });
 

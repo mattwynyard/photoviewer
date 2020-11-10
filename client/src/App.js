@@ -12,6 +12,7 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
+import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js';
 
 
@@ -25,6 +26,7 @@ class App extends React.Component {
     this.menu = React.createRef();
     this.customModal = React.createRef();
     this.photoModal = React.createRef();
+    this.archivePhotoModal = React.createRef();
     this.glpoints = null;
     this.state = {
       location: {
@@ -579,7 +581,6 @@ addCentrelines(data) {
       }
     } else {
       if (this.state.isArchive) {
-        console.log(e.latlng.lat);
         this.getArhivePhoto(e);
 
       } else {
@@ -785,12 +786,18 @@ addCentrelines(data) {
    * @param {event} e 
    */
   clickImage(e) {   
-    
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
-    //this.photoModal.current.delegate(this);
     this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
-    //this.setState({show: true});
+    this.photoModal.current.delegate(this);
+    console.log(this.state.selectedGLMarker)
+    console.log(photo)
+  }
+
+  clickArchiveImage(body) {
+    let data = body.data;
+    this.reverseLookup(data);
+    
   }
 
   getPhoto(direction) {
@@ -860,6 +867,7 @@ addCentrelines(data) {
   }
 
   async getArhivePhoto(e) {
+    e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
@@ -876,6 +884,7 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
+    this.clickArchiveImage(body);
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);    
@@ -1962,6 +1971,22 @@ addCentrelines(data) {
     }
   }
 
+  async reverseLookup(data) {
+    const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
+     + data.longitude + "&addressdetails=1", {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+    });
+    const body = await response.json();
+    let obj = {type: "archive", address: body.address, amazon: this.state.amazon, carriage: data.carriageway, photo: data.photo, 
+    roadid: data.roadid, side: data.side, erp: data.erp, lat: data.latitude, lng: data.longitude};
+    this.archivePhotoModal.current.setArchiveModal(true, obj);
+  }
+
   /**
    * Updates the string to searched
    * @param {event} e 
@@ -2810,6 +2835,13 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
+      <ArchivePhotoModal
+        ref={this.archivePhotoModal}
+        show={this.state.show} 
+        amazon={this.state.amazon}
+        currentPhoto={this.state.currentPhoto}
+      >
+      </ArchivePhotoModal>
       </>
     );
   }
