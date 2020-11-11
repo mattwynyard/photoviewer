@@ -251,16 +251,64 @@ app.post('/project', async (req, res) => {
     
 });
 
-app.post('/archive', async(req, res) => {
+app.post('/view', async(req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
       
       console.log(req.body);
+      let result = await db.buildView(req.body.project.code);
+      console.log(result);
+      res.send({success: true});
+    } catch (err) {
+      console.log(err);
+      res.send({error: err});
+    }
+    
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+
+app.post('/archive', async(req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    res.set('Content-Type', 'application/json');
+    try {
+      
+      //console.log(req.body);
       let result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
       let data = result.rows[0];
       
+      if (result.rowCount != 0) {
+        res.send({success: true, data: data});
+      } else {
+        res.send({success: false, data: null});
+      }
+    } catch (err) {
+      console.log(err);
+      res.send({error: err});
+    }
+    
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/archiveData', async(req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    res.set('Content-Type', 'application/json');
+    try {
+      
+      //console.log(req.body);
+      let result = await db.archiveData(req.body.project.code, req.body.photo);
+      let data = result.rows[0];
+      //console.log(data);
       if (result.rowCount != 0) {
         res.send({success: true, data: data});
       } else {
@@ -403,7 +451,7 @@ app.post('/dropdown', async (req, res) => {
 app.post('/layer', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
-    console.log(req.body);
+    //console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;

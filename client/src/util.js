@@ -18,6 +18,8 @@ const RDP = (l, eps) => {
     return [l[0], l[last]]
   };
 
+
+
   let LatLongToPixelXY = (latitude, longitude) => {
     var pi_180 = Math.PI / 180.0;
     var pi_4 = Math.PI * 4;
@@ -29,7 +31,7 @@ const RDP = (l, eps) => {
   
     return pixel;
   };
-  
+
   function translateMatrix(matrix, tx, ty) {
     // translation is in last column of matrix
     matrix[12] += matrix[0] * tx + matrix[4] * ty;

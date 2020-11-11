@@ -27,7 +27,6 @@ export default class ArchivePhotoModal extends React.Component {
       this.setState({lat: obj.lat});
       this.setState({lng: obj.lng});
       this.setState({erp: obj.erp});
-      console.log(obj);
       let address = this.buildAddress(obj.address);
       this.setState({address: address});
 
@@ -64,35 +63,28 @@ export default class ArchivePhotoModal extends React.Component {
         let newPhoto = prefix + newSuffix;
         this.setState({currentPhoto: newPhoto});
         return newPhoto;
-      }
-
-    clickPrev(e) {
-        e.preventDefault();
-        const newPhoto = this.getPhoto("prev");
-        this.setState({currentPhoto: newPhoto});
-        const url = this.state.amazon + newPhoto + ".jpg";
-        this.setState({photourl: url});
-        }
-        
-    clickNext(e) {
-        e.preventDefault();
-        const newPhoto = this.getPhoto("next");
-        this.setState({currentPhoto: newPhoto});
-        const url = this.state.amazon + newPhoto + ".jpg";
-        console.log(url);
-        this.setState({photourl: url});
     }
 
-
-  
+    async clickPrev(e) {
+      e.preventDefault();
+      const newPhoto = this.getPhoto("prev");
+      this.setState({currentPhoto: newPhoto});
+      const url = this.state.amazon + newPhoto + ".jpg";
+      this.setState({photourl: url});
+      await this.delegate.getArchiveData(newPhoto);
+    }
+        
+    async clickNext(e) {
+      e.preventDefault();
+      const newPhoto = this.getPhoto("next");
+      this.setState({currentPhoto: newPhoto});
+      const url = this.state.amazon + newPhoto + ".jpg";
+      this.setState({photourl: url});
+      await this.delegate.getArchiveData(newPhoto);
+    }
       
     closePhotoModal(e) {
-        //this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status, this.state.repaired);
         this.setState({show: false});     
-    }
-
-    delegate(parent) {
-      this.delegate = parent;
     }
 
       /**

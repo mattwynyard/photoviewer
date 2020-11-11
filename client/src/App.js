@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 
-import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup}  from 'react-leaflet';
+import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
@@ -15,8 +15,8 @@ import PhotoModal from './PhotoModal.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js';
 
-
 const DUPLICATE_OFFSET = 0.00002;
+const DIST_TOLERANCE = 5; //metres 
 
 class App extends React.Component {
 
@@ -71,6 +71,7 @@ class App extends React.Component {
       photos: [],
       currentPhoto: null,
       currentFault: [],
+      archiveMarker: [],
       layers: [],
       bounds: {},
       show: false,
@@ -124,6 +125,7 @@ class App extends React.Component {
     this.initializeGL();
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
+    this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     if(this.glpoints !== null) {
@@ -132,6 +134,12 @@ class App extends React.Component {
     } else {
       console.log("not null");
     }
+    let DefaultIcon = L.icon({
+      iconUrl: './OpenCamera20px.png',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    }); 
+    L.Marker.prototype.options.icon = DefaultIcon;
   }
 
   componentDidUpdate() {   
@@ -789,15 +797,11 @@ addCentrelines(data) {
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
     this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
-    this.photoModal.current.delegate(this);
-    console.log(this.state.selectedGLMarker)
-    console.log(photo)
   }
 
   clickArchiveImage(body) {
     let data = body.data;
-    this.reverseLookup(data);
-    
+    this.reverseLookup(data); 
   }
 
   getPhoto(direction) {
@@ -867,7 +871,7 @@ addCentrelines(data) {
   }
 
   async getArhivePhoto(e) {
-    e.preventDefault();
+    //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
@@ -884,7 +888,44 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
+    let distance = body.data.dist * 6371000 * (Math.PI /180);
+    if (distance <= DIST_TOLERANCE) {
+      this.clickArchiveImage(body);
+      let arr = this.state.archiveMarker;
+      let point = L.latLng(body.data.latitude, body.data.longitude);
+      arr.push(point);
+      console.log(point);
+      this.setState({archiveMarker: arr});
+    }
+    
+   
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);    
+    } 
+  }
+
+  async getArchiveData(photo) {
+    const response = await fetch("https://" + this.state.host + '/archiveData', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: this.state.activeLayer,
+        photo: photo
+      })
+    });
+    const body = await response.json();
     this.clickArchiveImage(body);
+    let arr = this.state.archiveMarker;
+    let point = L.latLng(body.data.latitude, body.data.longitude);
+    arr.push(point);
+    this.setState({archiveMarker: arr});
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);    
@@ -997,7 +1038,6 @@ addCentrelines(data) {
   async loadLayer(e, type) { 
     e.persist();
     this.setState({projectMode: type});
-    //console.log(type);
     for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
@@ -1045,6 +1085,7 @@ addCentrelines(data) {
         this.setState({amazon: projects[i].amazon});
         layers.push(project);
         this.setState({activeLayer: project});
+        await this.buildView(project);
         break;
         }
     }
@@ -1061,6 +1102,28 @@ addCentrelines(data) {
       }
       this.filterLayer(project, true); //fetch layer  
     });
+  }
+
+  async buildView(project) {
+    const response = await fetch("https://" + this.state.host + '/view', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      
+      })
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);    
+    } 
   }
 
   async requestDropdown(project, code) {
@@ -1985,6 +2048,7 @@ addCentrelines(data) {
     let obj = {type: "archive", address: body.address, amazon: this.state.amazon, carriage: data.carriageway, photo: data.photo, 
     roadid: data.roadid, side: data.side, erp: data.erp, lat: data.latitude, lng: data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
+
   }
 
   /**
@@ -2679,6 +2743,13 @@ updateStatus(marker, status) {
             </Dropdown>
           )}
           </div>
+          {this.state.archiveMarker.map((position, idx) =>
+            <Marker 
+              key={`marker-${idx}`} 
+              position={position}>
+
+            </Marker>
+          )}
           <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 

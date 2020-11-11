@@ -360,6 +360,34 @@ module.exports = {
         });
     },
 
+    buildView: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "CREATE VIEW temp AS SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom FROM photos WHERE project = '" + project + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let view = resolve(result);
+                return view;
+            });
+        });
+    },
+
+    createIndex: () => {
+        return new Promise((resolve, reject) => {
+            let sql = "CREATE INDEX ON temp USING GIST";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let view = resolve(result);
+                return view;
+            });
+        });
+    },
+
     archivePhoto: (project, lat, lng) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) AS dist FROM photos WHERE project = '" + project + "' ORDER BY dist LIMIT 1";
@@ -370,6 +398,20 @@ module.exports = {
                 }
                 let photo = resolve(result);
                 return photo;
+            });
+        });
+    },
+
+    archiveData: (project, photo) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude FROM temp WHERE photo = '" + photo + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let data = resolve(result);
+                return data;
             });
         });
     },
