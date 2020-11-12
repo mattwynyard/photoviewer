@@ -6,12 +6,14 @@ export default class ArchivePhotoModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            amazon: props.amazon,
-            currentPhoto: props.currentPhoto,
+            amazon: null,
+            currentPhoto: null,
             address: null,
             lat: null,
             lng: null,
-            erp: null
+            erp: null,
+            roadid: null,
+            carriage: null
         }
     }
 
@@ -27,8 +29,10 @@ export default class ArchivePhotoModal extends React.Component {
       this.setState({lat: obj.lat});
       this.setState({lng: obj.lng});
       this.setState({erp: obj.erp});
-      let address = this.buildAddress(obj.address);
-      this.setState({address: address});
+      this.setState({carriage: obj.carriage});
+      this.setState({roadid: obj.roaidid});
+      //let address = this.buildAddress(obj.address);
+      this.setState({address: obj.address});
 
     }
 

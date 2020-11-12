@@ -16,7 +16,12 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js';
 
 const DUPLICATE_OFFSET = 0.00002;
-const DIST_TOLERANCE = 5; //metres 
+const DIST_TOLERANCE = 20; //metres 
+const DefaultIcon = L.icon({
+  iconUrl: './OpenCamera20px.png',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8]
+}); 
 
 class App extends React.Component {
 
@@ -116,13 +121,18 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    // Call our fetch function below once the component mounts
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
     this.callBackendAPI()
     .catch(err => alert(err));
     //this.setPriorities();
     this.initializeGL();
+    this.addEventListeners(); 
+      if (this.state.login === 'asm' || this.state.login === 'pcc' || this.state.login === 'wda') {
+        this.setState({priorityMode: "Priority"});
+      } else {
+        this.setState({priorityMode: "Grade"});
+      }  
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
@@ -134,11 +144,8 @@ class App extends React.Component {
     } else {
       console.log("not null");
     }
-    let DefaultIcon = L.icon({
-      iconUrl: './OpenCamera20px.png',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    }); 
+    this.position = L.positionControl();
+    this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
   }
 
@@ -175,14 +182,7 @@ class App extends React.Component {
         console.log("Cannot load webgl1.0 using experimental-webgl instead");
       }   
       this.glLayer.delegate(this);
-      this.position = L.positionControl();
-      this.leafletMap.addControl(this.position);
-      this.addEventListeners(); 
-      if (this.state.login === 'asm' || this.state.login === 'pcc' || this.state.login === 'wda') {
-        this.setState({priorityMode: "Priority"});
-      } else {
-        this.setState({priorityMode: "Grade"});
-      }  
+     
     }  
   }
   
@@ -799,11 +799,6 @@ addCentrelines(data) {
     this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
   }
 
-  clickArchiveImage(body) {
-    let data = body.data;
-    this.reverseLookup(data); 
-  }
-
   getPhoto(direction) {
     let photo = this.state.currentPhoto;
     let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
@@ -890,7 +885,10 @@ addCentrelines(data) {
     const body = await response.json();
     let distance = body.data.dist * 6371000 * (Math.PI /180);
     if (distance <= DIST_TOLERANCE) {
-      this.clickArchiveImage(body);
+      let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+      roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
+      this.archivePhotoModal.current.setArchiveModal(true, obj);
+      //this.reverseLookup(body.data);
       let arr = this.state.archiveMarker;
       let point = L.latLng(body.data.latitude, body.data.longitude);
       arr.push(point);
@@ -921,7 +919,11 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
-    this.clickArchiveImage(body);
+    let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+    roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
+    this.archivePhotoModal.current.setArchiveModal(true, obj);
+
+    //this.reverseLookup(body.data); 
     let arr = this.state.archiveMarker;
     let point = L.latLng(body.data.latitude, body.data.longitude);
     arr.push(point);
@@ -2035,6 +2037,7 @@ addCentrelines(data) {
   }
 
   async reverseLookup(data) {
+    console.log(data);
     const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
      + data.longitude + "&addressdetails=1", {
       method: 'GET',
@@ -2045,10 +2048,7 @@ addCentrelines(data) {
       },
     });
     const body = await response.json();
-    let obj = {type: "archive", address: body.address, amazon: this.state.amazon, carriage: data.carriageway, photo: data.photo, 
-    roadid: data.roadid, side: data.side, erp: data.erp, lat: data.latitude, lng: data.longitude};
-    this.archivePhotoModal.current.setArchiveModal(true, obj);
-
+    
   }
 
   /**
