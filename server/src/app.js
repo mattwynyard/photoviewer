@@ -19,7 +19,10 @@ const { Console } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
-
+const options = {
+  key: fs.readFileSync('./server.key', 'utf8'),
+  cert: fs.readFileSync('./server.cert', 'utf8')
+}
 
 // comment out create server code below when deploying to server
 // server created in index.js
@@ -31,10 +34,6 @@ if(environment === 'production') {
       console.log(`Listening: http://${hostname}:${port}`);
    });
 } else {
-  const options = {
-    key: fs.readFileSync('./server.key', 'utf8'),
-    cert: fs.readFileSync('./server.cert', 'utf8')
-  }
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
@@ -61,7 +60,6 @@ app.get('/api', (req, res) => {
 });
 
 app.post('/login', async (request, response) => {
-  let succeded = null;
   let password = request.body.key;
   let user = request.body.user;
   //uncomment to genrate password for new user
@@ -69,7 +67,7 @@ app.post('/login', async (request, response) => {
   let p = await db.password(user);
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
-    succeded = false;
+    //succeded = false;
   } else {
     let count = await db.users(user);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
@@ -81,7 +79,7 @@ app.post('/login', async (request, response) => {
           algorithm: 'HS256',
           expiresIn: jwtExpirySeconds
       });
-        succeded = true;
+        //succeded = true;
         count = count += 1;
         await db.updateCount(count, user);
         this.token = token;

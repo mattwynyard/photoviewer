@@ -584,7 +584,7 @@ addCentrelines(data) {
  
       } else {
         let points = polyline.getLatLngs();
-        points.push(e.latlng.lat);
+        points.push(e.latlng);
         polyline.setLatLngs(points);
       }
     } else {
@@ -2017,6 +2017,7 @@ addCentrelines(data) {
 
   clickArchive(e) {
     if (this.state.isArchive) {
+      this.setState({archiveMarker: []});
       this.setState({isArchive: false});
     } else {
       this.setState({isArchive: true});
@@ -2604,6 +2605,7 @@ updateStatus(marker, status) {
           boxZoom={true}
           center={centre}
           zoom={this.state.zoom}
+          doubleClickZoom={false}
           onPopupClose={(e) => this.closePopup(e)}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}

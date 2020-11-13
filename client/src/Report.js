@@ -54,10 +54,16 @@ class Report extends React.Component {
             switch(item.priority) {
                 case  "Priority: 1":
                     this.g1Map = this.addMap(this.g1Map, item.fault);
+                    break;
                 case  "Priority: 2":
                     this.g2Map = this.addMap(this.g2Map, item.fault);
+                    break;
                 case  "Priority: 3":
                     this.g3Map = this.addMap(this.g3Map, item.fault);
+                    break;
+                default:
+                    break;
+
             }
             this.gradeMap = this.addMap(this.gradeMap, item.priority);
             this.faultMap = this.addMap(this.faultMap, item.class);

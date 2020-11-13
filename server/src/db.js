@@ -58,19 +58,8 @@ connection.on('connect', () => {
 
 connection.on('error', error => {
     console.log(error);
+    throw err;
 });
-
-// process.on('SIGTERM', () => {
-//     console.log("SIGTERM: " + process.env.PORT);
-// });
-
-// process.on('SIGINT', () => {
-//     console.log("SIGINT: " + process.env.PORT);
-// });
-
-// process.on('SIGINT', () => {
-//     console.log("SIGKILL: " + process.env.PORT);
-// });
 
 module.exports = { 
     projects : (user) => {
@@ -362,7 +351,7 @@ module.exports = {
 
     buildView: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "CREATE VIEW temp AS SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom FROM photos WHERE project = '" + project + "'";
+            let sql = "CREATE OR REPLACE VIEW temp AS SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom FROM photos WHERE project = '" + project + "'";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
