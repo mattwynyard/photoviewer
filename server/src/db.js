@@ -421,7 +421,7 @@ module.exports = {
 
     archiveData: (project, photo) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude FROM temp WHERE photo = '" + photo + "'";
+            let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude FROM photos WHERE photo = '" + photo + "'";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
