@@ -62,10 +62,52 @@ connection.on('error', error => {
 });
 
 module.exports = { 
+
+    isPublic : (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT public FROM projects WHERE code = $1::text';
+            connection.query(sql, [project], (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let projects = resolve(result.rows[0].public);
+                return projects;
+            });
+        });
+    },
+
+    public : () => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT code, description, date, amazon, surface FROM projects WHERE public = true AND active = true';
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let projects = resolve(result.rows);
+                return projects;
+            });
+        });
+    },
     projects : (user) => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT code, description, date, amazon, surface FROM projects WHERE client = $1::text AND active = true';
             connection.query(sql, [user], (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let project = resolve(result);
+                return project;
+            });
+        });
+    },
+
+    mode : (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT priority, reverse FROM projects WHERE code = $1::text';
+            connection.query(sql, [project], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -352,20 +394,6 @@ module.exports = {
     buildView: (project) => {
         return new Promise((resolve, reject) => {
             let sql = "CREATE OR REPLACE VIEW temp AS SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom FROM photos WHERE project = '" + project + "'";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let view = resolve(result);
-                return view;
-            });
-        });
-    },
-
-    createIndex: () => {
-        return new Promise((resolve, reject) => {
-            let sql = "CREATE INDEX ON temp USING GIST";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

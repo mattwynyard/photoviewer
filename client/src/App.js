@@ -50,7 +50,8 @@ class App extends React.Component {
       rulerDistance: 0,
       filter: [], //filter for db request
       priorityDropdown: null,
-      priorityMode: "Priority",
+      priorityMode: "Priority", //whether we use priority or grade
+      reverse: false,
       priorities: [], 
       ages: [],
       filterDropdowns: [],
@@ -123,16 +124,12 @@ class App extends React.Component {
   componentDidMount() {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
+    console.log(this.state.login);
     this.callBackendAPI()
     .catch(err => alert(err));
     //this.setPriorities();
     this.initializeGL();
     this.addEventListeners(); 
-      if (this.state.login === 'asm' || this.state.login === 'pcc' || this.state.login === 'wda') {
-        this.setState({priorityMode: "Priority"});
-      } else {
-        this.setState({priorityMode: "Grade"});
-      }  
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
@@ -142,7 +139,7 @@ class App extends React.Component {
       console.log(this.glpoints.length)
       this.redraw(this.glpoints);
     } else {
-      console.log("not null");
+      //console.log("not null");
     }
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
@@ -206,7 +203,6 @@ class App extends React.Component {
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
-          console.log(this.state.amazon);
           let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
           if (suffix !== bucket) {
             let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
@@ -359,26 +355,14 @@ addGLMarkers(project, data, type, zoomTo) {
   let med = null;
   let low = null;
 
-  if (this.state.projectMode === "road") {
-    if(this.state.login === "asm" || this.state.login === "pcc" || this.state.login === "wda") {    
-      high = 1;
-      med = 2;
-      low = 3;
-    } else {
-      high = 5;
-      med = 4;
-      low = 3;
-    }
+  if (this.state.reverse) {
+    high = 5;
+    med = 4;
+    low = 3;
   } else {
-    if(this.state.login === "cdc") { 
-      high = 1;
-      med = 2;
-      low = 3;
-    } else {
-      high = 5;
-      med = 4;
-      low = 3;
-    }   
+    high = 1;
+    med = 2;
+    low = 3;
   }
     
   let set = new Set();
@@ -690,7 +674,8 @@ addCentrelines(data) {
       alert(body);   
       throw Error(body.message) 
     } else {
-      console.log(body.express);
+      //console.log(body.projects);
+      this.buildProjects(body.projects);  
     }
     return body;
   };
@@ -796,7 +781,7 @@ addCentrelines(data) {
   clickImage(e) {   
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
-    this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo);
+    this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo, this.state.login);
   }
 
   getPhoto(direction) {
@@ -988,11 +973,11 @@ addCentrelines(data) {
       if(this.state.login === 'admin') {
         this.setState({admin: true});
       }
-      if (this.state.login === 'asm' || this.state.login === 'pcc') {
-        this.setState({priorityMode: "Priority"});
-      } else {
-        this.setState({priorityMode: "Grade"});
-      }
+      // if (this.state.login === 'asm' || this.state.login === 'pcc') {
+      //   this.setState({priorityMode: "Priority"});
+      // } else {
+      //   this.setState({priorityMode: "Grade"});
+      // }
     } else {
       this.setState({message: "Username or password is incorrect!"});
     }      
@@ -1047,14 +1032,11 @@ addCentrelines(data) {
     }
     let projects = null;
     let project = e.target.attributes.code.value; 
+    let mode = await this.getMode(project);    
     let dynamicDropdowns = [];
     if (type === "road") {
-        if (this.state.login === 'asm' || this.state.login === 'pcc') {
-        this.setState({priorityMode: "Priority"});
-        }
       projects = this.state.projects.road;
-      await this.loadFilters(project);
-     
+      await this.loadFilters(project);    
       for (let i = 0; i < this.state.faultClass.length; i++) {
         let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
         dropdown.setCode(this.state.faultClass[i].code);
@@ -1087,7 +1069,7 @@ addCentrelines(data) {
         this.setState({amazon: projects[i].amazon});
         layers.push(project);
         this.setState({activeLayer: project});
-        await this.buildView(project);
+        //await this.buildView(project);
         break;
         }
     }
@@ -1104,6 +1086,38 @@ addCentrelines(data) {
       }
       this.filterLayer(project, true); //fetch layer  
     });
+  }
+
+  async getMode(project) {
+    const response = await fetch("https://" + this.state.host + '/mode', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      
+      })
+    });
+    const body = await response.json();
+    if (body.priority) {
+      this.setState({priorityMode: "Priority"});
+    } else {
+      this.setState({priorityMode: "Grade"});
+    }
+    if (body.reverse) {
+      this.setState({reverse: true});
+    } else {
+      this.setState({reverse: false});
+    }
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);    
+    } 
   }
 
   async buildView(project) {
@@ -1167,7 +1181,7 @@ addCentrelines(data) {
 
   async requestFaults(project, code) {
     let result = null
-    if (this.state.login !== "Login") {
+    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/faults', {
       method: 'POST',
       headers: {
@@ -1198,12 +1212,12 @@ addCentrelines(data) {
         alert(error);
         return;
       });
-    }
+    //}
     return result;
   }
 
   async requestAge(project) {
-    if (this.state.login !== "Login") {
+    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
       headers: {
@@ -1233,11 +1247,11 @@ addCentrelines(data) {
         alert(error);
         return;
       }); 
-    }
+    //}
   }
 
   async requestPriority(project) {
-    if (this.state.login !== "Login") {
+    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/priority', {
       method: 'POST',
       headers: {
@@ -1267,7 +1281,7 @@ addCentrelines(data) {
         alert(error);
         return;
       }); 
-    }
+    //}
   }
 
   buildAge(ages) {
@@ -1317,7 +1331,7 @@ addCentrelines(data) {
         arr.push("Signage");
         arrb.push(99);
       } else {
-        arr.push(this.state.priorityMode + " " + priority[i]);
+        arr.push(this.state.priorityMode + " " + priority[i])
         arrb.push(priority[i]);
       }
     }
@@ -1430,7 +1444,7 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     this.setState({spinner: true});
-    if (this.state.login !== "Login") {
+    //if (this.state.login !== "Login") {
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
         await fetch('https://' + this.state.host + '/layer', {
@@ -1466,7 +1480,7 @@ addCentrelines(data) {
             return;
           });   
         }    
-      }
+      //}
       
   }
 
@@ -1504,7 +1518,6 @@ addCentrelines(data) {
   }
 
   async loadFilters(project) {
-    if (this.state.login !== "Login") {
       if (this.state.projectMode === "footpath") {
         return;
       } else {
@@ -1535,8 +1548,7 @@ addCentrelines(data) {
           return;
         }) 
        
-      }
-    }      
+      } 
   }
 
   async addNewUser(client, password) {
@@ -2210,8 +2222,7 @@ updateStatus(marker, status) {
      
       if (props.user === 'admin') {
         return (
-          <Nav>  
-            
+          <Nav>       
           <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
               <NavDropdown.Item  
               className="adminitem" 
@@ -2396,28 +2407,34 @@ updateStatus(marker, status) {
 
     const CustomSVG = function(props) {
       //console.log(props.login);
-      if (props.login === 'cdc') {
-        if (props.value === "Grade 1") {
+      if (!props.reverse) {
+        if (props.value === "Grade 1" || props.value === "Priority 1") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
               <circle cx="5" cy="5" r="3" />
             </svg>
             );
-        } else if (props.value === "Grade 2") {
+        } else if (props.value === "Grade 2" || props.value === "Priority 2") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
-        } else if (props.value === "Grade 3") {
+        } else if (props.value === "Grade 3" || props.value === "Priority 3") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
-        } else if (props.value === "Grade 5") {
+        } else if (props.value === "Grade 5" || props.value === "Priority 5") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Signage") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
@@ -2445,13 +2462,13 @@ updateStatus(marker, status) {
         }
 
       } else {
-        if (props.value === "Grade 5" || props.value === "Priority 1") {
+        if (props.value === "Grade 5" || props.value === "Priority 5") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
               <circle cx="5" cy="5" r="3" />
             </svg>
             );
-        } else if (props.value === "Grade 4" || props.value === "Priority 2") {
+        } else if (props.value === "Grade 4" || props.value === "Priority 4") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
               <circle cx="5" cy="5" r="3" />
@@ -2463,7 +2480,7 @@ updateStatus(marker, status) {
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
-        } else if (props.value === "Grade 1" || props.value === "Priority 5") {
+        } else if (props.value === "Grade 1" || props.value === "Priority 1") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
               <circle cx="5" cy="5" r="3" />
@@ -2551,10 +2568,8 @@ updateStatus(marker, status) {
               importData={(e) => this.importData(e)} 
               >
             </LayerNav>
-            <Nav>
-               
+            <Nav>              
               <NavDropdown className="navdropdown" title="Data" id="basic-nav-dropdown">
-              
                 <NavDropdown.Item 
                   className="navdropdownitem" 
                   title="Update Fault Status"
@@ -2574,7 +2589,6 @@ updateStatus(marker, status) {
                     login: this.customNav.current,
                     user: this.state.user,
                     data: this.state.objGLData
-
                   }}
                   style={{ textDecoration: 'none' }}
                   >Create Report
@@ -2652,7 +2666,7 @@ updateStatus(marker, status) {
                 <div key={`${index}`}>
                  <CustomSVG 
                  value={value}
-                 login={this.state.login}
+                 reverse={this.state.reverse}
                  >
                  </CustomSVG>
                   <input

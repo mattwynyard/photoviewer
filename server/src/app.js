@@ -19,25 +19,26 @@ const { Console } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
-const options = {
-  key: fs.readFileSync('./server.key', 'utf8'),
-  cert: fs.readFileSync('./server.cert', 'utf8')
-}
+
 
 // comment out create server code below when deploying to server
 // server created in index.js
-console.log("mode: " + environment);
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
-} else {
-  https.createServer(options, app).listen(port, () => {
-    console.log(`Listening: https://${host}:${port}`);
-    });
-}
+// const options = {
+//   key: fs.readFileSync('./server.key', 'utf8'),
+//   cert: fs.readFileSync('./server.cert', 'utf8')
+// }
+// console.log("mode: " + environment);
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       console.log(`Listening: http://${hostname}:${port}`);
+//    });
+// } else {
+//   https.createServer(options, app).listen(port, () => {
+//     console.log(`Listening: https://${host}:${port}`);
+//     });
+// }
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -55,8 +56,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/api', (req, res) => {
-  res.send({ express: 'Server online' });
+app.get('/api', async (req, res) => {
+  let result = await db.public();
+  //console.log(result);
+  //res.send({ express: 'Server online' });
+  res.send({ projects: result });
 });
 
 app.post('/login', async (request, response) => {
@@ -67,7 +71,6 @@ app.post('/login', async (request, response) => {
   let p = await db.password(user);
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
-    //succeded = false;
   } else {
     let count = await db.users(user);
     bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
@@ -250,14 +253,19 @@ app.post('/project', async (req, res) => {
 });
 
 app.post('/view', async(req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project.code);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
       
-      console.log(req.body);
+      //console.log(req.body);
       let result = await db.buildView(req.body.project.code);
-      console.log(result);
+      //console.log(result);
       res.send({success: true});
     } catch (err) {
       console.log(err);
@@ -324,7 +332,12 @@ app.post('/archiveData', async(req, res) => {
 });
 
 app.post('/district', async (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
 
   if (result) {
     try {
@@ -346,7 +359,12 @@ app.post('/district', async (req, res) => {
  * i.e. user clicked filter from menu
  */
 app.post('/class', async (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     let fclass = await db.class(req.body.project);
     res.set('Content-Type', 'application/json')
@@ -356,12 +374,18 @@ app.post('/class', async (req, res) => {
     res.send({error: "Invalid token"});
   } 
 });
+  
 /**
  * gets faults for specific class
  * 
  */
 app.post('/faults', async (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     let faults = await db.faults(req.body.project, req.body.code);
     let result = [];
@@ -377,7 +401,12 @@ app.post('/faults', async (req, res) => {
 });
 
 app.post('/age', async (req, res) => { 
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     let project = req.body.project;
     let result = await db.age(project);
@@ -389,8 +418,31 @@ app.post('/age', async (req, res) => {
 } 
 });
 
+app.post('/mode', async (req, res) => { 
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (result) {
+    let project = req.body.project;
+    let result = await db.mode(project);
+    res.set('Content-Type', 'application/json'); 
+    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse});  
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+} 
+});
+
 app.post('/priority', async (req, res) => { 
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   let priority = null
   if (result) {
     let project = req.body.project;
@@ -425,7 +477,12 @@ app.post('/priority', async (req, res) => {
 });
 
 app.post('/dropdown', async (req, res) => { 
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     let project = req.body.project;
     let code = req.body.code;
@@ -447,7 +504,12 @@ app.post('/dropdown', async (req, res) => {
  * from db
  */
 app.post('/layer', async (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     //console.log(req.body);
     let filterObj = req.body.filterObj;
@@ -512,7 +574,12 @@ app.post('/layer', async (req, res) => {
  * gets centrelines for specfic ta code
  */
 app.post('/roads', async (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   let code = req.body.code;
   if (result) {
     let layer = req.body.menu;

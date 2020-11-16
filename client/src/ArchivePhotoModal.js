@@ -30,8 +30,7 @@ export default class ArchivePhotoModal extends React.Component {
       this.setState({lng: obj.lng});
       this.setState({erp: obj.erp});
       this.setState({carriage: obj.carriage});
-      this.setState({roadid: obj.roaidid});
-      //let address = this.buildAddress(obj.address);
+      this.setState({roadid: obj.roadid});
       this.setState({address: obj.address});
 
     }
@@ -137,13 +136,14 @@ export default class ArchivePhotoModal extends React.Component {
             <div className="row">
                 <div className="col-md-4">
                     <b>{"Address: "}</b> {this.state.address} <br></br> 
-                    <b>{"Lat: "}</b>{this.state.lat}<b>{" Lng: "}</b>{this.state.lng}
+                    <b>{"Lat: "}</b>{this.state.lat}<b>{" Lng: "}</b>{this.state.lng} <br></br> 
+                    <b>{"ERP: "}</b> {this.state.erp}
                 </div>
-                <div className="col-md-4">
-                <b>{"ERP: "}</b> {this.state.erp} <br></br> 
-            </div> 
-            </div>   
-            
+                <div className="col-md-4">           
+                <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
+                <b>{"Carriage ID: "}</b> {this.state.carriage} <br></br> 
+              </div>
+            </div>              
         </div>
       </Modal.Footer>
     </Modal>

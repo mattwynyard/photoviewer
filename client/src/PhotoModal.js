@@ -15,13 +15,15 @@ export default class PhotoModal extends React.Component {
             checked: null,
             repaired: null,
             callbackUpdateStatus: props.callbackUpdateStatus,
+            login: props.login
         }
     }
 
    
 
-    setModal(show, marker, amazon, currentPhoto, type) {
+    setModal(show, marker, amazon, currentPhoto, login) {
         this.setState({show: show});
+        this.setState({login: login});
         this.setState({type: marker[0].type});
         this.setState({status: marker[0].status});
         this.setState({repaired:  marker[0].datefixed});
@@ -155,25 +157,34 @@ export default class PhotoModal extends React.Component {
       }
 
       const Slider = function(props) {
-        return (
-          <div>
+        if (props.login === "Login") {
+          return ( <div>
             <label className="lbstatus">
               <b>Status:</b> {props.status}
             </label>
-            <label 
-              className="switch">
-              <input 
-                type="checkbox"
-                checked={props.checked}
-                onClick={props.onClick}
-                onChange={props.onChange}
-
-              >
-              </input>
-              <span className="slider round"></span>
-            </label>
-          </div>
-        );
+            </div>);
+        } else {
+          return (
+            <div>
+              <label className="lbstatus">
+                <b>Status:</b> {props.status}
+              </label>
+              <label 
+                className="switch">
+                <input 
+                  type="checkbox"
+                  checked={props.checked}
+                  onClick={props.onClick}
+                  onChange={props.onChange}
+  
+                >
+                </input>
+                <span className="slider round"></span>
+              </label>
+            </div>
+          );
+        }
+        
       }
   
       const CustomTable = function(props) {
@@ -193,6 +204,7 @@ export default class PhotoModal extends React.Component {
                 </div>
                 <div className="col-md-4">
                 <Slider
+                  login = {props.login}
                   status={props.status}
                   checked={props.checked}
                   onClick={props.onClick}
@@ -232,6 +244,7 @@ export default class PhotoModal extends React.Component {
                 </div>
                 <div className="col-md-4">
                 <Slider
+                  login = {props.login}
                   status={props.status}
                   checked={props.checked}
                   onClick={props.onClick}
@@ -293,6 +306,7 @@ export default class PhotoModal extends React.Component {
       <Modal.Footer>
         <CustomTable 
           obj={this.state.selectedGLMarker[0]}
+          login={this.state.login}
           status={this.state.status}
           repaired={this.state.repaired}
           checked={this.state.checked}
