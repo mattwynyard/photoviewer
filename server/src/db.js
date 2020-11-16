@@ -376,7 +376,6 @@ module.exports = {
         });
     },
 
-    //DEPRECIATED
     faults: (project, code) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
@@ -552,9 +551,6 @@ module.exports = {
     },
 
     layer: (layer, filter, priority, inspection) => { 
-        //console.log(layer);
-        //console.log(priority)
-        //console.log(inspection)
         let codes = buildQuery(priority);
         let qAge = buildQuery(inspection);
         return new Promise((resolve, reject) => {
