@@ -23,22 +23,22 @@ const environment = process.env.ENVIRONMENT;
 
 // comment out create server code below when deploying to server
 // server created in index.js
-// const options = {
-//   key: fs.readFileSync('./server.key', 'utf8'),
-//   cert: fs.readFileSync('./server.cert', 'utf8')
-// }
-// console.log("mode: " + environment);
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function(req, res) {
-//   }).listen(port, hostname, () => {
-//       console.log(`Listening: http://${hostname}:${port}`);
-//    });
-// } else {
-//   https.createServer(options, app).listen(port, () => {
-//     console.log(`Listening: https://${host}:${port}`);
-//     });
-// }
+const options = {
+  key: fs.readFileSync('./server.key', 'utf8'),
+  cert: fs.readFileSync('./server.cert', 'utf8')
+}
+console.log("mode: " + environment);
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -280,7 +280,12 @@ app.post('/view', async(req, res) => {
 
 
 app.post('/archive', async(req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project.code);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
@@ -306,7 +311,12 @@ app.post('/archive', async(req, res) => {
 });
 
 app.post('/archiveData', async(req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project.code);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     res.set('Content-Type', 'application/json');
     try {

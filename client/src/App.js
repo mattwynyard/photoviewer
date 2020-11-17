@@ -868,24 +868,22 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
-    let distance = body.data.dist * 6371000 * (Math.PI /180);
-    if (distance <= DIST_TOLERANCE) {
-      let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
-      roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
-      this.archivePhotoModal.current.setArchiveModal(true, obj);
-      //this.reverseLookup(body.data);
-      let arr = this.state.archiveMarker;
-      let point = L.latLng(body.data.latitude, body.data.longitude);
-      arr.push(point);
-      console.log(point);
-      this.setState({archiveMarker: arr});
-    }
-    
-   
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
+    if (body.error == null) {
+      let distance = body.data.dist * 6371000 * (Math.PI /180);
+      if (distance <= DIST_TOLERANCE) {
+        let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+        roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
+        this.archivePhotoModal.current.setArchiveModal(true, obj);
+        //this.reverseLookup(body.data);
+        let arr = this.state.archiveMarker;
+        let point = L.latLng(body.data.latitude, body.data.longitude);
+        arr.push(point);
+        console.log(point);
+        this.setState({archiveMarker: arr});
+      }
+    } else {
+      alert(response.status + " " + body.error); 
+    }   
   }
 
   async getArchiveData(photo) {
@@ -904,6 +902,8 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
+    console.log(body);
+    if (body.error == null) {
     let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
@@ -912,12 +912,11 @@ addCentrelines(data) {
     let arr = this.state.archiveMarker;
     let point = L.latLng(body.data.latitude, body.data.longitude);
     arr.push(point);
-    this.setState({archiveMarker: arr});
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
+    this.setState({archiveMarker: arr}); 
+  } else {
+    alert(response.status + " " + body.error); 
   }
+}
 
   async logout(e) {
     e.preventDefault();
