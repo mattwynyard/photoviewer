@@ -2520,7 +2520,7 @@ updateStatus(marker, status) {
     const CustomSpinner = function(props) {
       if (props.show) {
         return(
-          <div className="spinnerArhive">
+          <div className="spinner">
           <Spinner
           as="span"
           animation="border"
