@@ -280,7 +280,12 @@ app.post('/view', async(req, res) => {
 
 
 app.post('/archive', async(req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project.code);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
@@ -306,7 +311,12 @@ app.post('/archive', async(req, res) => {
 });
 
 app.post('/archiveData', async(req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  let result = false;
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(req.body.project.code);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
