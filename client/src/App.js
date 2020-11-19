@@ -1992,9 +1992,6 @@ addCentrelines(data) {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    if (this.state.login === "Login") {
-      return;
-    }
     let query = this.state.filterPriorities;
     let priority = null;
     if (e.target.id === "Signage") {
