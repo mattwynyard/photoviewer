@@ -1992,9 +1992,9 @@ addCentrelines(data) {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    if (this.state.login === "Login") {
-      return;
-    }
+    // if (this.state.login === "Login") {
+    //   return;
+    // }
     let query = this.state.filterPriorities;
     let priority = null;
     if (e.target.id === "Signage") {
@@ -2861,7 +2861,7 @@ updateStatus(marker, status) {
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
         <Modal.Body >	
-          <b>Road Inspection Version 1.3</b><br></br>
+          <b>Road Inspection Version 1.3 (beta)</b><br></br>
           Relased: 23/04/2020<br></br>
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
