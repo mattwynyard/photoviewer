@@ -280,30 +280,38 @@ app.post('/view', async(req, res) => {
 
 
 app.post('/archive', async(req, res) => {
-  let result = false;
+  let security = false;
   if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project.code);
+    security = await db.isPublic(req.body.project.code);
   } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
+    security = users.findUserToken(req.headers.authorization, req.body.user);
   }
-  if (result) {
-    res.set('Content-Type', 'application/json');
-    try {
-      
-      //console.log(req.body);
-      let result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
-      let data = result.rows[0];
-      
-      if (result.rowCount != 0) {
-        res.send({success: true, data: data});
-      } else {
-        res.send({success: false, data: null});
+  if (security) {
+    if (req.body.project.code === null) {
+      res.send({error: "No project selected"});
+    } else {
+      res.set('Content-Type', 'application/json');
+      try {
+        let surface = req.body.project.surface;
+        let result = null;
+        let data = null; 
+        if (surface === "road") {
+          result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
+          data = result.rows[0];
+        } else {
+          result = await db.archiveFPPhoto(req.body.project.code, req.body.lat, req.body.lng);
+          data = result.rows[0];
+        }   
+        if (result.rowCount != 0) {
+          res.send({success: true, data: data});
+        } else {
+          res.send({success: false, data: null});
+        }
+      } catch (err) {
+        console.log(err);
+        res.send({error: err});
       }
-    } catch (err) {
-      console.log(err);
-      res.send({error: err});
-    }
-    
+    } 
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});

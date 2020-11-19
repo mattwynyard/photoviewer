@@ -125,8 +125,11 @@ class App extends React.Component {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
     console.log(this.state.login);
-    this.callBackendAPI()
-    .catch(err => alert(err));
+    if (this.state.login === "Login") {
+      this.callBackendAPI()
+      .catch(err => alert(err));
+    }
+    
     //this.setPriorities();
     this.initializeGL();
     this.addEventListeners(); 
@@ -552,7 +555,6 @@ addCentrelines(data) {
    */
 
   clickLeafletMap(e) {
-    console.log("click")
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
       if (polyline == null) {
@@ -572,7 +574,7 @@ addCentrelines(data) {
         polyline.setLatLngs(points);
       }
     } else {
-      if (this.state.isArchive) {
+      if (this.state.isArchive && this.state.activeLayer !== null) {
         this.getArhivePhoto(e);
 
       } else {
@@ -674,10 +676,9 @@ addCentrelines(data) {
       alert(body);   
       throw Error(body.message) 
     } else {
-      //console.log(body.projects);
-      this.buildProjects(body.projects);  
-    }
-    return body;
+        this.buildProjects(body.projects);  
+      }
+    return body; 
   };
 
   /**
@@ -972,11 +973,6 @@ addCentrelines(data) {
       if(this.state.login === 'admin') {
         this.setState({admin: true});
       }
-      // if (this.state.login === 'asm' || this.state.login === 'pcc') {
-      //   this.setState({priorityMode: "Priority"});
-      // } else {
-      //   this.setState({priorityMode: "Grade"});
-      // }
     } else {
       this.setState({message: "Username or password is incorrect!"});
     }      
