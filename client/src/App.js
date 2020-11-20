@@ -124,13 +124,10 @@ class App extends React.Component {
   componentDidMount() {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
-    console.log(this.state.login);
     if (this.state.login === "Login") {
       this.callBackendAPI()
       .catch(err => alert(err));
     }
-    
-    //this.setPriorities();
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
