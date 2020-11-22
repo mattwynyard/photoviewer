@@ -418,6 +418,20 @@ module.exports = {
         });
     },
 
+    archiveFPPhoto: (project, lat, lng) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo, roadid, erp, footpathid, side, latitude, longitude, geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) AS dist, house, street, suburb, town, ramm FROM fpphotos WHERE project = '" + project + "' ORDER BY dist LIMIT 1";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let photo = resolve(result);
+                return photo;
+            });
+        });
+    },
+
     archiveData: (project, photo) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude FROM photos WHERE photo = '" + photo + "'";

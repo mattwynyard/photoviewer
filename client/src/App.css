@@ -17,12 +17,8 @@ body {
   z-index: 1;
 }
 
-.leaflet-heatmap-layer {
-  z-index: 2;
-}
 .navbar {
   margin-bottom: 0;
-  
   border: 0;
   font-size: 22px !important;
   line-height: 2.0 !important;
