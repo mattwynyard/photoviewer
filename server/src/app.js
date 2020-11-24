@@ -295,15 +295,18 @@ app.post('/archive', async(req, res) => {
         let surface = req.body.project.surface;
         let result = null;
         let data = null; 
+        let fdata = null; 
         if (surface === "road") {
           result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
           data = result.rows[0];
+          fdata = formatData(data);
         } else {
           result = await db.archiveFPPhoto(req.body.project.code, req.body.lat, req.body.lng);
           data = result.rows[0];
+          fdata = formatData(data);
         }   
         if (result.rowCount != 0) {
-          res.send({success: true, data: data});
+          res.send({success: true, data: fdata});
         } else {
           res.send({success: false, data: null});
         }
@@ -328,13 +331,20 @@ app.post('/archiveData', async(req, res) => {
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
-      
-      //console.log(req.body);
-      let result = await db.archiveData(req.body.project.code, req.body.photo);
-      let data = result.rows[0];
-      //console.log(data);
+      let result = null;
+      let data = null;
+      let fdata = null;
+      if(req.body.project.surface === "footpath") {
+        result = await db.archiveFPData(req.body.project.code, req.body.photo);
+        data = result.rows[0];
+        fdata = formatData(data);
+      } else {
+        result = await db.archiveData(req.body.project.code, req.body.photo);
+        data = result.rows[0];
+        fdata = formatData(data);
+      }
       if (result.rowCount != 0) {
-        res.send({success: true, data: data});
+        res.send({success: true, data: fdata});
       } else {
         res.send({success: false, data: null});
       }
@@ -722,6 +732,24 @@ app.post('/import', async (req, res) => {
   }
 });
 
+//builds address for photo 
+function formatData(data) {
+  let address = buildAddress([data.house, data.street, data.suburb, data.town]);
+  let obj = {photo: data.photo, roadid: data.roadid, erp: data.erp, footpathid: data.footpathid, 
+    side: data.side, latitude: data.latitude, longitude: data.longitude, dist: data.dist, address: address, ramm: data.ramm};
+  return obj;
+}
+
+function buildAddress(data) {
+  let address = "";
+  data.forEach(element => {
+    if(element != null) {
+      address += element + " ";
+    }
+  });
+    console.log(address);
+    return address;
+}
 function formatDate(date) {
   let tokens = null;
     try {

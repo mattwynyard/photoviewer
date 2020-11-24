@@ -8,6 +8,14 @@ import Chart from 'chart.js';
 
 class Report extends React.Component {
 
+    constructor(props) {
+        super(props);
+        //console.log(props.location);
+        this.state = {
+            mode: props.mode,
+        }
+    }
+
     addMap(map, data) {
         if (map.has(data)) {
             let n = map.get(data);
@@ -43,30 +51,54 @@ class Report extends React.Component {
         this.g1Map = new Map();
         this.g2Map = new Map();
         this.g3Map = new Map();
+        
         this.data.forEach(item => {
-            if (item.priority !== 0 ) {
-                if (item.priority === 99) {
-                    item.priority = "Signage";
-                } else {
-                    item.priority = "Priority: " + item.priority;
+            
+            if(item.type === "footpath") {
+                console.log(item);
+                switch(item.grade) {
+                    case  "Grade: 5":
+                        this.g1Map = this.addMap(this.g1Map, item.fault);
+                        break;
+                    case  "Grade: 4":
+                        this.g2Map = this.addMap(this.g2Map, item.fault);
+                        break;
+                    case  "Grade: 3":
+                        this.g3Map = this.addMap(this.g3Map, item.fault);
+                        break;
+                    default:
+                        break;
+    
                 }
-            }
-            switch(item.priority) {
-                case  "Priority: 1":
-                    this.g1Map = this.addMap(this.g1Map, item.fault);
-                    break;
-                case  "Priority: 2":
-                    this.g2Map = this.addMap(this.g2Map, item.fault);
-                    break;
-                case  "Priority: 3":
-                    this.g3Map = this.addMap(this.g3Map, item.fault);
-                    break;
-                default:
-                    break;
-
-            }
+            this.gradeMap = this.addMap(this.gradeMap, item.grade);
+            this.faultMap = this.addMap(this.faultMap, item.fault);
+            } else {
+                if (item.priority !== 0 ) {
+                    if (item.priority === 99) {
+                        item.priority = "Signage";
+                    } else {
+                        item.priority = "Priority: " + item.priority;
+                    }
+                }
+                switch(item.priority) {
+                    case  "Priority: 1":
+                        this.g1Map = this.addMap(this.g1Map, item.fault);
+                        break;
+                    case  "Priority: 2":
+                        this.g2Map = this.addMap(this.g2Map, item.fault);
+                        break;
+                    case  "Priority: 3":
+                        this.g3Map = this.addMap(this.g3Map, item.fault);
+                        break;
+                    default:
+                        break;
+    
+                }
             this.gradeMap = this.addMap(this.gradeMap, item.priority);
             this.faultMap = this.addMap(this.faultMap, item.class);
+            }
+            
+            
         });
         let gradeData = Array.from(this.gradeMap, ([name, value]) => ({ name, value }));
         let faultData = Array.from(this.faultMap, ([name, value]) => ({ name, value }));
@@ -78,7 +110,6 @@ class Report extends React.Component {
         g1Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
         g2Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
         g3Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
-        console.log(g2Data)
         let g1Top = g1Data.slice(0, 5);
         let g1Bottom = g1Data.slice(5, g1Data.length);
         let g2Top = g2Data.slice(0, 5);
@@ -144,7 +175,6 @@ class Report extends React.Component {
         });
 
         var ctx = document.getElementById("grade1").getContext('2d');
-        console.log(g1Top);
         var g1Chart = new Chart(ctx, {
             type: 'doughnut',
             data: {

@@ -446,6 +446,20 @@ module.exports = {
         });
     },
 
+    archiveFPData: (project, photo) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo, roadid, erp, footpathid, side, latitude, longitude, house, street, suburb, town, ramm FROM fpphotos WHERE photo = '" + photo + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let data = resolve(result);
+                return data;
+            });
+        });
+    },
+
     road: (code) => { 
         return new Promise((resolve, reject) => {
             connection.query("SELECT gid, assetroadi, carriagewa, fullroadna, onrcclass, tacode, ST_AsGeoJSON(geom) FROM roads WHERE tacode = '" + code + "'", (err, result) => {

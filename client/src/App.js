@@ -17,6 +17,7 @@ import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  '
 
 const DUPLICATE_OFFSET = 0.00002;
 const DIST_TOLERANCE = 20; //metres 
+const EARTH_RADIUS = 6371000 //metres
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -848,6 +849,10 @@ addCentrelines(data) {
     this.setState({projects: obj});
   }
 
+  /**
+   * sends request for photo based in lat/lng of click
+   * @param {the click event i.e} e 
+   */
   async getArhivePhoto(e) {
     //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/archive', {
@@ -866,13 +871,13 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
+    console.log(body);
     if (body.error == null) {
-      let distance = body.data.dist * 6371000 * (Math.PI /180);
+      let distance = body.data.dist * EARTH_RADIUS * (Math.PI /180);
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+        let obj = {type: "archive", address: body.data.address, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
-        //this.reverseLookup(body.data);
         let arr = this.state.archiveMarker;
         let point = L.latLng(body.data.latitude, body.data.longitude);
         arr.push(point);
@@ -884,6 +889,10 @@ addCentrelines(data) {
     }   
   }
 
+  /**
+   * sends request for photo based on
+   * @param {the click event i.e} e 
+   */
   async getArchiveData(photo) {
     const response = await fetch("https://" + this.state.host + '/archiveData', {
       method: 'POST',
@@ -902,7 +911,7 @@ addCentrelines(data) {
     const body = await response.json();
     console.log(body);
     if (body.error == null) {
-    let obj = {type: "archive", address: null, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+    let obj = {type: "archive", address: body.data.address, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
 
@@ -2569,20 +2578,21 @@ updateStatus(marker, status) {
             </Nav>
             <Nav>
             <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">  
-              <NavDropdown.Item
-              className="navdropdownitem" >
+              {/* <NavDropdown.Item
+              className="navdropdownitem"> */}
                 <Link 
                   className="dropdownlink" 
                   to={{
                     pathname: '/statistics',
                     login: this.customNav.current,
                     user: this.state.user,
-                    data: this.state.objGLData
+                    data: this.state.objGLData,
+                    mode: this.state.priorityMode
                   }}
                   style={{ textDecoration: 'none' }}
                   >Create Report
                  </Link>
-                </NavDropdown.Item> 
+              {/* </NavDropdown.Item>  */}
                 <NavDropdown.Divider />         
                 </NavDropdown>   
             </Nav>
