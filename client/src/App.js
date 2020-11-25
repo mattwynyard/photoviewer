@@ -365,7 +365,6 @@ addGLMarkers(project, data, type, zoomTo) {
     med = 2;
     low = 3;
   }
-    
   let set = new Set();
   for (var i = 0; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
@@ -436,6 +435,7 @@ addGLMarkers(project, data, type, zoomTo) {
     }    
     latlngs.push(latlng);
     if (type === "footpath") {
+      
       let id = data[i].id.split('_');
       obj = {
         type: type,
@@ -445,6 +445,7 @@ addGLMarkers(project, data, type, zoomTo) {
         roadname: data[i].roadname,        
         location: data[i].location,
         asset:  data[i].asset,
+        fpsurface: data[i].type,
         fault: data[i].fault,
         cause: data[i].cause,
         size: data[i].size,
@@ -871,7 +872,6 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
-    console.log(body);
     if (body.error == null) {
       let distance = body.data.dist * EARTH_RADIUS * (Math.PI /180);
       if (distance <= DIST_TOLERANCE) {
@@ -881,7 +881,7 @@ addCentrelines(data) {
         let arr = this.state.archiveMarker;
         let point = L.latLng(body.data.latitude, body.data.longitude);
         arr.push(point);
-        console.log(point);
+        //console.log(point);
         this.setState({archiveMarker: arr});
       }
     } else {
@@ -909,7 +909,6 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
-    console.log(body);
     if (body.error == null) {
     let obj = {type: "archive", address: body.data.address, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
@@ -1467,7 +1466,6 @@ addCentrelines(data) {
                 let e = document.createEvent("MouseEvent");
                 await this.logout(e);
               } else {
-                //console.log(body)
                 if (body.type === "road") {
                   await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
                 } else {
@@ -2587,7 +2585,7 @@ updateStatus(marker, status) {
                     login: this.customNav.current,
                     user: this.state.user,
                     data: this.state.objGLData,
-                    mode: this.state.priorityMode
+                    project: this.state.activeLayer
                   }}
                   style={{ textDecoration: 'none' }}
                   >Create Report
@@ -2775,7 +2773,7 @@ updateStatus(marker, status) {
             variant="light" 
             type="button" 
             onClick={(e) => this.clickArchive(e)}>
-              {this.state.isArchive ? 'Archive' : "Not Archive" }
+              {this.state.isArchive ? "Street view (beta)" : "Fault view (beta)" }
           </Button>
           <LayerGroup >
             {this.state.selectedGLMarker.map((obj, index) =>  
