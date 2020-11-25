@@ -874,14 +874,19 @@ addCentrelines(data) {
     const body = await response.json();
     if (body.error == null) {
       let distance = body.data.dist * EARTH_RADIUS * (Math.PI /180);
+      let assetID = null;
+      if (this.state.activeLayer.surface === "footpath") {
+        assetID = body.data.footpathid;
+      } else {
+        assetID = body.data.carriageway;
+      }
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: "archive", address: body.data.address, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+        let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
         let arr = this.state.archiveMarker;
         let point = L.latLng(body.data.latitude, body.data.longitude);
         arr.push(point);
-        //console.log(point);
         this.setState({archiveMarker: arr});
       }
     } else {
@@ -909,8 +914,14 @@ addCentrelines(data) {
       })
     });
     const body = await response.json();
+    let assetID = null;
     if (body.error == null) {
-    let obj = {type: "archive", address: body.data.address, amazon: this.state.amazon, carriage: body.data.carriageway, photo: body.data.photo, 
+      if (this.state.activeLayer.surface === "footpath") {
+        assetID = body.data.footpathid;
+      } else {
+        assetID = body.data.carriageway;
+      }
+    let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
 
@@ -2924,6 +2935,7 @@ updateStatus(marker, status) {
         show={this.state.show} 
         amazon={this.state.amazon}
         currentPhoto={this.state.currentPhoto}
+        project={this.state.activeLayer}
       >
       </ArchivePhotoModal>
       </>

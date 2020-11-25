@@ -23,7 +23,7 @@ export default class ArchivePhotoModal extends React.Component {
 
     setArchiveModal(show, obj) {
       this.setState({show: show});
-      this.setState({type: 'archive'});
+      this.setState({type: obj.type});
       this.setState({amazon: obj.amazon});
       this.setState({currentPhoto: obj.photo});
       this.setState({lat: obj.lat});
@@ -32,7 +32,6 @@ export default class ArchivePhotoModal extends React.Component {
       this.setState({carriage: obj.carriage});
       this.setState({roadid: obj.roadid});
       this.setState({address: obj.address});
-
     }
 
     buildAddress(address) {
@@ -104,6 +103,42 @@ export default class ArchivePhotoModal extends React.Component {
     
     render() {
 
+      const CustomTable = (props) => {
+        if (props.surface === "footpath") {
+          return(
+            <div className="container">
+            <div className="row">
+                <div className="col-md-4">
+                    <b>{"Address: "}</b> {this.state.address} <br></br> 
+                    <b>{"Lat: "}</b>{this.state.lat}<b>{" Lng: "}</b>{this.state.lng} <br></br> 
+                    <b>{"ERP: "}</b> {this.state.erp}
+                </div>
+                <div className="col-md-4">           
+                <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
+                <b>{"Footpath ID: "}</b> {this.state.carriage} <br></br> 
+              </div>
+            </div>              
+        </div>
+          );
+        } else {
+          return(
+            <div className="container">
+            <div className="row">
+                <div className="col-md-4">
+                    <b>{"Address: "}</b> {this.state.address} <br></br> 
+                    <b>{"Lat: "}</b>{this.state.lat}<b>{" Lng: "}</b>{this.state.lng} <br></br> 
+                    <b>{"ERP: "}</b> {this.state.erp}
+                </div>
+                <div className="col-md-4">           
+                <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
+                <b>{"Carriage ID: "}</b> {this.state.carriage} <br></br> 
+              </div>
+            </div>              
+        </div>
+          );    
+        }  
+      }
+
       return (
       <Modal dialogClassName={"photoModal"} 
           show={this.state.show} 
@@ -132,19 +167,7 @@ export default class ArchivePhotoModal extends React.Component {
         </div>
       </Modal.Body >
       <Modal.Footer>
-        <div className="container">
-            <div className="row">
-                <div className="col-md-4">
-                    <b>{"Address: "}</b> {this.state.address} <br></br> 
-                    <b>{"Lat: "}</b>{this.state.lat}<b>{" Lng: "}</b>{this.state.lng} <br></br> 
-                    <b>{"ERP: "}</b> {this.state.erp}
-                </div>
-                <div className="col-md-4">           
-                <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
-                <b>{"Carriage ID: "}</b> {this.state.carriage} <br></br> 
-              </div>
-            </div>              
-        </div>
+        <CustomTable surface={this.state.type}></CustomTable>
       </Modal.Footer>
     </Modal>
     );
