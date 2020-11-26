@@ -120,10 +120,16 @@ class Report extends React.Component {
                     onClick: (e) => {
                         this.clickChart(e);
                     },
+                    title: {
+                        display: true,
+                        position: 'top',
+                        text: 'Grade',
+                    },
                     maintainAspectRatio: false,
+                    responsive: true,
                     legend: {
                         position: 'right',
-    
+                        fullWidth: false,
                         labels: {
                             padding: 10,
                             boxWidth: 12
@@ -133,7 +139,7 @@ class Report extends React.Component {
             });
     
             var ctx = document.getElementById("grade1").getContext('2d');
-            var g1Chart = new Chart(ctx, {
+            this.g1Chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: faultTop.map((faultTop) => faultTop.name + ": " + faultTop.value),
@@ -165,6 +171,7 @@ class Report extends React.Component {
                         text: 'Fault Type',
                     },
                     maintainAspectRatio: false,
+                    responsive: true,
                     legend: {
                         position: 'right',
                         fullWidth: false,
@@ -208,6 +215,7 @@ class Report extends React.Component {
                     text: 'Cause',
                 },
                 maintainAspectRatio: false,
+                responsive: true,
                 legend: {
                     position: 'right',
                     labels: {
@@ -357,6 +365,7 @@ class Report extends React.Component {
                     this.clickChart(e);
                 },
                 maintainAspectRatio: false,
+                responsive: true,
                 legend: {
                     position: 'right',
 
@@ -401,6 +410,7 @@ class Report extends React.Component {
                     text: 'Priority 1',
                 },
                 maintainAspectRatio: false,
+                responsive: true,
                 legend: {
                     position: 'right',
                     fullWidth: false,
@@ -444,6 +454,7 @@ class Report extends React.Component {
                 text: 'Priority 2',
             },
             maintainAspectRatio: false,
+            responsive: true,
             legend: {
                 position: 'right',
                 labels: {
@@ -531,6 +542,9 @@ class Report extends React.Component {
             </Navbar>
             
             <div className="chartParent">
+            <div className = "gradediv">
+                    <canvas className="gradeChart" id="myChart"></canvas>  
+                </div>
                 <div className = "g1div">
                     <canvas className="g1Chart" id="grade1"></canvas>  
                 </div>
@@ -540,9 +554,7 @@ class Report extends React.Component {
                 <div className = "g3div">
                     <canvas className="g3Chart" id="grade3"></canvas>  
                 </div>
-                <div className = "gradediv">
-                    <canvas className="gradeChart" id="myChart"></canvas>  
-                </div>
+                
             </div>    
       </div> 
     );

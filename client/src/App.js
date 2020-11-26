@@ -2546,6 +2546,27 @@ updateStatus(marker, status) {
       }  
     }
 
+    const CustomLink = (props) => {
+      if (this.state.activeLayer === null) {
+        return null;
+      } else {
+        return (
+          <Link 
+            className="dropdownlink" 
+            to={{
+              pathname: '/statistics',
+              login: this.customNav.current,
+              user: this.state.user,
+              data: this.state.objGLData,
+              project: this.state.activeLayer
+            }}
+            style={{ textDecoration: 'none' }}
+            >Create Report (beta)
+          </Link>
+        );
+          }      
+    }
+
     return ( 
       <> 
         <div>
@@ -2589,7 +2610,8 @@ updateStatus(marker, status) {
             <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">  
               {/* <NavDropdown.Item
               className="navdropdownitem"> */}
-                <Link 
+              <NavDropdown.Divider />         
+                <CustomLink 
                   className="dropdownlink" 
                   to={{
                     pathname: '/statistics',
@@ -2600,7 +2622,7 @@ updateStatus(marker, status) {
                   }}
                   style={{ textDecoration: 'none' }}
                   >Create Report
-                 </Link>
+                 </CustomLink>
               {/* </NavDropdown.Item>  */}
                 <NavDropdown.Divider />         
                 </NavDropdown>   
@@ -2652,14 +2674,21 @@ updateStatus(marker, status) {
               rootCloseEvent="dblclick"
               className="toolsmmenu"     
               >
+                <Button className="photoMode"
+                variant="light" 
+                type="button" 
+                onClick={(e) => this.clickArchive(e)}>
+                {this.state.isArchive ? "Street view (beta)" : "Fault view" }
+              </Button>
+              <br></br>
               <Button
                 className="rulerButton"
                 id="ruler"
                 variant="outline-secondary" 
                 size="sm"
                 onClick={(e) => this.clickRuler(e)}>
-              <img src="ruler-200.png" alt="ruler"></img>
-                
+                <img src="ruler-200.png" alt="ruler">
+                </img>
               </Button>
               {"\u0020"}Distance: {this.state.rulerDistance} m
             </Dropdown.Menu>
@@ -2780,12 +2809,7 @@ updateStatus(marker, status) {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-           <Button className="photoMode"
-            variant="light" 
-            type="button" 
-            onClick={(e) => this.clickArchive(e)}>
-              {this.state.isArchive ? "Street view (beta)" : "Fault view (beta)" }
-          </Button>
+          
           <LayerGroup >
             {this.state.selectedGLMarker.map((obj, index) =>  
             <CustomPopup 
