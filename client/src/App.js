@@ -525,12 +525,12 @@ addCentrelines(data) {
    * adds various event listeners to the canvas
    */
   addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", function(event) {
+    this.canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
       console.log("CRASH--recovering GL")
     }, false);
-    this.canvas.addEventListener("webglcontextrestored", function(event) {
-    this.gl = this.canvas.getContext('webgl', { antialias: true });
+    this.canvas.addEventListener("webglcontextrestored", (event) =>{
+      this.gl = this.canvas.getContext('webgl', { antialias: true });
     }, false);
     this.leafletMap.addEventListener('click', (event) => {
       this.clickLeafletMap(event);
@@ -647,9 +647,9 @@ addCentrelines(data) {
     const R = 6371 * 1000; // metres
     let metres = 0;
     for (let i = 0; i < points.length - 1; i++) {
-      let lat1 = points[i].lat * Math.PI/180; // φ, λ in radians
+      let lat1 = points[i].lat * Math.PI/180; //in radians
       let lat2 = points[i + 1].lat * Math.PI/180;
-      let lng1 = points[i].lng * Math.PI/180; // φ, λ in radians
+      let lng1 = points[i].lng * Math.PI/180; //in radians
       let lng2 = points[i + 1].lng * Math.PI/180;
       let deltaLat = (lat2-lat1);
       let deltaLng = (lng2-lng1);
@@ -2674,12 +2674,12 @@ updateStatus(marker, status) {
               rootCloseEvent="dblclick"
               className="toolsmmenu"     
               >
-                <Button className="photoMode"
+                {/* <Button className="photoMode"
                 variant="light" 
                 type="button" 
                 onClick={(e) => this.clickArchive(e)}>
                 {this.state.isArchive ? "Street view (beta)" : "Fault view" }
-              </Button>
+              </Button> */}
               <br></br>
               <Button
                 className="rulerButton"

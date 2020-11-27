@@ -6,6 +6,8 @@ import {Navbar, Nav}  from 'react-bootstrap';
 import CustomNav from './CustomNav.js';
 import Chart from 'chart.js';
 
+const NO_COLORS = 9;
+
 class Report extends React.Component {
 
     constructor(props) {
@@ -13,6 +15,7 @@ class Report extends React.Component {
         this.state = {
             mode: props.location.project.surface,
         }
+        
     }
 
     addMap(map, data) {
@@ -29,22 +32,22 @@ class Report extends React.Component {
     }
 
     buildColorTable(count) {
-        return [
-            'rgba(255, 159, 64, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',          
-        ];
+        let arr = [];
+        for(let i = 0; i < count; i++) {
+            arr.push(this.colorMap[i]);
+        }
+        return arr;
     }
 
     clickChart(e) {
-        //console.log(e.target);
         console.log(this.gradeChart.getElementsAtEvent(e));
     }
 
     componentDidMount() {
+
+        this.colorMap = [
+            "#FFC857", "#058ED9", "#BDD9BF", "#E8F086", "#6FDE6E", "#FF4242", "#A691AE", "#235FA4", "#0A284B", "#848FA2"
+        ];
         
         if(this.state.mode === "footpath") {
             this.gradeMap = new Map();
@@ -68,12 +71,12 @@ class Report extends React.Component {
             faultData.sort((a, b) => (a.value < b.value) ? 1 : -1);
             causeData.sort((a, b) => (a.value < b.value) ? 1 : -1);
             surfaceData.sort((a, b) => (a.value < b.value) ? 1 : -1);
-            let faultTop = faultData.slice(0, 10);
-            let faultBottom = faultData.slice(10, faultData.length);
-            let causeTop = causeData.slice(0, 10);
-            let causeBottom = causeData.slice(10, causeData.length);
-            let surfaceTop = surfaceData.slice(0, 10);
-            let surfaceBottom = surfaceData.slice(10, surfaceData.length);
+            let faultTop = faultData.slice(0, NO_COLORS);
+            let faultBottom = faultData.slice(NO_COLORS, faultData.length);
+            let causeTop = causeData.slice(0, NO_COLORS);
+            let causeBottom = causeData.slice( NO_COLORS, causeData.length);
+            let surfaceTop = surfaceData.slice(0, NO_COLORS);
+            let surfaceBottom = surfaceData.slice(NO_COLORS, surfaceData.length);
             let value1 = 0;
             let value2 = 0;
             let value3 = 0;
@@ -94,7 +97,6 @@ class Report extends React.Component {
             surfaceTop.push(others3);
            
             var ctx = document.getElementById('myChart').getContext("2d");
-            //let ct = this.buildColorTable(g1Top.length);
             this.gradeChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -145,22 +147,8 @@ class Report extends React.Component {
                     labels: faultTop.map((faultTop) => faultTop.name + ": " + faultTop.value),
                     datasets: [{
                         data: faultTop.map((faultTop) => faultTop.value),
-                        backgroundColor: [
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',                  
-                        ],
-                        borderColor: [
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',                 
-                        ],
+                        backgroundColor: this.buildColorTable(faultTop.length),
+                        borderColor: this.buildColorTable(faultTop.length),
                         borderWidth: 1
                     }]
                 },
@@ -190,22 +178,8 @@ class Report extends React.Component {
                 labels: causeTop.map((causeTop) => causeTop.name + ": " + causeTop.value),
                 datasets: [{
                     data: causeTop.map((causeTop) => causeTop.value),
-                    backgroundColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',             
-                    ],
-                    borderColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',                   
-                    ],
+                    backgroundColor: this.buildColorTable(causeTop.length),
+                    borderColor: this.buildColorTable(causeTop.length),
                     borderWidth: 1
                 }]
             },
@@ -233,22 +207,8 @@ class Report extends React.Component {
                     labels: surfaceTop.map((surfaceTop) => surfaceTop.name + ": " + surfaceTop.value),
                     datasets: [{
                         data: surfaceTop.map((surfaceTop) => surfaceTop.value),
-                        backgroundColor: [
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',            
-                        ],
-                        borderColor: [
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',                     
-                        ],
+                        backgroundColor: this.buildColorTable(surfaceTop.length),
+                        borderColor: this.buildColorTable(surfaceTop.length),
                         borderWidth: 1
                     }]
                 },
@@ -299,7 +259,7 @@ class Report extends React.Component {
 
                 }
                 this.gradeMap = this.addMap(this.gradeMap, item.priority);
-                this.faultMap = this.addMap(this.faultMap, item.class);
+                //this.faultMap = this.addMap(this.faultMap, item.class);
             });
 
             let gradeData = Array.from(this.gradeMap, ([name, value]) => ({ name, value }));
@@ -312,12 +272,12 @@ class Report extends React.Component {
         g1Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
         g2Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
         g3Data.sort((a, b) => (a.value < b.value) ? 1 : -1);
-        let g1Top = g1Data.slice(0, 5);
-        let g1Bottom = g1Data.slice(5, g1Data.length);
-        let g2Top = g2Data.slice(0, 5);
-        let g2Bottom = g2Data.slice(5, g2Data.length);
-        let g3Top = g3Data.slice(0, 5);
-        let g3Bottom = g3Data.slice(5, g3Data.length);
+        let g1Top = g1Data.slice(0, NO_COLORS);
+        let g1Bottom = g1Data.slice(NO_COLORS, g1Data.length);
+        let g2Top = g2Data.slice(0, NO_COLORS);
+        let g2Bottom = g2Data.slice(NO_COLORS, g2Data.length);
+        let g3Top = g3Data.slice(0, NO_COLORS);
+        let g3Bottom = g3Data.slice(NO_COLORS, g3Data.length);
         let value1 = 0;
         let value2 = 0;
         let value3 = 0;
@@ -338,7 +298,7 @@ class Report extends React.Component {
         g3Top.push(others3);
        
         var ctx = document.getElementById('myChart').getContext("2d");
-        let ct = this.buildColorTable(g1Top.length);
+        let colorTable = this.buildColorTable(g1Top.length);
         this.gradeChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -384,22 +344,8 @@ class Report extends React.Component {
                 labels: g1Top.map((g1Top) => g1Top.name + ": " + g1Top.value),
                 datasets: [{
                     data: g1Top.map((g1Top) => g1Top.value),
-                    backgroundColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',                  
-                    ],
-                    borderColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',                 
-                    ],
+                    backgroundColor: this.buildColorTable(g1Top.length),
+                    borderColor: this.buildColorTable(g1Top.length),
                     borderWidth: 1
                 }]
             },
@@ -429,22 +375,8 @@ class Report extends React.Component {
             labels: g2Top.map((g2Top) => g2Top.name + ": " + g2Top.value),
             datasets: [{
                 data: g2Top.map((g2Top) => g2Top.value),
-                backgroundColor: [
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',             
-                ],
-                borderColor: [
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',                   
-                ],
+                backgroundColor: this.buildColorTable(g2Top.length),
+                borderColor: this.buildColorTable(g2Top.length),
                 borderWidth: 1
             }]
         },
@@ -472,22 +404,8 @@ class Report extends React.Component {
                 labels: g3Top.map((g3Top) => g3Top.name + ": " + g3Top.value),
                 datasets: [{
                     data: g3Top.map((g3Top) => g3Top.value),
-                    backgroundColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',            
-                    ],
-                    borderColor: [
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',                     
-                    ],
+                    backgroundColor: this.buildColorTable(g3Top.length),
+                    borderColor: this.buildColorTable(g3Top.length),
                     borderWidth: 1
                 }]
             },

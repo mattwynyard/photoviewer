@@ -11,7 +11,6 @@ const users = require('./user.js');
 const jwt = require('jsonwebtoken');
 const jwtKey = process.env.KEY;
 const jwtExpirySeconds = 10000;
-
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
@@ -58,16 +57,12 @@ app.use((req, res, next) => {
 
 app.get('/api', async (req, res) => {
   let result = await db.public();
-  //console.log(result);
-  //res.send({ express: 'Server online' });
   res.send({ projects: result });
 });
 
 app.post('/login', async (request, response) => {
   let password = request.body.key;
   let user = request.body.user;
-  //uncomment to genrate password for new user
-  //generatePassword(password, 10);
   let p = await db.password(user);
   if (p.rows.length == 0) { //user doesn't exist
     response.send({ result: false, error: "user doesnt exist" });
