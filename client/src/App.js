@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 
-import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker}  from 'react-leaflet';
+import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
@@ -12,12 +12,13 @@ import './PositionControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
+import VideoModal from './VideoModal.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate} from  './util.js';
+import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
 
 const DUPLICATE_OFFSET = 0.00002;
 const DIST_TOLERANCE = 20; //metres 
-const EARTH_RADIUS = 6371000 //metres
+
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -33,6 +34,7 @@ class App extends React.Component {
     this.customModal = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
+    this.videoModal = React.createRef();
     this.glpoints = null;
     this.state = {
       location: {
@@ -82,6 +84,7 @@ class App extends React.Component {
       layers: [],
       bounds: {},
       show: false,
+      showVideo: false,
       showRuler: false,
       showLogin: false,
       showContact: false,
@@ -111,6 +114,8 @@ class App extends React.Component {
       mouseclick: null,
       objGLData: [],
       selectedGLMarker: [],
+      selectedCarriage: [],
+      photoArray: null,
       selectedStatus: null,
       projectMode: null, //the type of project being displayed footpath or road     
       newUser: null,
@@ -134,6 +139,7 @@ class App extends React.Component {
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
+    this.videoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     if(this.glpoints !== null) {
@@ -144,6 +150,14 @@ class App extends React.Component {
     }
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
+    var myStyle = {
+      "color": "#0000ff",
+      "weight": 5,
+      "opacity": 0.65,
+      "z-index": 999
+    };
+    this.geojsonLayer = L.geoJSON().addTo(this.leafletMap);
+    this.imageoverlay = L.imageOverlay
     L.Marker.prototype.options.icon = DefaultIcon;
   }
 
@@ -576,8 +590,14 @@ addCentrelines(data) {
       if (this.state.isArchive && this.state.activeLayer !== null) {
         this.getArhivePhoto(e);
 
+      } else if (this.state.isVideo && this.state.activeLayer !== null) {
+        
+        this.getCarriage(e, calcGCDistance, this.getPhotos);
       } else {
         if (this.state.glpoints !== null) {
+          if (this.state.selectedCarriage !== null) {
+            //this.state.selectedCarriage.remove(this.leafletMap);
+          }
           this.setState({selectedIndex: null});
           this.setState({selectedGLMarker: []});
           this.setState({mouseclick: e})
@@ -850,6 +870,104 @@ addCentrelines(data) {
     this.setState({projects: obj});
   }
 
+  async getCarriage(e, cb, photoFunc) {
+    //e.preventDefault();
+    const response = await fetch("https://" + this.state.host + '/carriage', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: this.state.activeLayer,
+        lat: e.latlng.lat,
+        lng: e.latlng.lng
+      })
+    });
+    const body = await response.json();
+    if (body.error == null) {
+      let geojson = JSON.parse(body.data.geojson);
+      let dist = cb(body.data.dist);
+      if (dist < 20) {
+        let latlngs = geojson.coordinates;
+        let coords = [];
+        latlngs.forEach( (coord) => {
+          let latlng = [coord[1], coord[0]];
+          coords.push(latlng);
+        });
+      
+        var polyline = L.polyline(coords, {
+          roadid: body.data.roadid,
+          carriageid: body.data.carriageid,
+          color: 'blue',
+          host: this.state.host,
+          login: {login: this.state.login, project: this.state.activeLayer}
+        }).addTo(this.leafletMap);
+        this.setState({show: true});
+        let parent = this;
+        polyline.on("click", function (e) {
+          this.setStyle({
+            color: 'red'
+          });
+          let carriage = polyline.options.carriageid;
+          let host = polyline.options.host;
+          let login = polyline.options.login;
+          let body = photoFunc(carriage, host, login);
+          
+          body.then((data) => {
+            parent.setState({photoArray: data.data});
+            //var video = L.DomUtil.create('div', 'video');
+            //video.innerHTML = "<img src=" + parent.state.amazon + ></img>'
+            //RUN MOVIE
+          //   <img
+          //   className="photo" 
+          //   alt="fault"
+          //   src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
+          //     >
+          // </img>
+            parent.videoModal.current.setModal(true, parent.state.amazon, parent.state.photoArray);
+
+          });
+        
+        });
+        this.setState({isVideo: false});
+      }
+      
+
+    } else {
+      alert(response.status + " " + body.error); 
+    }   
+  }
+
+  async getPhotos(carriageid, host, login) {
+
+    const response = await fetch('https://' + host + '/photos', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: login.login,
+        project: login.project,
+        carriageid: carriageid
+      })
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);   
+    } else {
+      
+      return body;
+    }
+    
+  }
+
   /**
    * sends request for photo based in lat/lng of click
    * @param {the click event i.e} e 
@@ -873,7 +991,7 @@ addCentrelines(data) {
     });
     const body = await response.json();
     if (body.error == null) {
-      let distance = body.data.dist * EARTH_RADIUS * (Math.PI /180);
+      let distance = this.calcGCDistance(body.data.dist);
       let assetID = null;
       if (this.state.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
@@ -2043,6 +2161,15 @@ addCentrelines(data) {
     }
   }
 
+  clickVideo(e) {
+    if (this.state.isVideo) {
+      //this.setState({archiveMarker: []});
+      this.setState({isVideo: false});
+    } else {
+      this.setState({isVideo: true});
+    }
+  }
+
   clickTools(e) {
     let polyline = this.state.rulerPolyline;
     if (polyline != null) {
@@ -2674,12 +2801,19 @@ updateStatus(marker, status) {
               rootCloseEvent="dblclick"
               className="toolsmmenu"     
               >
-                {/* <Button className="photoMode"
+              <Button className="photoMode"
                 variant="light" 
                 type="button" 
                 onClick={(e) => this.clickArchive(e)}>
                 {this.state.isArchive ? "Street view (beta)" : "Fault view" }
-              </Button> */}
+              </Button>
+              <br></br>
+              <Button className="photoMode"
+                variant="light" 
+                type="button" 
+                onClick={(e) => this.clickVideo(e)}>
+                {this.state.isVideo ? "Video view (beta)" : "Video" }
+              </Button>
               <br></br>
               <Button
                 className="rulerButton"
@@ -2802,6 +2936,13 @@ updateStatus(marker, status) {
               position={position}>
 
             </Marker>
+          )}
+          {this.state.selectedCarriage.map((position, idx) =>
+            <Polyline
+              key={`marker-${idx}`} 
+              position={position}>
+
+            </Polyline>
           )}
           <Image 
             className="satellite" 
@@ -2954,6 +3095,11 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
+      <VideoModal
+        ref={this.videoModal}
+        show={this.state.showVideo} 
+      >
+      </VideoModal>
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 

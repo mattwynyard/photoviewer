@@ -404,6 +404,37 @@ module.exports = {
         });
     },
 
+    closestCarriage: (lat, lng) => {
+        return new Promise((resolve, reject) => {
+            console.log("lat: " + lat + " lng: " + lng);
+            let sql = "SELECT r.carriageid, r.roadid,  ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM roadtemp as r ORDER BY geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let carriage = resolve(result);
+                return carriage;
+            });
+        });
+    },
+
+    getPhotos: (carriageid) => {
+        return new Promise((resolve, reject) => {
+            console.log(carriageid);
+            let sql = "SELECT photo, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' ORDER BY photo";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let carriage = resolve(result);
+                return carriage;
+            });
+        });
+    },
+
+
     archivePhoto: (project, lat, lng) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) AS dist FROM photos WHERE project = '" + project + "' ORDER BY dist LIMIT 1";

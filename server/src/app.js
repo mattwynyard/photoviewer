@@ -273,6 +273,75 @@ app.post('/view', async(req, res) => {
   }
 });
 
+app.post('/carriage', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project.code);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    if (req.body.project.code === null) {
+      res.send({error: "No project selected"});
+    } else {
+      res.set('Content-Type', 'application/json');
+      let result = null;
+      let data = null;
+      try {
+        result = await db.closestCarriage(req.body.lat, req.body.lng);
+        data = result.rows[0];
+       // console.log(data);
+      } catch (err) {
+        console.log(err);
+        res.send({error: err});
+      }
+      if (result.rowCount != 0) {
+        res.send({success: true, data: data});
+      } else {
+        res.send({success: false, data: null});
+      }
+    } 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/photos', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project.code);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    if (req.body.project.code === null) {
+      res.send({error: "No project selected"});
+    } else {
+      res.set('Content-Type', 'application/json');
+      let result = null;
+      let data = null;
+      try {
+        //console.log(req.body);
+        result = await db.getPhotos(req.body.carriageid);
+        data = result.rows;
+        console.log(data);
+      } catch (err) {
+        console.log(err);
+        res.send({error: err});
+      }
+      if (result.rowCount != 0) {
+        res.send({success: true, data: data});
+      } else {
+        res.send({success: false, data: null});
+      }
+    } 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
 
 app.post('/archive', async(req, res) => {
   let security = false;

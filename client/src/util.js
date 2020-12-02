@@ -1,3 +1,5 @@
+const EARTH_RADIUS = 6371000 //metres
+
 const RDP = (l, eps) => {
     const last = l.length - 1;
     const p1 = l[0];
@@ -18,8 +20,6 @@ const RDP = (l, eps) => {
     return [l[0], l[last]]
   };
 
-
-
   let LatLongToPixelXY = (latitude, longitude) => {
     var pi_180 = Math.PI / 180.0;
     var pi_4 = Math.PI * 4;
@@ -31,6 +31,21 @@ const RDP = (l, eps) => {
   
     return pixel;
   };
+
+  /**
+   * Calculates distance on earth surface
+   */
+  let calcGCDistance = (distance) => {
+    return distance * EARTH_RADIUS * (Math.PI /180);
+  }
+
+  function sleep(milliseconds) {
+    const date = Date.now();
+    let currentDate = null;
+    do {
+      currentDate = Date.now();
+    } while (currentDate - date < milliseconds);
+  }
 
   function translateMatrix(matrix, tx, ty) {
     // translation is in last column of matrix
@@ -115,4 +130,4 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate}
+  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
