@@ -36,6 +36,7 @@ class App extends React.Component {
     this.archivePhotoModal = React.createRef();
     this.videoModal = React.createRef();
     this.glpoints = null;
+    this.vidPolyline = null;
     this.state = {
       location: {
         lat: -41.2728,
@@ -591,8 +592,19 @@ addCentrelines(data) {
         this.getArhivePhoto(e);
 
       } else if (this.state.isVideo && this.state.activeLayer !== null) {
+        if(this.vidPolyline === null) {
+          
+          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos);
+        } else {
+          this.vidPolyline.then((line) => {
+            if(line.options.color === "blue") {
+              line.remove();
+              this.vidPolyline = null;
+            }
+            //
+          });
+        }
         
-        this.getCarriage(e, calcGCDistance, this.getPhotos);
       } else {
         if (this.state.glpoints !== null) {
           if (this.state.selectedCarriage !== null) {
@@ -870,6 +882,13 @@ addCentrelines(data) {
     this.setState({projects: obj});
   }
 
+  /**
+   * Get closest polyline to click and plots on map 
+   * Starts movie of carriagway
+   * @param {event} e 
+   * @param {callback to calculate distance} cb 
+   * @param {function to get closest polyline to click} photoFunc 
+   */
   async getCarriage(e, cb, photoFunc) {
     //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/carriage', {
@@ -887,6 +906,7 @@ addCentrelines(data) {
         lng: e.latlng.lng
       })
     });
+    let vidPolyline = null;
     const body = await response.json();
     if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
@@ -899,41 +919,31 @@ addCentrelines(data) {
           coords.push(latlng);
         });
       
-        var polyline = L.polyline(coords, {
+        vidPolyline = L.polyline(coords, {
           roadid: body.data.roadid,
           carriageid: body.data.carriageid,
           color: 'blue',
           host: this.state.host,
           login: {login: this.state.login, project: this.state.activeLayer}
         }).addTo(this.leafletMap);
-        this.setState({show: true});
         let parent = this;
-        polyline.on("click", function (e) {
+        vidPolyline.on("click", function (e) {
           this.setStyle({
             color: 'red'
           });
-          let carriage = polyline.options.carriageid;
-          let host = polyline.options.host;
-          let login = polyline.options.login;
+          let carriage = vidPolyline.options.carriageid;
+          let host = vidPolyline.options.host;
+          let login = vidPolyline.options.login;
           let body = photoFunc(carriage, host, login);
           
           body.then((data) => {
             parent.setState({photoArray: data.data});
-            //var video = L.DomUtil.create('div', 'video');
-            //video.innerHTML = "<img src=" + parent.state.amazon + ></img>'
-            //RUN MOVIE
-          //   <img
-          //   className="photo" 
-          //   alt="fault"
-          //   src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
-          //     >
-          // </img>
             parent.videoModal.current.setModal(true, parent.state.amazon, parent.state.photoArray);
-
           });
-        
         });
-        this.setState({isVideo: false});
+        return vidPolyline;
+        //this.setState({isVideo: false});
+        
       }
       
 

@@ -422,7 +422,7 @@ module.exports = {
     getPhotos: (carriageid) => {
         return new Promise((resolve, reject) => {
             console.log(carriageid);
-            let sql = "SELECT photo, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' ORDER BY photo";
+            let sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' ORDER BY photo";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

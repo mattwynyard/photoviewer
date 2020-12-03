@@ -379,6 +379,27 @@ body {
 
 }
 
+.play {
+  position: absolute;
+  right: 500px;
+}
+.buttoncontainer {
+  height: 80px;
+  width: 80px;
+}
+
+.progresscontainer {
+  height: 80px;
+  width: 1000px;
+  position: relative;
+}
+
+.progress {
+  height: 20px;
+  width: 1000px;
+  right: 500px;
+}
+
 .lbstatus {
   padding: 10px;
   position: relative;
