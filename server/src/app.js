@@ -325,7 +325,6 @@ app.post('/photos', async(req, res) => {
         //console.log(req.body);
         result = await db.getPhotos(req.body.carriageid);
         data = result.rows;
-        console.log(data);
       } catch (err) {
         console.log(err);
         res.send({error: err});

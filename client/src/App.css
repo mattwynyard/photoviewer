@@ -362,6 +362,39 @@ body {
   width: 1037px;
 }
 
+.videoModal {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.videoBody .video {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.videoFooter {
+  width: 100%;
+  
+}
+
+.videoText {
+  width: 100%;
+  
+}
+
+.videoProgress {
+  width: 100%;
+}
+
+.play {
+  position: absolute;
+  right: 50%;
+}
+
+
+
 .leftArrow {
   position: absolute;
   height: 64px;
@@ -379,26 +412,8 @@ body {
 
 }
 
-.play {
-  position: absolute;
-  right: 500px;
-}
-.buttoncontainer {
-  height: 80px;
-  width: 80px;
-}
 
-.progresscontainer {
-  height: 80px;
-  width: 1000px;
-  position: relative;
-}
 
-.progress {
-  height: 20px;
-  width: 1000px;
-  right: 500px;
-}
 
 .lbstatus {
   padding: 10px;

@@ -94,35 +94,32 @@ export default class VideoModal extends React.Component {
     
     render() {
       return (
-      <Modal dialogClassName={"photoModal"} 
-          show={this.state.show} 
-          size='xl' 
-          centered={true}
-          onHide={(e) => this.closePhotoModal(e)}
+      <Modal 
+        dialogClassName="videoModal"
+        show={this.state.show} 
+        size='lg'
+        centered={true}
+        onHide={(e) => this.closePhotoModal(e)}
       >
-      <Modal.Body className="photoBody">	
-        <div className="container">
+      <Modal.Body className="videoBody">	
+        <div>
           <img
-            className="photo" 
+            className="video" 
             alt="fault"
             src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
               >
           </img>     
         </div>
       </Modal.Body >
-      <Modal.Footer>
-          <div>
-          
-        {/* <div> */}
+      <Modal.Footer className="videoFooter">
             <ProgressBar 
-                className="progress" 
+                className="videoProgress" 
                 min={0} 
                 max={this.state.photoArray.length} 
                 now={this.state.counter} 
                 onClick={(e) => this.clickProgress(e)}
             /> 
-        {/* </div>    */}
-        <div className="buttoncontainer">
+        <div>
             <img 
                 className="play" 
                 src={this.state.playicon} 
@@ -130,16 +127,15 @@ export default class VideoModal extends React.Component {
                 onClick={(e) => this.clickPlay(e)}
             />     
         </div>
-        <div className="container">
-              <div className="row">
+        <div className="videoText">
+            <div className="row">
                 <div className="col-md-4">
                 <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
                     <b>{"Carriage ID: "} </b> {this.state.carriageid}<br></br>
                     <b>{"ERP: "}</b>{this.state.erp}
                 </div>
-              </div>
-            </div>	 
-        </div>
+            </div>
+        </div>	 
         
       
       </Modal.Footer>
