@@ -90,7 +90,7 @@ export default class VideoModal extends React.Component {
 
     delegate(parent) {
       this.delegate = parent;
-    }
+    }d
     
     render() {
       return (

@@ -9,10 +9,12 @@ import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import './PositionControl';
+import './MediaPlayerControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoModal from './VideoModal.js';
+import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
 
@@ -35,6 +37,7 @@ class App extends React.Component {
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
     this.videoModal = React.createRef();
+    this.videoCard = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     this.state = {
@@ -82,6 +85,7 @@ class App extends React.Component {
       currentPhoto: null,
       currentFault: [],
       archiveMarker: [],
+      carMarker: [], //position of current image in video
       layers: [],
       bounds: {},
       show: false,
@@ -140,7 +144,9 @@ class App extends React.Component {
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
-    this.videoModal.current.delegate(this);
+    
+    //this.videoModal.current.delegate(this);
+    //this.videoCard.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     if(this.glpoints !== null) {
@@ -562,6 +568,13 @@ addCentrelines(data) {
    
   }
 
+  getPhotoBounds() {
+    let mapBounds = this.leafletMap.getBounds();
+    let southeast = mapBounds.getSouthEast();
+    let center = this.leafletMap.getCenter();
+    return L.latLngBounds(center, southeast);
+  }
+
   /**o
    * Fires when user clicks on map.
    * Redraws gl points when user selects point
@@ -590,18 +603,21 @@ addCentrelines(data) {
     } else {
       if (this.state.isArchive && this.state.activeLayer !== null) {
         this.getArhivePhoto(e);
-
       } else if (this.state.isVideo && this.state.activeLayer !== null) {
-        if(this.vidPolyline === null) {
+        if(this.vidPolyline === null) {  
           
-          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos);
+          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+
         } else {
           this.vidPolyline.then((line) => {
-            if(line.options.color === "blue") {
-              line.remove();
+            if (line === null) {
               this.vidPolyline = null;
-            }
-            //
+            } else {
+              if(line.options.color === "blue") {
+                line.remove();
+                this.vidPolyline = null;
+              }
+            }           
           });
         }
         
@@ -889,7 +905,7 @@ addCentrelines(data) {
    * @param {callback to calculate distance} cb 
    * @param {function to get closest polyline to click} photoFunc 
    */
-  async getCarriage(e, cb, photoFunc) {
+  async getCarriage(e, distFunc, photoFunc) {
     //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/carriage', {
       method: 'POST',
@@ -910,8 +926,8 @@ addCentrelines(data) {
     const body = await response.json();
     if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
-      let dist = cb(body.data.dist);
-      if (dist < 20) {
+      let dist = distFunc(body.data.dist);
+      if (dist < 40) {
         let latlngs = geojson.coordinates;
         let coords = [];
         latlngs.forEach( (coord) => {
@@ -927,6 +943,8 @@ addCentrelines(data) {
           login: {login: this.state.login, project: this.state.activeLayer}
         }).addTo(this.leafletMap);
         let parent = this;
+        console.log(this.videoCard.current);
+        
         vidPolyline.on("click", function (e) {
           this.setStyle({
             color: 'red'
@@ -935,15 +953,16 @@ addCentrelines(data) {
           let host = vidPolyline.options.host;
           let login = vidPolyline.options.login;
           let body = photoFunc(carriage, host, login);
-          
+          parent.videoCard.current.delegate(parent);
           body.then((data) => {
             parent.setState({photoArray: data.data});
-            parent.videoModal.current.setModal(true, parent.state.amazon, parent.state.photoArray);
+            
+            parent.videoCard.current.setModal(true, parent.state.amazon, parent.state.photoArray);
           });
         });
-        return vidPolyline;
-        //this.setState({isVideo: false});
-        
+        return vidPolyline;  
+      } else {
+        return null;
       }
       
 
@@ -972,10 +991,8 @@ addCentrelines(data) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);   
     } else {
-      
       return body;
-    }
-    
+    }   
   }
 
   /**
@@ -1001,7 +1018,7 @@ addCentrelines(data) {
     });
     const body = await response.json();
     if (body.error == null) {
-      let distance = this.calcGCDistance(body.data.dist);
+      let distance = calcGCDistance(body.data.dist);
       let assetID = null;
       if (this.state.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
@@ -2947,6 +2964,13 @@ updateStatus(marker, status) {
 
             </Marker>
           )}
+          {this.state.carMarker.map((position, idx) =>
+            <Marker 
+              key={`marker-${idx}`} 
+              position={position}>
+
+            </Marker>
+          )}
           {this.state.selectedCarriage.map((position, idx) =>
             <Polyline
               key={`marker-${idx}`} 
@@ -2960,6 +2984,12 @@ updateStatus(marker, status) {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
+
+          <VideoCard
+            ref={this.videoCard}
+            show={this.state.showVideo} 
+          >
+          </VideoCard>
           
           <LayerGroup >
             {this.state.selectedGLMarker.map((obj, index) =>  
@@ -3003,6 +3033,7 @@ updateStatus(marker, status) {
           </div>    
       </LMap >    
       </div>
+
        {/* admin modal     */}
        <CustomModal 
         name={'user'}
@@ -3105,11 +3136,12 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
-      <VideoModal
+      {/* <VideoModal
         ref={this.videoModal}
         show={this.state.showVideo} 
       >
-      </VideoModal>
+      </VideoModal> */}
+      
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 
