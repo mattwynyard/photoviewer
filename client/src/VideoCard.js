@@ -16,9 +16,10 @@ export default class VideoCard extends React.Component {
             forwardicon: "seekForward64blue.png",
             interval: 500
         }
+        this.delegate(props.parent);
     }
 
-    setModal(show, amazon, photoArray) {
+    initialise(show, amazon, photoArray) {
         if(photoArray !== null) {
             this.setState({show: show});
             this.setState({photoArray: photoArray});

@@ -13,7 +13,6 @@ import './MediaPlayerControl';
 import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
-import VideoModal from './VideoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
@@ -128,7 +127,8 @@ class App extends React.Component {
       search: null,
       district: null,
       spinner: false,
-      isArchive: false //true when doing full photo search
+      isArchive: false, //true when doing full photo search
+      video: false
     };   
   }
 
@@ -575,13 +575,14 @@ addCentrelines(data) {
     return L.latLngBounds(center, southeast);
   }
 
-  /**o
-   * Fires when user clicks on map.
-   * Redraws gl points when user selects point
+  /**
+   * Handles click events on lealfet map
    * @param {event - the mouse event} e 
    */
 
   clickLeafletMap(e) {
+    console.log("clickLeaflet");
+
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
       if (polyline == null) {
@@ -604,27 +605,29 @@ addCentrelines(data) {
       if (this.state.isArchive && this.state.activeLayer !== null) {
         this.getArhivePhoto(e);
       } else if (this.state.isVideo && this.state.activeLayer !== null) {
-        if(this.vidPolyline === null) {  
-          
-          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-
-        } else {
-          this.vidPolyline.then((line) => {
-            if (line === null) {
-              this.vidPolyline = null;
-            } else {
-              if(line.options.color === "blue") {
-                line.remove();
+        // if (this.state.video) {
+        //   console.log('video');
+        console.log(this.vidPolyline)
+          if(this.vidPolyline === null) {  
+            this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+          } else {
+            this.vidPolyline.then((line) => {
+              if (line === null) {
                 this.vidPolyline = null;
-              }
-            }           
-          });
-        }
-        
+              } else {
+                if(line.options.color === "blue") {
+                  line.remove();
+                  this.vidPolyline = null;
+                  this.setState({carMarker: []})
+                } else {
+                  console.log("click libe")
+                }
+              }           
+            });
+          }      
       } else {
         if (this.state.glpoints !== null) {
           if (this.state.selectedCarriage !== null) {
-            //this.state.selectedCarriage.remove(this.leafletMap);
           }
           this.setState({selectedIndex: null});
           this.setState({selectedGLMarker: []});
@@ -867,6 +870,7 @@ addCentrelines(data) {
       objGLData: null,
       glpoints: [],
       activeLayers: [],
+      activeLayer: null,
       filterDropdowns: [],
       ages: [],
       rulerPoints: [],
@@ -940,12 +944,12 @@ addCentrelines(data) {
           carriageid: body.data.carriageid,
           color: 'blue',
           host: this.state.host,
-          login: {login: this.state.login, project: this.state.activeLayer}
+          login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
         let parent = this;
-        console.log(this.videoCard.current);
-        
+        //
         vidPolyline.on("click", function (e) {
+          console.log(vidPolyline);
           this.setStyle({
             color: 'red'
           });
@@ -953,19 +957,16 @@ addCentrelines(data) {
           let host = vidPolyline.options.host;
           let login = vidPolyline.options.login;
           let body = photoFunc(carriage, host, login);
-          parent.videoCard.current.delegate(parent);
+          parent.setState({video: true});
           body.then((data) => {
             parent.setState({photoArray: data.data});
-            
-            parent.videoCard.current.setModal(true, parent.state.amazon, parent.state.photoArray);
+            parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray);
           });
         });
         return vidPolyline;  
       } else {
         return null;
       }
-      
-
     } else {
       alert(response.status + " " + body.error); 
     }   
@@ -978,7 +979,8 @@ addCentrelines(data) {
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',        
+        'Content-Type': 'application/json', 
+        "authorization": login.token,       
       },
       body: JSON.stringify({
         user: login.login,
@@ -1519,6 +1521,7 @@ addCentrelines(data) {
     this.setState({filterDropdowns: []})
     this.setState({filterPriorities: []})
     this.setState({activeLayers: layers}); 
+    this.setState({activeLayer: null}); 
     this.setState({ages: layers}); 
     this.setState({district: null});    
   }
@@ -2702,7 +2705,7 @@ updateStatus(marker, status) {
 
     const CustomLink = (props) => {
       if (this.state.activeLayer === null) {
-        return null;
+        return(<span></span>);
       } else {
         return (
           <Link 
@@ -2988,6 +2991,7 @@ updateStatus(marker, status) {
           <VideoCard
             ref={this.videoCard}
             show={this.state.showVideo} 
+            parent={this}
           >
           </VideoCard>
           

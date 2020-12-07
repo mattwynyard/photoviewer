@@ -363,8 +363,8 @@ body {
 }
 
 .videoModal {
-  height:75%;
-  width: 50%;
+  /* height:75%; */
+  width: 45%;
   position: absolute;
   margin: 0px;
   padding: 0px;
