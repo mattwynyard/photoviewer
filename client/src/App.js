@@ -651,11 +651,13 @@ addCentrelines(data) {
         if (points.length === 1) {
           points.push(e.latlng);
           polyline.setLatLngs(points);
-          this.calculateDistance(points);
+          let distance = this.calculateDistance(points);
+          this.setState({rulerDistance: distance});
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
-          this.calculateDistance(points);
+          let distance = this.calculateDistance(points);
+          this.setState({rulerDistance: distance});
         }
       }   
     }
@@ -671,7 +673,8 @@ addCentrelines(data) {
         points.pop();
         //console.log(points);
         polyline.setLatLngs(points);
-        this.calculateDistance(points);
+        let distance = this.calculateDistance(points);
+        this.setState({rulerDistance: distance});
       }
     } else if (e.key === "Delete") {
       let polyline = this.state.rulerPolyline;
@@ -694,6 +697,11 @@ addCentrelines(data) {
     }
   }
 
+  /**
+   * Calculates the total  great circle distance of a line
+   * given the line points.
+   * @param {the points on line} points 
+   */
   calculateDistance(points) {
     const R = 6371 * 1000; // metres
     let metres = 0;
@@ -711,8 +719,8 @@ addCentrelines(data) {
       let d = R * c; // in metres
       metres += d;
     }
-    let total = Number((metres).toFixed(0));
-    this.setState({rulerDistance: total});
+    return Number((metres).toFixed(0));
+    
   }
 
   getDistance() {
