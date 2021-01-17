@@ -70,6 +70,8 @@ class App extends React.Component {
       zIndex: 900,
       key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      //url: "http://127.0.0.1/hot//{z}/{x}/{y}.png",
+      //url: 'file:///C:\\Users\\matt\\Documents\\Onsite\\website\\tiles\\{z}\\{x}\\{y}.png',
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       mode: "map",
