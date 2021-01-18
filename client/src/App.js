@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-
+import { Button as AButton} from 'antd';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -70,8 +70,6 @@ class App extends React.Component {
       zIndex: 900,
       key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      //url: "http://127.0.0.1/hot//{z}/{x}/{y}.png",
-      //url: 'file:///C:\\Users\\matt\\Documents\\Onsite\\website\\tiles\\{z}\\{x}\\{y}.png',
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       mode: "map",
@@ -607,9 +605,6 @@ addCentrelines(data) {
       if (this.state.isArchive && this.state.activeLayer !== null) {
         this.getArhivePhoto(e);
       } else if (this.state.isVideo && this.state.activeLayer !== null) {
-        // if (this.state.video) {
-        //   console.log('video');
-        console.log(this.vidPolyline)
           if(this.vidPolyline === null) {  
             this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
           } else {
@@ -622,7 +617,7 @@ addCentrelines(data) {
                   this.vidPolyline = null;
                   this.setState({carMarker: []})
                 } else {
-                  console.log("click libe")
+                  console.log("click line");
                 }
               }           
             });
@@ -653,13 +648,11 @@ addCentrelines(data) {
         if (points.length === 1) {
           points.push(e.latlng);
           polyline.setLatLngs(points);
-          let distance = this.calculateDistance(points);
-          this.setState({rulerDistance: distance});
+          this.calculateDistance(points);
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
-          let distance = this.calculateDistance(points);
-          this.setState({rulerDistance: distance});
+          this.calculateDistance(points);
         }
       }   
     }
@@ -675,8 +668,7 @@ addCentrelines(data) {
         points.pop();
         //console.log(points);
         polyline.setLatLngs(points);
-        let distance = this.calculateDistance(points);
-        this.setState({rulerDistance: distance});
+        this.calculateDistance(points);
       }
     } else if (e.key === "Delete") {
       let polyline = this.state.rulerPolyline;
@@ -699,11 +691,6 @@ addCentrelines(data) {
     }
   }
 
-  /**
-   * Calculates the total  great circle distance of a line
-   * given the line points.
-   * @param {the points on line} points 
-   */
   calculateDistance(points) {
     const R = 6371 * 1000; // metres
     let metres = 0;
@@ -721,8 +708,8 @@ addCentrelines(data) {
       let d = R * c; // in metres
       metres += d;
     }
-    return Number((metres).toFixed(0));
-    
+    let total = Number((metres).toFixed(0));
+    this.setState({rulerDistance: total});
   }
 
   getDistance() {

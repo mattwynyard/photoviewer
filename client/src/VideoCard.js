@@ -80,6 +80,7 @@ export default class VideoCard extends React.Component {
     }
       
     clickClose(e) {
+        e.preventDefault();
         this.setState({show: false}); 
         clearInterval(this.interval); 
         this.setState({playicon: "play64blue.png"}); 
