@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import { Button as AButton} from 'antd';
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -581,7 +580,7 @@ addCentrelines(data) {
    */
 
   clickLeafletMap(e) {
-    console.log("clickLeaflet");
+    //console.log("clickLeaflet");
 
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
@@ -590,12 +589,11 @@ addCentrelines(data) {
         points.push(e.latlng);
         polyline = new L.polyline(points, {
           color: 'blue',
-          weight: 2,
+          weight: 3,
           opacity: 0.5 
           });
         polyline.addTo(this.leafletMap);
         this.setState({rulerPolyline: polyline});
- 
       } else {
         let points = polyline.getLatLngs();
         points.push(e.latlng);
@@ -616,8 +614,8 @@ addCentrelines(data) {
                   line.remove();
                   this.vidPolyline = null;
                   this.setState({carMarker: []})
-                } else {
-                  console.log("click line");
+                // } else {
+                //   console.log(this.vidPolyline);
                 }
               }           
             });
@@ -940,25 +938,36 @@ addCentrelines(data) {
           roadid: body.data.roadid,
           carriageid: body.data.carriageid,
           color: 'blue',
+          weight: 3,
           host: this.state.host,
           login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
         let parent = this;
-        //
         vidPolyline.on("click", function (e) {
           console.log(vidPolyline);
-          this.setStyle({
-            color: 'red'
-          });
-          let carriage = vidPolyline.options.carriageid;
-          let host = vidPolyline.options.host;
-          let login = vidPolyline.options.login;
-          let body = photoFunc(carriage, host, login);
-          parent.setState({video: true});
-          body.then((data) => {
-            parent.setState({photoArray: data.data});
-            parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray);
-          });
+          console.log(parent.state.video)
+          if (parent.state.video) {
+            let host = vidPolyline.options.host;
+            let login = vidPolyline.options.login;
+            let photo = parent.getVideoPhoto(e.latlng, host, login);
+            photo.then((data) => {
+              parent.videoCard.current.search(data.data.photo);
+            });
+          } else {
+            this.setStyle({
+              color: 'red',
+              weight: 4
+            });
+            let carriage = vidPolyline.options.carriageid;
+            let host = vidPolyline.options.host;
+            let login = vidPolyline.options.login;
+            let body = photoFunc(carriage, host, login);
+            parent.setState({video: true});
+            body.then((data) => {
+              parent.setState({photoArray: data.data});
+              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray);
+            });
+          }         
         });
         return vidPolyline;  
       } else {
@@ -968,6 +977,32 @@ addCentrelines(data) {
       alert(response.status + " " + body.error); 
     }   
   }
+
+  async getVideoPhoto(latlng, host, login) {
+    const response = await fetch('https://' + host + '/archive', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json', 
+        "authorization": login.token,       
+      },
+      body: JSON.stringify({
+        user: login.login,
+        project: login.project,
+        lat: latlng.lat,
+        lng: latlng.lng
+      })
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);   
+    } else {
+      return body;
+    }   
+  }
+
 
   async getPhotos(carriageid, host, login) {
 

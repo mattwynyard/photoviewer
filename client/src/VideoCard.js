@@ -1,5 +1,5 @@
 import React from 'react';
-import {Card, ProgressBar, Button}  from 'react-bootstrap';
+import {Card, ProgressBar, Button, ButtonGroup, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 
 export default class VideoCard extends React.Component {
@@ -11,10 +11,17 @@ export default class VideoCard extends React.Component {
             show: props.show,
             counter: 0,
             photoArray: [],
+            leftArray: [],
+            rightArray: [],
+            erp: null,
+            roadid: null,
+            carriageid: null,
+            side: null,
             play: false,
             playicon: "play64blue.png",
             forwardicon: "seekForward64blue.png",
-            interval: 500
+            interval: 500,
+
         }
         this.delegate(props.parent);
     }
@@ -28,9 +35,17 @@ export default class VideoCard extends React.Component {
             this.setState({erp: this.state.photoArray[0].erp});
             this.setState({roadid: this.state.photoArray[0].roadid});
             this.setState({carriageid: this.state.photoArray[0].carriageway});
+            this.setState({side: this.state.photoArray[0].side});
+            let latlng = this.getLatLng(0);
+            this.delegate.setState({carMarker: [latlng]});
         } else {
             alert("photoarray null")
-        }        
+        }
+        // for (let i= 0; i < this.state.photoArray; i++) {
+        //     if (this.state.photoArray[i].side === 'L') {
+        //         this.sat
+        //     }
+        // }        
     }
 
     clickStop(e) {
@@ -54,24 +69,37 @@ export default class VideoCard extends React.Component {
             this.setState({play: true}); 
             this.setState({playicon: "pause64blue.png"});
             this.interval = setInterval(() => {
-                this.playMovie(this.state.counter);
+                this.update(this.state.counter);
                 this.setState({counter: this.state.counter + 1});           
             }, this.state.interval);  
         }
            
     }
 
-    playMovie(counter) {
+    search(photo) {
+        for(let i = 0; i < this.state.photoArray.length; i++) {
+            if (photo === this.state.photoArray[i].photo) {
+                this.setState({counter: i});
+                this.update(i);
+            }
+        }
+    }
+
+    update(counter) {
         if (this.state.counter < this.state.photoArray.length) {
             this.setState({currentPhoto: this.state.photoArray[counter].photo});
             this.setState({erp: this.state.photoArray[counter].erp});
-            let lat = this.state.photoArray[counter].latitude;
-            let lng = this.state.photoArray[counter].longitude;
-            let latlng = new L.LatLng(lat, lng);
+            let latlng = this.getLatLng(counter);
             this.delegate.setState({carMarker: [latlng]});
         } else {
             clearInterval(this.interval)
         }   
+    }
+
+    getLatLng(counter) {
+        let lat = this.state.photoArray[counter].latitude;
+        let lng = this.state.photoArray[counter].longitude;
+        return new L.LatLng(lat, lng);
     }
 
     stopMovie() {
@@ -85,7 +113,8 @@ export default class VideoCard extends React.Component {
         clearInterval(this.interval); 
         this.setState({playicon: "play64blue.png"}); 
         this.setState({counter: 0});
-        this.setState({show: false});  
+        this.setState({show: false}); 
+        this.delegate.setState({video: false}); 
         this.delegate.vidPolyline.then((line) => {
             line.setStyle({
                 color: 'blue'
@@ -96,20 +125,23 @@ export default class VideoCard extends React.Component {
     delegate(parent) {
       this.delegate = parent;
     }
+
+    changeRadio(value) {
+        console.log(value);
+    }
     
     render() {
         if (this.state.show) {
+            const radios = [
+                { name: 'Left', value: 'L' },
+                { name: 'Right', value: 'R' },
+              ];
+            
             return (
                 <Card 
                   className="videoModal"
                 >
-                <Card.Body className="videoBody">	
-                <Button 
-                    variant="outline-secondary" 
-                    size="sm"
-                    onClick={(e) => this.clickClose(e)}>
-                    Close
-                </Button>    
+                <Card.Body className="videoBody">	 
                   <div>
                     <img
                       className="video" 
@@ -119,30 +151,59 @@ export default class VideoCard extends React.Component {
                     </img>     
                   </div>
                   <ProgressBar 
-                          className="videoProgress" 
-                          min={0} 
-                          max={this.state.photoArray.length} 
-                          now={this.state.counter} 
-                          onClick={(e) => this.clickProgress(e)}
-                      /> 
-                      <div>
-                      <img 
-                          className="play" 
-                          src={this.state.playicon} 
-                          alt="play button"
-                          onClick={(e) => this.clickPlay(e)}
-                      />     
+                    className="videoProgress" 
+                    min={0} 
+                    max={this.state.photoArray.length} 
+                    now={this.state.counter} 
+                    onClick={(e) => this.clickProgress(e)}
+                    /> 
+                    <div>
+                        <img 
+                            className="play" 
+                            src={this.state.playicon} 
+                            alt="play button"
+                            onClick={(e) => this.clickPlay(e)}
+                        />     
                   </div>
                   <div className="videoText">
                       <div className="row">
                           <div className="col-md-4">
-                          <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
-                              <b>{"Carriage ID: "} </b> {this.state.carriageid}<br></br>
-                              <b>{"ERP: "}</b>{this.state.erp}
+                              <span className='sidetext'>
+                              <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
+                                <b>{"Carriage ID: "} </b> {this.state.carriageid}<br></br>
+                                <b>{"ERP: "}</b>{this.state.erp}<br></br>
+                                <b>{"Side:  "}</b>
+                                </span>
+                                <ButtonGroup className="sidebuttons" toggle>
+                               
+                                {radios.map((radio, idx) => (
+                                <ToggleButton
+                                    key={idx}
+                                    type="radio"
+                                    variant="outline-light"
+                                    name="radio"
+                                    size="sm"
+                                    value={radio.value}
+                                    checked={this.state.side === radio.value}
+                                    onChange={(e) => this.changeRadio(e.currentTarget.value)}
+                                >
+                                    {radio.name}
+                                </ToggleButton>
+                                ))}
+                            </ButtonGroup>
+                            
+                           
+                             
                           </div>
                       </div>
                   </div>	
-                    
+                  <Button 
+                    className="videoCloseButton"
+                    variant="light" 
+                    size="sm"
+                    onClick={(e) => this.clickClose(e)}>
+                    Close
+                </Button>  
                   </Card.Body >
               </Card>
               );

@@ -342,6 +342,33 @@ app.post('/photos', async(req, res) => {
   }
 });
 
+app.post('/videoPhoto', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project.code);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    console.log(req.body);
+    if (req.body.project.code === null) {
+      res.send({error: "No project selected"});
+    } else {
+      res.set('Content-Type', 'application/json');
+      try {
+        let surface = req.body.project.surface;
+        //console.log(surface);
+      } catch (err) {
+        console.log(err);
+        res.send({error: err});
+      }
+    } 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
 
 app.post('/archive', async(req, res) => {
   let security = false;

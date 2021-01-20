@@ -5,6 +5,7 @@
   "proxy": "https://localhost:8443/",
   "start": "HTTPS=true react-scripts start",
   "dependencies": {
+    "@ant-design/icons": "^4.4.0",
     "antd": "^4.10.2",
     "bootstrap": "^4.4.1",
     "chart.js": "^2.9.3",
