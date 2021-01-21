@@ -322,45 +322,29 @@ app.post('/photos', async(req, res) => {
       res.set('Content-Type', 'application/json');
       let result = null;
       let data = null;
+      let side = null;
       try {
-        //console.log(req.body);
-        result = await db.getPhotos(req.body.carriageid);
+        if (req.body.side === null) {
+          let result = await db.minERP(req.body.carriageid);
+          if (result.rowCount != 0) {
+            let min = result.rows[0];
+            console.log(min);
+            result = await db.side(req.body.carriageid, min.min);
+            side = result.rows[0].side;
+          } else {
+            //handle error finidng min
+          }  
+        }
+        result = await db.getPhotos(req.body.carriageid, side);
         data = result.rows;
       } catch (err) {
         console.log(err);
         res.send({error: err});
       }
       if (result.rowCount != 0) {
-        res.send({success: true, data: data});
+        res.send({success: true, data: data, side: side});
       } else {
         res.send({success: false, data: null});
-      }
-    } 
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
-app.post('/videoPhoto', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project.code);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    console.log(req.body);
-    if (req.body.project.code === null) {
-      res.send({error: "No project selected"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      try {
-        let surface = req.body.project.surface;
-        //console.log(surface);
-      } catch (err) {
-        console.log(err);
-        res.send({error: err});
       }
     } 
   } else {
@@ -388,9 +372,18 @@ app.post('/archive', async(req, res) => {
         let data = null; 
         let fdata = null; 
         if (surface === "road") {
-          result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
+          console.log(req.body.side);
+          if (typeof req.body.side !== 'undefined' || req.body.side !== null) {
+            result = await db.archiveVideoPhoto(req.body.project.code, req.body.lat, req.body.lng, req.body.side);
+          } else {
+            result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
+          }
+          console.log(result);
           data = result.rows[0];
-          fdata = formatData(data);
+          
+          if (result.rowCount !== 0) {
+            fdata = formatData(data);
+          }       
         } else {
           result = await db.archiveFPPhoto(req.body.project.code, req.body.lat, req.body.lng);
           data = result.rows[0];
@@ -825,6 +818,7 @@ app.post('/import', async (req, res) => {
 
 //builds address for photo 
 function formatData(data) {
+  console.log(data);
   let address = buildAddress([data.house, data.street, data.suburb, data.town]);
   let obj = {photo: data.photo, roadid: data.roadid, erp: data.erp, footpathid: data.footpathid, 
     side: data.side, latitude: data.latitude, longitude: data.longitude, dist: data.dist, address: address, ramm: data.ramm};

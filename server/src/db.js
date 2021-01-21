@@ -419,17 +419,45 @@ module.exports = {
         });
     },
 
-    getPhotos: (carriageid) => {
+    getPhotos: (carriageid, side) => {
+        console.log(side);
         return new Promise((resolve, reject) => {
-            console.log(carriageid);
-            let sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' ORDER BY photo";
+            let sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' and side = '" + side + "' ORDER BY photo";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                let carriage = resolve(result);
-                return carriage;
+                let photos = resolve(result);
+                return photos;
+            });
+        });
+    },
+
+    minERP: (carriageid) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT MIN(erp) from photos WHERE carriageway = '" + carriageid + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let min = resolve(result);
+                return min;
+            });
+        });
+    },
+
+    side: (carriageid, side) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT side from photos WHERE carriageway = '" + carriageid + "' and erp = '" + side + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let side= resolve(result);
+                return side;
             });
         });
     },
@@ -438,6 +466,20 @@ module.exports = {
     archivePhoto: (project, lat, lng) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) AS dist FROM photos WHERE project = '" + project + "' ORDER BY dist LIMIT 1";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let photo = resolve(result);
+                return photo;
+            });
+        });
+    },
+
+    archiveVideoPhoto: (project, lat, lng, side) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo, roadid, erp, carriageway, side, latitude, longitude, geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) AS dist FROM photos WHERE project = '" + project + "' AND side = '" + side + "' ORDER BY dist LIMIT 1";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

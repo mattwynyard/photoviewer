@@ -26,7 +26,7 @@ export default class VideoCard extends React.Component {
         this.delegate(props.parent);
     }
 
-    initialise(show, amazon, photoArray) {
+    initialise(show, amazon, photoArray, side) {
         if(photoArray !== null) {
             this.setState({show: show});
             this.setState({photoArray: photoArray});
@@ -35,7 +35,7 @@ export default class VideoCard extends React.Component {
             this.setState({erp: this.state.photoArray[0].erp});
             this.setState({roadid: this.state.photoArray[0].roadid});
             this.setState({carriageid: this.state.photoArray[0].carriageway});
-            this.setState({side: this.state.photoArray[0].side});
+            this.setState({side: side});
             let latlng = this.getLatLng(0);
             this.delegate.setState({carMarker: [latlng]});
         } else {
@@ -46,6 +46,10 @@ export default class VideoCard extends React.Component {
         //         this.sat
         //     }
         // }        
+    }
+
+    getSide() {
+        return this.state.side;
     }
 
     clickStop(e) {
@@ -127,6 +131,11 @@ export default class VideoCard extends React.Component {
     }
 
     changeRadio(value) {
+        this.setState({side: value});
+        console.log(value);
+    }
+
+    clickRadio(value) {
         console.log(value);
     }
     
@@ -186,6 +195,7 @@ export default class VideoCard extends React.Component {
                                     value={radio.value}
                                     checked={this.state.side === radio.value}
                                     onChange={(e) => this.changeRadio(e.currentTarget.value)}
+                                    //onClick={(e) => this.clickRadio(e)}
                                 >
                                     {radio.name}
                                 </ToggleButton>

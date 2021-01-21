@@ -589,7 +589,7 @@ addCentrelines(data) {
         points.push(e.latlng);
         polyline = new L.polyline(points, {
           color: 'blue',
-          weight: 3,
+          weight: 4,
           opacity: 0.5 
           });
         polyline.addTo(this.leafletMap);
@@ -938,18 +938,18 @@ addCentrelines(data) {
           roadid: body.data.roadid,
           carriageid: body.data.carriageid,
           color: 'blue',
-          weight: 3,
+          weight: 4,
           host: this.state.host,
           login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
         let parent = this;
         vidPolyline.on("click", function (e) {
           console.log(vidPolyline);
-          console.log(parent.state.video)
           if (parent.state.video) {
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
-            let photo = parent.getVideoPhoto(e.latlng, host, login);
+            let side = parent.videoCard.current.getSide();
+            let photo = parent.getVideoPhoto(e.latlng, host, login, side);
             photo.then((data) => {
               parent.videoCard.current.search(data.data.photo);
             });
@@ -961,11 +961,13 @@ addCentrelines(data) {
             let carriage = vidPolyline.options.carriageid;
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
-            let body = photoFunc(carriage, host, login);
+            let side = parent.videoCard.current.getSide();
+            console.log(side);
+            let body = photoFunc(carriage, side, host, login);
             parent.setState({video: true});
             body.then((data) => {
               parent.setState({photoArray: data.data});
-              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray);
+              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, side);
             });
           }         
         });
@@ -978,7 +980,13 @@ addCentrelines(data) {
     }   
   }
 
-  async getVideoPhoto(latlng, host, login) {
+  /**
+   * Returns photo name closest to user click 
+   * @param {lat lng of user click} latlng 
+   * @param {server} host 
+   * @param {user login} login 
+   */
+  async getVideoPhoto(latlng, host, login, side) {
     const response = await fetch('https://' + host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
@@ -991,7 +999,8 @@ addCentrelines(data) {
         user: login.login,
         project: login.project,
         lat: latlng.lat,
-        lng: latlng.lng
+        lng: latlng.lng,
+        side: side
       })
     });
     const body = await response.json();
@@ -1004,7 +1013,7 @@ addCentrelines(data) {
   }
 
 
-  async getPhotos(carriageid, host, login) {
+  async getPhotos(carriageid, side, host, login) {
 
     const response = await fetch('https://' + host + '/photos', {
       method: 'POST',
@@ -1017,7 +1026,8 @@ addCentrelines(data) {
       body: JSON.stringify({
         user: login.login,
         project: login.project,
-        carriageid: carriageid
+        carriageid: carriageid,
+        side: side
       })
     });
     const body = await response.json();
