@@ -323,6 +323,7 @@ app.post('/photos', async(req, res) => {
       let result = null;
       let data = null;
       let side = null;
+      console.log(req.body)
       try {
         if (req.body.side === null) {
           let result = await db.minERP(req.body.carriageid);
@@ -334,8 +335,11 @@ app.post('/photos', async(req, res) => {
           } else {
             //handle error finidng min
           }  
+        } else {
+          side = req.body.side;
         }
         result = await db.getPhotos(req.body.carriageid, side);
+        //console.log(result);
         data = result.rows;
       } catch (err) {
         console.log(err);

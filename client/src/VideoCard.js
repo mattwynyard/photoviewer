@@ -11,8 +11,6 @@ export default class VideoCard extends React.Component {
             show: props.show,
             counter: 0,
             photoArray: [],
-            leftArray: [],
-            rightArray: [],
             erp: null,
             roadid: null,
             carriageid: null,
@@ -40,12 +38,18 @@ export default class VideoCard extends React.Component {
             this.delegate.setState({carMarker: [latlng]});
         } else {
             alert("photoarray null")
-        }
-        // for (let i= 0; i < this.state.photoArray; i++) {
-        //     if (this.state.photoArray[i].side === 'L') {
-        //         this.sat
-        //     }
-        // }        
+        }       
+    }
+
+    refresh(photoArray, side) {
+        this.setState({currentPhoto: photoArray[0].photo});
+        this.setState({photoArray: photoArray});
+        this.setState({erp: this.state.photoArray[0].erp});
+        this.setState({roadid: this.state.photoArray[0].roadid});
+        this.setState({carriageid: this.state.photoArray[0].carriageway});
+        this.setState({side: side});
+        let latlng = this.getLatLng(0);
+        this.delegate.setState({carMarker: [latlng]});
     }
 
     getSide() {
@@ -118,6 +122,11 @@ export default class VideoCard extends React.Component {
         this.setState({playicon: "play64blue.png"}); 
         this.setState({counter: 0});
         this.setState({show: false}); 
+        this.setState({photoArray: []}); 
+        this.setState({erp: null}); 
+        this.setState({roadid: null}); 
+        this.setState({carriageid: null}); 
+        this.setState({side: null}); 
         this.delegate.setState({video: false}); 
         this.delegate.vidPolyline.then((line) => {
             line.setStyle({
@@ -132,13 +141,9 @@ export default class VideoCard extends React.Component {
 
     changeRadio(value) {
         this.setState({side: value});
-        console.log(value);
+        this.delegate.changeSide(this.state.carriageid, value);
     }
 
-    clickRadio(value) {
-        console.log(value);
-    }
-    
     render() {
         if (this.state.show) {
             const radios = [

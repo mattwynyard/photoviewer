@@ -232,7 +232,6 @@ class Report extends React.Component {
             
         } else {
             this.gradeMap = new Map();
-            //this.faultMap = new Map();
             this.g1Map = new Map();
             this.g2Map = new Map();
             this.g3Map = new Map();

@@ -127,7 +127,8 @@ class App extends React.Component {
       district: null,
       spinner: false,
       isArchive: false, //true when doing full photo search
-      video: false
+      video: false,
+      activeCarriage: null, //carriageway user has clicked on - leaflet polyline
     };   
   }
 
@@ -605,15 +606,20 @@ addCentrelines(data) {
       } else if (this.state.isVideo && this.state.activeLayer !== null) {
           if(this.vidPolyline === null) {  
             this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+            this.vidPolyline.then((line) => {
+              this.setState({activeCarriage: line})
+            });
           } else {
             this.vidPolyline.then((line) => {
               if (line === null) {
                 this.vidPolyline = null;
+                this.setState({activeCarriage: null});
               } else {
                 if(line.options.color === "blue") {
                   line.remove();
                   this.vidPolyline = null;
-                  this.setState({carMarker: []})
+                  this.setState({activeCarriage: null})
+                  this.setState({carMarker: []});
                 // } else {
                 //   console.log(this.vidPolyline);
                 }
@@ -902,7 +908,7 @@ addCentrelines(data) {
    * Starts movie of carriagway
    * @param {event} e 
    * @param {callback to calculate distance} cb 
-   * @param {function to get closest polyline to click} photoFunc 
+   * @param {callback to get closest polyline to click} photoFunc 
    */
   async getCarriage(e, distFunc, photoFunc) {
     //e.preventDefault();
@@ -942,9 +948,9 @@ addCentrelines(data) {
           host: this.state.host,
           login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
+        console.log(vidPolyline)
         let parent = this;
         vidPolyline.on("click", function (e) {
-          console.log(vidPolyline);
           if (parent.state.video) {
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
@@ -962,12 +968,11 @@ addCentrelines(data) {
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
             let side = parent.videoCard.current.getSide();
-            console.log(side);
             let body = photoFunc(carriage, side, host, login);
             parent.setState({video: true});
             body.then((data) => {
               parent.setState({photoArray: data.data});
-              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, side);
+              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, data.side);
             });
           }         
         });
@@ -978,6 +983,19 @@ addCentrelines(data) {
     } else {
       alert(response.status + " " + body.error); 
     }   
+  }
+
+  /**
+   * Delegate function for fetching new photos if user changes side 
+   */
+  //host: this.state.host,
+  //login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
+  async changeSide(carriageid, side) {
+    let body = this.getPhotos(carriageid, side, this.state.host, this.state.activeCarriage.options.login);
+    body.then((data) => {
+      this.setState({photoArray: data.data});
+      this.videoCard.current.refresh(data.data, side);
+    });
   }
 
   /**

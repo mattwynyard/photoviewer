@@ -448,15 +448,15 @@ module.exports = {
         });
     },
 
-    side: (carriageid, side) => {
+    side: (carriageid, erp) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT side from photos WHERE carriageway = '" + carriageid + "' and erp = '" + side + "'";
+            let sql = "SELECT side from photos WHERE carriageway = '" + carriageid + "' and erp = '" + erp + "'";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                let side= resolve(result);
+                let side = resolve(result);
                 return side;
             });
         });
