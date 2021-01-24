@@ -581,8 +581,6 @@ addCentrelines(data) {
    */
 
   clickLeafletMap(e) {
-    //console.log("clickLeaflet");
-
     if (this.state.ruler) {
       let polyline = this.state.rulerPolyline;
       if (polyline == null) {
@@ -620,8 +618,6 @@ addCentrelines(data) {
                   this.vidPolyline = null;
                   this.setState({activeCarriage: null})
                   this.setState({carMarker: []});
-                // } else {
-                //   console.log(this.vidPolyline);
                 }
               }           
             });
@@ -907,11 +903,10 @@ addCentrelines(data) {
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
    * @param {event} e 
-   * @param {callback to calculate distance} cb 
-   * @param {callback to get closest polyline to click} photoFunc 
+   * @param {callback to calculate distance} distFunc 
+   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc 
    */
   async getCarriage(e, distFunc, photoFunc) {
-    //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/carriage', {
       method: 'POST',
       credentials: 'same-origin',
@@ -945,12 +940,12 @@ addCentrelines(data) {
           carriageid: body.data.carriageid,
           color: 'blue',
           weight: 4,
+          opacity: 0.5,
           host: this.state.host,
           login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
-        console.log(vidPolyline)
         let parent = this;
-        vidPolyline.on("click", function (e) {
+        vidPolyline.on('click', function (e) {
           if (parent.state.video) {
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
@@ -967,12 +962,25 @@ addCentrelines(data) {
             let carriage = vidPolyline.options.carriageid;
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
-            let side = parent.videoCard.current.getSide();
-            let body = photoFunc(carriage, side, host, login);
+            let body = photoFunc(carriage, 'L', host, login);
             parent.setState({video: true});
             body.then((data) => {
-              parent.setState({photoArray: data.data});
-              parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, data.side);
+              let photo = parent.getVideoPhoto(e.latlng, host, login, 'L');        
+              photo.then((initialPhoto) => {
+                let found = false;
+                for (let i = 0; i < data.data.length; i++) {
+                  if(initialPhoto.data.photo === data.data[i].photo) {
+                    parent.setState({photoArray: data.data});
+                    parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, i);
+                    found = true;
+                    break;
+                  }   
+                }
+                if (!found) {
+                  alert("error loading video - photo not found")
+                }
+              });
+              
             });
           }         
         });
@@ -987,14 +995,16 @@ addCentrelines(data) {
 
   /**
    * Delegate function for fetching new photos if user changes side 
+   * Updates video cards data array
+   * @param {the id of the carriagway} carriageid 
+   * @param {left 'L' or right 'R' side of road} side 
    */
-  //host: this.state.host,
-  //login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
-  async changeSide(carriageid, side) {
-    let body = this.getPhotos(carriageid, side, this.state.host, this.state.activeCarriage.options.login);
+  async changeSide(carriageid, erp, side) {
+    let body = this.changeSides(carriageid, erp, side, this.state.host, this.state.activeCarriage.options.login);
     body.then((data) => {
+      console.log(data);
       this.setState({photoArray: data.data});
-      this.videoCard.current.refresh(data.data, side);
+      this.videoCard.current.refresh(data.data, data.newPhoto, side);
     });
   }
 
@@ -1046,6 +1056,32 @@ addCentrelines(data) {
         project: login.project,
         carriageid: carriageid,
         side: side
+      })
+    });
+    const body = await response.json();
+    if (response.status !== 200) {
+      alert(response.status + " " + response.statusText);  
+      throw Error(body.message);   
+    } else {
+      return body;
+    }   
+  }
+
+  async changeSides(carriageid, erp, side, host, login) {
+    const response = await fetch('https://' + host + '/changeSide', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json', 
+        "authorization": login.token,       
+      },
+      body: JSON.stringify({
+        user: login.login,
+        project: login.project,
+        carriageid: carriageid,
+        side: side,
+        erp: erp
       })
     });
     const body = await response.json();

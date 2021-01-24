@@ -406,7 +406,7 @@ module.exports = {
 
     closestCarriage: (lat, lng) => {
         return new Promise((resolve, reject) => {
-            console.log("lat: " + lat + " lng: " + lng);
+            //console.log("lat: " + lat + " lng: " + lng);
             let sql = "SELECT r.carriageid, r.roadid,  ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM roadtemp as r ORDER BY geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -420,7 +420,7 @@ module.exports = {
     },
 
     getPhotos: (carriageid, side) => {
-        console.log(side);
+        //console.log(side);
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' and side = '" + side + "' ORDER BY photo";
             connection.query(sql, (err, result) => {
@@ -430,6 +430,21 @@ module.exports = {
                 }
                 let photos = resolve(result);
                 return photos;
+            });
+        });
+    },
+
+    oppositePhoto: (carriageid, side, erp) => {
+        return new Promise((resolve, reject) => {
+            let number = 1;
+            let sql = "SELECT photo, erp from photos WHERE carriageway = '" + carriageid + "' and side = '" + side + "' ORDER BY ABS(erp - '" + erp + "')";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let side = resolve(result);
+                return side;
             });
         });
     },

@@ -257,10 +257,7 @@ app.post('/view', async(req, res) => {
   if (result) {
     res.set('Content-Type', 'application/json');
     try {
-      
-      //console.log(req.body);
       let result = await db.buildView(req.body.project.code);
-      //console.log(result);
       res.send({success: true});
     } catch (err) {
       console.log(err);
@@ -280,7 +277,6 @@ app.post('/carriage', async(req, res) => {
   } else {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
-  console.log(security);
   if (security) {
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
@@ -323,13 +319,11 @@ app.post('/photos', async(req, res) => {
       let result = null;
       let data = null;
       let side = null;
-      console.log(req.body)
       try {
         if (req.body.side === null) {
           let result = await db.minERP(req.body.carriageid);
           if (result.rowCount != 0) {
             let min = result.rows[0];
-            console.log(min);
             result = await db.side(req.body.carriageid, min.min);
             side = result.rows[0].side;
           } else {
@@ -347,6 +341,43 @@ app.post('/photos', async(req, res) => {
       }
       if (result.rowCount != 0) {
         res.send({success: true, data: data, side: side});
+      } else {
+        res.send({success: false, data: null});
+      }
+    } 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/changeSide', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project.code);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    if (req.body.project.code === null) {
+      res.send({error: "No project selected"});
+    } else {
+      res.set('Content-Type', 'application/json');
+      console.log(req.body);
+      let result = null;
+      let data = null;
+      let newPhoto = null;
+      try {
+        let opposite = await db.oppositePhoto(req.body.carriageid, req.body.side, req.body.erp);
+        newPhoto = opposite.rows[0];
+        result = await db.getPhotos(req.body.carriageid, req.body.side);
+        data = result.rows;
+      } catch (err) {
+        console.log(err);
+        res.send({error: err});
+      }
+      if (result.rowCount != 0) {
+        res.send({success: true, data: data, newPhoto: newPhoto});
       } else {
         res.send({success: false, data: null});
       }
@@ -376,15 +407,12 @@ app.post('/archive', async(req, res) => {
         let data = null; 
         let fdata = null; 
         if (surface === "road") {
-          console.log(req.body.side);
           if (typeof req.body.side !== 'undefined' || req.body.side !== null) {
             result = await db.archiveVideoPhoto(req.body.project.code, req.body.lat, req.body.lng, req.body.side);
           } else {
             result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
           }
-          console.log(result);
-          data = result.rows[0];
-          
+          data = result.rows[0];     
           if (result.rowCount !== 0) {
             fdata = formatData(data);
           }       

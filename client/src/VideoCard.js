@@ -24,36 +24,53 @@ export default class VideoCard extends React.Component {
         this.delegate(props.parent);
     }
 
-    initialise(show, amazon, photoArray, side) {
+    initialise(show, amazon, photoArray, index) {
         if(photoArray !== null) {
             this.setState({show: show});
             this.setState({photoArray: photoArray});
             this.setState({amazon: amazon});
-            this.setState({currentPhoto: photoArray[0].photo});
-            this.setState({erp: this.state.photoArray[0].erp});
-            this.setState({roadid: this.state.photoArray[0].roadid});
-            this.setState({carriageid: this.state.photoArray[0].carriageway});
-            this.setState({side: side});
-            let latlng = this.getLatLng(0);
+            this.setState({counter: index});
+            this.setState({currentPhoto: photoArray[index].photo});
+            this.setState({erp: this.state.photoArray[index].erp});
+            this.setState({roadid: this.state.photoArray[index].roadid});
+            this.setState({carriageid: this.state.photoArray[index].carriageway});
+            this.setState({side: 'L'});
+            let latlng = this.getLatLng(index);
             this.delegate.setState({carMarker: [latlng]});
         } else {
             alert("photoarray null")
         }       
     }
 
-    refresh(photoArray, side) {
-        this.setState({currentPhoto: photoArray[0].photo});
+    refresh(photoArray, photo, side) {
+        let index = null;
+        for (let i = 0; i < photoArray.length; i++) {
+            if(photoArray[i].photo === photo.photo) {
+                index = i;
+                break;
+            } 
+        }
+        if (index === null) {
+            alert("error - photo not found");
+            index = 0;
+        }
+        this.setState({currentPhoto: photoArray[index].photo});
         this.setState({photoArray: photoArray});
-        this.setState({erp: this.state.photoArray[0].erp});
-        this.setState({roadid: this.state.photoArray[0].roadid});
-        this.setState({carriageid: this.state.photoArray[0].carriageway});
+        this.setState({erp: this.state.photoArray[index].erp});
+        this.setState({roadid: this.state.photoArray[index].roadid});
+        this.setState({carriageid: this.state.photoArray[index].carriageway});
         this.setState({side: side});
-        let latlng = this.getLatLng(0);
+        this.setState({counter: index});
+        let latlng = this.getLatLng(index);
         this.delegate.setState({carMarker: [latlng]});
     }
 
     getSide() {
         return this.state.side;
+    }
+
+    getERP() {
+        return this.state.erp;
     }
 
     clickStop(e) {
@@ -141,7 +158,7 @@ export default class VideoCard extends React.Component {
 
     changeRadio(value) {
         this.setState({side: value});
-        this.delegate.changeSide(this.state.carriageid, value);
+        this.delegate.changeSide(this.state.carriageid, this.state.erp, value);
     }
 
     render() {
