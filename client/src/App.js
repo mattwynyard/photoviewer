@@ -1,15 +1,17 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner, ToggleButtonGroup, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
+import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import './PositionControl';
 import './MediaPlayerControl';
 import DynamicDropdown from './DynamicDropdown.js';
+import ToolsMenu from './ToolsMenu.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
@@ -36,6 +38,7 @@ class App extends React.Component {
     this.archivePhotoModal = React.createRef();
     this.videoModal = React.createRef();
     this.videoCard = React.createRef();
+    this.toolsRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     this.state = {
@@ -127,7 +130,9 @@ class App extends React.Component {
       district: null,
       spinner: false,
       isArchive: false, //true when doing full photo search
+      isVideo: false, //true when doing full photo search
       video: false,
+      toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
     };   
   }
@@ -157,12 +162,6 @@ class App extends React.Component {
     }
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
-    var myStyle = {
-      "color": "#0000ff",
-      "weight": 5,
-      "opacity": 0.65,
-      "z-index": 999
-    };
     this.geojsonLayer = L.geoJSON().addTo(this.leafletMap);
     this.imageoverlay = L.imageOverlay
     L.Marker.prototype.options.icon = DefaultIcon;
@@ -175,7 +174,7 @@ class App extends React.Component {
   componentWillUnmount() {
     console.log("unmount");
     if(this.state.glpoints === null) {
-      console.log("null");
+      //console.log("null");
     } else {
       console.log("not null");
       this.glpoints = this.state.glpoints;
@@ -579,10 +578,35 @@ addCentrelines(data) {
    * Handles click events on lealfet map
    * @param {event - the mouse event} e 
    */
-
   clickLeafletMap(e) {
-    if (this.state.ruler) {
-      let polyline = this.state.rulerPolyline;
+    switch(this.state.toolsRadio) {
+      case 'video':
+        if(this.vidPolyline === null) {  
+          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+          this.vidPolyline.then((line) => {
+            this.setState({activeCarriage: line})
+          });
+        } else {
+          this.vidPolyline.then((line) => {
+            if (line === null) {
+              this.vidPolyline = null;
+              this.setState({activeCarriage: null});
+            } else {
+              if(line.options.color === "blue") {
+                line.remove();
+                this.vidPolyline = null;
+                this.setState({activeCarriage: null})
+                this.setState({carMarker: []});
+              }
+            }           
+          });
+        }      
+        break;
+      case 'street':
+        this.getArhivePhoto(e);
+        break;
+      case 'ruler':
+        let polyline = this.state.rulerPolyline;
       if (polyline == null) {
         let points = [];
         points.push(e.latlng);
@@ -598,31 +622,8 @@ addCentrelines(data) {
         points.push(e.latlng);
         polyline.setLatLngs(points);
       }
-    } else {
-      if (this.state.isArchive && this.state.activeLayer !== null) {
-        this.getArhivePhoto(e);
-      } else if (this.state.isVideo && this.state.activeLayer !== null) {
-          if(this.vidPolyline === null) {  
-            this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-            this.vidPolyline.then((line) => {
-              this.setState({activeCarriage: line})
-            });
-          } else {
-            this.vidPolyline.then((line) => {
-              if (line === null) {
-                this.vidPolyline = null;
-                this.setState({activeCarriage: null});
-              } else {
-                if(line.options.color === "blue") {
-                  line.remove();
-                  this.vidPolyline = null;
-                  this.setState({activeCarriage: null})
-                  this.setState({carMarker: []});
-                }
-              }           
-            });
-          }      
-      } else {
+        break;
+      default:
         if (this.state.glpoints !== null) {
           if (this.state.selectedCarriage !== null) {
           }
@@ -631,8 +632,7 @@ addCentrelines(data) {
           this.setState({mouseclick: e})
           this.redraw(this.state.glpoints);
         }
-      }
-      
+        break;
     }
   }
 
@@ -640,7 +640,7 @@ addCentrelines(data) {
     let lat = Math.round(e.latlng.lat * 100000) / 100000;
     let lng = Math.round(e.latlng.lng * 100000) / 100000;
     this.position.updateHTML(lat, lng);
-    if (this.state.ruler) {
+    if (this.state.toolsRadio === 'ruler') {
       let polyline = this.state.rulerPolyline
       if (polyline !== null) {
         let points = polyline.getLatLngs();
@@ -1285,8 +1285,7 @@ addCentrelines(data) {
       }
     }
     let projects = null;
-    let project = e.target.attributes.code.value; 
-    let mode = await this.getMode(project);    
+    let project = e.target.attributes.code.value;   
     let dynamicDropdowns = [];
     if (type === "road") {
       projects = this.state.projects.road;
@@ -2287,42 +2286,56 @@ addCentrelines(data) {
     }
   }
 
-  clickVideo(e) {
+  clickVideo() {
+    console.log(this.state.isVideo);
     if (this.state.isVideo) {
-      //this.setState({archiveMarker: []});
       this.setState({isVideo: false});
     } else {
       this.setState({isVideo: true});
     }
+    console.log(this.state.isVideo);
   }
 
-  clickTools(e) {
-    let polyline = this.state.rulerPolyline;
-    if (polyline != null) {
-      polyline.removeFrom(this.leafletMap);
-      this.setState({rulerPolyline: null});
-      this.setState({showRuler: false});
-      this.setState({rulerDistance: 0});
-      this.setState({ruler: false});
-    } else {
-      //console.log(e.target)
+  /**
+   * Called from ToolsMenu component when user changes radio button
+   * @param {radio button clicked} value 
+   */
+  clickToolsRadio(value) {
+    console.log(value);
+    this.setState({toolsRadio: value});
+  }
+
+  /**
+   * Called when using opens or closes tools dropdown
+   * @param {true/false} isOpen 
+   */
+  toggleTools(isOpen) {    
+    if (!isOpen) {
+      console.log(this.state.toolsRadio);
+      this.setState({toolsRadio: null});
+      if (this.state.rulerPolyline != null) {
+        this.state.rulerPolyline.removeFrom(this.leafletMap);
+        
+        this.setState({rulerPolyline: null});
+        this.setState({showRuler: false});
+        this.setState({rulerDistance: 0});
+        this.setState({ruler: false});
+      }
     }
   }
 
-  async reverseLookup(data) {
-    console.log(data);
-    const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
-     + data.longitude + "&addressdetails=1", {
-      method: 'GET',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-    });
-    const body = await response.json();
-    
-  }
+  // async reverseLookup(data) {
+  //   console.log(data);
+  //   const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
+  //    + data.longitude + "&addressdetails=1", {
+  //     method: 'GET',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //   });  
+  // }
 
   /**
    * Updates the string to searched
@@ -2478,6 +2491,8 @@ updateStatus(marker, status) {
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
     let mode = this.state.projectMode; 
+    
+    
     const LayerNav = function LayerNav(props) { 
      
       if (props.user === 'admin') {
@@ -2618,26 +2633,26 @@ updateStatus(marker, status) {
       }
     }
 
-    const Slider = function(props) {
-      return (
-        <div>
-          <label>
-            <b>Search Arhive:</b> 
-          </label>
-          <label 
-            className="switch">
-            <input 
-              type="checkbox"
-              checked={props.checked}
-              onClick={props.onClick}
-              onChange={props.onChange}
-            >
-            </input>
-            <span className="slider round"></span>
-          </label>
-        </div>
-      );
-    }
+    // const Slider = function(props) {
+    //   return (
+    //     <div>
+    //       <label>
+    //         <b>Search Arhive:</b> 
+    //       </label>
+    //       <label 
+    //         className="switch">
+    //         <input 
+    //           type="checkbox"
+    //           checked={props.checked}
+    //           onClick={props.onClick}
+    //           onChange={props.onChange}
+    //         >
+    //         </input>
+    //         <span className="slider round"></span>
+    //       </label>
+    //     </div>
+    //   );
+    // }
 
     const CustomPopup = function(props) {
       let location = props.data.location;
@@ -2824,8 +2839,7 @@ updateStatus(marker, status) {
       <> 
         <div>
         
-          <Navbar bg="light" expand="lg"> 
-          
+          <Navbar bg="light" expand="lg">      
             <Navbar.Brand href="#home">
             <img
                 src="logo.png"
@@ -2915,19 +2929,22 @@ updateStatus(marker, status) {
           <CustomSpinner show={this.state.spinner}>
           </CustomSpinner>;
           <Dropdown className="tools" 
-            onClick={(e) => this.clickTools(e)}>
-          <Dropdown.Toggle
+            onToggle={(e) => this.toggleTools(e)}
+            >
+          <Dropdown.Toggle 
             title="Tools"
             variant="light" 
             size="sm"
             >
               Tools
-          </Dropdown.Toggle>
+          </Dropdown.Toggle >
             <Dropdown.Menu 
               rootCloseEvent="dblclick"
-              className="toolsmmenu"     
+              className="toolsmenu"    
               >
-              <Button className="photoMode"
+ 
+              <ToolsMenu parent={this} mode={this.state.toolsRadio}></ToolsMenu>
+              {/* <Button className="photoMode"
                 variant="light" 
                 type="button" 
                 onClick={(e) => this.clickArchive(e)}>
@@ -2950,7 +2967,7 @@ updateStatus(marker, status) {
                 <img src="ruler-200.png" alt="ruler">
                 </img>
               </Button>
-              {"\u0020"}Distance: {this.state.rulerDistance} m
+              {"\u0020"}Distance: {this.state.rulerDistance} m */}
             </Dropdown.Menu>
           </Dropdown>
           <Dropdown

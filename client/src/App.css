@@ -70,6 +70,7 @@ body {
   padding: 0px;
   color: gray;
   white-space: nowrap;
+
 }
 
 .rulerText {
@@ -186,7 +187,7 @@ body {
   white-space: nowrap;
 }
 
-.toolsmmenu {
+.toolsmenu {
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   color: gray;
