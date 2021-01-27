@@ -10,6 +10,7 @@ import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import './PositionControl';
 import './MediaPlayerControl';
+import AntDrawer from './Drawer.js';
 import DynamicDropdown from './DynamicDropdown.js';
 import ToolsMenu from './ToolsMenu.js';
 import CustomModal from './CustomModal.js';
@@ -579,6 +580,7 @@ addCentrelines(data) {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap(e) {
+    console.log("click leaflet")
     switch(this.state.toolsRadio) {
       case 'video':
         if(this.vidPolyline === null) {  
@@ -2909,6 +2911,7 @@ updateStatus(marker, status) {
           </Navbar>         
         </div>      
         <div className="map">
+        
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
@@ -2925,9 +2928,12 @@ updateStatus(marker, status) {
             maxNativeZoom={19}
             maxZoom={22}
           />
+          <AntDrawer >
+          </AntDrawer>
           <ScaleControl className="scale"/>
           <CustomSpinner show={this.state.spinner}>
           </CustomSpinner>;
+         
           <Dropdown className="tools" 
             onToggle={(e) => this.toggleTools(e)}
             >
@@ -3273,4 +3279,3 @@ updateStatus(marker, status) {
   
 }
 export default App;
-

@@ -206,7 +206,6 @@ export default class VideoCard extends React.Component {
                                 <b>{"Side:  "}</b>
                                 </span>
                                 <ButtonGroup className="sidebuttons" toggle>
-                               
                                 {radios.map((radio, idx) => (
                                 <ToggleButton
                                     key={idx}
@@ -222,10 +221,7 @@ export default class VideoCard extends React.Component {
                                     {radio.name}
                                 </ToggleButton>
                                 ))}
-                            </ButtonGroup>
-                            
-                           
-                             
+                            </ButtonGroup>  
                           </div>
                       </div>
                   </div>	
