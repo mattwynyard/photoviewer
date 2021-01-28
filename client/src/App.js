@@ -376,7 +376,6 @@ addGLMarkers(project, data, type, zoomTo) {
   let high = null;
   let med = null;
   let low = null;
-
   if (this.state.reverse) {
     high = 5;
     med = 4;
@@ -425,7 +424,7 @@ addGLMarkers(project, data, type, zoomTo) {
           alpha = 0.5;
         }
       }
-      if (data[i].status === "active") {
+      if (data[i].status === "active") { //road
         if(data[i].priority === high) {
           points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
         } else if (data[i].priority === med) {
@@ -439,7 +438,7 @@ addGLMarkers(project, data, type, zoomTo) {
         points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
       }
     } else {
-      if (data[i].status === "active") {
+      if (data[i].status === "active") { //footpath
         if(data[i].grade === high) {
           points.push(point.x, point.y, 1.0, 0, 1.0, 1, i + 1);
         } else if (data[i].grade === med) {
@@ -1289,6 +1288,7 @@ addCentrelines(data) {
     let projects = null;
     let project = e.target.attributes.code.value;   
     let dynamicDropdowns = [];
+    await this.getMode(project);
     if (type === "road") {
       projects = this.state.projects.road;
       await this.loadFilters(project);    
@@ -2683,7 +2683,7 @@ updateStatus(marker, status) {
     }
 
     const CustomSVG = function(props) {
-      //console.log(props.login);
+      //console.log(props);
       if (!props.reverse) {
         if (props.value === "Grade 1" || props.value === "Priority 1") {
           return ( 
