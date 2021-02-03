@@ -9,7 +9,8 @@ export default class AntDrawer extends React.Component {
         super(props);
         this.state = {
             visible: false,
-            mode: 'map',
+            mode: 'Map',
+            video: false
         }
     }
 
@@ -22,8 +23,16 @@ export default class AntDrawer extends React.Component {
   };
 
   setMode = (mode) => {
-      console.log(mode);
+      //console.log(mode);
     this.setState({mode: mode});
+  }
+
+  setVideo(hasVideo) {
+    this.setState({video: hasVideo});
+  }
+
+  getMode() {
+    return this.state.mode;
   }
 
   render() {
@@ -32,16 +41,10 @@ export default class AntDrawer extends React.Component {
             <Button 
                 className="button" 
                 type="light" 
-                onClick={this.showDrawer}>{this.state.mode}
-                {/* <Row type="flex" align="middle">
-                    <Col>
-                        <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}}>
-                        <GlobalOutlined
-                    style={{fontSize: '25px'}} 
-                    />
-                        </div>
-                    </Col>
-                </Row>   */}
+                onClick={this.showDrawer}
+                disabled={this.state.disabled}
+                >
+                {this.state.mode}
             </Button>
             <Drawer
                 className="drawer"
@@ -54,11 +57,10 @@ export default class AntDrawer extends React.Component {
             >
             <Space direction="vertical">
                 <Button 
-                    className="video-btn"
+                    className="map-btn"
                     block={true}
-                    id="video"
-                    disabled={(this.state.mode==="map")}
-                    onClick={(e) => this.setMode("map")}>
+                    disabled={(this.state.mode==="Map")}
+                    onClick={(e) => this.setMode("Map")}>
                     <div>
                     <Row>
                         <Col span={6}> 
@@ -73,8 +75,9 @@ export default class AntDrawer extends React.Component {
                 <Button 
                     className="video-btn"
                     block={true}
-                    disabled={(this.state.mode==="video")}
-                    onClick={(e) => this.setMode("video")}>
+                    disabled={(this.state.mode==="Video") || (this.state.video===false)}
+                    //disabled={true}
+                    onClick={(e) => this.setMode("Video")}>
                     <div>
                     <Row>
                         <Col span={6}> 

@@ -104,9 +104,9 @@ module.exports = {
         });
     },
 
-    mode : (project) => {
+    settings : (project) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT priority, reverse FROM projects WHERE code = $1::text';
+            let sql = 'SELECT priority, reverse, hasvideo FROM projects WHERE code = $1::text';
             connection.query(sql, [project], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -407,7 +407,21 @@ module.exports = {
     closestCarriage: (lat, lng) => {
         return new Promise((resolve, reject) => {
             //console.log("lat: " + lat + " lng: " + lng);
-            let sql = "SELECT r.carriageid, r.roadid,  ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM roadtemp as r ORDER BY geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
+            let sql = "SELECT r.id, r.roadid, r.direction, r.label, ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM centrelinecw as r ORDER BY geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let carriage = resolve(result);
+                return carriage;
+            });
+        });
+    },
+
+    closestFootpath: (lat, lng) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT r.id, r.roadid, r.side, r.label, ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM centrelinefp as r ORDER BY geom <-> ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -420,9 +434,29 @@ module.exports = {
     },
 
     getPhotos: (carriageid, side) => {
-        //console.log(side);
         return new Promise((resolve, reject) => {
-            let sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' and side = '" + side + "' ORDER BY photo";
+            let sql = null
+            if (side === null) {
+                sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' ORDER BY photo";
+            } else {
+                sql = "SELECT photo, carriageway, erp, roadid, side, address, latitude, longitude from photos WHERE carriageway = '" + carriageid + "' and side = '" + side + "' ORDER BY photo";
+            }
+            
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let photos = resolve(result);
+                return photos;
+            });
+        });
+    },
+
+    getFPPhotos: (id, project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT photo, footpathid, erp, roadid, side, address, latitude, longitude from fpphotos WHERE footpathid = '" + id + "' and project = '" + project + "' ORDER BY photo";
+
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

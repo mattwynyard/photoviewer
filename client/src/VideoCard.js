@@ -15,6 +15,7 @@ export default class VideoCard extends React.Component {
             roadid: null,
             carriageid: null,
             side: null,
+            disabled: false,
             play: false,
             playicon: "play64blue.png",
             forwardicon: "seekForward64blue.png",
@@ -24,7 +25,7 @@ export default class VideoCard extends React.Component {
         this.delegate(props.parent);
     }
 
-    initialise(show, amazon, photoArray, index) {
+    initialise(show, side, direction, amazon, photoArray, index) {
         if(photoArray !== null) {
             this.setState({show: show});
             this.setState({photoArray: photoArray});
@@ -34,7 +35,13 @@ export default class VideoCard extends React.Component {
             this.setState({erp: this.state.photoArray[index].erp});
             this.setState({roadid: this.state.photoArray[index].roadid});
             this.setState({carriageid: this.state.photoArray[index].carriageway});
-            this.setState({side: 'L'});
+            this.setState({side: side});
+            if (direction === 'B') {
+                this.setState({disabled: false});
+            } else {
+                this.setState({disabled: true});
+            }
+            
             let latlng = this.getLatLng(index);
             this.delegate.setState({carMarker: [latlng]});
         } else {
@@ -76,12 +83,6 @@ export default class VideoCard extends React.Component {
     clickStop(e) {
         e.preventDefault();
         this.setState({currentPhoto: this.state.photoArray[this.state.centeredcounter].photo});
-    }
-
-    clickProgress(e) {
-        e.preventDefault();
-        console.log(e.clientX - 300);
-        console.log(e.clientY - 300);
     }
         
     clickPlay(e) {
@@ -186,7 +187,7 @@ export default class VideoCard extends React.Component {
                     min={0} 
                     max={this.state.photoArray.length} 
                     now={this.state.counter} 
-                    onClick={(e) => this.clickProgress(e)}
+                    //onClick={(e) => this.clickProgress(e)}
                     /> 
                     <div>
                         <img 
@@ -214,6 +215,7 @@ export default class VideoCard extends React.Component {
                                     name="radio"
                                     size="sm"
                                     value={radio.value}
+                                    disabled={this.state.disabled}
                                     checked={this.state.side === radio.value}
                                     onChange={(e) => this.changeRadio(e.currentTarget.value)}
                                     //onClick={(e) => this.clickRadio(e)}

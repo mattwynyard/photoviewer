@@ -40,6 +40,7 @@ class App extends React.Component {
     this.videoModal = React.createRef();
     this.videoCard = React.createRef();
     this.toolsRef = React.createRef();
+    this.antdrawer = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     this.state = {
@@ -132,7 +133,7 @@ class App extends React.Component {
       spinner: false,
       isArchive: false, //true when doing full photo search
       isVideo: false, //true when doing full photo search
-      video: false,
+      hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
     };   
@@ -579,10 +580,10 @@ addCentrelines(data) {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap(e) {
-    console.log("click leaflet")
-    switch(this.state.toolsRadio) {
-      case 'video':
+    switch(this.antdrawer.current.getMode()) {
+      case 'Video':
         if(this.vidPolyline === null) {  
+          console.log("click")
           this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
           this.vidPolyline.then((line) => {
             this.setState({activeCarriage: line})
@@ -603,10 +604,10 @@ addCentrelines(data) {
           });
         }      
         break;
-      case 'street':
+      case 'Street':
         this.getArhivePhoto(e);
         break;
-      case 'ruler':
+      case 'Ruler':
         let polyline = this.state.rulerPolyline;
       if (polyline == null) {
         let points = [];
@@ -624,7 +625,7 @@ addCentrelines(data) {
         polyline.setLatLngs(points);
       }
         break;
-      default:
+        case 'Map':
         if (this.state.glpoints !== null) {
           if (this.state.selectedCarriage !== null) {
           }
@@ -634,6 +635,8 @@ addCentrelines(data) {
           this.redraw(this.state.glpoints);
         }
         break;
+        default:
+          break;
     }
   }
 
@@ -925,6 +928,7 @@ addCentrelines(data) {
     });
     let vidPolyline = null;
     const body = await response.json();
+    //console.log(body);
     if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
       let dist = distFunc(body.data.dist);
@@ -938,7 +942,9 @@ addCentrelines(data) {
       
         vidPolyline = L.polyline(coords, {
           roadid: body.data.roadid,
-          carriageid: body.data.carriageid,
+          carriageid: body.data.id,
+          direction: body.data.direction,
+          label: body.data.label,
           color: 'blue',
           weight: 4,
           opacity: 0.5,
@@ -963,16 +969,31 @@ addCentrelines(data) {
             let carriage = vidPolyline.options.carriageid;
             let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
-            let body = photoFunc(carriage, 'L', host, login);
+            let direction = vidPolyline.options.direction;
+            let body = null;
+
+            if (direction === 'B') {
+              body = photoFunc(carriage, 'L', host, login);
+            } else {
+              body = photoFunc(carriage, null, host, login);
+            }
             parent.setState({video: true});
             body.then((data) => {
-              let photo = parent.getVideoPhoto(e.latlng, host, login, 'L');        
+              console.log(data)
+              let photo = null;
+              if (data.side === null) {
+                photo = parent.getVideoPhoto(e.latlng, host, login, null);
+              } else {
+                photo = parent.getVideoPhoto(e.latlng, host, login, 'L');
+              }
+                        
               photo.then((initialPhoto) => {
+                console.log(initialPhoto)
                 let found = false;
                 for (let i = 0; i < data.data.length; i++) {
                   if(initialPhoto.data.photo === data.data[i].photo) {
                     parent.setState({photoArray: data.data});
-                    parent.videoCard.current.initialise(true, parent.state.amazon, parent.state.photoArray, i);
+                    parent.videoCard.current.initialise(true, initialPhoto.data.side, direction, parent.state.amazon, parent.state.photoArray, i);
                     found = true;
                     break;
                   }   
@@ -1043,7 +1064,6 @@ addCentrelines(data) {
 
 
   async getPhotos(carriageid, side, host, login) {
-
     const response = await fetch('https://' + host + '/photos', {
       method: 'POST',
       credentials: 'same-origin',
@@ -1288,7 +1308,8 @@ addCentrelines(data) {
     let projects = null;
     let project = e.target.attributes.code.value;   
     let dynamicDropdowns = [];
-    await this.getMode(project);
+    await this.getSettings(project);
+    this.antdrawer.current.setVideo(this.state.hasVideo);
     if (type === "road") {
       projects = this.state.projects.road;
       await this.loadFilters(project);    
@@ -1343,8 +1364,8 @@ addCentrelines(data) {
     });
   }
 
-  async getMode(project) {
-    const response = await fetch("https://" + this.state.host + '/mode', {
+  async getSettings(project) {
+    const response = await fetch("https://" + this.state.host + '/settings', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1368,6 +1389,11 @@ addCentrelines(data) {
       this.setState({reverse: true});
     } else {
       this.setState({reverse: false});
+    }
+    if (body.video) {
+      this.setState({hasVideo: true});
+    } else {
+      this.setState({hasVideo: false});
     }
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
@@ -2635,27 +2661,6 @@ updateStatus(marker, status) {
       }
     }
 
-    // const Slider = function(props) {
-    //   return (
-    //     <div>
-    //       <label>
-    //         <b>Search Arhive:</b> 
-    //       </label>
-    //       <label 
-    //         className="switch">
-    //         <input 
-    //           type="checkbox"
-    //           checked={props.checked}
-    //           onClick={props.onClick}
-    //           onChange={props.onChange}
-    //         >
-    //         </input>
-    //         <span className="slider round"></span>
-    //       </label>
-    //     </div>
-    //   );
-    // }
-
     const CustomPopup = function(props) {
       let location = props.data.location;
       if (props.data.type === "footpath") {
@@ -2683,7 +2688,6 @@ updateStatus(marker, status) {
     }
 
     const CustomSVG = function(props) {
-      //console.log(props);
       if (!props.reverse) {
         if (props.value === "Grade 1" || props.value === "Priority 1") {
           return ( 
@@ -2839,8 +2843,7 @@ updateStatus(marker, status) {
 
     return ( 
       <> 
-        <div>
-        
+        <div>        
           <Navbar bg="light" expand="lg">      
             <Navbar.Brand href="#home">
             <img
@@ -2910,8 +2913,7 @@ updateStatus(marker, status) {
             <CustomNav ref={this.customNav} className="navdropdown"/>
           </Navbar>         
         </div>      
-        <div className="map">
-        
+        <div className="map">      
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
@@ -2928,13 +2930,13 @@ updateStatus(marker, status) {
             maxNativeZoom={19}
             maxZoom={22}
           />
-          <AntDrawer >
+          <AntDrawer ref={this.antdrawer} video={this.state.hasVideo}>
           </AntDrawer>
           <ScaleControl className="scale"/>
           <CustomSpinner show={this.state.spinner}>
           </CustomSpinner>;
          
-          <Dropdown className="tools" 
+          {/* <Dropdown className="tools" 
             onToggle={(e) => this.toggleTools(e)}
             >
           <Dropdown.Toggle 
@@ -2949,7 +2951,7 @@ updateStatus(marker, status) {
               className="toolsmenu"    
               >
  
-              <ToolsMenu parent={this} mode={this.state.toolsRadio}></ToolsMenu>
+              <ToolsMenu parent={this} mode={this.state.toolsRadio}></ToolsMenu> */}
               {/* <Button className="photoMode"
                 variant="light" 
                 type="button" 
@@ -2974,8 +2976,8 @@ updateStatus(marker, status) {
                 </img>
               </Button>
               {"\u0020"}Distance: {this.state.rulerDistance} m */}
-            </Dropdown.Menu>
-          </Dropdown>
+            {/* </Dropdown.Menu>
+          </Dropdown> */}
           <Dropdown
             className="Priority">
           <Dropdown.Toggle variant="light" size="sm" >

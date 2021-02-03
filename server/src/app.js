@@ -278,6 +278,7 @@ app.post('/carriage', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
+
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
     } else {
@@ -285,9 +286,14 @@ app.post('/carriage', async(req, res) => {
       let result = null;
       let data = null;
       try {
-        result = await db.closestCarriage(req.body.lat, req.body.lng);
-        data = result.rows[0];
-       // console.log(data);
+        if (req.body.project.surface === 'footpath') {
+          result = await db.closestFootpath(req.body.lat, req.body.lng);
+          data = result.rows[0];
+        } else {
+          result = await db.closestCarriage(req.body.lat, req.body.lng);
+          data = result.rows[0];
+        }
+        
       } catch (err) {
         console.log(err);
         res.send({error: err});
@@ -312,6 +318,7 @@ app.post('/photos', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
+    console.log(req.body);
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
     } else {
@@ -321,20 +328,19 @@ app.post('/photos', async(req, res) => {
       let side = null;
       try {
         if (req.body.side === null) {
-          let result = await db.minERP(req.body.carriageid);
-          if (result.rowCount != 0) {
-            let min = result.rows[0];
-            result = await db.side(req.body.carriageid, min.min);
-            side = result.rows[0].side;
+          if (req.body.project.surface === 'footpath') {
+            result = await db.getFPPhotos(req.body.carriageid, req.body.project.code);
           } else {
-            //handle error finidng min
-          }  
+            result = await db.getPhotos(req.body.carriageid, null);
+          }
+          
         } else {
           side = req.body.side;
+          result = await db.getPhotos(req.body.carriageid, side);
         }
-        result = await db.getPhotos(req.body.carriageid, side);
-        //console.log(result);
+        
         data = result.rows;
+        console.log(data);
       } catch (err) {
         console.log(err);
         res.send({error: err});
@@ -363,7 +369,6 @@ app.post('/changeSide', async(req, res) => {
       res.send({error: "No project selected"});
     } else {
       res.set('Content-Type', 'application/json');
-      console.log(req.body);
       let result = null;
       let data = null;
       let newPhoto = null;
@@ -405,9 +410,10 @@ app.post('/archive', async(req, res) => {
         let surface = req.body.project.surface;
         let result = null;
         let data = null; 
-        let fdata = null; 
+        let fdata = null;
+        
         if (surface === "road") {
-          if (typeof req.body.side !== 'undefined' || req.body.side !== null) {
+          if (req.body.side !== null) {
             result = await db.archiveVideoPhoto(req.body.project.code, req.body.lat, req.body.lng, req.body.side);
           } else {
             result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
@@ -562,7 +568,7 @@ app.post('/age', async (req, res) => {
 } 
 });
 
-app.post('/mode', async (req, res) => { 
+app.post('/settings', async (req, res) => { 
   let result = false;
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project);
@@ -571,9 +577,9 @@ app.post('/mode', async (req, res) => {
   }
   if (result) {
     let project = req.body.project;
-    let result = await db.mode(project);
+    let result = await db.settings(project);
     res.set('Content-Type', 'application/json'); 
-    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse});  
+    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo});  
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});

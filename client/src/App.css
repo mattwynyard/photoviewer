@@ -51,13 +51,7 @@ body {
   left: 50%;
   z-index: 999;
 }
-
-/* .photoMode {
-  position: absolute;
-  /* top: 80px;
-  left: 80px;
-  z-index: 999;
-} 
+ 
  */
 .tools {
   position: absolute;
@@ -258,8 +252,6 @@ body {
   z-index: 999;
 }
 
-
-
 .displaytype {
   font-size: 18px !important;
   left: 50px;
@@ -315,8 +307,6 @@ body {
   flex-grow: 1;
  
 }
-
-
 
 .dropdownproject {
   float: right;
