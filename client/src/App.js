@@ -462,7 +462,7 @@ addGLMarkers(project, data, type, zoomTo) {
         type: type,
         id: id[id.length - 1],
         roadid: data[i].roadid,
-        footapthid: data[i].footpathid,
+        footpathid: data[i].footpathid,
         roadname: data[i].roadname,        
         location: data[i].location,
         asset:  data[i].asset,
@@ -971,7 +971,6 @@ addCentrelines(data) {
             let login = vidPolyline.options.login;
             let direction = vidPolyline.options.direction;
             let body = null;
-
             if (direction === 'B') {
               body = photoFunc(carriage, 'L', host, login);
             } else {
@@ -979,7 +978,6 @@ addCentrelines(data) {
             }
             parent.setState({video: true});
             body.then((data) => {
-              console.log(data)
               let photo = null;
               if (data.side === null) {
                 photo = parent.getVideoPhoto(e.latlng, host, login, null);
@@ -988,18 +986,20 @@ addCentrelines(data) {
               }
                         
               photo.then((initialPhoto) => {
-                console.log(initialPhoto)
                 let found = false;
-                for (let i = 0; i < data.data.length; i++) {
-                  if(initialPhoto.data.photo === data.data[i].photo) {
-                    parent.setState({photoArray: data.data});
-                    parent.videoCard.current.initialise(true, initialPhoto.data.side, direction, parent.state.amazon, parent.state.photoArray, i);
-                    found = true;
-                    break;
-                  }   
+                if (data.data != null) {
+                  for (let i = 0; i < data.data.length; i++) {
+                    if(initialPhoto.data.photo === data.data[i].photo) {
+                      parent.setState({photoArray: data.data});
+                      parent.videoCard.current.initialise(true, parent.state.projectMode, initialPhoto.data.side, direction, parent.state.amazon, parent.state.photoArray, i);
+                      found = true;
+                      break;
+                    }   
+                  }
                 }
+                
                 if (!found) {
-                  alert("error loading video - photo not found")
+                  alert("error loading video - Not found")
                 }
               });
               
@@ -1331,7 +1331,9 @@ addCentrelines(data) {
         let dropdown = new DynamicDropdown(filters[i]);
         let result = await this.requestDropdown(project, filters[i]);
         //console.log(result);
-        dropdown.setData(result);
+        if (result != null) {
+          dropdown.setData(result);
+        }
         dropdown.initialiseFilter();    
         dynamicDropdowns.push(dropdown);
       }
@@ -2085,17 +2087,21 @@ addCentrelines(data) {
     }
   }
 
-  clickUpdateFaultStatus(e) {
+  /**
+   * Shows modal to update fault status
+   * @param {event} e 
+   */
+  // clickUpdateFaultStatus(e) {
     
-    if (this.state.activeLayers.length > 0) {
-      this.customModal.current.setState({name: 'import'});
-      this.customModal.current.setProject(this.state.activeLayers[0].code);
-      this.customModal.current.setShow(true);
-    } else {
-      //Todo add alert
-    }
+  //   if (this.state.activeLayers.length > 0) {
+  //     this.customModal.current.setState({name: 'import'});
+  //     this.customModal.current.setProject(this.state.activeLayers[0].code);
+  //     this.customModal.current.setShow(true);
+  //   } else {
+  //     //Todo add alert
+  //   }
     
-  }
+  // }
 
   clickLogin(e) {
     e.preventDefault();
@@ -2828,14 +2834,14 @@ updateStatus(marker, status) {
           <Link 
             className="dropdownlink" 
             to={{
-              pathname: '/statistics',
+              pathname: props.endpoint,
               login: this.customNav.current,
               user: this.state.user,
               data: this.state.objGLData,
               project: this.state.activeLayer
             }}
             style={{ textDecoration: 'none' }}
-            >Create Report (beta)
+            >{props.label}
           </Link>
         );
           }      
@@ -2870,11 +2876,26 @@ updateStatus(marker, status) {
             </LayerNav>
             <Nav>              
               <NavDropdown className="navdropdown" title="Data" id="basic-nav-dropdown">
-                <NavDropdown.Item 
+              <CustomLink 
+                  className="dropdownlink" 
+                  endpoint="/data"
+                  label="Table View"
+                  // to={{
+                  //   pathname: '/data',
+                  //   login: this.customNav.current,
+                  //   user: this.state.user,
+                  //   data: this.state.objGLData,
+                  //   project: this.state.activeLayer
+                  // }}
+                  style={{ textDecoration: 'none' }}
+                  >
+                 </CustomLink>
+                {/* <NavDropdown.Item 
                   className="navdropdownitem" 
                   title="Update Fault Status"
-                  onClick={(e) => this.clickUpdateFaultStatus(e)} 
-                  >Update Status</NavDropdown.Item>
+                  onClick={(e) => this.clickUpdateFaultStatus(e)} >
+                  Table View
+                  </NavDropdown.Item> */}
                    <NavDropdown.Divider />         
               </NavDropdown>         
             </Nav>
@@ -2885,15 +2906,17 @@ updateStatus(marker, status) {
               <NavDropdown.Divider />         
                 <CustomLink 
                   className="dropdownlink" 
-                  to={{
-                    pathname: '/statistics',
-                    login: this.customNav.current,
-                    user: this.state.user,
-                    data: this.state.objGLData,
-                    project: this.state.activeLayer
-                  }}
+                  endpoint="/statistics"
+                  label="Create Report"
+                  // to={{
+                  //   pathname: '/statistics',
+                  //   login: this.customNav.current,
+                  //   user: this.state.user,
+                  //   data: this.state.objGLData,
+                  //   project: this.state.activeLayer
+                  // }}
                   style={{ textDecoration: 'none' }}
-                  >Create Report
+                  >
                  </CustomLink>
               {/* </NavDropdown.Item>  */}
                 <NavDropdown.Divider />         

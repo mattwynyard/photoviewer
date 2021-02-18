@@ -13,28 +13,36 @@ export default class VideoCard extends React.Component {
             photoArray: [],
             erp: null,
             roadid: null,
-            carriageid: null,
+            id: null,
             side: null,
             disabled: false,
             play: false,
             playicon: "play64blue.png",
             forwardicon: "seekForward64blue.png",
             interval: 500,
+            mode: null
 
         }
         this.delegate(props.parent);
     }
 
-    initialise(show, side, direction, amazon, photoArray, index) {
+    initialise(show, mode, side, direction, amazon, photoArray, index) {
         if(photoArray !== null) {
             this.setState({show: show});
+            this.setState({mode: mode});
             this.setState({photoArray: photoArray});
             this.setState({amazon: amazon});
             this.setState({counter: index});
             this.setState({currentPhoto: photoArray[index].photo});
             this.setState({erp: this.state.photoArray[index].erp});
             this.setState({roadid: this.state.photoArray[index].roadid});
-            this.setState({carriageid: this.state.photoArray[index].carriageway});
+            if (mode === 'road') {
+                let id = this.state.photoArray[index].carriageway.split('_');
+                this.setState({id: id[3]});
+            } else {
+                let id = this.state.photoArray[index].footpathid.split('_');
+                this.setState({id: id[3]});
+            }  
             this.setState({side: side});
             if (direction === 'B') {
                 this.setState({disabled: false});
@@ -65,7 +73,14 @@ export default class VideoCard extends React.Component {
         this.setState({photoArray: photoArray});
         this.setState({erp: this.state.photoArray[index].erp});
         this.setState({roadid: this.state.photoArray[index].roadid});
-        this.setState({carriageid: this.state.photoArray[index].carriageway});
+        //this.setState({carriageid: this.state.photoArray[index].carriageway});
+        if (this.state.mode === 'road') {
+            let id = this.state.photoArray[index].carriageway.split('_');
+            this.setState({id: id[3]});
+        } else {
+            let id = this.state.photoArray[index].footpathid.split('_');
+            this.setState({id: id[3]});
+        }   
         this.setState({side: side});
         this.setState({counter: index});
         let latlng = this.getLatLng(index);
@@ -162,7 +177,28 @@ export default class VideoCard extends React.Component {
         this.delegate.changeSide(this.state.carriageid, this.state.erp, value);
     }
 
+    
+
     render() {
+
+        const IdText = function(props) {
+            if (props.mode === "road") {
+                return (<span className='sidetext'>
+                <b>{"Road ID: "}</b> {props.roadid} <br></br>
+                  <b>{"Carriage ID: "} </b> {props.id}<br></br>
+                  <b>{"ERP: "}</b>{props.erp}<br></br>
+                  <b>{"Side:  "}</b>
+                  </span>);
+            } else {
+                return (<span className='sidetext'>
+                <b>{"Road ID: "}</b> {props.roadid} <br></br>
+                  <b>{"Footpath ID: "} </b> {props.id}<br></br>
+                  <b>{"ERP: "}</b>{props.erp}<br></br>
+                  <b>{"Side:  "}</b>
+                  </span>);
+            }
+        }
+
         if (this.state.show) {
             const radios = [
                 { name: 'Left', value: 'L' },
@@ -187,7 +223,6 @@ export default class VideoCard extends React.Component {
                     min={0} 
                     max={this.state.photoArray.length} 
                     now={this.state.counter} 
-                    //onClick={(e) => this.clickProgress(e)}
                     /> 
                     <div>
                         <img 
@@ -200,12 +235,12 @@ export default class VideoCard extends React.Component {
                   <div className="videoText">
                       <div className="row">
                           <div className="col-md-4">
-                              <span className='sidetext'>
-                              <b>{"Road ID: "}</b> {this.state.roadid} <br></br> 
-                                <b>{"Carriage ID: "} </b> {this.state.carriageid}<br></br>
-                                <b>{"ERP: "}</b>{this.state.erp}<br></br>
-                                <b>{"Side:  "}</b>
-                                </span>
+                              <IdText
+                                mode={this.state.projectMode}
+                                roadid={this.state.roadid}
+                                id={this.state.id}
+                                erp={this.state.erp}
+                              ></IdText>
                                 <ButtonGroup className="sidebuttons" toggle>
                                 {radios.map((radio, idx) => (
                                 <ToggleButton
@@ -218,7 +253,6 @@ export default class VideoCard extends React.Component {
                                     disabled={this.state.disabled}
                                     checked={this.state.side === radio.value}
                                     onChange={(e) => this.changeRadio(e.currentTarget.value)}
-                                    //onClick={(e) => this.clickRadio(e)}
                                 >
                                     {radio.name}
                                 </ToggleButton>
