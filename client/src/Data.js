@@ -41,9 +41,59 @@ export default class Data extends React.Component {
               key: 'footpathid',
             },
             {
+              title: 'Area',
+              dataIndex: 'area',
+              key: 'area',
+            },
+            {
+              title: 'Displacement',
+              dataIndex: 'displacement',
+              key: 'displacement',
+            },
+            {
+              title: 'Position',
+              dataIndex: 'position',
+              key: 'position',
+            },
+            {
+              title: 'Side',
+              dataIndex: 'side',
+              key: 'side',
+            },
+            {
+              title: 'ERP',
+              dataIndex: 'erp',
+              key: 'erp',
+            },
+            {
+              title: 'Type',
+              dataIndex: 'fpsurface',
+              key: 'fpsurface',
+            },
+            {
                 title: 'Fault',
                 dataIndex: 'fault',
                 key: 'fault',
+              },
+              {
+                title: 'Cause',
+                dataIndex: 'cause',
+                key: 'cause',
+              },
+              {
+                title: 'Size',
+                dataIndex: 'size',
+                key: 'size',
+              },
+              {
+                title: 'Length',
+                dataIndex: 'length',
+                key: 'length',
+              },
+              {
+                title: 'Width',
+                dataIndex: 'width',
+                key: 'width',
               },
             {
                 title: 'Grade',
