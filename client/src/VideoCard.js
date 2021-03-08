@@ -14,6 +14,7 @@ export default class VideoCard extends React.Component {
             erp: null,
             roadid: null,
             id: null,
+            carriageway: null,
             side: null,
             disabled: false,
             play: false,
@@ -38,6 +39,7 @@ export default class VideoCard extends React.Component {
             this.setState({roadid: this.state.photoArray[index].roadid});
             if (mode === 'road') {
                 let id = this.state.photoArray[index].carriageway.split('_');
+                this.setState({carriageway: this.state.photoArray[index].carriageway});
                 this.setState({id: id[3]});
             } else {
                 let id = this.state.photoArray[index].footpathid.split('_');
@@ -174,7 +176,7 @@ export default class VideoCard extends React.Component {
 
     changeRadio(value) {
         this.setState({side: value});
-        this.delegate.changeSide(this.state.carriageid, this.state.erp, value);
+        this.delegate.changeSide(this.state.carriageway, this.state.erp, value);
     }
 
     
@@ -236,7 +238,7 @@ export default class VideoCard extends React.Component {
                       <div className="row">
                           <div className="col-md-4">
                               <IdText
-                                mode={this.state.projectMode}
+                                mode={this.state.mode}
                                 roadid={this.state.roadid}
                                 id={this.state.id}
                                 erp={this.state.erp}

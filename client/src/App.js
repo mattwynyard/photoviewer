@@ -583,7 +583,6 @@ addCentrelines(data) {
     switch(this.antdrawer.current.getMode()) {
       case 'Video':
         if(this.vidPolyline === null) {  
-          console.log("click")
           this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
           this.vidPolyline.then((line) => {
             this.setState({activeCarriage: line})
@@ -1024,7 +1023,6 @@ addCentrelines(data) {
   async changeSide(carriageid, erp, side) {
     let body = this.changeSides(carriageid, erp, side, this.state.host, this.state.activeCarriage.options.login);
     body.then((data) => {
-      console.log(data);
       this.setState({photoArray: data.data});
       this.videoCard.current.refresh(data.data, data.newPhoto, side);
     });

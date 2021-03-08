@@ -318,7 +318,6 @@ app.post('/photos', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-    console.log(req.body);
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
     } else {
@@ -338,9 +337,7 @@ app.post('/photos', async(req, res) => {
           side = req.body.side;
           result = await db.getPhotos(req.body.carriageid, side);
         }
-        
         data = result.rows;
-        console.log(data);
       } catch (err) {
         console.log(err);
         res.send({error: err});
@@ -856,7 +853,7 @@ app.post('/import', async (req, res) => {
 
 //builds address for photo 
 function formatData(data) {
-  console.log(data);
+  //console.log(data);
   let address = buildAddress([data.house, data.street, data.suburb, data.town]);
   let obj = {photo: data.photo, roadid: data.roadid, erp: data.erp, footpathid: data.footpathid, 
     side: data.side, latitude: data.latitude, longitude: data.longitude, dist: data.dist, address: address, ramm: data.ramm};
@@ -870,7 +867,7 @@ function buildAddress(data) {
       address += element + " ";
     }
   });
-    console.log(address);
+    //console.log(address);
     return address;
 }
 function formatDate(date) {
