@@ -430,6 +430,13 @@ addGLMarkers(project, data, type, zoomTo) {
           points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
         } else if (data[i].priority === med) {
           points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i + 1);
+        } else if (data[i].grade === low) {
+          if (this.state.login === "chbdc") {
+            points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+          } else {
+            points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+          }
+          
         } else if (data[i].priority === 99) {
           points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
         } else {
@@ -445,7 +452,12 @@ addGLMarkers(project, data, type, zoomTo) {
         } else if (data[i].grade === med) {
           points.push(point.x, point.y, 1.0, 0.5, 0, 1, i + 1);
         } else if (data[i].grade === low) {
-          points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+          if (this.state.login === "chbdc") {
+            points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+          } else {
+            points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+          }
+          
         } else {
           points.push(point.x, point.y, 0, 0.8, 0.8, 1, i + 1);
         }
@@ -2644,7 +2656,7 @@ updateStatus(marker, status) {
     const CustomMenu = function(props) {
       if (typeof props.projects === 'undefined' || props.projects.length === 0) {
           return (  
-            <div></div>  
+            null  
             );
       } else {  
         return (        
@@ -2706,11 +2718,19 @@ updateStatus(marker, status) {
             </svg>
           );
         } else if (props.value === "Grade 3" || props.value === "Priority 3") {
-          return ( 
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
-              <circle cx="5" cy="5" r="3" />
-            </svg>
-          );
+          if (props.login === "chbdc") {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
         } else if (props.value === "Grade 5" || props.value === "Priority 5") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
@@ -2760,6 +2780,21 @@ updateStatus(marker, status) {
             </svg>
           );
         } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+          if (props.login === "chbdc") {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
+        } else if (props.value === "Grade 2" || props.value === "Priority 2") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
               <circle cx="5" cy="5" r="3" />
@@ -2799,8 +2834,7 @@ updateStatus(marker, status) {
           }
           
         }
-      }
-      
+      }   
     }
 
     const CustomSpinner = function(props) {
@@ -2878,41 +2912,19 @@ updateStatus(marker, status) {
                   className="dropdownlink" 
                   endpoint="/data"
                   label="Table View"
-                  // to={{
-                  //   pathname: '/data',
-                  //   login: this.customNav.current,
-                  //   user: this.state.user,
-                  //   data: this.state.objGLData,
-                  //   project: this.state.activeLayer
-                  // }}
                   style={{ textDecoration: 'none' }}
                   >
                  </CustomLink>
-                {/* <NavDropdown.Item 
-                  className="navdropdownitem" 
-                  title="Update Fault Status"
-                  onClick={(e) => this.clickUpdateFaultStatus(e)} >
-                  Table View
-                  </NavDropdown.Item> */}
                    <NavDropdown.Divider />         
               </NavDropdown>         
             </Nav>
             <Nav>
             <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">  
-              {/* <NavDropdown.Item
-              className="navdropdownitem"> */}
               <NavDropdown.Divider />         
                 <CustomLink 
                   className="dropdownlink" 
                   endpoint="/statistics"
                   label="Create Report"
-                  // to={{
-                  //   pathname: '/statistics',
-                  //   login: this.customNav.current,
-                  //   user: this.state.user,
-                  //   data: this.state.objGLData,
-                  //   project: this.state.activeLayer
-                  // }}
                   style={{ textDecoration: 'none' }}
                   >
                  </CustomLink>
@@ -2957,48 +2969,7 @@ updateStatus(marker, status) {
           <CustomSpinner show={this.state.spinner}>
           </CustomSpinner>;
          
-          {/* <Dropdown className="tools" 
-            onToggle={(e) => this.toggleTools(e)}
-            >
-          <Dropdown.Toggle 
-            title="Tools"
-            variant="light" 
-            size="sm"
-            >
-              Tools
-          </Dropdown.Toggle >
-            <Dropdown.Menu 
-              rootCloseEvent="dblclick"
-              className="toolsmenu"    
-              >
- 
-              <ToolsMenu parent={this} mode={this.state.toolsRadio}></ToolsMenu> */}
-              {/* <Button className="photoMode"
-                variant="light" 
-                type="button" 
-                onClick={(e) => this.clickArchive(e)}>
-                {this.state.isArchive ? "Street view (beta)" : "Fault view" }
-              </Button>
-              <br></br>
-              <Button className="photoMode"
-                variant="light" 
-                type="button" 
-                onClick={(e) => this.clickVideo(e)}>
-                {this.state.isVideo ? "Video view (beta)" : "Video" }
-              </Button>
-              <br></br>
-              <Button
-                className="rulerButton"
-                id="ruler"
-                variant="outline-secondary" 
-                size="sm"
-                onClick={(e) => this.clickRuler(e)}>
-                <img src="ruler-200.png" alt="ruler">
-                </img>
-              </Button>
-              {"\u0020"}Distance: {this.state.rulerDistance} m */}
-            {/* </Dropdown.Menu>
-          </Dropdown> */}
+          
           <Dropdown
             className="Priority">
           <Dropdown.Toggle variant="light" size="sm" >
@@ -3008,6 +2979,7 @@ updateStatus(marker, status) {
             {this.state.priorities.map((value, index) =>
                 <div key={`${index}`}>
                  <CustomSVG 
+                 login={this.state.login}
                  value={value}
                  reverse={this.state.reverse}
                  >
@@ -3032,22 +3004,26 @@ updateStatus(marker, status) {
             <Dropdown.Menu className="agemenu">
             {this.state.ages.map((value, index) =>
                 <div key={`${index}`}>
-                 <CustomSVG 
+                 <CustomSVG
+                  login={this.state.login}
                   value={value}
                   color={"magenta"}
                   bucket={formatDate(this.state.bucket)}>
                  </CustomSVG>
                  <CustomSVG 
+                  login={this.state.login}
                   value={value}
                   color={"darkorange"}
                   bucket={formatDate(this.state.bucket)}>
                  </CustomSVG>
                  <CustomSVG 
+                  login={this.state.login}
                   value={value}
                   color={"limegreen"}
                   bucket={formatDate(this.state.bucket)}>
                 </CustomSVG>
                 <CustomSVG 
+                  login={this.state.login}
                   value={value}
                   color={"blue"}
                   bucket={formatDate(this.state.bucket)}> 
