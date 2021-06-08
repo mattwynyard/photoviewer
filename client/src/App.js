@@ -418,9 +418,7 @@ addGLMarkers(project, data, type, zoomTo) {
     if (type === "road") {
       let bucket = data[i].inspection;
       if (bucket != null) {
-        //console.log(this.state.amazon);
         let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        //console.log(suffix);
         if (bucket !== suffix) {
           alpha = 0.5;
         }
@@ -2538,7 +2536,6 @@ updateStatus(marker, status) {
     
     
     const LayerNav = function LayerNav(props) { 
-     
       if (props.user === 'admin') {
         return (
           <Nav>       
@@ -2653,7 +2650,7 @@ updateStatus(marker, status) {
       }
       
     }
-    const CustomMenu = function(props) {
+    const CustomMenu = (props) => {
       if (typeof props.projects === 'undefined' || props.projects.length === 0) {
           return (  
             null  
@@ -2677,7 +2674,7 @@ updateStatus(marker, status) {
       }
     }
 
-    const CustomPopup = function(props) {
+    const CustomPopup = (props) => {
       let location = props.data.location;
       if (props.data.type === "footpath") {
         location = props.data.roadname;
@@ -2703,7 +2700,7 @@ updateStatus(marker, status) {
       );      
     }
 
-    const CustomSVG = function(props) {
+    const CustomSVG = (props) => {
       if (!props.reverse) {
         if (props.value === "Grade 1" || props.value === "Priority 1") {
           return ( 
@@ -3258,11 +3255,6 @@ updateStatus(marker, status) {
         callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
-      {/* <VideoModal
-        ref={this.videoModal}
-        show={this.state.showVideo} 
-      >
-      </VideoModal> */}
       
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
