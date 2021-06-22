@@ -8,6 +8,7 @@ import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
 import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
+import GLEngine from './GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
@@ -17,7 +18,7 @@ import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
+import {LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
 
 const DUPLICATE_OFFSET = 0.00002;
 const DIST_TOLERANCE = 20; //metres 
@@ -146,19 +147,17 @@ class App extends React.Component {
       this.callBackendAPI()
       .catch(err => alert(err));
     }
+    this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
     this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
-    
-    //this.videoModal.current.delegate(this);
-    //this.videoCard.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     if(this.glpoints !== null) {
       console.log(this.glpoints.length)
-      this.redraw(this.glpoints);
+      this.GLEngine.redraw(this.glpoints);
     } else {
       //console.log("not null");
     }
@@ -185,25 +184,8 @@ class App extends React.Component {
   }
 
   initializeGL() {
-    this.leafletMap = this.map.leafletElement;
-    if (this.gl == null) {
-      this.glLayer = L.canvasOverlay()
-      .addTo(this.leafletMap);
-      this.canvas = this.glLayer.canvas();
-      this.glLayer.canvas.width = this.canvas.width;
-      this.glLayer.canvas.height = this.canvas.height;
-      this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
-      if (!this.gl) {
-        this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-        console.log("Cannot load webgl2.0 using webgl instead");
-      }  
-      if (!this.gl) {
-        this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
-        console.log("Cannot load webgl1.0 using experimental-webgl instead");
-      }   
-      this.glLayer.delegate(this);
-     
-    }  
+    this.GLEngine = new GLEngine(this.leafletMap); 
+    this.GLEngine.setAppDelegate(this);
   }
   
   /**
@@ -240,144 +222,35 @@ class App extends React.Component {
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
     }
-    this.redraw(this.state.glpoints);
+    this.GLEngine.redraw(this.GLEngine.glpoints);
   }
 
-  reColorPoints(data) {
-    let verts = new Float32Array(data);
-    if (this.state.mouseclick === null) {
-      if (this.state.selectedIndex === null) {
-        return verts;
-      } else {
-        //TODO
-        for (let i = 0; i < verts.length; i += 7) {
-          if (verts[i + 6] === this.state.selectedIndex) {
-            verts[i + 2] = 1.0;
-            verts[i + 3] = 0;
-            verts[i + 4] = 0;
-            verts[i + 5] = 1.0;
-          }
-        }
-      }
-      
-    } else {
-      for (let i = 0; i < verts.length; i += 7) {
-        let index = verts[i + 6];
-        //calculates r,g,b color from index
-        let r = ((index & 0x000000FF) >>  0) / 255;
-        let g = ((index & 0x0000FF00) >>  8) / 255;
-        let b = ((index & 0x00FF0000) >> 16) / 255;
-        verts[i + 2] = r;
-        verts[i + 3] = g;
-        verts[i + 4] = b;
-        verts[i + 5] = 1.0; //alpha
-      }
-    }
-    return verts;
-  }
-
-  redraw(data) {
-
-    this.glLayer.drawing(drawingOnCanvas); 
-    let pixelsToWebGLMatrix = new Float32Array(16);
-    this.mapMatrix = new Float32Array(16);  
-        // -- WebGl setup
-    let vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-    this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
-    this.gl.compileShader(vertexShader);
-    let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    //let length = this.state.activeLayers.length - 1;
-    this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
-    this.gl.compileShader(fragmentShader);
-    // link shaders to create our program
-    let program = this.gl.createProgram();
-    this.gl.attachShader(program, vertexShader);
-    this.gl.attachShader(program, fragmentShader);
-    this.gl.linkProgram(program);
-    this.gl.useProgram(program);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-    this.gl.enable(this.gl.BLEND);
-  // ----------------------------
-    // look up the locations for the inputs to our shaders.
-    var u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
-    var colorLoc = this.gl.getAttribLocation(program, "a_color");
-    var vertLoc = this.gl.getAttribLocation(program, "a_vertex");
-    this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
-    // Set the matrix to some that makes 1 unit 1 pixel.
-    pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
- 
-    var numPoints = data.length / 7 ; //[lat, lng, r, g, b, a, id]
-    let vertBuffer = this.gl.createBuffer();
-    //let vertArray = new Float32Array(verts);
-    let vertArray = this.reColorPoints(data);
-    let fsize = vertArray.BYTES_PER_ELEMENT;
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
-    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize*7, 0);
-    this.gl.enableVertexAttribArray(vertLoc);
-    // -- offset for color buffer
-    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, true, fsize*7, fsize*2);
-    this.gl.enableVertexAttribArray(colorLoc);
-    this.glLayer.redraw();
-
-    function drawingOnCanvas(canvasOverlay, params) {
-      if (this.delegate.gl == null)  {
-        return;
-      }
-      this.delegate.gl.clearColor(0, 0, 0, 0);
-      this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
-      let pixelsToWebGLMatrix = new Float32Array(16);
-      pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
-      this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      let pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
-      if(this.delegate.state.login === "asm") {
-        pointSize = Math.max(this._map.getZoom() - 0.0, 1.0);
-      }
-      this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
-      // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
-      this.delegate.mapMatrix.set(pixelsToWebGLMatrix);
-      var bounds = this._map.getBounds();
-      var topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
-      var offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
-      // -- Scale to current zoom
-      var scale = Math.pow(2, this._map.getZoom());
-      scaleMatrix(this.delegate.mapMatrix, scale, scale);
-      translateMatrix(this.delegate.mapMatrix, -offset.x, -offset.y);
-      let u_matLoc = this.delegate.gl.getUniformLocation(program, "u_matrix");
-      // -- attach matrix value to 'mapMatrix' uniform in shader
-      this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
-      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numPoints);
-      if (this.delegate.state.mouseclick !== null) {
-        
-        let pixel = new Uint8Array(4);
-        this.delegate.gl.readPixels(this.delegate.state.mouseclick.originalEvent.layerX, 
-          this.canvas.height - this.delegate.state.mouseclick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-        this.delegate.setState({mouseclick: null});
-        this.delegate.setIndex(index);
-        this._redraw();
-      }         
-    }
-  }
-
-  /**
+ /**
  * Loops through json objects and extracts fault information
  * Builds object containing fault information and calls redraw
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
  */
-addGLMarkers(project, data, type, zoomTo) {
-  this.setState({amazon: this.state.activeLayer.amazon});
-  let obj = {};
-  let faults = [];
+  addGLMarkers(project, points, lines, type, zoomTo) {
+    //console.log(lines);
+    this.setState({amazon: this.state.activeLayer.amazon});
+    let  glPoints = this.buildPoints(points, type, this.state.reverse, zoomTo);
+    this.setState({objGLData: glPoints.faults});
+    this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
+    let glLines = this.buildLines(lines);
+    this.GLEngine.redraw(glPoints.points, glLines.lines);
+    this.setState({spinner: false});
+  }
+
+buildPoints(data, type, reverse, zoomTo) {
+  let obj = {}; //return
+  let faults = []; 
   let latlngs = [];
   let points = []; //TODO change to Float32Array to make selection faster
   let high = null;
   let med = null;
   let low = null;
-  if (this.state.reverse) {
+  if (reverse) {
     high = 5;
     med = 4;
     low = 3;
@@ -386,33 +259,13 @@ addGLMarkers(project, data, type, zoomTo) {
     med = 2;
     low = 3;
   }
-  let set = new Set();
-  for (var i = 0; i < data.length; i++) { //start at one index 0 will be black
+  let pointSet = new Set();
+  for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
     const position = JSON.parse(data[i].st_asgeojson);
     const lng = position.coordinates[0];
     const lat = position.coordinates[1];
     let latlng = L.latLng(lat, lng);
-    if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
-      let randomLat = Math.random() >= 0.5;
-      let randomPlus = Math.random() >= 0.5;
-      if (randomLat) {
-        if (randomPlus) {
-          latlng.lat += DUPLICATE_OFFSET;
-        } else {
-          latlng.lat -= DUPLICATE_OFFSET;
-        }
-      } else {
-        if (randomPlus) {
-          latlng.lng += DUPLICATE_OFFSET;
-        } else {
-          latlng.lng -= DUPLICATE_OFFSET;
-        }
-      }
-      set.add(latlng.lat.toString() + latlng.lng.toString());
-    } else {
-      set.add(latlng.lat.toString() + latlng.lng.toString());
-    }
-   
+    this.addToSet(pointSet, latlng);
     let point = LatLongToPixelXY(latlng.lat, latlng.lng);
     let alpha = 0.9;
     if (type === "road") {
@@ -433,8 +286,7 @@ addGLMarkers(project, data, type, zoomTo) {
             points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
           } else {
             points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
-          }
-          
+          }        
         } else if (data[i].priority === 99) {
           points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
         } else {
@@ -461,12 +313,10 @@ addGLMarkers(project, data, type, zoomTo) {
         }
       } else {
         points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
-      }
-      
+      }  
     }    
     latlngs.push(latlng);
-    if (type === "footpath") {
-      
+    if (type === "footpath") {   
       let id = data[i].id.split('_');
       obj = {
         type: type,
@@ -514,55 +364,83 @@ addGLMarkers(project, data, type, zoomTo) {
   if (zoomTo) {
     this.centreMap(latlngs);
   }
-
-  this.setState({objGLData: faults});
-  this.setState({glpoints: points}); //Immutable reserve of original points
-  this.redraw(points, null);
-  this.setState({spinner: false});
+  return {
+    faults: faults,
+    points: points
+  }
 }
 
-addCentrelines(data) {
-  let lines = [];
-  for (var i = 0; i < data.length; i++) {
-    const linestring = JSON.parse(data[i].st_asgeojson);
-    const rcClass = data[i].onrcclass; 
-    if(linestring !== null) {       
-      let segment = linestring.coordinates[0];
-      var points = [];
-      //let pixelSegment = null; 
-      for (let j = 0; j < segment.length; j++) {
-        let point = segment[j];
-        let xy = LatLongToPixelXY(point[1], point[0]);     
-        points.push(xy);
+ /**
+ * Loops through json objects and extracts fault information
+ * Builds object containing fault information and calls redraw
+ * @param {JSON array of fault objects received from db} data 
+ * @param {String type of data ie. road or footpath} type
+ */
+  buildLines(data) {
+    let lines = [];
+    let indices = []
+    for (var i = 0; i < data.length; i++) {
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      if(linestring !== null) {  
+        let segment = linestring.coordinates;
+        
+        if (data[i].id === "MDC_RD_0521_3096" || data[i].id === "MDC_RD_0521_3086") {
+          let vertices = [];
+          
+          for (let j = 0; j < segment.length; j++) {
+            let vertex = segment[j];
+            console.log(vertex)
+            let xy = LatLongToPixelXY(vertex[1], vertex[0]);
+            //let xy = ShpericalLatLongToPixelXY(vertex[1], vertex[0]);     
+            vertices.push(xy);
+          }
+          let segmentObj = {segment: vertices};
+          lines.push(segmentObj);
+        }
+        //console.log(data[i])
+        // indices.push(segment.length);
+        // let vertices = [];
+        // for (let j = 0; j < segment.length; j++) {
+        //   let vertex = segment[j];
+        //   let xy = LatLongToPixelXY(vertex[1], vertex[0]);     
+        //   vertices.push(xy);
+        // }
+        // let segmentObj = {segment: vertices};
+        // lines.push(segmentObj);
       }
-      //pointBefore += points.length;
-      if (points.length > 2) {
-        //pixelSegment = RDP(points, 0.00000000001); //Douglas-Peckam simplify line
-        let seg = {segment: points, class: rcClass};
-        lines.push(seg);
-        //pointAfter += points.length;
-      }  else {
-        let seg = {segment: points, class: rcClass};
-        lines.push(seg);
-        //pointAfter += points.length;
-      }           
-    }       
-  } 
-  this.setState({lineData: lines});  
-  this.redraw(lines, null);
+    } 
+    return {lines: lines, indices: indices}
+  }
+
+
+addToSet(set, latlng) {
+  if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
+    let randomLat = Math.random() >= 0.5;
+    let randomPlus = Math.random() >= 0.5;
+    if (randomLat) {
+      if (randomPlus) {
+        latlng.lat += DUPLICATE_OFFSET;
+      } else {
+        latlng.lat -= DUPLICATE_OFFSET;
+      }
+    } else {
+      if (randomPlus) {
+        latlng.lng += DUPLICATE_OFFSET;
+      } else {
+        latlng.lng -= DUPLICATE_OFFSET;
+      }
+    }
+    set.add(latlng.lat.toString() + latlng.lng.toString());
+  } else {
+    set.add(latlng.lat.toString() + latlng.lng.toString());
+  }
 }
+
 
   /**
    * adds various event listeners to the canvas
    */
   addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", (event) => {
-      event.preventDefault();
-      console.log("CRASH--recovering GL")
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", (event) =>{
-      this.gl = this.canvas.getContext('webgl', { antialias: true });
-    }, false);
     this.leafletMap.addEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
@@ -634,18 +512,18 @@ addCentrelines(data) {
         polyline.setLatLngs(points);
       }
         break;
-        case 'Map':
-        if (this.state.glpoints !== null) {
-          if (this.state.selectedCarriage !== null) {
-          }
-          this.setState({selectedIndex: null});
-          this.setState({selectedGLMarker: []});
-          this.setState({mouseclick: e})
-          this.redraw(this.state.glpoints);
+      case 'Map':
+      if (this.state.glpoints !== null) {
+        if (this.state.selectedCarriage !== null) {
         }
+        this.setState({selectedIndex: null});
+        this.setState({selectedGLMarker: []});
+        this.GLEngine.mouseClick = e;
+        this.GLEngine.redraw(this.state.glpoints);
+      }
         break;
-        default:
-          break;
+      default:
+        break;
     }
   }
 
@@ -889,7 +767,7 @@ addCentrelines(data) {
       filterPriorities: [],
       filterAges: [],
     }, function() {
-      this.redraw([]);
+      this.GLEngine.redraw([]);
     })
   }
 
@@ -1508,7 +1386,6 @@ addCentrelines(data) {
   }
 
   async requestAge(project) {
-    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
       headers: {
@@ -1640,7 +1517,7 @@ addCentrelines(data) {
   removeLayer(e) {
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.redraw([]);
+    this.GLEngine.redraw([]);
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1736,7 +1613,6 @@ addCentrelines(data) {
  */
   async filterLayer(project, zoomTo) {
     this.setState({spinner: true});
-    //if (this.state.login !== "Login") {
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
         await fetch('https://' + this.state.host + '/layer', {
@@ -1752,14 +1628,14 @@ addCentrelines(data) {
               throw new Error(response.status);
             } else {
               const body = await response.json();
-              //console.log(body);
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
                 await this.logout(e);
               } else {
                 if (body.type === "road") {
-                  await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+                  //await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+                  await this.addGLMarkers(project, body.points, body.lines, body.type, zoomTo);
                 } else {
                   await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
                 }
@@ -1767,7 +1643,7 @@ addCentrelines(data) {
             }
           }).catch((error) => {
             console.log("error: " + error);
-            alert(error);
+            //alert(error);
             return;
           });   
         }    
@@ -2158,10 +2034,6 @@ addCentrelines(data) {
   clickActive(e, index) {
     e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
 
-  }
-
-  changeCheck(e) {
-    //console.log("change")
   }
 
 /**
@@ -3121,13 +2993,13 @@ updateStatus(marker, status) {
             </CustomPopup>
             )}
           </LayerGroup>
-          <Button 
+          {/* <Button 
             className="applyButton" 
             variant="light" 
             size="sm"
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
-          </Button>
+          </Button> */}
           <div >
           <InputGroup className="search">
             <FormControl 
@@ -3152,7 +3024,14 @@ updateStatus(marker, status) {
           </div>    
       </LMap >    
       </div>
-
+      {/* taken button out of map component */}
+      <Button 
+            className="applyButton" 
+            variant="light" 
+            size="sm"
+            onClick={(e) => this.clickApply(e)}
+            >Apply Filter
+          </Button>
        {/* admin modal     */}
        <CustomModal 
         name={'user'}

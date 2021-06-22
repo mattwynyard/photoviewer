@@ -11,7 +11,6 @@
 */
 import L from 'leaflet'
 
-
 L.DomUtil.setTransform = L.DomUtil.setTransform || function(el, offset, scale) {
     var pos = offset || new L.Point(0, 0);
   
@@ -84,17 +83,13 @@ L.CanvasOverlay = L.Layer.extend({
 
         var animated = this._map.options.zoomAnimation && L.Browser.any3d;
         L.DomUtil.addClass(this._canvas, 'leaflet-zoom-' + (animated ? 'animated' : 'hide'));
-
-
         map._panes.overlayPane.appendChild(this._canvas);
-
         map.on('moveend', this._reset, this);
         map.on('resize',  this._resize, this);
 
         if (map.options.zoomAnimation && L.Browser.any3d) {
             map.on('zoomanim', this._animateZoom, this);
         }
-
         this._reset();
     },
 
@@ -130,6 +125,7 @@ L.CanvasOverlay = L.Layer.extend({
         var size     = this._map.getSize();
         var bounds   = this._map.getBounds();
         var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
+        console.log("resolution: " + (1 / zoomScale))
         var zoom = this._map.getZoom();
         if (this._userDrawFunc) {
             this._userDrawFunc(this,

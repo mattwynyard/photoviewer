@@ -556,7 +556,8 @@ app.post('/age', async (req, res) => {
   }
   if (result) {
     let project = req.body.project;
-    let result = await db.age(project);
+    //let result = await db.age(project);
+    let result = await db.inspection(project);
     res.set('Content-Type', 'application/json'); 
     res.send({result: result.rows});  
   } else {
@@ -658,7 +659,6 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    //console.log(req.body);
     let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
@@ -669,7 +669,8 @@ app.post('/layer', async (req, res) => {
     let types = req.body.types;
     let causes = req.body.causes;
     let isCompleted = false;
-    let finalGeometry = null;
+    let finalPoints = null;
+    let finalLines = null;
     let dbPriority = [];
     let surface = await db.projecttype(project);
     for (let i = 0; i < priority.length; i++) {
@@ -679,40 +680,43 @@ app.post('/layer', async (req, res) => {
         dbPriority.push(priority[i])
       }
     }
-    let activeGeom = [];
-    let completedGeom = [];
-    if (surface.rows[0].surface === "footpath") {
-      
+
+    let activePoints = [];
+    let activeLines = [];
+    let completedPoints = [];
+    let completedLines = [];
+    if (surface.rows[0].surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (dbPriority.length !== 0) {
         let geometry = await db.footpath(project, dbPriority, assets, faults, types, causes);
-        activeGeom = geometry.rows;
+        activePoints = geometry.rows;
       } 
       if (isCompleted) {
-        let geometry = await db.footpathCompleted(project, assets, faults, types, causes);
-        completedGeom = geometry.rows;
+        let points = await db.footpathCompleted(project, assets, faults, types, causes);
+        completedPoints = points.rows;
       }
-      finalGeometry = activeGeom.concat(completedGeom);
+      finalPoints = activePoints.concat(completedPoints);
     } else if (surface.rows[0].surface === "road") {
-
       if (dbPriority.length !== 0) {
-        let geometry = await db.layer(project, filter, dbPriority, inspection);
-        activeGeom = geometry.rows;
+        //let geometry = await db.layer(project, filter, dbPriority, inspection);
+        let points = await db.geometries(project, filter, dbPriority, inspection, "ST_Point", 'active');
+        let lines = await db.geometries(project, filter, dbPriority, inspection, "ST_LineString", 'active');
+        activePoints = points.rows;
+        activeLines = lines.rows;
       } 
-      if (isCompleted) {
-        let geometry = await db.layerCompleted(project, filter, inspection);
-        completedGeom = geometry.rows;
+      if (isCompleted) { //**** db.geometries to include status */
+        //let geometry = await db.layerCompleted(project, filter, inspection);
+        let points = await db.geometries(project, filter, null, inspection, "ST_Point", 'completed');
+        let lines = await db.geometries(project, filter, null, inspection, "ST_LineString", 'completed');
+        completedPoints = points.rows;
+        completedLines = lines.rows;
       }
-      finalGeometry = activeGeom.concat(completedGeom);
+      finalPoints = activePoints.concat(completedPoints);
+      finalLines = activeLines.concat(completedLines);
     } else {
       res.send({error: "Layer not found"});
-    }
-    if (filter.length === 0) {
-      await db.updateLayerCount(project);
-    } else {
-      await db.updateFilterCount(project);
     }  
     res.set('Content-Type', 'application/json');
-    res.send({type: surface.rows[0].surface, geometry: finalGeometry});
+    res.send({type: surface.rows[0].surface, points: finalPoints, lines: finalLines});
   } else {
     res.send({error: "Invalid token"});
   } 

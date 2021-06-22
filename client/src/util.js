@@ -1,4 +1,4 @@
-const EARTH_RADIUS = 6371000 //metres
+const EARTH_RADIUS = 6371008.7714 //metres
 
 const RDP = (l, eps) => {
     const last = l.length - 1;
@@ -21,14 +21,20 @@ const RDP = (l, eps) => {
   };
 
   let LatLongToPixelXY = (latitude, longitude) => {
-    var pi_180 = Math.PI / 180.0;
-    var pi_4 = Math.PI * 4;
-    var sinLatitude = Math.sin(latitude * pi_180);
-    var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;
-    var pixelX = ((longitude + 180) / 360) * 256;
-  
-    var pixel = { x: pixelX, y: pixelY };
-  
+    let pi_180 = Math.PI / 180.0;
+    let pi_4 = Math.PI * 4;
+    let sinLatitude = Math.sin(latitude * pi_180);
+    let pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;
+    let pixelX = ((longitude + 180) / 360) * 256;
+    let pixel = { x: pixelX, y: pixelY };
+    return pixel;
+  };
+
+  let ShpericalLatLongToPixelXY = (latitude, longitude) => {
+    let equator = 40075016.68557849;
+    let pixelX = (longitude + (equator / 2.0)) / (equator / 256.0);
+    let pixelY = (latitude - (equator / 2.0)) / (equator / -256.0);
+    let pixel = { x: pixelX, y: pixelY };
     return pixel;
   };
 
@@ -130,4 +136,4 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, LatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
+  export {RDP, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
