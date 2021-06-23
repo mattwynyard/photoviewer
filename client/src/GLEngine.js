@@ -92,7 +92,7 @@ export default class GLEngine {
   }
 
   redraw(points, lines) {
-    console.log("redrawing.." + lines)
+    console.log("redrawing..")
     this.glpoints = points;
     this.gllines = lines;
     this.glLayer.drawing(drawingOnCanvas); 
@@ -117,35 +117,45 @@ export default class GLEngine {
     this.gl.enable(this.gl.BLEND);
     // look up the locations for the inputs to our shaders.
     let u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
+    let u_eyepos = this.gl.getUniformLocation(program, "u_eyepos");
+    let u_eyeposLow = this.gl.getUniformLocation(program, "u_eyepos_low");
     let colorLoc = this.gl.getAttribLocation(program, "a_color");
     let vertLoc = this.gl.getAttribLocation(program, "a_vertex");
+    let vertLocLow = this.gl.getAttribLocation(program, "a_vertex_low");
+    //let colorLoc = this.gl.getAttribLocation(program, "a_color");
+    //let vertLoc = this.gl.getAttribLocation(program, "a_vertex");
     this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
+    pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
-    //this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    //this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    let vertBuffer = this.gl.createBuffer();
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
+    
     //let numPoints = points.length / 7 ; //[lat, lng, r, g, b, a, id]
     let thickness = 0.00001;
     //let vertArray = this.reColorPoints(new Float32Array(points));
     //let vertArray = new Float32Array(this.buildVertices(lines, [], thickness));
-    let vertices = this.buildLines(lines, []);
-    console.log(vertices);
-    let vertArray = new Float32Array(vertices.length);
-    for (let i = 0; i < vertices.length; i++) {
-      //vertArray[i] = Math.fround(vertices[i]);
-      vertArray[i] = vertices[i];
-
-    }
-    //let vertArray = new Float32Array(vertices);
-    
-    console.log(vertArray);
+    //let vertices = this.buildLines(lines, []);
+    let verts = this.buildLines(lines, []);
+    console.log(verts)
+    // lines.segment.map((d, i) => {
+    //   console.log(d);
+    //   let pixel = LatLongToPixelXY(d[1], d[0]);
+    //   console.log(pixel)
+    //   //-- 2 coord, 3 rgb colors interleaved buffer
+    //   let pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+    //   verts.push(pixel.x, pixel.y, pixelLow.x, pixelLow.y, Math.random(), Math.random(), Math.random());
+    // });
+    let vertBuffer = this.gl.createBuffer();
+    var vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize*7, 0);
     this.gl.enableVertexAttribArray(vertLoc);
+    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, fsize * 7, fsize * 2);
+    this.gl.enableVertexAttribArray(vertLocLow);
     // -- offset for color buffer
-    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize*7, fsize*2);
+    this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, fsize*7, fsize*4);
     this.gl.enableVertexAttribArray(colorLoc);
     this.glLayer.redraw();
 
@@ -153,9 +163,9 @@ export default class GLEngine {
       if (this.delegate.gl == null)  {
         return;
       }
-      this.delegate.gl.clearColor(0, 0, 0, 0);
+      //this.delegate.gl.clearColor(0, 0, 0, 0);
       this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
-      let pixelsToWebGLMatrix = new Float32Array(16);
+      //let pixelsToWebGLMatrix = new Float32Array(16);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
       this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
       let pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
@@ -167,11 +177,19 @@ export default class GLEngine {
       let offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
       var scale = Math.pow(2, this._map.getZoom());
+      console.log("scale:" + scale)
+      console.log("zoom:" + this._map.getZoom())
       scaleMatrix(this.delegate.mapMatrix, scale, scale);
-      translateMatrix(this.delegate.mapMatrix, -offset.x, -offset.y);
+      //translateMatrix(this.delegate.mapMatrix, -offset.x, -offset.y);
       let u_matLoc = this.delegate.gl.getUniformLocation(program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
+      this.delegate.gl.uniform3f(u_eyepos, offset.x, offset.y, 0.0);
+            var offsetLow = {
+                x: offset.x - Math.fround(offset.x),
+                y: offset.y - Math.fround(offset.y)
+            }
+        this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       //this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numPoints);
       let pointer = 0;
       for (var i = 0; i < lines.length - 1; i += 1) {             
@@ -205,13 +223,13 @@ buildLines(lines, points) {
         continue;
       }
       if(lines[i].segment.length == 2 ) {
+        let pixelLow0 = { x: lines[i].segment[0].x - Math.fround(lines[i].segment[0].x), y: lines[i].segment[0].y - Math.fround(lines[i].segment[0].y) };
+        let pixelLow1 = { x: lines[i].segment[1].x - Math.fround(lines[i].segment[1].x), y: lines[i].segment[1].y - Math.fround(lines[i].segment[1].y) };
         const point0 = {x: lines[i].segment[0].x, y: lines[i].segment[0].y};   
         const point1 = {x: lines[i].segment[1].x, y: lines[i].segment[1].y};
-        // if (point0.x === point1.x || point0.y === point1.y) {
-        //   continue;
-        // }
-        points.push(point0.x, point0.y, red, green, blue, 1, 1);
-        points.push(point1.x, point1.y, red, green, blue, 1, 1);
+
+        points.push(point0.x, point0.y, pixelLow0.x, pixelLow0.y, red, green, blue);
+        points.push(point1.x, point1.y, pixelLow1.x, pixelLow1.y, red, green, blue);
       }
     //}
   }

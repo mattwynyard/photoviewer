@@ -1,4 +1,6 @@
-const EARTH_RADIUS = 6371008.7714 //metres
+const EARTH_RADIUS = 6378137.0 //metres
+const TILE_SIZE = 256
+const EARTH_EQUATOR = 40075016.68557849
 
 const RDP = (l, eps) => {
     const last = l.length - 1;
@@ -24,16 +26,16 @@ const RDP = (l, eps) => {
     let pi_180 = Math.PI / 180.0;
     let pi_4 = Math.PI * 4;
     let sinLatitude = Math.sin(latitude * pi_180);
-    let pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;
-    let pixelX = ((longitude + 180) / 360) * 256;
+    let pixelX = ((longitude + 180) / 360) * TILE_SIZE;
+    let pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * TILE_SIZE;
     let pixel = { x: pixelX, y: pixelY };
     return pixel;
   };
 
   let ShpericalLatLongToPixelXY = (latitude, longitude) => {
     let equator = 40075016.68557849;
-    let pixelX = (longitude + (equator / 2.0)) / (equator / 256.0);
-    let pixelY = (latitude - (equator / 2.0)) / (equator / -256.0);
+    let pixelX = (longitude + (equator / 2.0)) / (equator / TILE_SIZE);
+    let pixelY = (latitude - (equator / 2.0)) / (equator / TILE_SIZE);
     let pixel = { x: pixelX, y: pixelY };
     return pixel;
   };
@@ -67,7 +69,6 @@ const RDP = (l, eps) => {
     matrix[1] *= scaleX;
     matrix[2] *= scaleX;
     matrix[3] *= scaleX;
-  
     matrix[4] *= scaleY;
     matrix[5] *= scaleY;
     matrix[6] *= scaleY;

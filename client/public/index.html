@@ -19,16 +19,31 @@
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <!-- vertex shader -->
     <script id="vshader" type="x-shader/x-vertex">
+      precision highp float;
       uniform mat4 u_matrix;
-      attribute vec4 a_vertex;
+      uniform vec3 u_eyepos;
+      uniform vec3 u_eyepos_low;
+
+      attribute vec3 a_vertex;
+      attribute vec3 a_vertex_low;
+
       attribute float a_pointSize;
       attribute vec4 a_color;
       varying vec4 v_color;
 
       void main() {
-        gl_PointSize =  a_pointSize;
-        gl_Position = u_matrix * a_vertex;
-        v_color = a_color;
+        // inspired a lot by https://prideout.net/emulating-double-precision
+        // also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
+        vec3 t1 = a_vertex_low - u_eyepos_low;
+            vec3 e = t1 - a_vertex_low;
+            vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+            vec3 high_delta = t1 + t2;
+            vec3 low_delta = t2 - (high_delta - t1);
+            vec3 p = high_delta + low_delta;
+            gl_Position = u_matrix * vec4(p, 1.0);
+            gl_PointSize =  a_pointSize;
+            // pass the color to the fragment shader
+            v_color = a_color;
       }
     </script>
     

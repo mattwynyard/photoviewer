@@ -384,19 +384,18 @@ buildPoints(data, type, reverse, zoomTo) {
       if(linestring !== null) {  
         let segment = linestring.coordinates;
         
-        if (data[i].id === "MDC_RD_0521_3096" || data[i].id === "MDC_RD_0521_3086") {
+        //if (data[i].id === "MDC_RD_0521_3096" || data[i].id === "MDC_RD_0521_3086") {
           let vertices = [];
           
           for (let j = 0; j < segment.length; j++) {
             let vertex = segment[j];
-            console.log(vertex)
             let xy = LatLongToPixelXY(vertex[1], vertex[0]);
             //let xy = ShpericalLatLongToPixelXY(vertex[1], vertex[0]);     
             vertices.push(xy);
           }
           let segmentObj = {segment: vertices};
           lines.push(segmentObj);
-        }
+        //}
         //console.log(data[i])
         // indices.push(segment.length);
         // let vertices = [];
@@ -1628,6 +1627,7 @@ addToSet(set, latlng) {
               throw new Error(response.status);
             } else {
               const body = await response.json();
+              console.log(body);
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
