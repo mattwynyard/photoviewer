@@ -125,7 +125,7 @@ L.CanvasOverlay = L.Layer.extend({
         var size     = this._map.getSize();
         var bounds   = this._map.getBounds();
         var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
-        console.log("resolution: " + (1 / zoomScale))
+        //console.log("resolution: " + (1 / zoomScale))
         var zoom = this._map.getZoom();
         if (this._userDrawFunc) {
             this._userDrawFunc(this,

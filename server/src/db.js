@@ -786,7 +786,7 @@ module.exports = {
         return new Promise((resolve, reject) => {
             if (inspection.length === 0) {
                 connection.query("SELECT id, roadid, carriage, location, class, fault, repair, priority, length, width, inspection, photoid, "
-                + "faulttime, status, datefixed, ST_AsGeoJSON(ST_Transform(geom, 3857)),  " 
+                + "faulttime, status, datefixed, ST_AsGeoJSON(geom),  " 
                 + "FROM roadfaults WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND  ST_GeometryType(geom) = '" + type + "'"
                 + "AND status = '" + status +"'", (err, result) => {
                 if (err) {
@@ -798,7 +798,7 @@ module.exports = {
                 }); 
             }  else if (filter.length == 0) {
                 connection.query("SELECT id, roadid, carriage, location, class, fault, repair, priority, comment, length, width, inspection, photoid, "
-                + "faulttime, status, datefixed, ST_AsGeoJSON(ST_Transform(geom, 3857)) " 
+                + "faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
                 + "FROM roadfaults WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND  ST_GeometryType(geom) = '" + type + "'"
                 +"AND inspection IN (" + qAge + ") AND status = '" + status +"'", (err, result) => {
                 if (err) {
@@ -811,7 +811,7 @@ module.exports = {
             } else {
                 let condition = buildQuery(filter);
                 connection.query("SELECT id, roadid, carriage, location, class, fault, repair, priority, comment, length, width, inspection, photoid, "
-                + "faulttime, status, datefixed, ST_AsGeoJSON(ST_Transform(geom, 3857)) " 
+                + "faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
                 + "FROM roadfaults WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND priority IN (" + codes + ") AND "
                 + "inspection IN (" + qAge + ") AND  ST_GeometryType(geom) = '" + type + "'"
                 + "AND  status = '" + status +"'", (err, result) => {

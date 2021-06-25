@@ -230,210 +230,232 @@ class App extends React.Component {
  * Builds object containing fault information and calls redraw
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
+ *  @param {Boolean zoom to extents when data loads} zoomTo
  */
-  addGLMarkers(project, points, lines, type, zoomTo) {
+  addGLGeometry(project, points, lines, type, zoom) {
     //console.log(lines);
     this.setState({amazon: this.state.activeLayer.amazon});
-    let  glPoints = this.buildPoints(points, type, this.state.reverse, zoomTo);
+    let  glPoints = this.buildPoints(points, type, this.state.reverse, zoom); //change reverse to global
+    //console.log(glPoints)
     this.setState({objGLData: glPoints.faults});
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
-    let glLines = this.buildLines(lines);
-    this.GLEngine.redraw(glPoints.points, glLines.lines);
+    let glLinePoints = this.buildLines(lines, type, this.state.reverse);
+    this.GLEngine.redraw(glPoints.points, glLinePoints);
     this.setState({spinner: false});
   }
 
-buildPoints(data, type, reverse, zoomTo) {
-  let obj = {}; //return
-  let faults = []; 
-  let latlngs = [];
-  let points = []; //TODO change to Float32Array to make selection faster
-  let high = null;
-  let med = null;
-  let low = null;
-  if (reverse) {
-    high = 5;
-    med = 4;
-    low = 3;
-  } else {
-    high = 1;
-    med = 2;
-    low = 3;
-  }
-  let pointSet = new Set();
-  for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
-    const position = JSON.parse(data[i].st_asgeojson);
-    const lng = position.coordinates[0];
-    const lat = position.coordinates[1];
-    let latlng = L.latLng(lat, lng);
-    this.addToSet(pointSet, latlng);
-    let point = LatLongToPixelXY(latlng.lat, latlng.lng);
-    let alpha = 0.9;
-    if (type === "road") {
-      let bucket = data[i].inspection;
-      if (bucket != null) {
-        let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        if (bucket !== suffix) {
-          alpha = 0.5;
-        }
-      }
-      if (data[i].status === "active") { //road
-        if(data[i].priority === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
-        } else if (data[i].priority === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i + 1);
-        } else if (data[i].grade === low) {
-          if (this.state.login === "chbdc") {
-            points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
-          } else {
-            points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
-          }        
-        } else if (data[i].priority === 99) {
-          points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
-        } else {
-          points.push(point.x, point.y, 0, 0.8, 0, alpha, i + 1);
-        }
+  /**
+   * Loops through json objects and extracts fault information
+   * Builds object containing fault information and calls redraw
+   * @param {JSON array of fault objects received from db} data 
+   * @param {String type of data ie. road or footpath} type
+   */
+    buildLines(data, type, reverse) {
+      //console.log(data)
+      let glPoints = [];
+      let lengths = [];
+      let high = null;
+      let med = null;
+      let low = null;
+      if (reverse) {
+        high = 5;
+        med = 4;
+        low = 3;
       } else {
-        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+        high = 1;
+        med = 2;
+        low = 3;
       }
-    } else {
-      if (data[i].status === "active") { //footpath
-        if(data[i].grade === high) {
-          points.push(point.x, point.y, 1.0, 0, 1.0, 1, i + 1);
-        } else if (data[i].grade === med) {
-          points.push(point.x, point.y, 1.0, 0.5, 0, 1, i + 1);
-        } else if (data[i].grade === low) {
-          if (this.state.login === "chbdc") {
-            points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
-          } else {
-            points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+      let alpha = 0.9;
+      
+      for (let i = 0; i < data.length; i++) {
+       //if (data[i].id === "MDC_RD_0521_1742") {
+          const linestring = JSON.parse(data[i].st_asgeojson);
+          const priority = data[i].priority;
+          if (linestring !== null) {  
+            let line = linestring.coordinates;
+            lengths.push(line.length)
+            for (let j = 0; j < line.length; j++) {
+              const point = line[j];
+              //console.log(point)
+              const pixel = LatLongToPixelXY(point[1], point[0]);
+              const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+              const pixelHigh = {x: pixel.x, y: pixel.y};
+              if (type === "road") {
+                if(priority === high) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1);
+                } else if (priority === med) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
+                } else if (priority === low) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                } else if (priority === 99) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
+                } else {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                }
+              } else {
+                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, i + 1);
+              } 
+            }
           }
-          
-        } else {
-          points.push(point.x, point.y, 0, 0.8, 0.8, 1, i + 1);
-        }
-      } else {
-        points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
-      }  
-    }    
-    latlngs.push(latlng);
-    if (type === "footpath") {   
-      let id = data[i].id.split('_');
-      obj = {
-        type: type,
-        id: id[id.length - 1],
-        roadid: data[i].roadid,
-        footpathid: data[i].footpathid,
-        roadname: data[i].roadname,        
-        location: data[i].location,
-        asset:  data[i].asset,
-        fpsurface: data[i].type,
-        fault: data[i].fault,
-        cause: data[i].cause,
-        size: data[i].size,
-        grade: data[i].grade,
-        photo: data[i].photoid,
-        datetime: data[i].faulttime,
-        latlng: latlng,
-        status: data[i].status,
-        datefixed: data[i].datefixed
-      };
-    } else {
-      let id = data[i].id.split('_');
-      obj = {
-        type: type,
-        id: id[id.length - 1],
-        roadid: data[i].roadid,
-        carriage: data[i].carriageway,
-        inspection: data[i].inspection,
-        location: data[i].location,
-        class: data[i].class,
-        fault: data[i].fault,
-        repair: data[i].repair,
-        comment: data[i].comment,
-        size: data[i].size,
-        priority: data[i].priority,
-        photo: data[i].photoid,
-        datetime: data[i].faulttime,
-        latlng: latlng,
-        status: data[i].status,
-        datefixed: data[i].datefixed
-      };
-    }   
-    faults.push(obj);          
-  }
-  if (zoomTo) {
-    this.centreMap(latlngs);
-  }
-  return {
-    faults: faults,
-    points: points
-  }
-}
+        //} 
+      }
+      //console.log(glPoints.length);
+      //console.log(lengths)
+      return {glPoints: glPoints, lengths: lengths}
+    }
 
- /**
- * Loops through json objects and extracts fault information
- * Builds object containing fault information and calls redraw
- * @param {JSON array of fault objects received from db} data 
- * @param {String type of data ie. road or footpath} type
- */
-  buildLines(data) {
-    let lines = [];
-    let indices = []
-    for (var i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson);
-      if(linestring !== null) {  
-        let segment = linestring.coordinates;
-        
-        //if (data[i].id === "MDC_RD_0521_3096" || data[i].id === "MDC_RD_0521_3086") {
-          let vertices = [];
-          
-          for (let j = 0; j < segment.length; j++) {
-            let vertex = segment[j];
-            let xy = LatLongToPixelXY(vertex[1], vertex[0]);
-            //let xy = ShpericalLatLongToPixelXY(vertex[1], vertex[0]);     
-            vertices.push(xy);
+
+    buildPoints(data, type, reverse, zoomTo) {
+      let obj = {}; //return
+      let faults = []; 
+      let latlngs = [];
+      let points = []; //TODO change to Float32Array to make selection faster
+      let high = null;
+      let med = null;
+      let low = null;
+      if (reverse) {
+        high = 5;
+        med = 4;
+        low = 3;
+      } else {
+        high = 1;
+        med = 2;
+        low = 3;
+      }
+      let pointSet = new Set();
+      for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
+        const position = JSON.parse(data[i].st_asgeojson);
+        const lng = position.coordinates[0];
+        const lat = position.coordinates[1];
+        let latlng = L.latLng(lat, lng);
+        this.addToSet(pointSet, latlng);
+        let point = LatLongToPixelXY(latlng.lat, latlng.lng);
+        let alpha = 0.9;
+        if (type === "road") {
+          let bucket = data[i].inspection;
+          if (bucket != null) {
+            let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+            if (bucket !== suffix) {
+              alpha = 0.5;
+            }
           }
-          let segmentObj = {segment: vertices};
-          lines.push(segmentObj);
-        //}
-        //console.log(data[i])
-        // indices.push(segment.length);
-        // let vertices = [];
-        // for (let j = 0; j < segment.length; j++) {
-        //   let vertex = segment[j];
-        //   let xy = LatLongToPixelXY(vertex[1], vertex[0]);     
-        //   vertices.push(xy);
-        // }
-        // let segmentObj = {segment: vertices};
-        // lines.push(segmentObj);
+          if (data[i].status === "active") { //road
+            if(data[i].priority === high) {
+              points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
+            } else if (data[i].priority === med) {
+              points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i + 1);
+            } else if (data[i].grade === low) {
+              if (this.state.login === "chbdc") {
+                points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+              } else {
+                points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+              }        
+            } else if (data[i].priority === 99) {
+              points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
+            } else {
+              points.push(point.x, point.y, 0, 0.8, 0, alpha, i + 1);
+            }
+          } else {
+            points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+          }
+        } else {
+          if (data[i].status === "active") { //footpath
+            if(data[i].grade === high) {
+              points.push(point.x, point.y, 1.0, 0, 1.0, 1, i + 1);
+            } else if (data[i].grade === med) {
+              points.push(point.x, point.y, 1.0, 0.5, 0, 1, i + 1);
+            } else if (data[i].grade === low) {
+              if (this.state.login === "chbdc") {
+                points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+              } else {
+                points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+              }
+              
+            } else {
+              points.push(point.x, point.y, 0, 0.8, 0.8, 1, i + 1);
+            }
+          } else {
+            points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+          }  
+        }    
+        latlngs.push(latlng);
+        if (type === "footpath") {   
+          let id = data[i].id.split('_');
+          obj = {
+            type: type,
+            id: id[id.length - 1],
+            roadid: data[i].roadid,
+            footpathid: data[i].footpathid,
+            roadname: data[i].roadname,        
+            location: data[i].location,
+            asset:  data[i].asset,
+            fpsurface: data[i].type,
+            fault: data[i].fault,
+            cause: data[i].cause,
+            size: data[i].size,
+            grade: data[i].grade,
+            photo: data[i].photoid,
+            datetime: data[i].faulttime,
+            latlng: latlng,
+            status: data[i].status,
+            datefixed: data[i].datefixed
+          };
+        } else {
+          let id = data[i].id.split('_');
+          obj = {
+            type: type,
+            id: id[id.length - 1],
+            roadid: data[i].roadid,
+            carriage: data[i].carriageway,
+            inspection: data[i].inspection,
+            location: data[i].location,
+            class: data[i].class,
+            fault: data[i].fault,
+            repair: data[i].repair,
+            comment: data[i].comment,
+            size: data[i].size,
+            priority: data[i].priority,
+            photo: data[i].photoid,
+            datetime: data[i].faulttime,
+            latlng: latlng,
+            status: data[i].status,
+            datefixed: data[i].datefixed
+          };
+        }   
+        faults.push(obj);          
       }
-    } 
-    return {lines: lines, indices: indices}
-  }
-
-
-addToSet(set, latlng) {
-  if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
-    let randomLat = Math.random() >= 0.5;
-    let randomPlus = Math.random() >= 0.5;
-    if (randomLat) {
-      if (randomPlus) {
-        latlng.lat += DUPLICATE_OFFSET;
-      } else {
-        latlng.lat -= DUPLICATE_OFFSET;
+      if (zoomTo) {
+        this.centreMap(latlngs);
       }
-    } else {
-      if (randomPlus) {
-        latlng.lng += DUPLICATE_OFFSET;
-      } else {
-        latlng.lng -= DUPLICATE_OFFSET;
+      return {
+        faults: faults,
+        points: points
       }
     }
-    set.add(latlng.lat.toString() + latlng.lng.toString());
-  } else {
-    set.add(latlng.lat.toString() + latlng.lng.toString());
+
+  addToSet(set, latlng) {
+    if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
+      let randomLat = Math.random() >= 0.5;
+      let randomPlus = Math.random() >= 0.5;
+      if (randomLat) {
+        if (randomPlus) {
+          latlng.lat += DUPLICATE_OFFSET;
+        } else {
+          latlng.lat -= DUPLICATE_OFFSET;
+        }
+      } else {
+        if (randomPlus) {
+          latlng.lng += DUPLICATE_OFFSET;
+        } else {
+          latlng.lng -= DUPLICATE_OFFSET;
+        }
+      }
+      set.add(latlng.lat.toString() + latlng.lng.toString());
+    } else {
+      set.add(latlng.lat.toString() + latlng.lng.toString());
+    }
   }
-}
 
 
   /**
@@ -1563,8 +1585,7 @@ addToSet(set, latlng) {
           types: this.state.filterDropdowns[2].filter,
           causes: this.state.filterDropdowns[3].filter})
       }
-    }
-      
+    }     
   }
 
   async sendData(project, data, endpoint) {
@@ -1634,10 +1655,10 @@ addToSet(set, latlng) {
                 await this.logout(e);
               } else {
                 if (body.type === "road") {
-                  //await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
-                  await this.addGLMarkers(project, body.points, body.lines, body.type, zoomTo);
+                  //await this.addGLGeometry(project, body.geometry, body.type, zoomTo);
+                  await this.addGLGeometry(project, body.points, body.lines, body.type, zoomTo);
                 } else {
-                  await this.addGLMarkers(project, body.geometry, body.type, zoomTo);
+                  await this.addGLGeometry(project, body.geometry, body.type, zoomTo);
                 }
               }     
             }
