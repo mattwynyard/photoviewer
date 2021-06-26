@@ -3,8 +3,6 @@ import {LatLongToPixelXY, translateMatrix, scaleMatrix} from  './util.js';
 import L from 'leaflet';
 import './L.CanvasOverlay';
 
-
-
 export default class GLEngine {
  
     constructor(leaflet) {
@@ -13,8 +11,6 @@ export default class GLEngine {
         this.gl = null;
         this.intializeGL();    
     }
-
-    
 
   intializeGL() {
     if (this.gl == null) {
@@ -96,14 +92,13 @@ export default class GLEngine {
 
   redraw(points, lines) {
     console.log("redrawing..");
-    console.log(lines);
-    this.glpoints = points;
-    this.gllines = lines;
+    this.glPoints = points;
+    const numPoints = points.length;
+    this.glLines = lines;
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);  
         // -- WebGl setup
-    const [minSize, maxSize] = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
     let vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
     this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
     this.gl.compileShader(vertexShader);
@@ -133,17 +128,11 @@ export default class GLEngine {
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    
-    //let numPoints = points.length / 7 ; //[lat, lng, r, g, b, a, id]
     let thickness = 0.00001;
-    //let vertArray = this.reColorPoints(new Float32Array(points));
-    //let vertArray = new Float32Array(this.buildVertices(lines, [], thickness));
-    //let vertices = this.buildLines(lines, []);
-    //let verts = this.buildLines(lines, []);
-    let verts = lines.glPoints;
-    //console.log(verts);
+    let verts = lines.vertices.concat(points);
+
     let vertBuffer = this.gl.createBuffer();
-    var vertArray = new Float32Array(verts);
+    let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
@@ -152,7 +141,7 @@ export default class GLEngine {
     this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, fsize * 9, fsize * 2);
     this.gl.enableVertexAttribArray(vertLocLow);
     // -- offset for color buffer
-    this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, fsize * 9, fsize * 4);
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
     this.gl.enableVertexAttribArray(colorLoc);
     this.glLayer.redraw();
 
@@ -160,18 +149,17 @@ export default class GLEngine {
       if (this.delegate.gl == null)  {
         return;
       }
-      //this.delegate.gl.clearColor(0, 0, 0, 0);
+      this.delegate.gl.clearColor(0, 0, 0, 0);
       this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
-      //let pixelsToWebGLMatrix = new Float32Array(16);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
       this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      let pointSize = Math.max(this._map.getZoom() - 6.0, 1.0);
+      let pointSize = Math.max(this._map.getZoom() - 7.0, 1.0);
       this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
       this.delegate.mapMatrix.set(pixelsToWebGLMatrix);
       let bounds = this._map.getBounds();
       let topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
-      let offset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
+      let pixelOffset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
       var scale = Math.pow(2, this._map.getZoom());
       scaleMatrix(this.delegate.mapMatrix, scale, scale);
@@ -179,117 +167,188 @@ export default class GLEngine {
       let u_matLoc = this.delegate.gl.getUniformLocation(program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
-      this.delegate.gl.uniform3f(u_eyepos, offset.x, offset.y, 0.0);
-            var offsetLow = {
-                x: offset.x - Math.fround(offset.x),
-                y: offset.y - Math.fround(offset.y)
-            }
-        this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      //this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numPoints);
-      let pointer = 0;
-      for (var i = 0; i < lines.lengths.length; i += 1) {             
-        //let numPoints = (lines[i].segment.length - 1) * 6;
-        let numPoints = lines.lengths[i];
-        //console.log(numPoints)
-        //this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, pointer, numPoints);
-        this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, pointer, numPoints);
-        pointer += numPoints;
-    } 
-      // if (this.delegate.mouseClick !== null) {      
-      //   let pixel = new Uint8Array(4);
-      //   this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-      //   this.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-      //   let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-      //   this.delegate.mouseClick = null;
-      //   this.delegate.appDelegate.setIndex(index);
-      //   this._redraw();
-      // }        
-    }
-}
+      this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
+      let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
+      this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
+      let offset = 0;
+      // for (var i = 0; i < lines.lengths.length; i++) {
+      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, offset, 6); 
+      //   offset += 6; 
+      // }
 
-buildVertices(lines, points, thickness) {
-  for (let i = 0; i < lines.length; i += 1) {
-    let red = 0;
-    let green = 0;
-    let blue = 1;  
-    for (let j = 0; j < lines[i].segment.length; j += 1) {
-      if (lines[i].segment.length < 2) {
-        console.log(lines[i]);
-        continue;
-      }
-      if(lines[i].segment.length >= 2 ) {
-        const pixel0 = {x: lines[i].segment[0].x, y: lines[i].segment[0].y};   
-        const pixel1 = {x: lines[i].segment[1].x, y: lines[i].segment[1].y};
-        if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
+      //draw thin lines
+      for (var i = 0; i < lines.lengths.length; i += 1) {             
+        let count = lines.lengths[i];
+        this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
+        offset += count;
+      } 
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPoints);
+
+      if (this.delegate.mouseClick !== null) {      
+        let pixel = new Uint8Array(4);
+        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
+        this.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+        this.delegate.mouseClick = null;
+        this.delegate.appDelegate.setIndex(index);
+        this._redraw();
+      }        
+    }
+  }
+
+    /**
+   * Loops through json objects and extracts fault information
+   * Builds object containing fault information and calls redraw
+   * @param {JSON array of fault objects received from db} data 
+   * @param {String type of data ie. road or footpath} type
+   */
+    drawThinLines(data, type, reverse) {
+    let glPoints = [];
+    let lengths = [];
+    let high = null;
+    let med = null;
+    let low = null;
+    if (reverse) {
+      high = 5;
+      med = 4;
+      low = 3;
+    } else {
+      high = 1;
+      med = 2;
+      low = 3;
+    }
+    let alpha = 0.9;  
+    for (let i = 0; i < data.length; i++) {
+      //if (data[i].id === "MDC_RD_0521_1742") {
+        const linestring = JSON.parse(data[i].st_asgeojson);
+        const priority = data[i].priority;
+        if (linestring !== null) {  
+          let line = linestring.coordinates;
+          lengths.push(line.length);
+          for (let j = 0; j < line.length; j++) {
+            const point = line[j];
+            const pixel = LatLongToPixelXY(point[1], point[0]);
+            const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+            const pixelHigh = {x: pixel.x, y: pixel.y};
+            if (type === "road") {
+              if (data[i].status === "active") { //road
+                if(priority === high) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1); 
+                } else if (priority === med) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
+                } else if (priority === low) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                } else if (priority === 99) {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
+                } else {
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                }
+              } else {
+                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, i + 1);
+              } 
+            } else { //footpath
+
+            }
+          } 
+        }
+    }
+    return {vertices: glPoints, lengths: lengths};
+  }
+
+  drawLines(data, type, reverse) {
+    const thickness = 0.00001;
+    let glPoints = [];
+    let lengths = [];
+    let high = null;
+    let med = null;
+    let low = null;
+    if (reverse) {
+      high = 5;
+      med = 4;
+      low = 3;
+    } else {
+      high = 1;
+      med = 2;
+      low = 3;
+    }
+    let alpha = 0.9; 
+    for (let i = 0; i < data.length; i++) {
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      const priority = data[i].priority;
+      if (linestring !== null) {  
+        let line = linestring.coordinates;
+        //console.log(line)
+        
+        if (line.length < 2) {
+          console.log(line[i]);
+          continue;
+        } else if (line.length === 2 ) {
+          lengths.push(line.length);
+          const point0 = line[0];
+          const point1 = line[1];
+          const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
+          const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
+          const p0 = new Vector2D(pixel0.x, pixel0.y);
+          const p1 = new Vector2D(pixel1.x, pixel1.y);
+          const pixelLine = Vector2D.subtract(p1, p0);
+          const normal = new Vector2D(-pixelLine.y, pixelLine.x)
+          const normalized = normal.normalize();
+          const vertex1 = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
+          const vertex2 = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
+          const vertex3 = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
+          const vertex4 =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
+          const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
+          //console.log("thickness " + l);
+          const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
+          const vertex1High = {x: vertex1.x, y: vertex1.y};
+          const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
+          const vertex2High = {x: vertex2.x, y: vertex2.y};
+          const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
+          const vertex3High = {x: vertex3.x, y: vertex3.y};
+          const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
+          const vertex4High = {x: vertex4.x, y: vertex4.y};
+          
+          glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, 1.0, 0, 1.0, alpha, i + 1);
+          glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, 1.0, 0, 1.0, alpha, i + 1);
+          glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, 1.0, 0, 1.0, alpha, i + 1);
+          glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, 1.0, 0, 1.0, alpha, i + 1);
+          glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, 1.0, 0, 1.0, alpha, i + 1);
+          glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, 1.0, 0, 1.0, alpha, i + 1);  
+          //6 * 9 = 54 elements per two point line
+        } else {
+          
+        }
+      }      
+    }
+    return {vertices: glPoints, lengths: lengths}
+  }
+
+  buildVertices(lines, points, thickness) {
+    for (let i = 0; i < lines.length; i += 1) {
+      let red = 0;
+      let green = 0;
+      let blue = 1;  
+      for (let j = 0; j < lines[i].segment.length; j += 1) {
+        if (lines[i].segment.length < 2) {
+          console.log(lines[i]);
           continue;
         }
-        let p0 = new Vector2D(pixel0.x, pixel0.y);
-        let p1 = new Vector2D(pixel1.x, pixel1.y);
-        let line = Vector2D.subtract(p1, p0);
-        let normal = new Vector2D(-line.y, line.x)
-        let normalized = normal.normalize();
-        let a = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
-        let b = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
-        let c = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
-        let d =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
-        let l = Vector2D.subtract(a, b).length();
-        if (l > thickness * 2.1) {
-          console.log(l);
-        }
-        points.push(a.x, a.y, red, green, blue, 1, 1);
-        points.push(b.x, b.y, red, green, blue, 1, 1);
-        points.push(c.x, c.y, red, green, blue, 1, 1);
-        points.push(c.x, c.y, red, green, blue, 1, 1); 
-        points.push(d.x, d.y, red, green, blue, 1, 1);
-        points.push(b.x, b.y, red, green, blue, 1, 1);
-        continue;
-      } else {
-        if (j === 0) {
-          const pixel0 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-          const pixel1 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-          const pixel2 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
+        if(lines[i].segment.length === 2 ) {
+          const pixel0 = {x: lines[i].segment[0].x, y: lines[i].segment[0].y};   
+          const pixel1 = {x: lines[i].segment[1].x, y: lines[i].segment[1].y};
+          if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
+            continue;
+          }
           let p0 = new Vector2D(pixel0.x, pixel0.y);
           let p1 = new Vector2D(pixel1.x, pixel1.y);
-          let p2 = new Vector2D(pixel2.x, pixel2.y);
-  
           let line = Vector2D.subtract(p1, p0);
           let normal = new Vector2D(-line.y, line.x)
           let normalized = normal.normalize();
-          let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
-          let b = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
-
-          let miter = this.getMiter(p0, p1, p2, thickness);
-          if (miter.x === 0 && miter.y === 0) {
-            continue;
-          }
-          let c = Vector2D.subtract(p1, miter);
-          let d = Vector2D.add(p1, miter);  
+          let a = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
+          let b = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
+          let c = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
+          let d =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
           let l = Vector2D.subtract(a, b).length();
-          points.push(a.x, a.y, red, green, blue, 1, 1);
-          points.push(b.x, b.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1); 
-          points.push(d.x, d.y, red, green, blue, 1, 1);
-          points.push(b.x, b.y, red, green, blue, 1, 1);
-          } else if (j === lines[i].segment.length - 2) {
-          const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
-          const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-          const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-          let p0 = new Vector2D(pixel0.x, pixel0.y);
-          let p1 = new Vector2D(pixel1.x, pixel1.y);
-          let p2 = new Vector2D(pixel2.x, pixel2.y);
-          let miter1 = this.getMiter(p0, p1, p2, thickness);
-          if (miter1.x === 0 && miter1.y === 0) {
-            break;
-          }
-          let a = Vector2D.add(p1, miter1);
-          let b = Vector2D.subtract(p1,  miter1);
-          let line = Vector2D.subtract(p2, p1);
-          let normal = new Vector2D(-line.y, line.x)
-          let normalized = normal.normalize();
-          let c = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
-          let d = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
-          let l = Vector2D.subtract(c, d).length();
           if (l > thickness * 2.1) {
             console.log(l);
           }
@@ -298,65 +357,131 @@ buildVertices(lines, points, thickness) {
           points.push(c.x, c.y, red, green, blue, 1, 1);
           points.push(c.x, c.y, red, green, blue, 1, 1); 
           points.push(d.x, d.y, red, green, blue, 1, 1);
-          points.push(a.x, a.y, red, green, blue, 1, 1);
-          break;  
-          } else {
-          const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
-          const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-          const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-          const pixel3 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
-          let p0 = new Vector2D(pixel0.x, pixel0.y);
-          let p1 = new Vector2D(pixel1.x, pixel1.y);
-          let p2 = new Vector2D(pixel2.x, pixel2.y);
-          let p3 = new Vector2D(pixel3.x, pixel3.y);
-          //meter calc
-          let miter1 = this.getMiter(p0, p1, p2, thickness);
-          if (miter1.x === 0 && miter1.y === 0) {
-            continue;
-          }
-          p1 = new Vector2D(pixel1.x, pixel1.y);
-          p2 = new Vector2D(pixel2.x, pixel2.y);
-          p3 = new Vector2D(pixel3.x, pixel3.y);
-          let miter2 = this.getMiter(p1, p2, p3, thickness);
-          if (miter2.x === 0 && miter2.y === 0) {
-            continue;
-          }
-          let a = Vector2D.add(p1, miter1);
-          let b = Vector2D.subtract(p1,  miter1);
-          let c = Vector2D.add(p2, miter2);
-          let d = Vector2D.subtract(p2,  miter2);
-          points.push(a.x, a.y, red, green, blue, 1, 1);
           points.push(b.x, b.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1);
-          points.push(d.x, d.y, red, green, blue, 1, 1);
-          points.push(b.x, b.y, red, green, blue, 1, 1);
+          continue;
+        } else {
+          if (j === 0) {
+            const pixel0 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
+            const pixel1 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
+            const pixel2 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+    
+            let line = Vector2D.subtract(p1, p0);
+            let normal = new Vector2D(-line.y, line.x)
+            let normalized = normal.normalize();
+            let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
+            let b = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
+  
+            let miter = this.getMiter(p0, p1, p2, thickness);
+            if (miter.x === 0 && miter.y === 0) {
+              continue;
+            }
+            let c = Vector2D.subtract(p1, miter);
+            let d = Vector2D.add(p1, miter);  
+            let l = Vector2D.subtract(a, b).length();
+            points.push(a.x, a.y, red, green, blue, 1, 1);
+            points.push(b.x, b.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1); 
+            points.push(d.x, d.y, red, green, blue, 1, 1);
+            points.push(b.x, b.y, red, green, blue, 1, 1);
+            } else if (j === lines[i].segment.length - 2) {
+            const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
+            const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
+            const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+            let miter1 = this.getMiter(p0, p1, p2, thickness);
+            if (miter1.x === 0 && miter1.y === 0) {
+              break;
+            }
+            let a = Vector2D.add(p1, miter1);
+            let b = Vector2D.subtract(p1,  miter1);
+            let line = Vector2D.subtract(p2, p1);
+            let normal = new Vector2D(-line.y, line.x)
+            let normalized = normal.normalize();
+            let c = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
+            let d = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
+            let l = Vector2D.subtract(c, d).length();
+            if (l > thickness * 2.1) {
+              console.log(l);
+            }
+            points.push(a.x, a.y, red, green, blue, 1, 1);
+            points.push(b.x, b.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1); 
+            points.push(d.x, d.y, red, green, blue, 1, 1);
+            points.push(a.x, a.y, red, green, blue, 1, 1);
+            break;  
+            } else {
+            const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
+            const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
+            const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
+            const pixel3 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
+            let p0 = new Vector2D(pixel0.x, pixel0.y);
+            let p1 = new Vector2D(pixel1.x, pixel1.y);
+            let p2 = new Vector2D(pixel2.x, pixel2.y);
+            let p3 = new Vector2D(pixel3.x, pixel3.y);
+            //meter calc
+            let miter1 = this.getMiter(p0, p1, p2, thickness);
+            if (miter1.x === 0 && miter1.y === 0) {
+              continue;
+            }
+            p1 = new Vector2D(pixel1.x, pixel1.y);
+            p2 = new Vector2D(pixel2.x, pixel2.y);
+            p3 = new Vector2D(pixel3.x, pixel3.y);
+            let miter2 = this.getMiter(p1, p2, p3, thickness);
+            if (miter2.x === 0 && miter2.y === 0) {
+              continue;
+            }
+            let a = Vector2D.add(p1, miter1);
+            let b = Vector2D.subtract(p1,  miter1);
+            let c = Vector2D.add(p2, miter2);
+            let d = Vector2D.subtract(p2,  miter2);
+            points.push(a.x, a.y, red, green, blue, 1, 1);
+            points.push(b.x, b.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1);
+            points.push(c.x, c.y, red, green, blue, 1, 1);
+            points.push(d.x, d.y, red, green, blue, 1, 1);
+            points.push(b.x, b.y, red, green, blue, 1, 1);
+          }
         }
       }
     }
-  }
-  return points;
-  }
-
-  getMiter(p0, p1, p2, thickness) {
-    let p2p1 = Vector2D.subtract(p2, p1);
-    let p1p0 = Vector2D.subtract(p1, p0);
-    let y = p2p1.y * -1;
-    let normal = new Vector2D(y, p2p1.x);
-    let normalized = normal.normalize();
-    p2p1.normalize();
-    p1p0.normalize();
-    p2p1 = Vector2D.subtract(p2, p1);
-    let tangent = Vector2D.add(p2p1, p1p0);    
-    let nTangent = tangent.normalize();
-    y = nTangent.y * -1;
-    let miter = new Vector2D(-nTangent.y, nTangent.x);
-    let length = thickness / Vector2D.dot(miter, normalized);
-    if (length > thickness * 1.5 || length < thickness * 0.5) {
-      return new Vector2D(0, 0);
+    return points;
     }
-    let l = miter.multiply(length);
-    return new Vector2D(l.x, l.y);  
-  } 
+  
+    getMiter(p0, p1, p2, thickness) {
+      let p2p1 = Vector2D.subtract(p2, p1);
+      let p1p0 = Vector2D.subtract(p1, p0);
+      let y = p2p1.y * -1;
+      let normal = new Vector2D(y, p2p1.x);
+      let normalized = normal.normalize();
+      p2p1.normalize();
+      p1p0.normalize();
+      p2p1 = Vector2D.subtract(p2, p1);
+      let tangent = Vector2D.add(p2p1, p1p0);    
+      let nTangent = tangent.normalize();
+      y = nTangent.y * -1;
+      let miter = new Vector2D(-nTangent.y, nTangent.x);
+      let length = thickness / Vector2D.dot(miter, normalized);
+      if (length > thickness * 1.5 || length < thickness * 0.5) {
+        return new Vector2D(0, 0);
+      }
+      let l = miter.multiply(length);
+      return new Vector2D(l.x, l.y);  
+    } 
 
+    minMaxLineSize() {
+      const [minLineSize, maxLineSize] = this.gl.getParameter(this.gl.ALIASED_LINE_WIDTH_RANGE);
+      return [minLineSize, maxLineSize];
+    }
+
+    minMaxPointSize() {
+      const [minPointSize, maxPointSize] = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
+      return [minPointSize, maxPointSize];
+    }
 };

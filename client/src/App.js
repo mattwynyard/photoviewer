@@ -216,8 +216,7 @@ class App extends React.Component {
           }
         }
       } else {
-      }
-      
+      }    
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
       this.setState({selectedGLMarker: []});
@@ -233,78 +232,18 @@ class App extends React.Component {
  *  @param {Boolean zoom to extents when data loads} zoomTo
  */
   addGLGeometry(project, points, lines, type, zoom) {
-    //console.log(lines);
-    this.setState({amazon: this.state.activeLayer.amazon});
-    let  glPoints = this.buildPoints(points, type, this.state.reverse, zoom); //change reverse to global
-    //console.log(glPoints)
+    this.minMaxLine = this.GLEngine.minMaxLineSize();
+    this.minMaxPoint = this.GLEngine.minMaxPointSize();
+    
+    let glPoints = this.buildPoints(points, type, this.state.reverse, zoom); //change reverse to global
+    let glLinePoints = this.GLEngine.drawThinLines(lines, type, this.state.reverse);
+    this.GLEngine.redraw(glPoints.points, glLinePoints);
+
     this.setState({objGLData: glPoints.faults});
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
-    let glLinePoints = this.buildLines(lines, type, this.state.reverse);
-    this.GLEngine.redraw(glPoints.points, glLinePoints);
+    this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
-
-  /**
-   * Loops through json objects and extracts fault information
-   * Builds object containing fault information and calls redraw
-   * @param {JSON array of fault objects received from db} data 
-   * @param {String type of data ie. road or footpath} type
-   */
-    buildLines(data, type, reverse) {
-      //console.log(data)
-      let glPoints = [];
-      let lengths = [];
-      let high = null;
-      let med = null;
-      let low = null;
-      if (reverse) {
-        high = 5;
-        med = 4;
-        low = 3;
-      } else {
-        high = 1;
-        med = 2;
-        low = 3;
-      }
-      let alpha = 0.9;
-      
-      for (let i = 0; i < data.length; i++) {
-       //if (data[i].id === "MDC_RD_0521_1742") {
-          const linestring = JSON.parse(data[i].st_asgeojson);
-          const priority = data[i].priority;
-          if (linestring !== null) {  
-            let line = linestring.coordinates;
-            lengths.push(line.length)
-            for (let j = 0; j < line.length; j++) {
-              const point = line[j];
-              //console.log(point)
-              const pixel = LatLongToPixelXY(point[1], point[0]);
-              const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
-              const pixelHigh = {x: pixel.x, y: pixel.y};
-              if (type === "road") {
-                if(priority === high) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1);
-                } else if (priority === med) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
-                } else if (priority === low) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
-                } else if (priority === 99) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
-                } else {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
-                }
-              } else {
-                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, i + 1);
-              } 
-            }
-          }
-        //} 
-      }
-      //console.log(glPoints.length);
-      //console.log(lengths)
-      return {glPoints: glPoints, lengths: lengths}
-    }
-
 
     buildPoints(data, type, reverse, zoomTo) {
       let obj = {}; //return
@@ -330,7 +269,9 @@ class App extends React.Component {
         const lat = position.coordinates[1];
         let latlng = L.latLng(lat, lng);
         this.addToSet(pointSet, latlng);
-        let point = LatLongToPixelXY(latlng.lat, latlng.lng);
+        const pixel = LatLongToPixelXY(latlng.lat, latlng.lng);
+        const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+        const pixelHigh = {x: pixel.x, y: pixel.y};
         let alpha = 0.9;
         if (type === "road") {
           let bucket = data[i].inspection;
@@ -342,41 +283,41 @@ class App extends React.Component {
           }
           if (data[i].status === "active") { //road
             if(data[i].priority === high) {
-              points.push(point.x, point.y, 1.0, 0, 1.0, alpha, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1);
             } else if (data[i].priority === med) {
-              points.push(point.x, point.y, 1.0, 0.5, 0, alpha, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
             } else if (data[i].grade === low) {
               if (this.state.login === "chbdc") {
-                points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+                points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, i + 1);
               } else {
-                points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+                points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, i + 1);
               }        
             } else if (data[i].priority === 99) {
-              points.push(point.x, point.y, 0, 0, 1, alpha, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
             } else {
-              points.push(point.x, point.y, 0, 0.8, 0, alpha, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
             }
           } else {
-            points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, i + 1);
           }
         } else {
           if (data[i].status === "active") { //footpath
             if(data[i].grade === high) {
-              points.push(point.x, point.y, 1.0, 0, 1.0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, 1, i + 1);
             } else if (data[i].grade === med) {
-              points.push(point.x, point.y, 1.0, 0.5, 0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, 1, i + 1);
             } else if (data[i].grade === low) {
               if (this.state.login === "chbdc") {
-                points.push(point.x, point.y, 1, 1, 0, 1, i + 1);
+                points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, i + 1);
               } else {
-                points.push(point.x, point.y, 0, 0.8, 0, 1, i + 1);
+                points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, i + 1);
               }
               
             } else {
-              points.push(point.x, point.y, 0, 0.8, 0.8, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0.8, 1, i + 1);
             }
           } else {
-            points.push(point.x, point.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, i + 1);
           }  
         }    
         latlngs.push(latlng);
