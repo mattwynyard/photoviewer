@@ -54,12 +54,23 @@ export default class GLEngine {
     }, false);
   }
 
+  
   setAppDelegate(delegate) {
       this.appDelegate = delegate;
   }
 
-  zoomTo() {
-
+  readPixel() {
+    if (this.mouseClick !== null) {      
+      let pixel = new Uint8Array(4);
+      this.gl.readPixels(this.mouseClick.originalEvent.layerX, 
+      this.canvas.height - this.mouseClick.originalEvent.layerY, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
+      let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+      this.mouseClick = null;
+      this.appDelegate.setIndex(index);   
+      return true;   
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -100,6 +111,7 @@ export default class GLEngine {
   }
 
   redraw(points, lines) {
+    console.log(lines);
     console.log("redrawing..");
     this.glPoints = points;
     const numPoints = points.length;
@@ -138,9 +150,12 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     let thickness = 0.00001;
+    console.log(lines.vertices)
     let verts = lines.vertices.concat(points);
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
+    let numLines = lines.vertices.length / 9;
+    console.log(numLines)
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
@@ -180,9 +195,10 @@ export default class GLEngine {
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       let offset = 0;
-      // for (var i = 0; i < lines.lengths.length; i++) {
-      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, offset, 6); 
-      //   offset += 6; 
+      // for (var i = 0; i < numLines; i++) {
+      // let count = lines.lengths[i];
+      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, offset, count * 3); 
+      //   offset += 9; 
       // }
 
       //draw thin lines
@@ -192,16 +208,9 @@ export default class GLEngine {
         offset += count;
       } 
       this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPoints);
-
-      if (this.delegate.mouseClick !== null) {      
-        let pixel = new Uint8Array(4);
-        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-        this.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-        this.delegate.mouseClick = null;
-        this.delegate.appDelegate.setIndex(index);
-        this._redraw();
-      }        
+      if (!this.delegate.readPixel()) {
+        this._redraw();   
+      }    
     }
   }
 
@@ -212,7 +221,6 @@ export default class GLEngine {
  * @param {String type of data ie. road or footpath} type
  */
   drawThinLines(data, type, priorities) {
-    console.log(data);
     let faults = [];
     let glPoints = [];
     let lengths = [];
