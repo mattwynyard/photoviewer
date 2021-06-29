@@ -145,8 +145,7 @@ L.CanvasOverlay = L.Layer.extend({
         let scale = this._map.getZoomScale(e.zoom);
         // -- different calc of animation zoom  in leaflet 1.0.3 thanks @peterkarabinovic, @jduggan1
         let offset = L.Layer ? this._map._latLngBoundsToNewLayerBounds(this._map.getBounds(), e.zoom, e.center).min :
-        this._map._getCenterOffset(e.center)._multiplyBy(-scale).subtract(this._map._getMapPanePos());
-    
+        this._map._getCenterOffset(e.center)._multiplyBy(-scale).subtract(this._map._getMapPanePos());   
         L.DomUtil.setTransform(this._canvas, offset, scale);
       }
 });

@@ -122,7 +122,7 @@ class App extends React.Component {
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
-      selectedGLMarker: [],
+      selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
       selectedStatus: null,
@@ -193,6 +193,7 @@ class App extends React.Component {
    * @param {int - calculates the index from r,g,b color} color 
    */
   getIndex(color) { 
+    console.log(color)
     return color[0] + color[1] * 256 + color[2] * 256 * 256 + color[3] * 256 * 256 * 256;
   }
 
@@ -203,9 +204,12 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
+      console.log(index);
       this.setState({selectedIndex: index});
-      this.setState({selectedGLMarker: [this.state.objGLData[index - 1]]}); //0 is black ie the screen <--- not working fix
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
+      //console.log(this.state.objGLData)
       let bucket = this.getGLFault(index - 1, 'inspection');
+      
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
           let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
@@ -219,7 +223,7 @@ class App extends React.Component {
       }    
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
-      this.setState({selectedGLMarker: []});
+      this.setState({selectedGeometry: []});
     }
     this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines);
   }
@@ -231,23 +235,22 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  *  @param {Boolean zoom to extents when data loads} zoomTo
  */
-  addGLGeometry(project, points, lines, type, zoom) {
+  addGLGeometry(project, points, lines, type) {
     this.minMaxLine = this.GLEngine.minMaxLineSize();
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); //fix zoomTo on redraw
-    let glLinePoints = this.GLEngine.drawThinLines(lines, type, priorites);
-    this.GLEngine.redraw(glPoints.points, glLinePoints);
+    let glLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
+    this.GLEngine.redraw(glPoints.points, glLines);
     this.centreMap(this.GLEngine.latlngs);
-    this.setState({objGLData: glPoints.faults});
+    let faults = glPoints.faults.concat(glLines.faults);
+    this.setState({objGLData: faults});
+    console.log(faults);
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
 
-  /**
-   * 
-   */
   setPriorityObject() {
     let obj = {}
     if (this.state.reverse) {
@@ -338,11 +341,12 @@ class App extends React.Component {
       }
         break;
       case 'Map':
+        console.log("Map")
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
         this.setState({selectedIndex: null});
-        this.setState({selectedGLMarker: []});
+        this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
         this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines);
       }
@@ -533,7 +537,7 @@ class App extends React.Component {
 
   closePopup(e) {
     if (!this.state.show) {
-      this.setState({selectedGLMarker: []});
+      this.setState({selectedGeometry: []});
       this.setIndex(0); //simulate user click black screen
     } 
   }
@@ -545,7 +549,7 @@ class App extends React.Component {
   clickImage(e) {   
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.setState({currentPhoto: photo});
-    this.photoModal.current.setModal(true, this.state.selectedGLMarker, this.state.amazon, photo, this.state.login);
+    this.photoModal.current.setModal(true, this.state.selectedGeometry, this.state.amazon, photo, this.state.login);
   }
 
   getPhoto(direction) {
@@ -1418,7 +1422,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeProject, false);
+              this.filterLayer(this.state.activeProject);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1435,7 +1439,7 @@ class App extends React.Component {
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project, zoomTo) {
+  async filterLayer(project) {
     this.setState({spinner: true});
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -1459,10 +1463,9 @@ class App extends React.Component {
                 await this.logout(e);
               } else {
                 if (body.type === "road") {
-                  //await this.addGLGeometry(project, body.geometry, body.type, zoomTo);
-                  await this.addGLGeometry(project, body.points, body.lines, body.type, zoomTo);
+                  await this.addGLGeometry(project, body.points, body.lines, body.type);
                 } else {
-                  await this.addGLGeometry(project, body.geometry, body.type, zoomTo);
+                  await this.addGLGeometry(project, body.geometry, body.type);
                 }
               }     
             }
@@ -1784,7 +1787,7 @@ class App extends React.Component {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.rows != null) {
-            this.filterLayer(this.state.activeProject, false);
+            this.filterLayer(this.state.activeProject);
           }
         }   
       })
@@ -2138,7 +2141,7 @@ class App extends React.Component {
  * @param {the property of the fault} attribute 
  */
 getGLFault(index, attribute) {
-  if (this.state.selectedGLMarker.length !== 0 && index !== null) {
+  if (this.state.selectedGeometry.length !== 0 && index !== null) {
     switch(attribute) {
       case "type":
         return  this.state.objGLData[index].type;
@@ -2150,8 +2153,10 @@ getGLFault(index, attribute) {
         return  this.state.objGLData[index].inspection;
       case "location":
         return  this.state.objGLData[index].location;
-      case "size":
-        return  this.state.objGLData[index].size;
+      case "width":
+        return  this.state.objGLData[index].width;
+      case "length":
+        return  this.state.objGLData[index].length;
       case "datetime":
         return  this.state.objGLData[index].datetime;
       case "photo":
@@ -2808,7 +2813,7 @@ updateStatus(marker, status) {
           </VideoCard>
           
           <LayerGroup >
-            {this.state.selectedGLMarker.map((obj, index) =>  
+            {this.state.selectedGeometry.map((obj, index) =>  
             <CustomPopup 
               key={`${index}`} 
               data={obj}
@@ -2953,7 +2958,7 @@ updateStatus(marker, status) {
       <PhotoModal
         ref={this.photoModal}
         show={this.state.show} 
-        marker={this.state.selectedGLMarker}
+        marker={this.state.selectedGeometry}
         amazon={this.state.amazon}
         currentPhoto={this.state.currentPhoto}
         callbackUpdateStatus={this.updateStatus}

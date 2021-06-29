@@ -25,13 +25,13 @@ export default class GLEngine {
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
     }
-    this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
+    this.gl = this.canvas.getContext('webgl2', { antialias: false }, {preserveDrawingBuffer: false}); 
     if (!this.gl) {
-        this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-        console.log("Cannot load webgl2.0 using webgl instead");
+        this.gl = this.canvas.getContext('webgl', { antialias: false }, {preserveDrawingBuffer: false});
+        //console.log("Cannot load webgl2.0 using webgl instead");
     }  
     if (!this.gl) {
-      this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
+      this.gl = this.canvas.getContext('experimental-webgl', { antialias: false }, {preserveDrawingBuffer: false});
       console.log("Cannot load webgl1.0 using experimental-webgl instead");
     } 
     if (!this.gl) {
@@ -59,20 +59,6 @@ export default class GLEngine {
       this.appDelegate = delegate;
   }
 
-  readPixel() {
-    if (this.mouseClick !== null) {      
-      let pixel = new Uint8Array(4);
-      this.gl.readPixels(this.mouseClick.originalEvent.layerX, 
-      this.canvas.height - this.mouseClick.originalEvent.layerY, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
-      let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-      this.mouseClick = null;
-      this.appDelegate.setIndex(index);   
-      return true;   
-    } else {
-      return false;
-    }
-  }
-
   /**
    * Checks points to see if a point is selected and colors red
    * else returns vertices
@@ -81,6 +67,7 @@ export default class GLEngine {
    * @returns vertices data as Float32 array
    */
   reColorPoints(verts) {
+    //console.log(verts)
     if (this.mouseClick === null) {
       if (this.appDelegate.state.selectedIndex === null) {
         return verts;
@@ -97,6 +84,7 @@ export default class GLEngine {
     } else {
       for (let i = 0; i < verts.length; i += 9) {
         let index = verts[i + 8];
+        //console.log(index);
         //calculates r,g,b color from index
         let r = ((index & 0x000000FF) >>  0) / 255;
         let g = ((index & 0x0000FF00) >>  8) / 255;
@@ -111,7 +99,7 @@ export default class GLEngine {
   }
 
   redraw(points, lines) {
-    console.log(lines);
+    //console.log(lines);
     console.log("redrawing..");
     this.glPoints = points;
     const numPoints = points.length;
@@ -125,7 +113,7 @@ export default class GLEngine {
     this.gl.compileShader(vertexShader);
     let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
     //let length = this.state.activeLayers.length - 1;
-    this.gl.shaderSource(fragmentShader, document.getElementById('fshader').text);
+    this.gl.shaderSource(fragmentShader, document.getElementById('fshader-square').text);
     this.gl.compileShader(fragmentShader);
     // link shaders to create our program
     let program = this.gl.createProgram();
@@ -133,7 +121,7 @@ export default class GLEngine {
     this.gl.attachShader(program, fragmentShader);
     this.gl.linkProgram(program);
     this.gl.useProgram(program);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA); //<---?
     this.gl.enable(this.gl.BLEND);
     // look up the locations for the inputs to our shaders.
     let u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
@@ -150,12 +138,11 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     let thickness = 0.00001;
-    console.log(lines.vertices)
+    //console.log(lines.vertices)
     let verts = lines.vertices.concat(points);
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
     let numLines = lines.vertices.length / 9;
-    console.log(numLines)
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
@@ -208,9 +195,16 @@ export default class GLEngine {
         offset += count;
       } 
       this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPoints);
-      if (!this.delegate.readPixel()) {
-        this._redraw();   
-      }    
+      if (this.delegate.mouseClick !== null) {      
+        let pixel = new Uint8Array(4);
+        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
+        this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+        console.log(pixel)
+        let index = pixel[0] + (pixel[1] * 256) + (pixel[2] * 256 * 256);
+        this.delegate.mouseClick = null;
+        this.delegate.appDelegate.setIndex(index);   
+        this._redraw();
+      }
     }
   }
 
@@ -220,16 +214,19 @@ export default class GLEngine {
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
  */
-  drawThinLines(data, type, priorities) {
+  drawThinLines(data, type, priorities, pointCount) {
     let faults = [];
     let glPoints = [];
     let lengths = [];
-    let alpha = 0.9; 
+    let alpha = 1.0; 
     for (let i = 0; i < data.length; i++) {
       //if (data[i].id === "MDC_RD_0521_1742") {
         const linestring = JSON.parse(data[i].st_asgeojson);
+        const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
         const priority = data[i].priority;
-        if (linestring !== null) {  
+        
+        if (linestring !== null) {
+          ++pointCount;   
           let line = linestring.coordinates;
           lengths.push(line.length);
           for (let j = 0; j < line.length; j++) {
@@ -243,54 +240,36 @@ export default class GLEngine {
             if (type === "road") {
               if (data[i].status === "active") { //road
                 if(priority === priorities.high) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1); 
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, pointCount); 
                 } else if (priority === priorities.med) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, pointCount);
                 } else if (priority === priorities.low) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, pointCount);
                 } else if (priority === 99) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, pointCount);
                 } else {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, pointCount);
                 }
               } else {
-                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, i + 1);
+                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, pointCount);
               } 
             } else { //footpath
 
             }
-          } 
+          }
+          
         }
-        let id = data[i].id.split('_');
-        let obj = {
-            type: type,
-            id: id[id.length - 1],
-            roadid: data[i].roadid,
-            carriage: data[i].carriageway,
-            inspection: data[i].inspection,
-            location: data[i].location,
-            class: data[i].class,
-            fault: data[i].fault,
-            repair: data[i].repair,
-            comment: data[i].comment,
-            size: data[i].size,
-            priority: data[i].priority,
-            photo: data[i].photoid,
-            datetime: data[i].faulttime,
-            //latlng: L.latLng(lat, lng),
-            status: data[i].status,
-            datefixed: data[i].datefixed
-          };
-        faults.push(obj)
+        let fault = this.createFaultObject(data[i], type, latlng)
+        faults.push(fault);
     }
-    return {vertices: glPoints, lengths: lengths};
+    return {vertices: glPoints, lengths: lengths, faults: faults};
   }
 
   drawLines(data, type, priorities) {
     const thickness = 0.00001;
     let glPoints = [];
     let lengths = [];
-    let alpha = 0.9; 
+    let alpha = 1.0; 
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
       const priority = data[i].priority;
@@ -346,18 +325,19 @@ export default class GLEngine {
     let faults = []; 
     let latlngs = [];
     let points = []; //TODO change to Float32Array to make selection faster
-
+    let count = 0;
     let pointSet = new Set();
     for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(data[i].st_asgeojson);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
-      this.latlngs.push(L.latLng(lat, lng));
+      const latlng = L.latLng(lat, lng);
+      latlngs.push(L.latLng(lat, lng));
       this.addToSet(pointSet, L.latLng(lat, lng));
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      let alpha = 0.9;
+      let alpha = 1.0;
       if (type === "road") {
         // let bucket = data[i].inspection;
         // if (bucket != null) {
@@ -368,91 +348,50 @@ export default class GLEngine {
         // }
         if (data[i].status === "active") { //road
           if(data[i].priority === priorities.high) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, ++count);
           } else if (data[i].priority === priorities.med) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, ++count);
           } else if (data[i].grade === priorities.low) {
             if (this.state.login === "chbdc") {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
             } else {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
             }        
           } else if (data[i].priority === 99) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, ++count);
           } else {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, ++count);
           }
         } else {
-          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, ++count);
         }
       } else {
         if (data[i].status === "active") { //footpath
           if(data[i].grade === priorities.high) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, 1, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, 1, ++count);
           } else if (data[i].grade === priorities.med) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, 1, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, 1, ++count);
           } else if (data[i].grade === priorities.low) {
             if (this.state.login === "chbdc") {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
             } else {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, i + 1);
+              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
             }
             
           } else {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0.8, 1, i + 1);
+            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0.8, 1, ++count);
           }
         } else {
-          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, i + 1);
+          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, ++count);
         }  
-      }    
-      if (type === "footpath") {   
-        let id = data[i].id.split('_');
-        obj = {
-          type: type,
-          id: id[id.length - 1],
-          roadid: data[i].roadid,
-          footpathid: data[i].footpathid,
-          roadname: data[i].roadname,        
-          location: data[i].location,
-          asset:  data[i].asset,
-          fpsurface: data[i].type,
-          fault: data[i].fault,
-          cause: data[i].cause,
-          size: data[i].size,
-          grade: data[i].grade,
-          photo: data[i].photoid,
-          datetime: data[i].faulttime,
-          latlng: L.latLng(lat, lng),
-          status: data[i].status,
-          datefixed: data[i].datefixed
-        };
-      } else {
-        let id = data[i].id.split('_');
-        obj = {
-          type: type,
-          id: id[id.length - 1],
-          roadid: data[i].roadid,
-          carriage: data[i].carriageway,
-          inspection: data[i].inspection,
-          location: data[i].location,
-          class: data[i].class,
-          fault: data[i].fault,
-          repair: data[i].repair,
-          comment: data[i].comment,
-          size: data[i].size,
-          priority: data[i].priority,
-          photo: data[i].photoid,
-          datetime: data[i].faulttime,
-          latlng: L.latLng(lat, lng),
-          status: data[i].status,
-          datefixed: data[i].datefixed
-        };
-      }   
-      faults.push(obj);          
+      }  
+      let fault = this.createFaultObject(data[i], type, latlng)
+      faults.push(fault);         
     }
     return {
       faults: faults,
-      points: points
+      points: points,
+      count: count
     }
   }
 
@@ -607,6 +546,55 @@ export default class GLEngine {
       let l = miter.multiply(length);
       return new Vector2D(l.x, l.y);  
     } 
+
+    createFaultObject(data, type, latlng) {
+      let id = data.id.split('_');
+      let obj = {};
+      if (type === "footpath") {   
+        obj = {
+          type: type,
+          id: id[id.length - 1],
+          roadid: data.roadid,
+          footpathid: data.footpathid,
+          roadname: data.roadname,        
+          location: data.location,
+          asset:  data.asset,
+          fpsurface: data.type,
+          fault: data.fault,
+          cause: data.cause,
+          width: data.width,
+          length: data.length,
+          grade: data.grade,
+          photo: data.photoid,
+          datetime: data.faulttime,
+          latlng: latlng,
+          status: data.status,
+          datefixed: data.datefixed
+        };
+      } else {
+        obj = {
+          type: type,
+          id: id[id.length - 1],
+          roadid: data.roadid,
+          carriage: data.carriage,
+          inspection: data.inspection,
+          location: data.location,
+          class: data.class,
+          fault: data.fault,
+          repair: data.repair,
+          comment: data.comment,
+          width: data.width,
+          length: data.length,
+          priority: data.priority,
+          photo: data.photoid,
+          datetime: data.faulttime,
+          latlng: latlng,
+          status: data.status,
+          datefixed: data.datefixed
+        };
+      }
+      return obj;
+    }
 
     addToSet(set, latlng) {
       if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
