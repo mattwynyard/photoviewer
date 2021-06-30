@@ -1,7 +1,9 @@
 import Vector2D from './Vector2D';
 import {LatLongToPixelXY, translateMatrix, scaleMatrix} from  './util.js';
-import L from 'leaflet';
+import L, { LineUtil } from 'leaflet';
 import './L.CanvasOverlay';
+import {compileShader, createProgram, vshader, fshader} from './shaders.js'
+import { NumberOutlined } from '@ant-design/icons';
 
 const DUPLICATE_OFFSET = 0.00002;
 
@@ -25,13 +27,13 @@ export default class GLEngine {
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
     }
-    this.gl = this.canvas.getContext('webgl2', { antialias: false }, {preserveDrawingBuffer: false}); 
+    this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
     if (!this.gl) {
-        this.gl = this.canvas.getContext('webgl', { antialias: false }, {preserveDrawingBuffer: false});
+        this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
         //console.log("Cannot load webgl2.0 using webgl instead");
     }  
     if (!this.gl) {
-      this.gl = this.canvas.getContext('experimental-webgl', { antialias: false }, {preserveDrawingBuffer: false});
+      this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
       console.log("Cannot load webgl1.0 using experimental-webgl instead");
     } 
     if (!this.gl) {
@@ -39,6 +41,9 @@ export default class GLEngine {
     } 
     this.glLayer.delegate(this); 
     this.addEventListeners();
+    let vertexShader = compileShader(this.gl, vshader, this.gl.VERTEX_SHADER);
+    let fragmentShader = compileShader(this.gl, fshader, this.gl.FRAGMENT_SHADER);
+    this.program = createProgram(this.gl, vertexShader, fragmentShader);
     }
 
   /**
@@ -107,42 +112,30 @@ export default class GLEngine {
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);  
-        // -- WebGl setup
-    let vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-    this.gl.shaderSource(vertexShader, document.getElementById('vshader').text);
-    this.gl.compileShader(vertexShader);
-    let fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    //let length = this.state.activeLayers.length - 1;
-    this.gl.shaderSource(fragmentShader, document.getElementById('fshader-square').text);
-    this.gl.compileShader(fragmentShader);
-    // link shaders to create our program
-    let program = this.gl.createProgram();
-    this.gl.attachShader(program, vertexShader);
-    this.gl.attachShader(program, fragmentShader);
-    this.gl.linkProgram(program);
-    this.gl.useProgram(program);
+        // -- WebGl program setup
+    // let vertexShader = compileShader(this.gl, vshader, this.gl.VERTEX_SHADER);
+    // let fragmentShader = compileShader(this.gl, fshader, this.gl.FRAGMENT_SHADER);
+    // let program = createProgram(this.gl, vertexShader, fragmentShader);
+    this.gl.useProgram(this.program);
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA); //<---?
     this.gl.enable(this.gl.BLEND);
     // look up the locations for the inputs to our shaders.
-    let u_matLoc = this.gl.getUniformLocation(program, "u_matrix");
-    let u_eyepos = this.gl.getUniformLocation(program, "u_eyepos");
-    let u_eyeposLow = this.gl.getUniformLocation(program, "u_eyepos_low");
-    let colorLoc = this.gl.getAttribLocation(program, "a_color");
-    let vertLoc = this.gl.getAttribLocation(program, "a_vertex");
-    let vertLocLow = this.gl.getAttribLocation(program, "a_vertex_low");
-    //let colorLoc = this.gl.getAttribLocation(program, "a_color");
-    //let vertLoc = this.gl.getAttribLocation(program, "a_vertex");
-    this.gl.aPointSize = this.gl.getAttribLocation(program, "a_pointSize");
+    let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
+    let u_eyepos = this.gl.getUniformLocation(this.program, "u_eyepos");
+    let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_eyepos_low");
+    let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
+    let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
+    let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
+    this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    let thickness = 0.00001;
     //console.log(lines.vertices)
     let verts = lines.vertices.concat(points);
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
-    let numLines = lines.vertices.length / 9;
+    let numVertices = lines.vertices.length / 9;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
@@ -173,39 +166,76 @@ export default class GLEngine {
       let pixelOffset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
       var scale = Math.pow(2, this._map.getZoom());
-      scaleMatrix(this.delegate.mapMatrix, scale, scale);
-      //translateMatrix(this.delegate.mapMatrix, -offset.x, -offset.y);
-      let u_matLoc = this.delegate.gl.getUniformLocation(program, "u_matrix");
+      scaleMatrix(this.delegate.mapMatrix, scale, scale); //translation done in shader
+
+      let u_matLoc = this.delegate.gl.getUniformLocation(this.delegate.program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      let offset = 0;
-      // for (var i = 0; i < numLines; i++) {
-      // let count = lines.lengths[i];
-      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, offset, count * 3); 
-      //   offset += 9; 
-      // }
-
+      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numVertices); 
       //draw thin lines
-      for (var i = 0; i < lines.lengths.length; i += 1) {             
-        let count = lines.lengths[i];
-        this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
-        offset += count;
-      } 
+      //let offset = 0;
+      // for (var i = 0; i < lines.lengths.length; i += 1) {             
+      //   let count = lines.lengths[i];
+      //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
+      //   offset += count;
+      // }
+      let offset  = numVertices * 9;
       this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPoints);
+
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
         this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
         console.log(pixel)
-        let index = pixel[0] + (pixel[1] * 256) + (pixel[2] * 256 * 256);
+        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
         this.delegate.mouseClick = null;
         this.delegate.appDelegate.setIndex(index);   
         this._redraw();
       }
     }
+  }
+
+  drawLines(data, type, priorities, pointCount) {
+    const thickness = 0.000005;
+    let glPoints = [];
+    let lengths = [];
+    
+      for (let i = 0; i < data.length; i++) {
+        if (data[i].id === "MDC_RD_0521_1692") {
+          const linestring = JSON.parse(data[i].st_asgeojson);
+          if (linestring !== null) {  
+            let polyline = linestring.coordinates;
+            let colors = this.setColors(data[i], type, priorities);
+            if (polyline.length < 2) {
+              console.log(polyline[i]);
+              continue;
+            } else {
+              console.log(polyline)
+              for(let i = 0; i < polyline.length; i++) {
+                let a = ((i - 1) < 0) ? 0 : (i - 1);
+                let b = i;
+                let c = ((i + 1) >= polyline.length) ? polyline.length - 1 : (i + 1);
+                let d = ((i + 2) >= polyline.length) ? polyline.length - 1 : (i + 2);
+                let p0 = polyline[a];
+                let p1 = polyline[b];
+                let p2 = polyline[c];
+                let p3 = polyline[d];
+                if (p1 == p2)
+                continue;
+                const px0 = LatLongToPixelXY(p1, p0);
+                const px1 = LatLongToPixelXY(p3, point1[0]);
+                
+                console.log("p0 " + p0 + "\np1 " + p1 + "\np2 " + p2 + "\np3 " + p3)
+              }
+          } 
+        }    
+      }
+    }
+    
+    return {vertices: glPoints, lengths: lengths}
   }
 
   /**
@@ -218,110 +248,32 @@ export default class GLEngine {
     let faults = [];
     let glPoints = [];
     let lengths = [];
-    let alpha = 1.0; 
     for (let i = 0; i < data.length; i++) {
-      //if (data[i].id === "MDC_RD_0521_1742") {
-        const linestring = JSON.parse(data[i].st_asgeojson);
-        const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-        const priority = data[i].priority;
-        
-        if (linestring !== null) {
-          ++pointCount;   
-          let line = linestring.coordinates;
-          lengths.push(line.length);
-          for (let j = 0; j < line.length; j++) {
-            const point = line[j];
-            const lng = point[0];
-            const lat = point[1];
-            this.latlngs.push(L.latLng(lat, lng));
-            const pixel = LatLongToPixelXY(point[1], point[0]);
-            const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
-            const pixelHigh = {x: pixel.x, y: pixel.y};
-            if (type === "road") {
-              if (data[i].status === "active") { //road
-                if(priority === priorities.high) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, pointCount); 
-                } else if (priority === priorities.med) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, pointCount);
-                } else if (priority === priorities.low) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, pointCount);
-                } else if (priority === 99) {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, pointCount);
-                } else {
-                  glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, pointCount);
-                }
-              } else {
-                glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, alpha, pointCount);
-              } 
-            } else { //footpath
-
-            }
-          }
-          
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+      if (linestring !== null) {
+        ++pointCount;   
+        let line = linestring.coordinates;
+        let colors = this.setColors(data[i], type, priorities);
+        lengths.push(line.length);
+        for (let j = 0; j < line.length; j++) {
+          const point = line[j];
+          const lng = point[0];
+          const lat = point[1];
+          this.latlngs.push(L.latLng(lat, lng));
+          const pixel = LatLongToPixelXY(point[1], point[0]);
+          const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+          const pixelHigh = {x: pixel.x, y: pixel.y};
+          glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
         }
-        let fault = this.createFaultObject(data[i], type, latlng)
-        faults.push(fault);
+      }
+      let fault = this.createFaultObject(data[i], type, latlng)
+      faults.push(fault);
     }
     return {vertices: glPoints, lengths: lengths, faults: faults};
   }
 
-  drawLines(data, type, priorities) {
-    const thickness = 0.00001;
-    let glPoints = [];
-    let lengths = [];
-    let alpha = 1.0; 
-    for (let i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson);
-      const priority = data[i].priority;
-      if (linestring !== null) {  
-        let line = linestring.coordinates;
-        if (line.length < 2) {
-          console.log(line[i]);
-          continue;
-        } else if (line.length === 2 ) {
-          lengths.push(line.length);
-          const point0 = line[0];
-          const point1 = line[1];
-          const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
-          const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
-          const p0 = new Vector2D(pixel0.x, pixel0.y);
-          const p1 = new Vector2D(pixel1.x, pixel1.y);
-          const pixelLine = Vector2D.subtract(p1, p0);
-          const normal = new Vector2D(-pixelLine.y, pixelLine.x)
-          const normalized = normal.normalize();
-          const vertex1 = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
-          const vertex2 = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
-          const vertex3 = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
-          const vertex4 =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
-          const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
-          //console.log("thickness " + l);
-          const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
-          const vertex1High = {x: vertex1.x, y: vertex1.y};
-          const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
-          const vertex2High = {x: vertex2.x, y: vertex2.y};
-          const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
-          const vertex3High = {x: vertex3.x, y: vertex3.y};
-          const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
-          const vertex4High = {x: vertex4.x, y: vertex4.y};
-          
-          glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, 1.0, 0, 1.0, alpha, i + 1);
-          glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, 1.0, 0, 1.0, alpha, i + 1);
-          glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, 1.0, 0, 1.0, alpha, i + 1);
-          glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, 1.0, 0, 1.0, alpha, i + 1);
-          glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, 1.0, 0, 1.0, alpha, i + 1);
-          glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, 1.0, 0, 1.0, alpha, i + 1);  
-          //6 * 9 = 54 elements per two point line
-        } else {
-          
-        }
-        
-      }      
-    }
-    return {vertices: glPoints, lengths: lengths}
-  }
-
   buildPoints(data, type, priorities) {
-    let obj = {}; //return
     let faults = []; 
     let latlngs = [];
     let points = []; //TODO change to Float32Array to make selection faster
@@ -329,6 +281,7 @@ export default class GLEngine {
     let pointSet = new Set();
     for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(data[i].st_asgeojson);
+      let colors = this.setColors(data[i], type, priorities);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       const latlng = L.latLng(lat, lng);
@@ -337,8 +290,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      let alpha = 1.0;
-      if (type === "road") {
+      points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
         // let bucket = data[i].inspection;
         // if (bucket != null) {
         //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
@@ -346,206 +298,37 @@ export default class GLEngine {
         //     alpha = 0.5;
         //   }
         // }
-        if (data[i].status === "active") { //road
-          if(data[i].priority === priorities.high) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, alpha, ++count);
-          } else if (data[i].priority === priorities.med) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, alpha, ++count);
-          } else if (data[i].grade === priorities.low) {
-            if (this.state.login === "chbdc") {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
-            } else {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
-            }        
-          } else if (data[i].priority === 99) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0, 1, alpha, ++count);
-          } else {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, alpha, ++count);
-          }
-        } else {
-          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, ++count);
-        }
-      } else {
-        if (data[i].status === "active") { //footpath
-          if(data[i].grade === priorities.high) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0, 1.0, 1, ++count);
-          } else if (data[i].grade === priorities.med) {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1.0, 0.5, 0, 1, ++count);
-          } else if (data[i].grade === priorities.low) {
-            if (this.state.login === "chbdc") {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
-            } else {
-              points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
-            }
-            
-          } else {
-            points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0.8, 1, ++count);
-          }
-        } else {
-          points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0.5, 0.5, 0.5, 0.8, ++count);
-        }  
-      }  
+        // if (this.state.login === "chbdc") {
+        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
+        // } else {
+        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
+        // }  
       let fault = this.createFaultObject(data[i], type, latlng)
       faults.push(fault);         
     }
-    return {
-      faults: faults,
-      points: points,
-      count: count
-    }
+    return { faults: faults, points: points, count: count}
   }
 
-  buildVertices(lines, points, thickness) {
-    for (let i = 0; i < lines.length; i += 1) {
-      let red = 0;
-      let green = 0;
-      let blue = 1;  
-      for (let j = 0; j < lines[i].segment.length; j += 1) {
-        if (lines[i].segment.length < 2) {
-          console.log(lines[i]);
-          continue;
-        }
-        if(lines[i].segment.length === 2 ) {
-          const pixel0 = {x: lines[i].segment[0].x, y: lines[i].segment[0].y};   
-          const pixel1 = {x: lines[i].segment[1].x, y: lines[i].segment[1].y};
-          if (pixel0.x === pixel1.x || pixel0.y === pixel1.y) {
-            continue;
-          }
-          let p0 = new Vector2D(pixel0.x, pixel0.y);
-          let p1 = new Vector2D(pixel1.x, pixel1.y);
-          let line = Vector2D.subtract(p1, p0);
-          let normal = new Vector2D(-line.y, line.x)
-          let normalized = normal.normalize();
-          let a = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
-          let b = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
-          let c = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
-          let d =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
-          let l = Vector2D.subtract(a, b).length();
-          if (l > thickness * 2.1) {
-            console.log(l);
-          }
-          points.push(a.x, a.y, red, green, blue, 1, 1);
-          points.push(b.x, b.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1);
-          points.push(c.x, c.y, red, green, blue, 1, 1); 
-          points.push(d.x, d.y, red, green, blue, 1, 1);
-          points.push(b.x, b.y, red, green, blue, 1, 1);
-          continue;
-        } else {
-          if (j === 0) {
-            const pixel0 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-            const pixel1 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-            const pixel2 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-    
-            let line = Vector2D.subtract(p1, p0);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let a = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
-            let b = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
-  
-            let miter = this.getMiter(p0, p1, p2, thickness);
-            if (miter.x === 0 && miter.y === 0) {
-              continue;
-            }
-            let c = Vector2D.subtract(p1, miter);
-            let d = Vector2D.add(p1, miter);  
-            let l = Vector2D.subtract(a, b).length();
-            points.push(a.x, a.y, red, green, blue, 1, 1);
-            points.push(b.x, b.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1); 
-            points.push(d.x, d.y, red, green, blue, 1, 1);
-            points.push(b.x, b.y, red, green, blue, 1, 1);
-            } else if (j === lines[i].segment.length - 2) {
-            const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
-            const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-            const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              break;
-            }
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-            let line = Vector2D.subtract(p2, p1);
-            let normal = new Vector2D(-line.y, line.x)
-            let normalized = normal.normalize();
-            let c = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
-            let d = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
-            let l = Vector2D.subtract(c, d).length();
-            if (l > thickness * 2.1) {
-              console.log(l);
-            }
-            points.push(a.x, a.y, red, green, blue, 1, 1);
-            points.push(b.x, b.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1); 
-            points.push(d.x, d.y, red, green, blue, 1, 1);
-            points.push(a.x, a.y, red, green, blue, 1, 1);
-            break;  
-            } else {
-            const pixel0 = {x: lines[i].segment[j -1].x, y: lines[i].segment[j -1].y};
-            const pixel1 = {x: lines[i].segment[j].x, y: lines[i].segment[j].y};
-            const pixel2 = {x: lines[i].segment[j + 1].x, y: lines[i].segment[j + 1].y};
-            const pixel3 = {x: lines[i].segment[j + 2].x, y: lines[i].segment[j + 2].y};
-            let p0 = new Vector2D(pixel0.x, pixel0.y);
-            let p1 = new Vector2D(pixel1.x, pixel1.y);
-            let p2 = new Vector2D(pixel2.x, pixel2.y);
-            let p3 = new Vector2D(pixel3.x, pixel3.y);
-            //meter calc
-            let miter1 = this.getMiter(p0, p1, p2, thickness);
-            if (miter1.x === 0 && miter1.y === 0) {
-              continue;
-            }
-            p1 = new Vector2D(pixel1.x, pixel1.y);
-            p2 = new Vector2D(pixel2.x, pixel2.y);
-            p3 = new Vector2D(pixel3.x, pixel3.y);
-            let miter2 = this.getMiter(p1, p2, p3, thickness);
-            if (miter2.x === 0 && miter2.y === 0) {
-              continue;
-            }
-            let a = Vector2D.add(p1, miter1);
-            let b = Vector2D.subtract(p1,  miter1);
-            let c = Vector2D.add(p2, miter2);
-            let d = Vector2D.subtract(p2,  miter2);
-            points.push(a.x, a.y, red, green, blue, 1, 1);
-            points.push(b.x, b.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1);
-            points.push(c.x, c.y, red, green, blue, 1, 1);
-            points.push(d.x, d.y, red, green, blue, 1, 1);
-            points.push(b.x, b.y, red, green, blue, 1, 1);
-          }
-        }
-      }
-    }
-    return points;
-    }
-  
-    getMiter(p0, p1, p2, thickness) {
-      let p2p1 = Vector2D.subtract(p2, p1);
-      let p1p0 = Vector2D.subtract(p1, p0);
-      let y = p2p1.y * -1;
-      let normal = new Vector2D(y, p2p1.x);
-      let normalized = normal.normalize();
-      p2p1.normalize();
-      p1p0.normalize();
-      p2p1 = Vector2D.subtract(p2, p1);
-      let tangent = Vector2D.add(p2p1, p1p0);    
-      let nTangent = tangent.normalize();
-      y = nTangent.y * -1;
-      let miter = new Vector2D(-nTangent.y, nTangent.x);
-      let length = thickness / Vector2D.dot(miter, normalized);
-      if (length > thickness * 1.5 || length < thickness * 0.5) {
-        return new Vector2D(0, 0);
-      }
-      let l = miter.multiply(length);
-      return new Vector2D(l.x, l.y);  
-    } 
+  getMiter(p0, p1, p2, thickness) {
+    let p2p1 = Vector2D.subtract(p2, p1);
+    let p1p0 = Vector2D.subtract(p1, p0);
+    let y = p2p1.y * -1;
+    let normal = new Vector2D(y, p2p1.x);
+    let normalized = normal.normalize();
+    p2p1.normalize();
+    p1p0.normalize();
+    p2p1 = Vector2D.subtract(p2, p1);
+    let tangent = Vector2D.add(p2p1, p1p0);    
+    let nTangent = tangent.normalize();
+    y = nTangent.y * -1;
+    let miter = new Vector2D(-nTangent.y, nTangent.x);
+    let length = thickness / Vector2D.dot(miter, normalized);
+    // if (length > thickness * 1.5 || length < thickness * 0.5) {
+    //   return new Vector2D(0, 0);
+    // }
+    let l = miter.multiply(length);
+    return new Vector2D(l.x, l.y);  
+  } 
 
     createFaultObject(data, type, latlng) {
       let id = data.id.split('_');
@@ -596,6 +379,50 @@ export default class GLEngine {
       return obj;
     }
 
+    setColors(geometry, type, priorities) {
+      let colors = {r: null, b: null, g: null, a: null}
+      let priority = null
+      if (type === "road") {
+        priority = geometry.priority;
+      } else {
+        priority = geometry.grade;
+      }
+      if (geometry.status === "active") {
+        if(priority === priorities.high) {
+          colors.r = 1.0;
+          colors.g = 0.0;
+          colors.b = 1.0;
+          colors.a = 1.0;
+        } else if(priority === priorities.med) {
+          colors.r = 1.0;
+          colors.g = 0.5;
+          colors.b = 0.0;
+          colors.a = 1.0;
+        } else if (priority === priorities.low) {
+          colors.r = 0.0;
+          colors.g = 0.8;
+          colors.b = 0.0;
+          colors.a = 1.0;
+        } else if (priority === 99) {
+          colors.r = 0.0;
+          colors.g = 0.0;
+          colors.b = 1.0;
+          colors.a = 1.0;
+        } else {
+          colors.r = 0.0;
+          colors.g = 0.8;
+          colors.b = 0.8;
+          colors.a = 1.0;
+        }
+      } else {
+        colors.r = 0.5;
+        colors.g = 0.5;
+        colors.b = 0.5;
+        colors.a = 0.8
+      }
+      return colors;
+    }
+
     addToSet(set, latlng) {
       if (set.has(latlng.lat.toString() + latlng.lng.toString())) {
         let randomLat = Math.random() >= 0.5;
@@ -627,5 +454,169 @@ export default class GLEngine {
     minMaxPointSize() {
       const [minPointSize, maxPointSize] = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
       return [minPointSize, maxPointSize];
+    }
+
+
+    _drawLines(data, type, priorities, pointCount) {
+      const thickness = 0.000005;
+      let glPoints = [];
+      let lengths = [];
+      for (let i = 0; i < data.length; i++) {
+        //if (data[i].id === "MDC_RD_0521_1692" || data[i].id === "MDC_RD_0521_1690") {
+          const linestring = JSON.parse(data[i].st_asgeojson);
+          if (linestring !== null) {  
+            let line = linestring.coordinates;
+            let colors = this.setColors(data[i], type, priorities);
+            if (line.length < 2) {
+              console.log(line[i]);
+              continue;
+            } else if (line.length === 2 ) { 
+              lengths.push(line.length);
+              const point0 = line[0];
+              const point1 = line[1];
+              const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
+              const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
+              const p0 = new Vector2D(pixel0.x, pixel0.y);
+              const p1 = new Vector2D(pixel1.x, pixel1.y);
+              const pixelLine = Vector2D.subtract(p1, p0);
+              const normal = new Vector2D(-pixelLine.y, pixelLine.x)
+              const normalized = normal.normalize();
+              const vertex1 = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
+              const vertex2 = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
+              const vertex3 = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
+              const vertex4 =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
+              const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
+              //console.log("thickness " + l);
+              const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
+              const vertex1High = {x: vertex1.x, y: vertex1.y};
+              const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
+              const vertex2High = {x: vertex2.x, y: vertex2.y};
+              const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
+              const vertex3High = {x: vertex3.x, y: vertex3.y};
+              const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
+              const vertex4High = {x: vertex4.x, y: vertex4.y};       
+              glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);  
+              //6 * 9 = 54 elements per two point line
+          } else {
+            for (let j = 0; j < line.length; j += 1) {
+              if (j === 0) { //start of line
+                const point0 = line[j];
+                const point1 = line[j + 1];
+                const point2 = line[j + 2];
+                const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
+                const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
+                const pixel2 = LatLongToPixelXY(point2[1], point2[0]);
+                let p0 = new Vector2D(pixel0.x, pixel0.y);
+                let p1 = new Vector2D(pixel1.x, pixel1.y);
+                let p2 = new Vector2D(pixel2.x, pixel2.y);
+      
+                let pixelLine = Vector2D.subtract(p1, p0);
+                let normal = new Vector2D(-pixelLine.y, pixelLine.x)
+                let normalized = normal.normalize();
+  
+                let vertex1 = Vector2D.subtract(p0, Vector2D.multiply(normalized,thickness));
+                let vertex2 = Vector2D.add(p0, Vector2D.multiply(normalized,thickness));
+      
+                let miter = this.getMiter(p0, p1, p2, thickness);
+                let vertex3 = Vector2D.subtract(p1, miter);
+                let vertex4 = Vector2D.add(p1, miter);  
+  
+                //let l = Vector2D.subtract(a, b).length();
+                const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
+                const vertex1High = {x: vertex1.x, y: vertex1.y};
+                const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
+                const vertex2High = {x: vertex2.x, y: vertex2.y};
+                const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
+                const vertex3High = {x: vertex3.x, y: vertex3.y};
+                const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
+                const vertex4High = {x: vertex4.x, y: vertex4.y};
+                glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);  
+            } else if (j === line.length - 2) {
+                const point0 = line[j - 1];
+                const point1 = line[j];
+                const point2 = line[j + 1];
+                const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
+                const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
+                const pixel2 = LatLongToPixelXY(point2[1], point2[0]);
+                let p0 = new Vector2D(pixel0.x, pixel0.y);
+                let p1 = new Vector2D(pixel1.x, pixel1.y);
+                let p2 = new Vector2D(pixel2.x, pixel2.y);
+                let miter1 = this.getMiter(p0, p1, p2, thickness);
+  
+                let vertex1 = Vector2D.add(p1, miter1);
+                let vertex2 = Vector2D.subtract(p1,  miter1);
+                let pixelLine = Vector2D.subtract(p2, p1);
+                let normal = new Vector2D(-pixelLine.y, pixelLine.x)
+                let normalized = normal.normalize();
+                let vertex3 = Vector2D.subtract(p2, Vector2D.multiply(normalized,thickness));
+                let vertex4 = Vector2D.add(p2, Vector2D.multiply(normalized,thickness));
+                //let l = Vector2D.subtract(c, d).length();
+                const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
+                const vertex1High = {x: vertex1.x, y: vertex1.y};
+                const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
+                const vertex2High = {x: vertex2.x, y: vertex2.y};
+                const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
+                const vertex3High = {x: vertex3.x, y: vertex3.y};
+                const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
+                const vertex4High = {x: vertex4.x, y: vertex4.y};
+                glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);  
+                break;  
+            } else {
+              const point0 = line[j - 1];
+              const point1 = line[j];
+              const point2 = line[j + 1];
+              const point3 = line[j + 2];
+              const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
+              const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
+              const pixel2 = LatLongToPixelXY(point2[1], point2[0]);
+              const pixel3 = LatLongToPixelXY(point3[1], point2[0]);
+              let p0 = new Vector2D(pixel0.x, pixel0.y);
+              let p1 = new Vector2D(pixel1.x, pixel1.y);
+              let p2 = new Vector2D(pixel2.x, pixel2.y);
+              let p3 = new Vector2D(pixel3.x, pixel3.y);
+              //meter calc
+              let miter1 = this.getMiter(p0, p1, p2, thickness);
+              let miter2 = this.getMiter(p1, p2, p3, thickness);
+  
+              let vertex1 = Vector2D.add(p1, miter1);
+              let vertex2 = Vector2D.subtract(p1,  miter1);
+              let vertex3 = Vector2D.add(p2, miter2);
+              let vertex4 = Vector2D.subtract(p2,  miter2);
+              const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
+              const vertex1High = {x: vertex1.x, y: vertex1.y};
+              const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
+              const vertex2High = {x: vertex2.x, y: vertex2.y};
+              const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
+              const vertex3High = {x: vertex3.x, y: vertex3.y};
+              const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
+              const vertex4High = {x: vertex4.x, y: vertex4.y};
+  
+              glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);  
+            }
+          }
+          }
+        }      
+      }
+      return {vertices: glPoints, lengths: lengths}
     }
 };
