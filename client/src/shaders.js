@@ -34,16 +34,12 @@
 export let createProgram = (gl, vertexShader, fragmentShader) => {
 // create a program.
 var program = gl.createProgram();
-// attach the shaders.
 gl.attachShader(program, vertexShader);
 gl.attachShader(program, fragmentShader);
-// link the program.
 gl.linkProgram(program);
-// Check if it linked.
-var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+let success = gl.getProgramParameter(program, gl.LINK_STATUS);
 if (!success) {
-    // something went wrong with the link
-    throw ("program failed to link:" + gl.getProgramInfoLog (program));
+    alert("program failed to link:" + gl.getProgramInfoLog (program));
 }
 return program;
 };
@@ -73,35 +69,16 @@ void main() {
 v_color = a_color;
 }`
 
-export let vshader = 
-`precision highp float;
-uniform mat4 u_matrix;
-uniform vec3 u_eyepos;
-uniform vec3 u_eyepos_low;
-attribute vec3 a_vertex;
-attribute vec3 a_vertex_low;
-attribute float a_pointSize;
-attribute vec4 a_color;
-varying vec4 v_color;
-
-void main() {
-// inspired a lot by https://prideout.net/emulating-double-precision
-// also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
-vec3 t1 = a_vertex_low - u_eyepos_low;
-vec3 e = t1 - a_vertex_low;
-vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
-vec3 high_delta = t1 + t2;
-vec3 low_delta = t2 - (high_delta - t1);
-vec3 p = high_delta + low_delta;
-gl_Position = u_matrix * vec4(p, 1.0);
-gl_PointSize =  a_pointSize;
-// pass the color to the fragment shader
-v_color = a_color;
-}`
-
 export let vshader300 = 
 `#version 300 es
-precision highp float;
+//precision highp float;
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float; // highp is supported. floats have high precision
+#else
+precision mediump float; // highp is not supported. floats have medium precision
+#endif
+#endif 
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;
 uniform vec3 u_eyepos_low;
@@ -145,6 +122,39 @@ if (dist > border)
     t = dist / border;
     frag_color = mix(vec4(0), v_color, t);
 }`;
+
+export let vshader = 
+`//precision highp float;
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float; // highp is supported. floats have high precision
+#else
+precision mediump float; // highp is not supported. floats have medium precision
+#endif
+#endif 
+uniform mat4 u_matrix;
+uniform vec3 u_eyepos;
+uniform vec3 u_eyepos_low;
+attribute vec3 a_vertex;
+attribute vec3 a_vertex_low;
+attribute float a_pointSize;
+attribute vec4 a_color;
+varying vec4 v_color;
+
+void main() {
+// inspired a lot by https://prideout.net/emulating-double-precision
+// also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
+vec3 t1 = a_vertex_low - u_eyepos_low;
+vec3 e = t1 - a_vertex_low;
+vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+vec3 high_delta = t1 + t2;
+vec3 low_delta = t2 - (high_delta - t1);
+vec3 p = high_delta + low_delta;
+gl_Position = u_matrix * vec4(p, 1.0);
+gl_PointSize =  a_pointSize;
+// pass the color to the fragment shader
+v_color = a_color;
+}`
 
 export let fshader = 
 `precision mediump float;

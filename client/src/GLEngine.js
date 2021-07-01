@@ -28,12 +28,12 @@ export default class GLEngine {
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
     }
-    this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
-    if (!this.gl) {
-        this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-        this.webgl = 1;
-        console.log("Cannot load webgl2.0 using webgl instead");
-    }  
+    //this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
+    // if (!this.gl) {
+    //     this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
+    //     this.webgl = 1;
+    //     console.log("Cannot load webgl2.0 using webgl instead");
+    // }  
     if (!this.gl) {
       this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
       console.log("Cannot load webgl1.0 using experimental-webgl instead");
@@ -42,20 +42,22 @@ export default class GLEngine {
     if (!this.gl) {
       alert("Error: Failed to load webgl.\n" + "Your browser may not support webgl - this web app will not work correctly.\n" + "Please use a modern web browser.");
       this.webgl = 0;
-    } 
-    this.glLayer.delegate(this); 
-    this.addEventListeners();
-    if (this.webgl === 2) {
-      let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
-      let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
-      this.program = createProgram(this.gl, vertexShader, fragmentShader);
-    } else if (this.webgl === 1) {
-      let vertexShader = compileShader(this.gl, vshader, this.gl.VERTEX_SHADER);
-      let fragmentShader = compileShader(this.gl, fshader, this.gl.FRAGMENT_SHADER);
-      this.program = createProgram(this.gl, vertexShader, fragmentShader);
     } else {
-      //no webgl
+      this.glLayer.delegate(this); 
+      this.addEventListeners();
+      if (this.webgl === 2) {
+        let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
+        let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
+        this.program = createProgram(this.gl, vertexShader, fragmentShader);
+      } else if (this.webgl === 1) {
+        let vertexShader = compileShader(this.gl, vshader, this.gl.VERTEX_SHADER);
+        let fragmentShader = compileShader(this.gl, fshader, this.gl.FRAGMENT_SHADER);
+        this.program = createProgram(this.gl, vertexShader, fragmentShader);
+      } else {
+        //no webgl
+      }
     }
+    
   }
 
   /**
@@ -71,7 +73,6 @@ export default class GLEngine {
     }, false);
   }
 
-  
   setAppDelegate(delegate) {
       this.appDelegate = delegate;
   }
@@ -117,7 +118,6 @@ export default class GLEngine {
 
   redraw(points, lines) {
     this.glPoints = points;
-    const numPoints = points.length;
     this.glLines = lines;
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
@@ -137,13 +137,11 @@ export default class GLEngine {
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    //console.log(lines.vertices)
-    let verts = lines.vertices.concat(points);
+    let verts = lines.vertices.concat(points.vertices);
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
-    //console.log(verts)
-    let numVertices = lines.vertices.length / 9;
-    //console.log(numVertices)
+    let numLineVerts = lines.vertices.length / 9;
+    let numPointVerts = points.vertices.length / 9;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
@@ -173,10 +171,9 @@ export default class GLEngine {
       let topLeft = new L.LatLng(bounds.getNorth(), bounds.getWest());
       let pixelOffset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
-      var scale = Math.pow(2, this._map.getZoom());
+      let scale = Math.pow(2, this._map.getZoom());
       //console.log(this._map.getZoom());
       scaleMatrix(this.delegate.mapMatrix, scale, scale); //translation done in shader
-
       let u_matLoc = this.delegate.gl.getUniformLocation(this.delegate.program, "u_matrix");
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
@@ -191,26 +188,30 @@ export default class GLEngine {
       //   offset += count;
       //   }
       // } else {
-        this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numVertices); 
-      //}
-      let offset  = numVertices * 9;
-      //this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPoints);
-
+      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
+      let offset  = numLineVerts;
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPointVerts);
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
         this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        console.log(pixel)
-        let index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+        let index = null;
+        if (pixel[3] === 255) {
+          index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+          ;
+        } else {
+          index = 0; //deals with edge cases from anti-aliasing 
+        }
         this.delegate.mouseClick = null;
         this.delegate.appDelegate.setIndex(index);   
-        this._redraw();
+        this._redraw()
+        
       }
     }
   }
 
   drawLines(data, type, priorities, pointCount) {
-    const thickness = 0.0000075;
+    const thickness = 0.00001;
     let glPoints = [];
     let lengths = [];
     let faults = [];
@@ -225,6 +226,7 @@ export default class GLEngine {
             continue;
           }
           const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+          this.latlngs.push(latlng)
           for (let j = 0; j < line.length; j += 1) {
             if (j === 0  || j === line.length - 1) { 
               const point0 = line[0];
@@ -271,7 +273,6 @@ export default class GLEngine {
               let p0 = new Vector2D(pixel0.x, pixel0.y);
               let p1 = new Vector2D(pixel1.x, pixel1.y);
               let p2 = new Vector2D(pixel2.x, pixel2.y);
-              let miter = this.getMiter(p0, p1, p2, thickness);
               if (p0.equals(p1)) {
                 //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
                 continue;
@@ -284,6 +285,7 @@ export default class GLEngine {
                 //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
                 continue;
               }
+              let miter = this.getMiter(p0, p1, p2, thickness);
               let vertex1 = Vector2D.add(p1, miter);
               let vertex2 = Vector2D.subtract(p1, miter);
               let pixelLine = Vector2D.subtract(p2, p1);
@@ -310,8 +312,6 @@ export default class GLEngine {
           let fault = this.createFaultObject(data[i], type, latlng)
           faults.push(fault);
         } 
-      //}
-      
     }
     return {vertices: glPoints, lengths: lengths, faults: faults}
   }
@@ -329,6 +329,7 @@ export default class GLEngine {
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
       const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+      this.latlngs.push(latlng);
       if (linestring !== null) {
         ++pointCount;   
         let line = linestring.coordinates;
@@ -353,7 +354,6 @@ export default class GLEngine {
 
   buildPoints(data, type, priorities) {
     let faults = []; 
-    let latlngs = [];
     let points = []; //TODO change to Float32Array to make selection faster
     let count = 0;
     let pointSet = new Set();
@@ -363,7 +363,7 @@ export default class GLEngine {
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       const latlng = L.latLng(lat, lng);
-      latlngs.push(L.latLng(lat, lng));
+      this.latlngs.push(latlng);
       this.addToSet(pointSet, L.latLng(lat, lng));
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
@@ -384,7 +384,7 @@ export default class GLEngine {
       let fault = this.createFaultObject(data[i], type, latlng)
       faults.push(fault);         
     }
-    return { faults: faults, points: points, count: count}
+    return { faults: faults, vertices: points, count: count}
   }
 
   getMiter(p0, p1, p2, thickness) {

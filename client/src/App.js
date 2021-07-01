@@ -204,12 +204,9 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      console.log(index);
       this.setState({selectedIndex: index});
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-      //console.log(this.state.objGLData)
       let bucket = this.getGLFault(index - 1, 'inspection');
-      
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
           let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
@@ -240,12 +237,11 @@ class App extends React.Component {
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
-    let glThinLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
-    console.log(glThinLines)
+    //let glThinLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
     let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
     //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
     //this.GLEngine.redraw(glPoints.points, glLines);
-    this.GLEngine.redraw([], glLines);
+    this.GLEngine.redraw(glPoints, glLines);
     this.centreMap(this.GLEngine.latlngs);
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
@@ -344,7 +340,6 @@ class App extends React.Component {
       }
         break;
       case 'Map':
-        console.log("Map")
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
