@@ -98,6 +98,10 @@ export default class Vector2D {
 		return this;
     }
 
+	toString() {
+		return "x: " + this.x + "y: " + this.y;
+	}
+
     /* STATIC METHODS */
     static negative(v) {
         return new Vector2D(-v.x, -v.y);
