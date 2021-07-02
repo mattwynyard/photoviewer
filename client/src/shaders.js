@@ -44,6 +44,9 @@ if (!success) {
 return program;
 };
 
+// inspired a lot by https://prideout.net/emulating-double-precision
+// also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
+
 export let vshaderLine = 
 `#version 300 es
 precision highp float;
@@ -71,14 +74,7 @@ v_color = a_color;
 
 export let vshader300 = 
 `#version 300 es
-//precision highp float;
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
-precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
+precision highp float;
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;
 uniform vec3 u_eyepos_low;
@@ -89,8 +85,7 @@ in vec4 a_color;
 out vec4 v_color;
 
 void main() {
-// inspired a lot by https://prideout.net/emulating-double-precision
-// also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
+
 vec3 t1 = a_vertex_low - u_eyepos_low;
 vec3 e = t1 - a_vertex_low;
 vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
@@ -105,7 +100,14 @@ v_color = a_color;
 
 export let fshader300 = 
 `#version 300 es
-precision highp float;
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float; // highp is supported. floats have high precision
+#else
+precision mediump float; // highp is not supported. floats have medium precision
+#endif
+#endif 
+//precision highp float;
 in vec4 v_color;
 out vec4 frag_color;
 
@@ -124,14 +126,8 @@ if (dist > border)
 }`;
 
 export let vshader = 
-`//precision highp float;
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
-precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
+`
+precision highp float;
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;
 uniform vec3 u_eyepos_low;
@@ -142,8 +138,6 @@ attribute vec4 a_color;
 varying vec4 v_color;
 
 void main() {
-// inspired a lot by https://prideout.net/emulating-double-precision
-// also https://faistos18.github.io/webGL_leaflet_precise_points you legend!
 vec3 t1 = a_vertex_low - u_eyepos_low;
 vec3 e = t1 - a_vertex_low;
 vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
@@ -157,7 +151,15 @@ v_color = a_color;
 }`
 
 export let fshader = 
-`precision mediump float;
+`
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float; // highp is supported. floats have high precision
+#else
+precision mediump float; // highp is not supported. floats have medium precision
+#endif
+#endif 
+//precision mediump float;
 varying vec4 v_color;
 
 void main() {

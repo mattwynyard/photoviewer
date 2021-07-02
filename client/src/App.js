@@ -13,12 +13,12 @@ import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
 import DynamicDropdown from './DynamicDropdown.js';
-import ToolsMenu from './ToolsMenu.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
-import {LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, pad, formatDate, calcGCDistance} from  './util.js';
+import {pad, formatDate, calcGCDistance} from  './util.js';
+import {SearchBar} from './components/searchBar.js'
 
 
 const DIST_TOLERANCE = 20; //metres 
@@ -36,12 +36,14 @@ class App extends React.Component {
     this.customNav = React.createRef();
     this.menu = React.createRef();
     this.customModal = React.createRef();
+    this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
     this.videoModal = React.createRef();
     this.videoCard = React.createRef();
     this.toolsRef = React.createRef();
     this.antdrawer = React.createRef();
+    this.searchRef = React.createRef(this);
     this.glpoints = null;
     this.vidPolyline = null;
     this.state = {
@@ -143,6 +145,8 @@ class App extends React.Component {
   componentDidMount() {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
+    //L.DomEvent.disableClickPropagation(this.search.current);
+    console.log(this.cu)
     if (this.state.login === "Login") {
       this.callBackendAPI()
       .catch(err => alert(err));
@@ -206,6 +210,7 @@ class App extends React.Component {
     if (index !== 0) {
       this.setState({selectedIndex: index});
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
+      //console.log(this.state.selectedGeometry)
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
@@ -295,6 +300,7 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap(e) {
+    
     switch(this.antdrawer.current.getMode()) {
       case 'Video':
         if(this.vidPolyline === null) {  
@@ -340,6 +346,7 @@ class App extends React.Component {
       }
         break;
       case 'Map':
+        console.log("map")
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
@@ -2096,7 +2103,7 @@ class App extends React.Component {
     if (this.state.search !== null) {
       tokens = this.state.search.split(" ");
     }
-
+    if(!tokens) return;
     let searchString = "";
     for (let i = 0; i < tokens.length; i++) {
       if (i !== tokens.length - 1) {
@@ -2108,7 +2115,6 @@ class App extends React.Component {
     if (this.state.district !== null) {
       searchString += "," + this.state.district
     }
-    
     const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
       method: 'GET',
       credentials: 'same-origin',
@@ -2534,7 +2540,7 @@ updateStatus(marker, status) {
       }   
     }
 
-    const CustomSpinner = function(props) {
+    const CustomSpinner = (props) => {
       if (props.show) {
         return(
           <div className="spinner">
@@ -2550,14 +2556,14 @@ updateStatus(marker, status) {
         );
       } else {
         return(
-          <span></span>
+          null
         );    
       }  
     }
 
     const CustomLink = (props) => {
       if (this.state.activeLayer === null) {
-        return(<span></span>);
+        return(null);
       } else {
         return (
           <Link 
@@ -2573,7 +2579,7 @@ updateStatus(marker, status) {
             >{props.label}
           </Link>
         );
-          }      
+      }      
     }
 
     return ( 
@@ -2796,12 +2802,12 @@ updateStatus(marker, status) {
 
             </Polyline>
           )}
-          <Image 
+          {/* <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
-          />
+          /> */}
 
           <VideoCard
             ref={this.videoCard}
@@ -2828,8 +2834,10 @@ updateStatus(marker, status) {
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
           </Button> */}
-          <div >
-          <InputGroup className="search">
+          <SearchBar ref={this.searchRef} parentRef={this.searchRef}></SearchBar>
+          {/* <div ref={this.search}>
+          <InputGroup 
+            className="search">
             <FormControl 
               className="search"
               id="search"
@@ -2849,17 +2857,23 @@ updateStatus(marker, status) {
               </Button>
             </InputGroup.Append>
           </InputGroup>
-          </div>    
+          </div>     */}
       </LMap >    
       </div>
       {/* taken button out of map component */}
       <Button 
-            className="applyButton" 
-            variant="light" 
-            size="sm"
-            onClick={(e) => this.clickApply(e)}
-            >Apply Filter
-          </Button>
+        className="applyButton" 
+        variant="light" 
+        size="sm"
+        onClick={(e) => this.clickApply(e)}
+        >Apply Filter
+      </Button>
+      <Image 
+            className="satellite" 
+            src={this.state.osmThumbnail} 
+            onClick={(e) => this.toogleMap(e)} 
+            thumbnail={true}
+          />
        {/* admin modal     */}
        <CustomModal 
         name={'user'}

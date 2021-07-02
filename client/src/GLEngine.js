@@ -1,9 +1,8 @@
 import Vector2D from './Vector2D';
-import {LatLongToPixelXY, translateMatrix, scaleMatrix} from  './util.js';
-import L, { LineUtil } from 'leaflet';
+import {LatLongToPixelXY, scaleMatrix} from  './util.js';
+import L from 'leaflet';
 import './L.CanvasOverlay';
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
-import { NumberOutlined } from '@ant-design/icons';
 
 const DUPLICATE_OFFSET = 0.00002;
 
@@ -28,12 +27,12 @@ export default class GLEngine {
       this.glLayer.canvas.width = this.canvas.width;
       this.glLayer.canvas.height = this.canvas.height;
     }
-    //this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
-    // if (!this.gl) {
-    //     this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
-    //     this.webgl = 1;
-    //     console.log("Cannot load webgl2.0 using webgl instead");
-    // }  
+    this.gl = this.canvas.getContext('webgl2', { antialias: true }, {preserveDrawingBuffer: false}); 
+    if (!this.gl) {
+      this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
+      this.webgl = 1;
+      console.log("Cannot load webgl2.0 using webgl instead");
+    }  
     if (!this.gl) {
       this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
       console.log("Cannot load webgl1.0 using experimental-webgl instead");
