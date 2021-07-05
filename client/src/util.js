@@ -1,6 +1,5 @@
 const EARTH_RADIUS = 6378137.0 //metres
 const TILE_SIZE = 256
-const EARTH_EQUATOR = 40075016.68557849
 
 const RDP = (l, eps) => {
     const last = l.length - 1;

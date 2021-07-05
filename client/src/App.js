@@ -2834,7 +2834,7 @@ updateStatus(marker, status) {
             onClick={(e) => this.clickApply(e)}
             >Apply Filter
           </Button> */}
-          <SearchBar ref={this.searchRef} parentRef={this.searchRef}></SearchBar>
+         {/* <SearchBar ref={this.searchRef} parentRef={this.searchRef}></SearchBar> */}
           {/* <div ref={this.search}>
           <InputGroup 
             className="search">

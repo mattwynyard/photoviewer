@@ -245,7 +245,7 @@ export default class GLEngine {
               const vertex2 = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
               const vertex3 = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
               const vertex4 =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
-              const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
+              //const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
               //console.log("thickness " + l);
               const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
               const vertex1High = {x: vertex1.x, y: vertex1.y};

@@ -18,7 +18,7 @@
     var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (!success) {
         // Something went wrong during compilation; get the error
-        throw "could not compile shader:" + gl.getShaderInfoLog(shader);
+        alert("could not compile shader:" + gl.getShaderInfoLog(shader));
     }
     return shader;
 };
