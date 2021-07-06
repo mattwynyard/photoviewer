@@ -16,6 +16,7 @@ export default class GLEngine {
         this.glLines = [];
         this.latlngs = [];
         this.webgl = 2;
+        this.zoom = false;
         this.intializeGL();    
     }
 
@@ -115,9 +116,10 @@ export default class GLEngine {
     return verts;
   }
 
-  redraw(points, lines) {
+  redraw(points, lines, zoom) {
     this.glPoints = points;
     this.glLines = lines;
+    this.zoom = zoom;
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
     this.mapMatrix = new Float32Array(16);  
@@ -152,6 +154,10 @@ export default class GLEngine {
     // -- offset for color buffer
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
     this.gl.enableVertexAttribArray(colorLoc);
+    if (zoom) {
+      console.log(zoom);
+      this.appDelegate.centreMap(this.latlngs);
+    }
     this.glLayer.redraw();
 
     function drawingOnCanvas(canvasOverlay, params) {
@@ -406,6 +412,26 @@ export default class GLEngine {
 
   createFaultObject(data, type, latlng) {
     let id = data.id.split('_');
+    let width = null;
+    let length = null;
+    let starterp = null;
+    let enderp = null;
+    if (typeof(data.size) !== "undefined") {
+      let sizes = data.size.split('x');
+      length = sizes[0];
+      width = sizes[1];
+    } else {
+      length = data.length;
+      width = data.width;
+    }
+    if (typeof(data.erp) !== "undefined") {
+      starterp = data.erp;
+      enderp = null;
+    } else {
+      starterp = data.starterp;
+      enderp = data.enderp;
+    }
+    
     let obj = {};
     if (type === "footpath") {   
       obj = {
@@ -414,19 +440,20 @@ export default class GLEngine {
         roadid: data.roadid,
         footpathid: data.footpathid,
         roadname: data.roadname,        
-        location: data.location,
+        starterp: starterp,
+        enderp: enderp,
         asset:  data.asset,
         fpsurface: data.type,
         fault: data.fault,
         cause: data.cause,
-        width: data.width,
-        length: data.length,
+        width: width,
+        length: length,
+        count: data.count,
         grade: data.grade,
         photo: data.photoid,
         datetime: data.faulttime,
         latlng: latlng,
         status: data.status,
-        datefixed: data.datefixed
       };
     } else {
       obj = {
@@ -437,17 +464,19 @@ export default class GLEngine {
         inspection: data.inspection,
         location: data.location,
         class: data.class,
+        starterp: starterp,
+        enderp: enderp,
         fault: data.fault,
         repair: data.repair,
         comment: data.comment,
         width: data.width,
         length: data.length,
+        count: data.count,
         priority: data.priority,
         photo: data.photoid,
         datetime: data.faulttime,
         latlng: latlng,
         status: data.status,
-        datefixed: data.datefixed
       };
     }
     return obj;

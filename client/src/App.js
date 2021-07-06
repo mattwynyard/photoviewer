@@ -146,7 +146,6 @@ class App extends React.Component {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
     //L.DomEvent.disableClickPropagation(this.search.current);
-    console.log(this.cu)
     if (this.state.login === "Login") {
       this.callBackendAPI()
       .catch(err => alert(err));
@@ -159,12 +158,12 @@ class App extends React.Component {
     this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
-    if(this.glpoints !== null) {
-      console.log(this.glpoints.length)
-      this.GLEngine.redraw(this.glPoints, this.glLines);
-    } else {
-      //console.log("not null");
-    }
+    // if(this.glpoints !== null) {
+    //   console.log(this.glpoints.length)
+    //   this.GLEngine.redraw(this.glPoints, this.glLines, true);
+    // } else {
+    //   //console.log("not null");
+    // }
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     this.geojsonLayer = L.geoJSON().addTo(this.leafletMap);
@@ -210,7 +209,6 @@ class App extends React.Component {
     if (index !== 0) {
       this.setState({selectedIndex: index});
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-      //console.log(this.state.selectedGeometry)
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
@@ -227,7 +225,7 @@ class App extends React.Component {
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
     }
-    this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines);
+    this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
   }
 
  /**
@@ -235,19 +233,19 @@ class App extends React.Component {
  * Builds object containing fault information and calls redraw
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
- *  @param {Boolean zoom to extents when data loads} zoomTo
+ *  @param {Boolean zoom to extents when data loads} zoom
  */
-  addGLGeometry(project, points, lines, type) {
+  addGLGeometry(points, lines, type) {
     this.minMaxLine = this.GLEngine.minMaxLineSize();
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
     //let glThinLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
     let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    //this.GLEngine.redraw(glPoints.points, glLines);
-    this.GLEngine.redraw(glPoints, glLines);
-    this.centreMap(this.GLEngine.latlngs);
+    this.GLEngine.redraw(glPoints, glLines, true);
+    // if (zoom) {
+    //   this.centreMap(this.GLEngine.latlngs);
+    // }
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
@@ -300,7 +298,6 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap(e) {
-    
     switch(this.antdrawer.current.getMode()) {
       case 'Video':
         if(this.vidPolyline === null) {  
@@ -353,7 +350,8 @@ class App extends React.Component {
         this.setState({selectedIndex: null});
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
-        this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines);
+        this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
+        console.log("redraw");
       }
         break;
       default:
@@ -601,7 +599,7 @@ class App extends React.Component {
       filterPriorities: [],
       filterAges: [],
     }, function() {
-      this.GLEngine.redraw([], []);
+      this.GLEngine.redraw([], [], false);
     })
   }
 
@@ -1071,7 +1069,6 @@ class App extends React.Component {
         break;
         }
     }
-    
     this.setState(() => ({
       filterDropdowns: dynamicDropdowns,
       activeLayers: layers,
@@ -1270,6 +1267,7 @@ class App extends React.Component {
           throw new Error(response.status);
         } else {
           const body = await response.json();
+          console.log(body);
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
@@ -1351,7 +1349,7 @@ class App extends React.Component {
   removeLayer(e) {
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.GLEngine.redraw([], []);
+    this.GLEngine.redraw([], [], false);
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1427,7 +1425,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeProject);
+              this.filterLayer(this.state.activeProject, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1467,11 +1465,7 @@ class App extends React.Component {
                 let e = document.createEvent("MouseEvent");
                 await this.logout(e);
               } else {
-                if (body.type === "road") {
-                  await this.addGLGeometry(project, body.points, body.lines, body.type);
-                } else {
-                  await this.addGLGeometry(project, body.geometry, body.type);
-                }
+                await this.addGLGeometry(body.points, body.lines, body.type);
               }     
             }
           }).catch((error) => {
@@ -1766,11 +1760,9 @@ class App extends React.Component {
     if (date === "") {
       date = null;
     }
-
     if (status === "active") {
       date = null;
     }
-    
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/status', {
         method: 'POST',
@@ -1788,6 +1780,7 @@ class App extends React.Component {
         })
       }).then(async (response) => {
         const body = await response.json();
+        console.log(body);
         if (body.error != null) {
           alert(`Error: ${body.error}\n`);
         } else {
@@ -1985,7 +1978,7 @@ class App extends React.Component {
         query.splice(query.indexOf(date), 1 );
       }
     }
-    this.filterLayer(this.state.activeProject, false); //fetch layer  
+    this.filterLayer(this.state.activeProject); //fetch layer  
   }
 
   /**

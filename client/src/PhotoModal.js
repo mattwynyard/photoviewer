@@ -11,9 +11,7 @@ export default class PhotoModal extends React.Component {
             currentPhoto: props.currentPhoto,
             type: null,
             show: props.show,
-            status: null,
-            checked: null,
-            repaired: null,
+            latlng: null,
             callbackUpdateStatus: props.callbackUpdateStatus,
             login: props.login
         }
@@ -22,21 +20,15 @@ export default class PhotoModal extends React.Component {
    
 
     setModal(show, marker, amazon, currentPhoto, login) {
+      console.log(marker)
         this.setState({show: show});
         this.setState({login: login});
         this.setState({type: marker[0].type});
-        this.setState({status: marker[0].status});
-        this.setState({repaired:  marker[0].datefixed});
+        this.setState({latlng: marker[0].latlng});
         this.setState({amazon: amazon});
         this.setState({currentPhoto: currentPhoto});
         this.setState({selectedGLMarker: marker});
-        if (marker[0].status === "active") {
-          this.setState({checked: true});
-          this.setState({repaired:  ""});
-        } else {
-          this.setState({checked: false});
-          this.setState({repaired:  marker[0].datefixed});
-        }
+
     
     }
 
@@ -108,10 +100,10 @@ export default class PhotoModal extends React.Component {
           checked: false
         }));    
       } 
+      this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status, this.state.repaired);
     }
       
     closePhotoModal(e) {
-        this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status, this.state.repaired);
         this.setState({show: false});     
     }
 
@@ -125,7 +117,8 @@ export default class PhotoModal extends React.Component {
      * @param {*} latlng Leaflet latlng object
      */
     copyToClipboard(e, latlng) {
-      //e.preventDefault();
+      e.preventDefault();
+      console.log(latlng)
       const position = latlng.lat + " " + latlng.lng
       navigator.clipboard.writeText(position);
     }
@@ -157,33 +150,32 @@ export default class PhotoModal extends React.Component {
       }
 
       const Slider = function(props) {
-        if (props.login === "Login") {
+        //if (props.login === "Login") {
           return ( <div>
             <label className="lbstatus">
               <b>Status:</b> {props.status}
             </label>
             </div>);
-        } else {
-          return (
-            <div>
-              <label className="lbstatus">
-                <b>Status:</b> {props.status}
-              </label>
-              <label 
-                className="switch">
-                <input 
-                  type="checkbox"
-                  checked={props.checked}
-                  onClick={props.onClick}
-                  onChange={props.onChange}
-  
-                >
-                </input>
-                <span className="slider round"></span>
-              </label>
-            </div>
-          );
-        }
+        // } else {
+        //   return (
+        //     <div>
+        //       <label className="lbstatus">
+        //         <b>Status:</b> {props.status}
+        //       </label>
+        //       <label 
+        //         className="switch">
+        //         <input 
+        //           type="checkbox"
+        //           checked={props.checked}
+        //           onClick={props.onClick}
+        //           onChange={props.onChange}
+        //         >
+        //         </input>
+        //         <span className="slider round"></span>
+        //       </label>
+        //     </div>
+        //   );
+        //}
         
       }
   
@@ -193,30 +185,27 @@ export default class PhotoModal extends React.Component {
             <div className="container">
               <div className="row">
                 <div className="col-md-4">
-                    <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-                    <b>{"Location: "} </b> {props.obj.location}<br></br>
-                    <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng}
+                <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
+                  <b>{"Priority: "} </b> {props.obj.priority} <br></br>
+                  <b>{"Location: "} </b> {props.obj.location}<br></br>
+                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
+                  <Button variant="outline-secondary" 
+                    size="sm" 
+                    onClick={props.copy} 
+                    active >Copy
+                  </Button>
                 </div>
                 <div className="col-md-4">
-                  <b>{"Grade: "} </b> {props.obj.priority} <br></br>
+                  <b>{"Fault: "} </b> {props.obj.fault} <br></br>
                   <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
-                  <b>{"DateTime: "} </b> {props.obj.datetime}
+                  <b>{"Width: "}</b> {props.obj.width} m<br></br> 
+                  <b>{"Length: "}</b> {props.obj.length} m
                 </div>
                 <div className="col-md-4">
-                <Slider
-                  login = {props.login}
-                  status={props.status}
-                  checked={props.checked}
-                  onClick={props.onClick}
-                  onChange={props.onChange}              
-                  >
-                </Slider>
-                <DateBox 
-                  repaired={props.repaired}
-                  onChange={props.onDateChange}
-                  status={props.status}
-                >
-                </DateBox>
+                <b>{"Start ERP: "} </b> {props.obj.starterp}<br></br> 
+                  <b>{"End ERP: "} </b> {props.obj.enderp}<br></br> 
+                  <b>{"DateTime: "} </b> {props.obj.datetime}<br></br> 
+                  <b>{"Status: "} </b> {props.obj.status}
                 </div>
               </div>
             </div>	 
@@ -239,32 +228,17 @@ export default class PhotoModal extends React.Component {
                 <div className="col-md-4">
                   <b>{"Type: "}</b> {props.obj.fault} <br></br> 
                   <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
-                  <b>{"Size: "}</b> {props.obj.size} m<br></br> 
-                  <b>{"DateTime: "} </b> {props.obj.datetime}
+                  <b>{"Width: "}</b> {props.obj.width} m<br></br> 
+                  <b>{"Length: "}</b> {props.obj.length} m
                 </div>
                 <div className="col-md-4">
-                <Slider
-                  login = {props.login}
-                  status={props.status}
-                  checked={props.checked}
-                  onClick={props.onClick}
-                  onChange={props.onChange}              
-                  >
-                </Slider>
-                {/* <DatePicker
-                  selected={props.repaired}
-                  onChange={props.onDateChange}
-                  status={props.status}
-                /> */}
-                <DateBox 
-                  repaired={props.repaired}
-                  onChange={props.onDateChange}
-                  status={props.status}
-                >
-                </DateBox>
+                  <b>{"Start ERP: "} </b> {props.obj.starterp}<br></br> 
+                  <b>{"End ERP: "} </b> {props.obj.enderp}<br></br> 
+                  <b>{"DateTime: "} </b> {props.obj.datetime}<br></br> 
+                  <b>{"Status: "} </b> {props.obj.status}
                 </div>
-              </div>
-            </div>	 
+                </div>
+              </div>	 
           );
       
         } else {
@@ -307,14 +281,7 @@ export default class PhotoModal extends React.Component {
         <CustomTable 
           obj={this.state.selectedGLMarker[0]}
           login={this.state.login}
-          status={this.state.status}
-          repaired={this.state.repaired}
-          checked={this.state.checked}
-          onClick={(e) => this.clickSlider(e)}
-          onChange={(e) => this.changeSlider(e)}
-          onDateChange={(e) => this.changeDate(e)}
-          //TODO copy not working
-          // copy={(e) => this.copyToClipboard(e, () => this.getGLFault('latlng'))}
+          copy={(e) => this.copyToClipboard(e, this.state.latlng)}
           >      
         </CustomTable >
       </Modal.Footer>

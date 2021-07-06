@@ -556,8 +556,8 @@ app.post('/age', async (req, res) => {
   }
   if (result) {
     let project = req.body.project;
-    //let result = await db.age(project);
-    let result = await db.inspection(project);
+    let archive = await db.isArchive(project);
+    let result = await db.inspection(project, archive.rows[0].isarchive);
     res.set('Content-Type', 'application/json'); 
     res.send({result: result.rows});  
   } else {
@@ -591,12 +591,12 @@ app.post('/priority', async (req, res) => {
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
-  let priority = null
   if (result) {
     let project = req.body.project;
     let surface = await db.projecttype(project);
+    let archive = await db.isArchive(project); 
     if (surface.rows[0].surface === "footpath") {
-      let result = await db.filters(project, "grade");
+      let result = await db.filters(project, "grade", archive.rows[0].isarchive);
       let grade = []
       for (let i = 0; i < result.rows.length; i++) {
         let value = Object.values(result.rows[i]);
@@ -609,7 +609,8 @@ app.post('/priority', async (req, res) => {
       res.set('Content-Type', 'application/json'); 
       res.send({priority: grade});        
     } else {
-      let result = await db.priority(project);
+      let result = await db.priority(project, archive.rows[0].isarchive);
+      console.log(result.rows)
       let priority = [];
       for (let i = 0; i < result.rows.length; i++) {
         let value = Object.values(result.rows[i]);
@@ -664,8 +665,8 @@ app.post('/layer', async (req, res) => {
     let filter = req.body.filter;
     let priority = req.body.priority;
     let inspection = req.body.inspection;
-    let assets = req.body.assets;
     let faults = req.body.faults;
+    let assets = req.body.assets;;
     let types = req.body.types;
     let causes = req.body.causes;
     let isCompleted = false;
@@ -673,6 +674,8 @@ app.post('/layer', async (req, res) => {
     let finalLines = null;
     let dbPriority = [];
     let surface = await db.projecttype(project);
+    let isarchive = await db.isArchive(project); 
+    let archive = isarchive.rows[0].isarchive
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
         isCompleted = true
@@ -689,32 +692,45 @@ app.post('/layer', async (req, res) => {
       if (dbPriority.length !== 0) {
         let geometry = await db.footpath(project, dbPriority, assets, faults, types, causes);
         activePoints = geometry.rows;
+        activeLines = [];
       } 
       if (isCompleted) {
         let points = await db.footpathCompleted(project, assets, faults, types, causes);
         completedPoints = points.rows;
+        completedLines = [];
       }
       finalPoints = activePoints.concat(completedPoints);
     } else if (surface.rows[0].surface === "road") {
-      if (dbPriority.length !== 0) {
-        //let geometry = await db.layer(project, filter, dbPriority, inspection);
-        let points = await db.geometries(project, filter, dbPriority, inspection, "ST_Point", 'active');
-        let lines = await db.geometries(project, filter, dbPriority, inspection, "ST_LineString", 'active');
-        activePoints = points.rows;
-        activeLines = lines.rows;
-      } 
-      if (isCompleted) { //**** db.geometries to include status */
-        //let geometry = await db.layerCompleted(project, filter, inspection);
-        let points = await db.geometries(project, filter, null, inspection, "ST_Point", 'completed');
-        let lines = await db.geometries(project, filter, null, inspection, "ST_LineString", 'completed');
-        completedPoints = points.rows;
-        completedLines = lines.rows;
-      }
-      finalPoints = activePoints.concat(completedPoints);
-      finalLines = activeLines.concat(completedLines);
+        if (dbPriority.length !== 0) {
+          if (archive) {
+            let points = await db.layer(project, filter, dbPriority, inspection);
+            activePoints = points.rows;
+            activeLines = [];
+          } else {
+            let points = await db.geometries(project, filter, dbPriority, inspection, "ST_Point", 'active');
+            let lines = await db.geometries(project, filter, dbPriority, inspection, "ST_LineString", 'active');
+            activePoints = points.rows;
+            activeLines = lines.rows;
+          }   
+        } 
+        if (isCompleted) { //**** db.geometries to include status */
+          if (archive) {
+            let points = await db.layerCompleted(project, filter, inspection);
+            completedPoints = points.rows;
+            completedLines = [];
+          } else {
+            let points = await db.geometries(project, filter, null, inspection, "ST_Point", 'completed');
+            let lines = await db.geometries(project, filter, null, inspection, "ST_LineString", 'completed');
+            completedPoints = points.rows;
+            completedLines = lines.rows;
+          } 
+          
+        }
     } else {
       res.send({error: "Layer not found"});
     }  
+    finalPoints = activePoints.concat(completedPoints);
+    finalLines = activeLines.concat(completedLines);
     res.set('Content-Type', 'application/json');
     res.send({type: surface.rows[0].surface, points: finalPoints, lines: finalLines});
   } else {
