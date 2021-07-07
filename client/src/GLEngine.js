@@ -5,6 +5,7 @@ import './L.CanvasOverlay';
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
 
 const DUPLICATE_OFFSET = 0.00002;
+const ALPHA = 0.9;
 
 export default class GLEngine {
  
@@ -85,7 +86,6 @@ export default class GLEngine {
    * @returns vertices data as Float32 array
    */
   reColorPoints(verts) {
-    //console.log(verts)
     if (this.mouseClick === null) {
       if (this.appDelegate.state.selectedIndex === null) {
         return verts;
@@ -102,7 +102,6 @@ export default class GLEngine {
     } else {
       for (let i = 0; i < verts.length; i += 9) {
         let index = verts[i + 8];
-        //console.log(index);
         //calculates r,g,b color from index
         let r = ((index & 0x000000FF) >>  0) / 255;
         let g = ((index & 0x0000FF00) >>  8) / 255;
@@ -439,7 +438,9 @@ export default class GLEngine {
         id: id[id.length - 1],
         roadid: data.roadid,
         footpathid: data.footpathid,
-        roadname: data.roadname,        
+        roadname: data.roadname,  
+        location: data.location, 
+        position: data.position,     
         starterp: starterp,
         enderp: enderp,
         asset:  data.asset,
@@ -463,12 +464,12 @@ export default class GLEngine {
         carriage: data.carriage,
         inspection: data.inspection,
         location: data.location,
+        position: data.position, 
         class: data.class,
         starterp: starterp,
         enderp: enderp,
         fault: data.fault,
         repair: data.repair,
-        comment: data.comment,
         width: data.width,
         length: data.length,
         count: data.count,

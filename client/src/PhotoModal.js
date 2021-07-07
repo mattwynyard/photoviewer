@@ -1,3 +1,4 @@
+import { FieldBinaryOutlined } from '@ant-design/icons';
 import React from 'react';
 import {Modal, Button}  from 'react-bootstrap';
 import {pad} from  './util.js'
@@ -6,110 +7,60 @@ export default class PhotoModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            selectedGLMarker: props.marker,
-            amazon: props.amazon,
-            currentPhoto: props.currentPhoto,
-            type: null,
-            show: props.show,
-            latlng: null,
-            callbackUpdateStatus: props.callbackUpdateStatus,
-            login: props.login
+            marker: [],
+            amazon: null,
+            show: false,
+            photo: null,
+
         }
     }
 
-   
+    showModal(show, marker, amazon) {
+      this.setState({marker: marker});
+      this.setState({photo: marker[0].photo});
+      this.setState({amazon: amazon});
+      this.setState({show: show});
 
-    setModal(show, marker, amazon, currentPhoto, login) {
-      console.log(marker)
-        this.setState({show: show});
-        this.setState({login: login});
-        this.setState({type: marker[0].type});
-        this.setState({latlng: marker[0].latlng});
-        this.setState({amazon: amazon});
-        this.setState({currentPhoto: currentPhoto});
-        this.setState({selectedGLMarker: marker});
-
-    
     }
 
-    setArchiveModal(show, obj, amazon) {
-      
-      this.setState({show: show});
+    setArchiveModal(show, marker, amazon) {
+      this.setState({marker: marker});
       this.setState({amazon: amazon});
-      this.setState({type: 'archive'});
-      this.setState({currentPhoto: obj[0].photo});
-      this.setState({selectedGLMarker: obj});
-      console.log(this.state.selectedGLMarker);
+      this.setState({photo: marker[0].photo});
+      this.setState({show: show});
+
     }
 
     getPhoto(direction) {
-        let photo = this.state.currentPhoto;
-        let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
-        let n = null;
-        if (direction === "prev") {
-          n = intSuffix - 1;
-        } else {
-          n = intSuffix + 1;
-        }
-        let newSuffix = pad(n, 5);
-        let prefix = photo.slice(0, photo.length - 5);
-        let newPhoto = prefix + newSuffix;
-        this.setState({currentPhoto: newPhoto});
-        return newPhoto;
-      }
-
-    clickPrev(e) {
-        e.preventDefault();
-        const newPhoto = this.getPhoto("prev");
-        this.setState({currentPhoto: newPhoto});
-        const url = this.state.amazon + newPhoto + ".jpg";
-        this.setState({photourl: url});
-        }
-        
-    clickNext(e) {
-        e.preventDefault();
-        const newPhoto = this.getPhoto("next");
-        this.setState({currentPhoto: newPhoto});
-        const url = this.state.amazon + newPhoto + ".jpg";
-        this.setState({photourl: url});
-    }
-
-    changeSlider = (e) => {
-      
-    }
-
-    changeDate(e) {
-      e.preventDefault();
-      console.log(e.target.value);
-      this.setState({repaired: e.target.value});
-    }
-
-
-    clickSlider(e) {
-      if (this.state.repaired === "") {
-        return;
-      }
-      if (!this.state.checked) {
-        this.setState(() => ({
-          status: "active", 
-          checked: true
-        }));  
+      let photo = this.state.photo;
+      let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
+      let n = null;
+      if (direction === "prev") {
+        n = intSuffix - 1;
       } else {
-        this.setState(() => ({
-          status: "completed", 
-          checked: false
-        }));    
-      } 
-      this.delegate.updateStatusAsync(this.state.selectedGLMarker, this.state.status, this.state.repaired);
-    }
-      
-    closePhotoModal(e) {
-        this.setState({show: false});     
+        n = intSuffix + 1;
+      }
+      let newSuffix = pad(n, 5);
+      let prefix = photo.slice(0, photo.length - 5);
+      let newPhoto = prefix + newSuffix;
+      return newPhoto;
     }
 
-    delegate(parent) {
-      this.delegate = parent;
+    clickPrev = (e) => {
+      e.preventDefault();
+      const newPhoto = this.getPhoto("prev");
+      this.setState({photo: newPhoto});
     }
+        
+    clickNext = (e) => {
+      e.preventDefault();
+      const newPhoto = this.getPhoto("next");
+      this.setState({photo: newPhoto});
+    };
+      
+    closePhotoModal = () => {
+        this.setState({show: false});     
+    };
 
       /**
      * Copies the lat lng from photo modal to users clipboard
@@ -123,89 +74,63 @@ export default class PhotoModal extends React.Component {
       navigator.clipboard.writeText(position);
     }
 
-    
     render() {
-      const DateBox = function(props) {
-        if (props.status === "active") {
-          return (
+      const DataColumn = (props) => {
+        return (
             <div>
-              <label><b>{"Date Repaired: "} </b></label>
-              <input
-                value={props.repaired}
-                type="date" 
-                id="daterepaired"
-                onChange={props.onChange}
-                >
-              </input>
-            </div>     
-          );
-        } else {
-          return (
+            {props.data.map((field, index) => 
+              <DataRow key={index.toString()} name={field.name} data={field.data} symbol={field.symbol}></DataRow>    
+            )}
+            </div>
+        );
+      }
+      const DataRow = (props) => {
+        return (
             <div>
-              <label><b>{"Date Repaired: "}</b> {props.repaired}</label>
-            </div>     
-          );
-        }
-        
+            {props.data ? <div><b>{props.name}</b>{props.data}{props.symbol}</div>: null}
+            </div>
+        );
       }
-
-      const Slider = function(props) {
-        //if (props.login === "Login") {
-          return ( <div>
-            <label className="lbstatus">
-              <b>Status:</b> {props.status}
-            </label>
-            </div>);
-        // } else {
-        //   return (
-        //     <div>
-        //       <label className="lbstatus">
-        //         <b>Status:</b> {props.status}
-        //       </label>
-        //       <label 
-        //         className="switch">
-        //         <input 
-        //           type="checkbox"
-        //           checked={props.checked}
-        //           onClick={props.onClick}
-        //           onChange={props.onChange}
-        //         >
-        //         </input>
-        //         <span className="slider round"></span>
-        //       </label>
-        //     </div>
-        //   );
-        //}
-        
-      }
-  
-      const CustomTable = function(props) {
+      const CustomTable = (props) => {
+        console.log(props.obj)
         if(props.obj.type === "road") {
           return (
             <div className="container">
               <div className="row">
                 <div className="col-md-4">
-                <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
-                  <b>{"Priority: "} </b> {props.obj.priority} <br></br>
-                  <b>{"Location: "} </b> {props.obj.location}<br></br>
-                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
+                  <DataColumn className="col-md-4" data={[
+                    {name: "Fault ID: ", data: props.obj.id},
+                    {name: "Priority: ", data: props.obj.priority},
+                    {name: "Road ID: ", data: props.obj.roadid},
+                    {name: "Carriage ID: ", data: props.obj.carriage},
+                    {name: "Location: ", data: props.obj.location}
+                    ]}>
+                  </DataColumn>   
+                </div>
+                <div className="col-md-4">
+                  <DataColumn className="col-md-4"data={[
+                      {name: "Fault: ", data: props.obj.fault},
+                      {name: "Repair: ", data: props.obj.repair},
+                      {name: "Width: ", data: props.obj.width, symbol: " m"},
+                      {name: "Length: ", data: props.obj.length, symbol: " m"},
+                      {name: "Count: ", data: props.obj.count}
+                      ]}>
+                  </DataColumn>
+                  </div>
+                <div className="col-md-4">
+                  <DataColumn className="col-md-4"data={[
+                      {name: "Start ERP: ", data: props.obj.starterp},
+                      {name: "End ERP: ", data: props.obj.enderp},
+                      {name: "DateTime: ", data: props.obj.datetime},
+                      ]}>
+
+                </DataColumn>
+                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={props.copy} 
                     active >Copy
                   </Button>
-                </div>
-                <div className="col-md-4">
-                  <b>{"Fault: "} </b> {props.obj.fault} <br></br>
-                  <b>{"Repair: "}</b>{props.obj.repair}<br></br> 
-                  <b>{"Width: "}</b> {props.obj.width} m<br></br> 
-                  <b>{"Length: "}</b> {props.obj.length} m
-                </div>
-                <div className="col-md-4">
-                <b>{"Start ERP: "} </b> {props.obj.starterp}<br></br> 
-                  <b>{"End ERP: "} </b> {props.obj.enderp}<br></br> 
-                  <b>{"DateTime: "} </b> {props.obj.datetime}<br></br> 
-                  <b>{"Status: "} </b> {props.obj.status}
                 </div>
               </div>
             </div>	 
@@ -215,53 +140,65 @@ export default class PhotoModal extends React.Component {
             <div className="container">
               <div className="row">
                 <div className="col-md-4">
-                  <b>{"Fault ID: "}</b> {props.obj.id} <br></br> 
-                  <b>{"Grade: "} </b> {props.obj.grade} <br></br>
-                  <b>{"Location: "} </b> {props.obj.roadname}<br></br>
-                  <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}  
+                  <DataColumn className="col-md-4" data={[
+                    {name: "Fault ID: ", data: props.obj.id},
+                    {name: "Grade: ", data: props.obj.grade},
+                    {name: "Road ID: ", data: props.obj.roadid},
+                    {name: "Footpath ID: ", data: props.obj.footpathid},
+                    {name: "Location: ", data: props.obj.roadname}
+                    ]}>
+                  </DataColumn>   
+                </div>
+                <div className="col-md-4">
+                  <DataColumn className="col-md-4"data={[
+                      {name: "Fault: ", data: props.obj.fault},
+                      {name: "Cause: ", data: props.obj.cause},
+                      {name: "Width: ", data: props.obj.width, symbol: " m"},
+                      {name: "Length: ", data: props.obj.length, symbol: " m"},
+                      {name: "Count: ", data: props.obj.count}
+                      ]}>
+                  </DataColumn>
+                  </div>
+                <div className="col-md-4">
+                  <DataColumn className="col-md-4"data={[
+                      {name: "Start ERP: ", data: props.obj.starterp},
+                      {name: "End ERP: ", data: props.obj.enderp},
+                      {name: "DateTime: ", data: props.obj.datetime},
+                      ]}>
+
+                </DataColumn>
+                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={props.copy} 
                     active >Copy
                   </Button>
                 </div>
-                <div className="col-md-4">
-                  <b>{"Type: "}</b> {props.obj.fault} <br></br> 
-                  <b>{"Cause: "}</b>{props.obj.cause} <br></br> 
-                  <b>{"Width: "}</b> {props.obj.width} m<br></br> 
-                  <b>{"Length: "}</b> {props.obj.length} m
-                </div>
-                <div className="col-md-4">
-                  <b>{"Start ERP: "} </b> {props.obj.starterp}<br></br> 
-                  <b>{"End ERP: "} </b> {props.obj.enderp}<br></br> 
-                  <b>{"DateTime: "} </b> {props.obj.datetime}<br></br> 
-                  <b>{"Status: "} </b> {props.obj.status}
-                </div>
-                </div>
-              </div>	 
-          );
-      
+              </div>
+            </div>	  
+          );     
         } else {
           return (
-            <div></div>
+            null
           );
         }     
       }
+
       return (
       <Modal dialogClassName={"photoModal"} 
           show={this.state.show} 
           size='xl' 
           centered={true}
-          onHide={(e) => this.closePhotoModal(e)}
+          onHide={this.closePhotoModal}
       >
       <Modal.Body className="photoBody">	
         <div className="container">
-        {this.state.selectedGLMarker.map((obj, index) => 
+        {this.state.marker.map((obj, index) => 
           <img
             key={`${index}`}  
             className="photo" 
             alt="fault"
-            src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
+            src={this.state.amazon + this.state.photo + ".jpg"} 
               >
           </img>
         )}
@@ -269,18 +206,17 @@ export default class PhotoModal extends React.Component {
             className="leftArrow" 
             src={"leftArrow_128.png"} 
             alt="left arrow"
-            onClick={(e) => this.clickPrev(e)}/> 
+            onClick={this.clickPrev}/> 
           <img 
             className="rightArrow" 
             src={"rightArrow_128.png"} 
             alt="right arrow"
-            onClick={(e) => this.clickNext(e)}/>         
+            onClick={this.clickNext}/>         
         </div>
       </Modal.Body >
       <Modal.Footer>
         <CustomTable 
-          obj={this.state.selectedGLMarker[0]}
-          login={this.state.login}
+          obj={this.state.marker[0]}
           copy={(e) => this.copyToClipboard(e, this.state.latlng)}
           >      
         </CustomTable >

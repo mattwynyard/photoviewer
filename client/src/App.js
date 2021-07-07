@@ -88,7 +88,6 @@ class App extends React.Component {
       priority: [],
       sizes: [],
       photos: [],
-      currentPhoto: null,
       currentFault: [],
       archiveMarker: [],
       carMarker: [], //position of current image in video
@@ -154,7 +153,7 @@ class App extends React.Component {
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    this.photoModal.current.delegate(this);
+    //this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
@@ -249,6 +248,7 @@ class App extends React.Component {
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
+    console.log(this.state.activeLayer)
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
@@ -551,8 +551,8 @@ class App extends React.Component {
    */
   clickImage(e) {   
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
-    this.setState({currentPhoto: photo});
-    this.photoModal.current.setModal(true, this.state.selectedGeometry, this.state.amazon, photo, this.state.login);
+    console.log(photo)
+    this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
   }
 
   getPhoto(direction) {
@@ -2962,11 +2962,6 @@ updateStatus(marker, status) {
       {/*photo modal */}    
       <PhotoModal
         ref={this.photoModal}
-        show={this.state.show} 
-        marker={this.state.selectedGeometry}
-        amazon={this.state.amazon}
-        currentPhoto={this.state.currentPhoto}
-        callbackUpdateStatus={this.updateStatus}
       >
       </PhotoModal>
       
