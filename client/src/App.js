@@ -43,7 +43,7 @@ class App extends React.Component {
     this.videoCard = React.createRef();
     this.toolsRef = React.createRef();
     this.antdrawer = React.createRef();
-    this.searchRef = React.createRef(this);
+    this.searchRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     this.state = {
@@ -144,7 +144,6 @@ class App extends React.Component {
   componentDidMount() {
     this.customNav.current.setTitle(this.state.user);
     this.customNav.current.setOnClick(this.state.loginModal);
-    //L.DomEvent.disableClickPropagation(this.search.current);
     if (this.state.login === "Login") {
       this.callBackendAPI()
       .catch(err => alert(err));
@@ -155,6 +154,7 @@ class App extends React.Component {
     this.customModal.current.delegate(this);
     //this.photoModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
+    //this.searchRef.current.setLeaflet(this.map.leafletMap);
     this.rulerPolyline = null;
     this.distance = 0;
     // if(this.glpoints !== null) {
@@ -188,6 +188,21 @@ class App extends React.Component {
   initializeGL() {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
+  }
+
+  centreMap = (latlngs) => {
+    //if (!map) return;
+    if (latlngs.length !== 0) {
+        let bounds = L.latLngBounds(latlngs);
+        this.leafletMap.fitBounds(bounds);
+    } else {
+        return;
+    }
+    let textbox = document.getElementById("search");
+    if (this.state.search !== null) {
+        textbox.value = "";
+        this.setState({search: null});
+    }
   }
   
   /**
@@ -234,21 +249,22 @@ class App extends React.Component {
  * @param {String type of data ie. road or footpath} type
  *  @param {Boolean zoom to extents when data loads} zoom
  */
-  addGLGeometry(points, lines, type) {
+  addGLGeometry(points, lines, type, zoom) {
     this.minMaxLine = this.GLEngine.minMaxLineSize();
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
     //let glThinLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
     let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    this.GLEngine.redraw(glPoints, glLines, true);
-    // if (zoom) {
-    //   this.centreMap(this.GLEngine.latlngs);
-    // }
+    
+    if (zoom) {
+      this.GLEngine.redraw(glPoints, glLines, true);
+    } else {
+      this.GLEngine.redraw(glPoints, glLines, false);
+    }
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
     this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
-    console.log(this.state.activeLayer)
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
@@ -351,7 +367,6 @@ class App extends React.Component {
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
         this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
-        console.log("redraw");
       }
         break;
       default:
@@ -500,7 +515,7 @@ class App extends React.Component {
   centreMap(latlngs) {
       if (latlngs.length !== 0) {
         let bounds = L.latLngBounds(latlngs);
-        const map = this.map.leafletElement;
+        const map = this.leaflet;
         map.fitBounds(bounds);
       } else {
         return;
@@ -551,7 +566,6 @@ class App extends React.Component {
    */
   clickImage(e) {   
     let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
-    console.log(photo)
     this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
   }
 
@@ -599,7 +613,7 @@ class App extends React.Component {
       filterPriorities: [],
       filterAges: [],
     }, function() {
-      this.GLEngine.redraw([], [], false);
+      this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
     })
   }
 
@@ -1267,7 +1281,6 @@ class App extends React.Component {
           throw new Error(response.status);
         } else {
           const body = await response.json();
-          console.log(body);
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
@@ -1349,7 +1362,7 @@ class App extends React.Component {
   removeLayer(e) {
     this.setState({objGLData: null});
     this.setState({glpoints: []});
-    this.GLEngine.redraw([], [], false);
+    this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1442,7 +1455,7 @@ class App extends React.Component {
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project) {
+  async filterLayer(project, zoom) {
     this.setState({spinner: true});
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -1459,13 +1472,12 @@ class App extends React.Component {
               throw new Error(response.status);
             } else {
               const body = await response.json();
-              console.log(body);
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
                 await this.logout(e);
               } else {
-                await this.addGLGeometry(body.points, body.lines, body.type);
+                await this.addGLGeometry(body.points, body.lines, body.type, zoom);
               }     
             }
           }).catch((error) => {
@@ -1785,7 +1797,7 @@ class App extends React.Component {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.rows != null) {
-            this.filterLayer(this.state.activeProject);
+            this.filterLayer(this.state.activeProject, false);
           }
         }   
       })
@@ -1891,12 +1903,6 @@ class App extends React.Component {
     navigator.clipboard.writeText(position);
   }
 
-  
-
-  changeLayer(e) {
-    console.log("redraw");
-  }
-
   selectLayer(e, index) {
     console.log(this.state.activeLayers[index]);
     this.setState({activeLayer: this.state.activeLayers[index]});
@@ -1978,7 +1984,7 @@ class App extends React.Component {
         query.splice(query.indexOf(date), 1 );
       }
     }
-    this.filterLayer(this.state.activeProject); //fetch layer  
+    this.filterLayer(this.state.activeProject, false); //fetch layer  
   }
 
   /**
@@ -2090,46 +2096,46 @@ class App extends React.Component {
    * Sends get request to nominatim server. Centres map on bounding box from response
    * @param {event} e - search button click
    */
-  async clickSearch(e) {
-    e.preventDefault();
-    let tokens = null
-    if (this.state.search !== null) {
-      tokens = this.state.search.split(" ");
-    }
-    if(!tokens) return;
-    let searchString = "";
-    for (let i = 0; i < tokens.length; i++) {
-      if (i !== tokens.length - 1) {
-        searchString += tokens[i] + "+";
-      } else {
-        searchString += tokens[i];
-      }
-    }
-    if (this.state.district !== null) {
-      searchString += "," + this.state.district
-    }
-    const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
-      method: 'GET',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
-    if (body.length !== 0) {
-      if (body[0] !== "undefined" || body[0] !== "") {
-        let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
-        let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
-        this.centreMap([latlng1, latlng2])
-      }
-    }
+  // async clickSearch(e) {
+  //   e.preventDefault();
+  //   let tokens = null
+  //   if (this.state.search !== null) {
+  //     tokens = this.state.search.split(" ");
+  //   }
+  //   if(!tokens) return;
+  //   let searchString = "";
+  //   for (let i = 0; i < tokens.length; i++) {
+  //     if (i !== tokens.length - 1) {
+  //       searchString += tokens[i] + "+";
+  //     } else {
+  //       searchString += tokens[i];
+  //     }
+  //   }
+  //   if (this.state.district !== null) {
+  //     searchString += "," + this.state.district
+  //   }
+  //   const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
+  //     method: 'GET',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //   });
+  //   const body = await response.json();
+  //   if (response.status !== 200) {
+  //     alert(response.status + " " + response.statusText);  
+  //     throw Error(body.message);    
+  //   } 
+  //   if (body.length !== 0) {
+  //     if (body[0] !== "undefined" || body[0] !== "") {
+  //       let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
+  //       let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
+  //       this.centreMap([latlng1, latlng2])
+  //     }
+  //   }
     
-  }
+  // }
 
 
   /**
@@ -2820,37 +2826,8 @@ updateStatus(marker, status) {
             </CustomPopup>
             )}
           </LayerGroup>
-          {/* <Button 
-            className="applyButton" 
-            variant="light" 
-            size="sm"
-            onClick={(e) => this.clickApply(e)}
-            >Apply Filter
-          </Button> */}
-         {/* <SearchBar ref={this.searchRef} parentRef={this.searchRef}></SearchBar> */}
-          {/* <div ref={this.search}>
-          <InputGroup 
-            className="search">
-            <FormControl 
-              className="search"
-              id="search"
-              placeholder="Search"
-              onChange={(e) => this.changeSearch(e)}
-            />
-            <InputGroup.Append>
-              <Button className="searchButton" variant="light">
-                <img 
-                  className="searchicon" 
-                  src="search.png" 
-                  alt="magnifying glass" 
-                  width="24" 
-                  height="24"
-                  onClick={(e) => this.clickSearch(e)}>
-                </img>
-              </Button>
-            </InputGroup.Append>
-          </InputGroup>
-          </div>     */}
+          {/* notworking!! */}
+         <SearchBar ref={this.searchRef} map={this.map} district={this.state.district}></SearchBar> notworking
       </LMap >    
       </div>
       {/* taken button out of map component */}
@@ -2959,12 +2936,10 @@ updateStatus(marker, status) {
         <Modal.Footer>
         </Modal.Footer>
       </Modal>
-      {/*photo modal */}    
       <PhotoModal
         ref={this.photoModal}
       >
       </PhotoModal>
-      
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 

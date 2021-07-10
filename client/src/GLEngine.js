@@ -154,7 +154,6 @@ export default class GLEngine {
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
     this.gl.enableVertexAttribArray(colorLoc);
     if (zoom) {
-      console.log(zoom);
       this.appDelegate.centreMap(this.latlngs);
     }
     this.glLayer.redraw();
@@ -167,7 +166,7 @@ export default class GLEngine {
       this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
       this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      let pointSize = Math.max(this._map.getZoom() - 7.0, 1.0);
+      let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
       this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
       this.delegate.mapMatrix.set(pixelsToWebGLMatrix);

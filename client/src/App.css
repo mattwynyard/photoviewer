@@ -335,23 +335,13 @@ body {
   width: 103px;
 }
 
-.container {
-  float: right;
-}
+
 
 .text {
   float: left;
 }
 
-.photo {
-  height: 648px;
-  width: 1000px;
-}
 
-.photoModal {
-  height: 648px;
-  width: 1037px;
-}
 
 .videoModal {
   /* height:75%; */
@@ -401,22 +391,7 @@ body {
   font-size: 14px !important;
 }
 
-.leftArrow {
-  position: absolute;
-  height: 64px;
-  width: 64px;
-  left: 55px;
-  bottom: 275px;
-}
-.rightArrow {
-  position: absolute;
-  height: 64px;
-  width: 64px;
-  right: 25px;
-  bottom: 275px;
 
-
-}
 
 .lbstatus {
   padding: 10px;

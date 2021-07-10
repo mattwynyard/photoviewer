@@ -1,0 +1,44 @@
+/* .photo {
+    height: 648px;
+    width: 1000px;
+  } */
+  /* .container {
+    font-family: "Century Gothic", sans-serif;
+    font-size: 0.8vw;
+  } */
+
+
+  .dataTable {
+    position: absolute;
+    right: 1%;
+    top: 2%;
+    overflow: hidden;
+    max-width: 10%;
+    height: 90%
+  }
+
+  .photo {
+    max-width: 90%;
+  }
+  
+    .photoModal {
+        font-family: "Century Gothic", sans-serif;
+    font-size: 0.8vw;
+        width: 100vw;   
+    }
+
+  .leftArrow {
+    position: absolute;
+    height: 3vw;
+    width: 3vw;
+    left: 3%;
+    bottom: 50%;
+  }
+  .rightArrow {
+    position: absolute;
+    height: 3.1vw;
+    width: 3.1vw;
+    right: 13%;
+    bottom: 50%;
+
+  }

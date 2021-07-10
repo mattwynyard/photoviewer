@@ -610,7 +610,6 @@ app.post('/priority', async (req, res) => {
       res.send({priority: grade});        
     } else {
       let result = await db.priority(project, archive.rows[0].isarchive);
-      console.log(result.rows)
       let priority = [];
       for (let i = 0; i < result.rows.length; i++) {
         let value = Object.values(result.rows[i]);

@@ -22,8 +22,7 @@ function parseInteger(x) {
     }
 }
 
-function parseString(s) {
-   
+function parseString(s) { 
     if (s.indexOf('\'') >= 0) {
         //console.log(s);
         let index = s.indexOf('\'');

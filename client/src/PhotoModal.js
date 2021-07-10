@@ -1,7 +1,8 @@
-import { FieldBinaryOutlined } from '@ant-design/icons';
 import React from 'react';
-import {Modal, Button}  from 'react-bootstrap';
-import {pad} from  './util.js'
+import {Modal}  from 'react-bootstrap';
+import { Button} from 'antd';
+import {pad} from  './util.js';
+import './PhotoModal.css';
 
 export default class PhotoModal extends React.Component {
     constructor(props) {
@@ -11,6 +12,8 @@ export default class PhotoModal extends React.Component {
             amazon: null,
             show: false,
             photo: null,
+            date: null,
+            time: null
 
         }
     }
@@ -18,6 +21,8 @@ export default class PhotoModal extends React.Component {
     showModal(show, marker, amazon) {
       this.setState({marker: marker});
       this.setState({photo: marker[0].photo});
+      this.setState({date: marker[0].datetime.split('T')[0]});
+      this.setState({time: marker[0].datetime.split('T')[1].substr(0,8)});
       this.setState({amazon: amazon});
       this.setState({show: show});
 
@@ -92,90 +97,68 @@ export default class PhotoModal extends React.Component {
         );
       }
       const CustomTable = (props) => {
-        console.log(props.obj)
         if(props.obj.type === "road") {
           return (
-            <div className="container">
-              <div className="row">
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4" data={[
+            <div className="container" >
+                  <DataColumn data={[
                     {name: "Fault ID: ", data: props.obj.id},
                     {name: "Priority: ", data: props.obj.priority},
                     {name: "Road ID: ", data: props.obj.roadid},
                     {name: "Carriage ID: ", data: props.obj.carriage},
-                    {name: "Location: ", data: props.obj.location}
+                    {name: "Location: ", data: props.obj.location},
+                    {name: "Fault: ", data: props.obj.fault},
+                    {name: "Repair: ", data: props.obj.repair},
+                    {name: "Width: ", data: props.obj.width, symbol: " m"},
+                    {name: "Length: ", data: props.obj.length, symbol: " m"},
+                    {name: "Count: ", data: props.obj.count},
+                    {name: "Start ERP: ", data: props.obj.starterp},
+                    {name: "End ERP: ", data: props.obj.enderp} 
                     ]}>
-                  </DataColumn>   
-                </div>
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4"data={[
-                      {name: "Fault: ", data: props.obj.fault},
-                      {name: "Repair: ", data: props.obj.repair},
-                      {name: "Width: ", data: props.obj.width, symbol: " m"},
-                      {name: "Length: ", data: props.obj.length, symbol: " m"},
-                      {name: "Count: ", data: props.obj.count}
-                      ]}>
-                  </DataColumn>
-                  </div>
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4"data={[
-                      {name: "Start ERP: ", data: props.obj.starterp},
-                      {name: "End ERP: ", data: props.obj.enderp},
-                      {name: "DateTime: ", data: props.obj.datetime},
-                      ]}>
-
-                </DataColumn>
-                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}
+                  </DataColumn>  
+                  <div>
+                  <b>{"Date: "}</b>{this.state.date}<br></br>
+                  <b>{"Time: "}</b>{this.state.time}<br></br>
+                  <b>{"Lat: "}</b>{this.state.marker[0].latlng.lat}<br></br>
+                    <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
                   <Button variant="outline-secondary" 
                     size="sm" 
-                    onClick={props.copy} 
-                    active >Copy
-                  </Button>
-                </div>
+                    onClick={this.copy} 
+                    >Copy
+                  </Button> 
+                  </div>     
+
               </div>
-            </div>	 
           );
         } else if(props.obj.type === "footpath") {      
           return (
             <div className="container">
-              <div className="row">
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4" data={[
-                    {name: "Fault ID: ", data: props.obj.id},
-                    {name: "Grade: ", data: props.obj.grade},
-                    {name: "Road ID: ", data: props.obj.roadid},
-                    {name: "Footpath ID: ", data: props.obj.footpathid},
-                    {name: "Location: ", data: props.obj.roadname}
-                    ]}>
-                  </DataColumn>   
-                </div>
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4"data={[
-                      {name: "Fault: ", data: props.obj.fault},
-                      {name: "Cause: ", data: props.obj.cause},
-                      {name: "Width: ", data: props.obj.width, symbol: " m"},
-                      {name: "Length: ", data: props.obj.length, symbol: " m"},
-                      {name: "Count: ", data: props.obj.count}
-                      ]}>
-                  </DataColumn>
-                  </div>
-                <div className="col-md-4">
-                  <DataColumn className="col-md-4"data={[
-                      {name: "Start ERP: ", data: props.obj.starterp},
-                      {name: "End ERP: ", data: props.obj.enderp},
-                      {name: "DateTime: ", data: props.obj.datetime},
-                      ]}>
-
-                </DataColumn>
-                <b>{"Lat: "}</b>{props.obj.latlng.lat}<b>{" Lng: "}</b>{props.obj.latlng.lng + "  "}
-                  <Button variant="outline-secondary" 
-                    size="sm" 
-                    onClick={props.copy} 
-                    active >Copy
-                  </Button>
-                </div>
-              </div>
-            </div>	  
+              <DataColumn className="col-md-4" data={[
+                {name: "Fault ID: ", data: props.obj.id},
+                {name: "Grade: ", data: props.obj.grade},
+                {name: "Road ID: ", data: props.obj.roadid},
+                {name: "Footpath ID: ", data: props.obj.footpathid},
+                {name: "Location: ", data: props.obj.roadname},
+                {name: "Fault: ", data: props.obj.fault},
+                {name: "Cause: ", data: props.obj.cause},
+                {name: "Width: ", data: props.obj.width, symbol: " m"},
+                {name: "Length: ", data: props.obj.length, symbol: " m"},
+                {name: "Count: ", data: props.obj.count},
+                {name: "Start ERP: ", data: props.obj.starterp},
+                {name: "End ERP: ", data: props.obj.enderp},
+                ]}>
+              </DataColumn>   
+              <div>
+                <b>{"Date: "}</b>{this.state.date}<br></br>
+                <b>{"Time: "}</b>{this.state.time}<br></br>
+                <b>{"Lat: "}</b>{this.state.marker[0].latlng.lat}<br></br>
+                  <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
+                <Button variant="outline-secondary" 
+                  size="sm" 
+                  onClick={this.copy} 
+                  >Copy
+                </Button>  
+              </div>	 
+            </div> 
           );     
         } else {
           return (
@@ -191,17 +174,13 @@ export default class PhotoModal extends React.Component {
           centered={true}
           onHide={this.closePhotoModal}
       >
-      <Modal.Body className="photoBody">	
-        <div className="container">
-        {this.state.marker.map((obj, index) => 
-          <img
-            key={`${index}`}  
-            className="photo" 
+      <Modal.Body >	
+          <div>
+          <img className="photo" 
             alt="fault"
             src={this.state.amazon + this.state.photo + ".jpg"} 
-              >
+            >  
           </img>
-        )}
           <img 
             className="leftArrow" 
             src={"leftArrow_128.png"} 
@@ -211,16 +190,16 @@ export default class PhotoModal extends React.Component {
             className="rightArrow" 
             src={"rightArrow_128.png"} 
             alt="right arrow"
-            onClick={this.clickNext}/>         
+            onClick={this.clickNext}/>  
+          <div className="dataTable">   
+          <CustomTable 
+            obj={this.state.marker[0]}
+            copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
+          </CustomTable >
+          </div >
+          
         </div>
       </Modal.Body >
-      <Modal.Footer>
-        <CustomTable 
-          obj={this.state.marker[0]}
-          copy={(e) => this.copyToClipboard(e, this.state.latlng)}
-          >      
-        </CustomTable >
-      </Modal.Footer>
     </Modal>
     );
   }
