@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, InputGroup, FormControl, Modal, Button, Image, Form, Spinner, ToggleButtonGroup, ToggleButton}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, ButtonGroup, Modal, Button, Image, Form, Spinner, ToggleButtonGroup, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -18,7 +18,7 @@ import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
-import {SearchBar} from './components/searchBar.js'
+import SearchBar from './components/SearchBar.jsx'
 
 
 const DIST_TOLERANCE = 20; //metres 
@@ -153,6 +153,7 @@ class App extends React.Component {
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
     //this.photoModal.current.delegate(this);
+    this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
     //this.searchRef.current.setLeaflet(this.map.leafletMap);
     this.rulerPolyline = null;
@@ -191,7 +192,6 @@ class App extends React.Component {
   }
 
   centreMap = (latlngs) => {
-    //if (!map) return;
     if (latlngs.length !== 0) {
         let bounds = L.latLngBounds(latlngs);
         this.leafletMap.fitBounds(bounds);
@@ -359,7 +359,6 @@ class App extends React.Component {
       }
         break;
       case 'Map':
-        console.log("map")
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
@@ -2646,6 +2645,7 @@ updateStatus(marker, status) {
               </NavDropdown>         
             </Nav>
             <CustomNav ref={this.customNav} className="navdropdown"/>
+            <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
           </Navbar>         
         </div>      
         <div className="map">      
@@ -2670,10 +2670,45 @@ updateStatus(marker, status) {
           <ScaleControl className="scale"/>
           <CustomSpinner show={this.state.spinner}>
           </CustomSpinner>;
-         
-          
-          <Dropdown
-            className="Priority">
+          <div className="btn-group">
+          {this.state.filterDropdowns.map((value, indexNo) =>
+            <Dropdown 
+              className="button"
+              key={`${indexNo}`}     
+              >                
+              <Dropdown.Toggle variant="light" size="sm">
+                <input
+                  key={`${indexNo}`} 
+                  id={value} 
+                  type="checkbox" 
+                  checked={this.isInputActive(value)} 
+                  onChange={(e) => this.changeActive(e, indexNo)}
+                  onClick={(e) => this.clickSelect(e, value)}
+                  >
+                </input>
+                {value.name}         
+              </Dropdown.Toggle>
+              <Dropdown.Menu className="custommenu">
+                {value.data.result.map((input, index) =>
+                  <div key={`${index}`}>
+                    <input
+                      key={`${index}`} 
+                      id={input} 
+                      type="checkbox" 
+                      checked={this.isChecked(value, index)} 
+                      
+                      onClick={(e) => this.clickCheck(e, value)}
+                      onChange={(e) => this.changeCheck(e)}
+                      >
+                    </input>{" " + input}<br></br>
+                  </div> 
+                  )}
+                <Dropdown.Divider />
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
+          </div>
+          <Dropdown className="Priority">
           <Dropdown.Toggle variant="light" size="sm" >
               {this.state.priorityMode}
             </Dropdown.Toggle>
@@ -2742,44 +2777,13 @@ updateStatus(marker, status) {
                 )}
             </Dropdown.Menu>
           </Dropdown>
-          <div className="btn-group">
-          {this.state.filterDropdowns.map((value, indexNo) =>
-            <Dropdown 
-              className="button"
-              key={`${indexNo}`}     
-              >                
-              <Dropdown.Toggle variant="light" size="sm">
-                <input
-                  key={`${indexNo}`} 
-                  id={value} 
-                  type="checkbox" 
-                  checked={this.isInputActive(value)} 
-                  onChange={(e) => this.changeActive(e, indexNo)}
-                  onClick={(e) => this.clickSelect(e, value)}
-                  >
-                </input>
-                {value.name}         
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="custommenu">
-                {value.data.result.map((input, index) =>
-                  <div key={`${index}`}>
-                    <input
-                      key={`${index}`} 
-                      id={input} 
-                      type="checkbox" 
-                      checked={this.isChecked(value, index)} 
-                      
-                      onClick={(e) => this.clickCheck(e, value)}
-                      onChange={(e) => this.changeCheck(e)}
-                      >
-                    </input>{" " + input}<br></br>
-                  </div> 
-                  )}
-                <Dropdown.Divider />
-              </Dropdown.Menu>
-            </Dropdown>
-          )}
-          </div>
+          <Button
+            className="applyButton" 
+            variant="light" 
+            size="sm"
+            onClick={(e) => this.clickApply(e)}
+            >Apply Filter
+          </Button>
           {this.state.archiveMarker.map((position, idx) =>
             <Marker 
               key={`marker-${idx}`} 
@@ -2801,13 +2805,6 @@ updateStatus(marker, status) {
 
             </Polyline>
           )}
-          {/* <Image 
-            className="satellite" 
-            src={this.state.osmThumbnail} 
-            onClick={(e) => this.toogleMap(e)} 
-            thumbnail={true}
-          /> */}
-
           <VideoCard
             ref={this.videoCard}
             show={this.state.showVideo} 
@@ -2827,17 +2824,9 @@ updateStatus(marker, status) {
             )}
           </LayerGroup>
           {/* notworking!! */}
-         <SearchBar ref={this.searchRef} map={this.map} district={this.state.district}></SearchBar> notworking
+         
       </LMap >    
       </div>
-      {/* taken button out of map component */}
-      <Button 
-        className="applyButton" 
-        variant="light" 
-        size="sm"
-        onClick={(e) => this.clickApply(e)}
-        >Apply Filter
-      </Button>
       <Image 
             className="satellite" 
             src={this.state.osmThumbnail} 

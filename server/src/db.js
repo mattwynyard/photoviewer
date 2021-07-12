@@ -314,15 +314,13 @@ module.exports = {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                let isarchive = resolve(result);
-                //console.log(isarchive.rows);
-                return isarchive;
+                let isArchive = resolve(result);
+                return isArchive;
             });
         });
     },
 
     inspection: (project, isArchive) => {
-        console.log(isArchive);
         return new Promise((resolve, reject) => {
             let sql = null;
             if (isArchive) {
@@ -355,30 +353,36 @@ module.exports = {
         });
     },
 
-    classes: ()=> {
-        return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let classes = resolve(result);
-                return classes;
-            });
-        });
-    },
+    // classes: ()=> {
+    //     return new Promise((resolve, reject) => {
+    //         let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
+    //         connection.query(sql, (err, result) => {
+    //             if (err) {
+    //                 console.error('Error executing query', err.stack)
+    //                 return reject(err);
+    //             }
+    //             let classes = resolve(result);
+    //             return classes;
+    //         });
+    //     });
+    // },
 
-    class: (project) => {
+    class: (project, isArchive) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+            let sql = null;
+            if (isArchive) {
+                sql = "SELECT code, description FROM assetclass WHERE code IN "
+                + "(SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+            } else {
+                sql = "SELECT code, description FROM assetclass WHERE code IN "
+                + "(SELECT class FROM roadfaults WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+            }
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
                 let classes = resolve(result);
-                //console.log(project);
                 return classes;
             });
         });
@@ -412,9 +416,14 @@ module.exports = {
         });
     },
 
-    faults: (project, code) => {
+    faults: (project, code, archive) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
+            let sql = null;
+            if (archive) {
+                sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
+            } else {
+                sql = "SELECT fault FROM roadfaults WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
+            }
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

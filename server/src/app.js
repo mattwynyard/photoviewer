@@ -22,22 +22,22 @@ const environment = process.env.ENVIRONMENT;
 
 // comment out create server code below when deploying to server
 // server created in index.js
-const options = {
-  key: fs.readFileSync('./server.key', 'utf8'),
-  cert: fs.readFileSync('./server.cert', 'utf8')
-}
-console.log("mode: " + environment);
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
-} else {
-  https.createServer(options, app).listen(port, () => {
-    console.log(`Listening: https://${host}:${port}`);
-    });
-}
+// const options = {
+//   key: fs.readFileSync('./server.key', 'utf8'),
+//   cert: fs.readFileSync('./server.cert', 'utf8')
+// }
+// console.log("mode: " + environment);
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       console.log(`Listening: http://${hostname}:${port}`);
+//    });
+// } else {
+//   https.createServer(options, app).listen(port, () => {
+//     console.log(`Listening: https://${host}:${port}`);
+//     });
+// }
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -513,7 +513,9 @@ app.post('/class', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let fclass = await db.class(req.body.project);
+    let isArchive = await db.isArchive(req.body.project); 
+    let archive = isArchive.rows[0].isarchive
+    let fclass = await db.class(req.body.project, archive);
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
@@ -534,7 +536,9 @@ app.post('/faults', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let faults = await db.faults(req.body.project, req.body.code);
+    let isarchive = await db.isArchive(req.body.project); 
+    let archive = isarchive.rows[0].isarchive
+    let faults = await db.faults(req.body.project, req.body.code, archive);
     let result = [];
     for (let i = 0; i < faults.rows.length; i++) {
       result.push(faults.rows[i].fault)

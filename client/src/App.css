@@ -73,11 +73,20 @@ body {
 }
 
 .searchButton {
-  top: 2%;
-  right: 2%;
-  padding: 0px;
-  height: 30px;
+  position: absolute;
+  top: 50px;
+  right: 10%;
+  height: 2vw;
+  width: 2vw;
   background-color: white;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  height: 100%;
+  width: 100%;
 }
 
 .search {
@@ -85,23 +94,67 @@ body {
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   font-size: 14px !important;
-  width: 250px;
-  height: 30px;
-  top: 2%;
+  width: 15vw;
+  height: 2vw;
+  top: 50px;
   right: 1%;
   z-index: 999;
   color: gray;
+}
+
+.Priority { 
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  z-index: 999;
+  color: gray;
+  left: 50px;
+  top: 10px;
+}
+
+.custommenu {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  z-index: 1000;
+  color: gray;
+  width: auto;
+  padding: 10px;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.agemenu {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  z-index: 1000;
+  color: gray;
+  width: auto;
+  padding: 10px;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.Age {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  color: gray;
+  left: 135px;
+  top: 10px;
 }
 
 .applyButton {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
-  font-size: 14px !important;
-  top: 95px;
-  right: 290px;
   z-index: 999;
   color: gray;
+  left: 20px;
+  top: 120px;
 }
 
 .toogle {
@@ -152,33 +205,9 @@ body {
   letter-spacing: 1px;
   font-size: 12px !important;
   top: 10px;
-  left: 290px;
+  left: 280px;
   z-index: 999;
   color: gray;
-}
-
-.Priority {
-  
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  font-size: 16px !important;
-  top: 10px;
-  left: 50px;
-  z-index: 999;
-  color: gray;
-}
-
-.custommenu {
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  z-index: 1000;
-  color: gray;
-  width: auto;
-  padding: 10px;
-  font-size: 14px !important;
-  white-space: nowrap;
 }
 
 .toolsmenu {
@@ -190,29 +219,6 @@ body {
   font-size: 14px !important;
   white-space: nowrap;
 
-}
-
-.agemenu {
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  z-index: 1000;
-  color: gray;
-  width: auto;
-  padding: 10px;
-  font-size: 14px !important;
-  white-space: nowrap;
-}
-
-.Age {
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  font-size: 16px !important;
-  top: 10px;
-  left: 140px;
-  z-index: 999;
-  color: gray;
 }
 
 
@@ -275,6 +281,7 @@ body {
   font-size: 22px !important;
   white-space: nowrap;
   margin: 10x;
+  z-index: 1000;
 
 }
 
