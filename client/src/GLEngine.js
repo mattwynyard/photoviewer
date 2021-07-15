@@ -129,9 +129,14 @@ export default class GLEngine {
     let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
     let u_eyepos = this.gl.getUniformLocation(this.program, "u_eyepos");
     let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_eyepos_low");
+
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
+    let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
+    let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
+    let nextLoc = this.gl.getAttribLocation(this.program, "a_next");
+    let nextLocLow = this.gl.getAttribLocation(this.program, "a_next_low");
     this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
