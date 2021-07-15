@@ -427,9 +427,7 @@ class Report extends React.Component {
             });
            
         }
-            
-            
-        
+    
     }
     render() {
         const { login } = this.props.location
@@ -441,25 +439,25 @@ class Report extends React.Component {
         
     return (
         <div> 
-            <Navbar bg="light" expand="lg"> 
-        
-          <Navbar.Brand href="#home">
-          <img
-              src="logo.png"
-              width="122"
-              height="58"
-              className="d-inline-block align-top"
-              alt="logo"
-            />
-          </Navbar.Brand>
-          <Nav> 
-            <Link className="dropdownlink" to={'/'} style={{ textDecoration: 'none' }}>Home</Link>
-            </Nav>
-            <CustomNav title={this.user}></CustomNav>
+            <Navbar bg="light" expand="lg">  
+                <Navbar.Brand href="#home">
+                    <img
+                    src="logo.png"
+                    width="122"
+                    height="58"
+                    className="d-inline-block align-top"
+                    alt="logo"
+                    />
+                </Navbar.Brand>
+                <Nav> 
+                    <Link className="dropdownlink" to={'/'} style={{ textDecoration: 'none' }}>Home</Link>
+                </Nav>
+                <CustomNav 
+                    title={this.user}>
+                </CustomNav>
             </Navbar>
-            
             <div className="chartParent">
-            <div className = "gradediv">
+                <div className = "gradediv">
                     <canvas className="gradeChart" id="myChart"></canvas>  
                 </div>
                 <div className = "g1div">
@@ -470,8 +468,7 @@ class Report extends React.Component {
                 </div>
                 <div className = "g3div">
                     <canvas className="g3Chart" id="grade3"></canvas>  
-                </div>
-                
+                </div>    
             </div>    
       </div> 
     );

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
-
 import App from './App.js';
 import Report from './Report.js'
 import Data from './Data.js'
