@@ -129,8 +129,10 @@ export default class GLEngine {
     let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
     let u_eyepos = this.gl.getUniformLocation(this.program, "u_eyepos");
     let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_eyepos_low");
+
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
+    //let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
     this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
@@ -183,13 +185,14 @@ export default class GLEngine {
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      // if (this._map.getZoom() <= 16) {
-      //   let offset = 0;
-      //   for (var i = 0; i < lines.lengths.length; i += 1) {             
-      //   let count = lines.lengths[i];
-      //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
-      //   offset += count;
-      //   }
+      //if (this._map.getZoom() <= 16) {
+      //console.log(this._map.getZoom());
+        // let offset = 0;
+        // for (var i = 0; i < lines.lengths.length; i += 1) {             
+        //   let count = lines.lengths[i];
+        //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
+        //   offset += count;
+        // }
       // } else {
       this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
       let offset  = numLineVerts;

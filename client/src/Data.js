@@ -7,13 +7,10 @@ export default class Data extends React.Component {
 
     constructor(props) {
         super(props);
-        console.log(props.location.data)
         this.state = {
             data: props.location.data
         }          
     }
-
-    
 
     componentDidMount() {
     }
@@ -27,7 +24,7 @@ export default class Data extends React.Component {
             },
             {
                 title: 'Road Name',
-                dataIndex: 'roadname',
+                dataIndex: 'location',
                 key: 'roadname',
             },
             {
@@ -39,21 +36,6 @@ export default class Data extends React.Component {
               title: 'Footpath ID',
               dataIndex: 'footpathid',
               key: 'footpathid',
-            },
-            {
-              title: 'Area',
-              dataIndex: 'area',
-              key: 'area',
-            },
-            {
-              title: 'Displacement',
-              dataIndex: 'displacement',
-              key: 'displacement',
-            },
-            {
-              title: 'Position',
-              dataIndex: 'position',
-              key: 'position',
             },
             {
               title: 'Side',
@@ -103,7 +85,10 @@ export default class Data extends React.Component {
           ];
 
 
-        return(<Table dataSource={this.state.data} columns={columns} />);
+        return(<Table 
+          dataSource={this.state.data} 
+          align={'center'}
+          columns={columns} />);
     }
             
 }

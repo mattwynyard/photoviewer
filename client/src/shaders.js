@@ -54,9 +54,11 @@ attribute vec3 a_vertex;
 attribute vec3 a_vertex_low;
 attribute float a_pointSize;
 attribute vec4 a_color;
+
 attribute vec3 a_prev;
-attribute vec3 a_current;
+attribute vec3 a_prev_low;
 attribute vec3 a_next;
+attribute vec3 a_next_low;
 
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;

@@ -9,7 +9,6 @@ import Main from './Main.js'
 import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render((
-
         <Main />
     ), document.getElementById('root'));
 
