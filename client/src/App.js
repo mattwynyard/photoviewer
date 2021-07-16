@@ -252,7 +252,8 @@ class App extends React.Component {
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
-    //let glThinLines = this.GLEngine.drawThinLines(lines, type, priorites, glPoints.count);
+    //let glShaderLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
+    //console.log(glShaderLines)
     let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
     
     if (zoom) {

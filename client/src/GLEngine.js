@@ -132,12 +132,12 @@ export default class GLEngine {
 
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
-    //let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
     let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
     let nextLoc = this.gl.getAttribLocation(this.program, "a_next");
     let nextLocLow = this.gl.getAttribLocation(this.program, "a_next_low");
+
     this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
@@ -150,15 +150,21 @@ export default class GLEngine {
     let numPointVerts = points.vertices.length / 9;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
+    console.log(fsize)
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize * 9, 0);
     this.gl.enableVertexAttribArray(vertLoc);
     this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, fsize * 9, fsize * 2);
     this.gl.enableVertexAttribArray(vertLocLow);
-    // -- offset for color buffer
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
     this.gl.enableVertexAttribArray(colorLoc);
+
+    //this.gl.vertexAttribPointer(prevLoc, 2, this.gl.FLOAT, false, fsize * 9, fsize);
+    //this.gl.enableVertexAttribArray(prevLoc);
+    // -- offset for color buffer
+
+    
     if (zoom) {
       this.appDelegate.centreMap(this.latlngs);
     }
@@ -354,6 +360,48 @@ export default class GLEngine {
           const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
           const pixelHigh = {x: pixel.x, y: pixel.y};
           glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+        }
+      }
+      let fault = this.createFaultObject(data[i], type, latlng)
+      faults.push(fault);
+    }
+    return {vertices: glPoints, lengths: lengths, faults: faults};
+  }
+
+  drawShaderLines(data, type, priorities, pointCount) {
+    let faults = [];
+    let glPoints = [];
+    let lengths = [];
+    for (let i = 0; i < data.length; i++) {
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+      this.latlngs.push(latlng);
+      if (linestring !== null) {
+        ++pointCount;   
+        let line = linestring.coordinates;
+        let colors = this.setColors(data[i], type, priorities);
+        lengths.push(line.length);
+        for (let j = 0; j < line.length; j++) {
+          const point = line[j];
+          const lng = point[0];
+          const lat = point[1];
+          this.latlngs.push(L.latLng(lat, lng));
+          const pixel = LatLongToPixelXY(point[1], point[0]);
+          const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+          const pixelHigh = {x: pixel.x, y: pixel.y};
+          if (j === 0) {
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, colors.r, colors.g, colors.b, colors.a, pointCount);
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, colors.r, colors.g, colors.b, colors.a, pointCount);
+          } else if (j === line.length - 1) {
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j - 1, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount);
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount);
+          } else {
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount); 
+          }
+          
         }
       }
       let fault = this.createFaultObject(data[i], type, latlng)

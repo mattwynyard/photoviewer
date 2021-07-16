@@ -49,29 +49,36 @@ return program;
 
 export let vshaderLine = 
 `#version 300 es
-precision highp float;
-attribute vec3 a_vertex;
-attribute vec3 a_vertex_low;
-attribute float a_pointSize;
-attribute vec4 a_color;
+in highp float;
+in vec3 a_vertex;
+in vec3 a_vertex_low;
+in float a_pointSize;
+in vec4 a_color;
 
-attribute vec3 a_prev;
-attribute vec3 a_prev_low;
-attribute vec3 a_next;
-attribute vec3 a_next_low;
+in vec3 a_prev;
+in vec3 a_prev_low;
+in vec3 a_next;
+in vec3 a_next_low;
 
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;
 uniform vec3 u_eyepos_low;
 uniform float thickness;
 
-varying vec4 v_color;
-varying float v_index;
+out vec4 v_color;
 
 void main() {
 
-// pass the color to the fragment shader
-v_color = a_color;
+    vec3 t1 = a_vertex_low - u_eyepos_low;
+    vec3 e = t1 - a_vertex_low;
+    vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+    vec3 high_delta = t1 + t2;
+    vec3 low_delta = t2 - (high_delta - t1);
+    vec3 p = high_delta + low_delta;
+    gl_Position = u_matrix * vec4(p, 1.0);
+    gl_PointSize =  a_pointSize;
+    // pass the color to the fragment shader
+    v_color = a_color;
 }`
 
 export let vshader300 = 
@@ -88,16 +95,16 @@ out vec4 v_color;
 
 void main() {
 
-vec3 t1 = a_vertex_low - u_eyepos_low;
-vec3 e = t1 - a_vertex_low;
-vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
-vec3 high_delta = t1 + t2;
-vec3 low_delta = t2 - (high_delta - t1);
-vec3 p = high_delta + low_delta;
-gl_Position = u_matrix * vec4(p, 1.0);
-gl_PointSize =  a_pointSize;
-// pass the color to the fragment shader
-v_color = a_color;
+    vec3 t1 = a_vertex_low - u_eyepos_low;
+    vec3 e = t1 - a_vertex_low;
+    vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+    vec3 high_delta = t1 + t2;
+    vec3 low_delta = t2 - (high_delta - t1);
+    vec3 p = high_delta + low_delta;
+    gl_Position = u_matrix * vec4(p, 1.0);
+    gl_PointSize =  a_pointSize;
+    // pass the color to the fragment shader
+    v_color = a_color;
 }`
 
 export let fshader300 = 
