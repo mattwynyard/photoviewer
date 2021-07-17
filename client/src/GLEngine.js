@@ -2,10 +2,11 @@ import Vector2D from './Vector2D';
 import {LatLongToPixelXY, scaleMatrix} from  './util.js';
 import L from 'leaflet';
 import './L.CanvasOverlay';
-import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
+import {compileShader, createProgram, vshader, fshader, vshader300, fshader300, vshaderLine} from './shaders.js'
 
 const DUPLICATE_OFFSET = 0.00002;
 const ALPHA = 0.9;
+const VERTEX_SIZE = 10;
 
 export default class GLEngine {
  
@@ -47,7 +48,7 @@ export default class GLEngine {
       this.glLayer.delegate(this); 
       this.addEventListeners();
       if (this.webgl === 2) {
-        let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
+        let vertexShader = compileShader(this.gl, vshaderLine, this.gl.VERTEX_SHADER);
         let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
         this.program = createProgram(this.gl, vertexShader, fragmentShader);
       } else if (this.webgl === 1) {
@@ -116,6 +117,7 @@ export default class GLEngine {
   }
 
   redraw(points, lines, zoom) {
+    console.log(lines);
     this.glPoints = points;
     this.glLines = lines;
     this.zoom = zoom;
@@ -129,6 +131,7 @@ export default class GLEngine {
     let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
     let u_eyepos = this.gl.getUniformLocation(this.program, "u_eyepos");
     let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_eyepos_low");
+    let thickness = this.gl.getUniformLocation(this.program, "u_thickness")
 
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
@@ -143,26 +146,38 @@ export default class GLEngine {
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
+    this.gl.uniform1f(thickness, false, 0.00001); 
     let verts = lines.vertices.concat(points.vertices);
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
-    let numLineVerts = lines.vertices.length / 9;
-    let numPointVerts = points.vertices.length / 9;
+    let numLineVerts = lines.vertices.length / VERTEX_SIZE;
+    console.log(numLineVerts)
+    //let numPointVerts = points.vertices.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
-    console.log(fsize)
+    let bytesVertex = fsize * VERTEX_SIZE;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
-    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, fsize * 9, 0);
+    this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0);
+    this.gl.enableVertexAttribArray(prevLoc);
+    this.gl.vertexAttribPointer(prevLocLow, 2, this.gl.FLOAT, false, bytesVertex, fsize * 3);
+    this.gl.enableVertexAttribArray(prevLocLow);
+    // this.gl.vertexAttribPointer(prevColorLoc, 4, this.gl.FLOAT, false, bytesVertex, fsize * 5);
+    // this.gl.enableVertexAttribArray(prevColorLoc);
+    this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex);
     this.gl.enableVertexAttribArray(vertLoc);
-    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, fsize * 9, fsize * 2);
+    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + (fsize * 3));
     this.gl.enableVertexAttribArray(vertLocLow);
-    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + (fsize * 5));
     this.gl.enableVertexAttribArray(colorLoc);
 
-    //this.gl.vertexAttribPointer(prevLoc, 2, this.gl.FLOAT, false, fsize * 9, fsize);
-    //this.gl.enableVertexAttribArray(prevLoc);
-    // -- offset for color buffer
+    this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
+    this.gl.enableVertexAttribArray(nextLoc);
+    this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
+    this.gl.enableVertexAttribArray(nextLocLow);
+    //this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, bytesVertex + (fsize * 5));
+    //this.gl.enableVertexAttribArray(colorLoc);
+
 
     
     if (zoom) {
@@ -204,9 +219,9 @@ export default class GLEngine {
         //   offset += count;
         // }
       // } else {
-      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
+      //this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
       let offset  = numLineVerts;
-      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, numPointVerts);
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numLineVerts - 4);
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
@@ -344,6 +359,7 @@ export default class GLEngine {
     let lengths = [];
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
+      console.log(linestring)
       const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
       this.latlngs.push(latlng);
       if (linestring !== null) {
@@ -374,38 +390,41 @@ export default class GLEngine {
     let lengths = [];
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
-      const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-      this.latlngs.push(latlng);
-      if (linestring !== null) {
-        ++pointCount;   
-        let line = linestring.coordinates;
-        let colors = this.setColors(data[i], type, priorities);
-        lengths.push(line.length);
-        for (let j = 0; j < line.length; j++) {
-          const point = line[j];
-          const lng = point[0];
-          const lat = point[1];
-          this.latlngs.push(L.latLng(lat, lng));
-          const pixel = LatLongToPixelXY(point[1], point[0]);
-          const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
-          const pixelHigh = {x: pixel.x, y: pixel.y};
-          if (j === 0) {
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, colors.r, colors.g, colors.b, colors.a, pointCount); 
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, colors.r, colors.g, colors.b, colors.a, pointCount);
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, colors.r, colors.g, colors.b, colors.a, pointCount);
-          } else if (j === line.length - 1) {
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j - 1, colors.r, colors.g, colors.b, colors.a, pointCount); 
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount);
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount);
-          } else {
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount); 
-            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, j, colors.r, colors.g, colors.b, colors.a, pointCount); 
+      if (data[i].id === "MDC_RD_0521_01740") {
+        const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+        this.latlngs.push(latlng);
+        if (linestring !== null) {
+          ++pointCount;   
+          let line = linestring.coordinates;
+          let colors = this.setColors(data[i], type, priorities);
+          lengths.push(line.length);
+          let index = 0;
+          for (let j = 0; j < line.length; j++) {
+            const point = line[j];
+            const lng = point[0];
+            const lat = point[1];
+            this.latlngs.push(L.latLng(lat, lng));
+            const pixel = LatLongToPixelXY(point[1], point[0]);
+            const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+            const pixelHigh = {x: pixel.x, y: pixel.y};
+            if (j === 0) {
+              glPoints.push(pixelHigh.x, pixelHigh.y, 0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(pixelHigh.x, pixelHigh.y, 1, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+            }
+
+            glPoints.push(pixelHigh.x, pixelHigh.y, index++, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, index++, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+
+            if (j === line.length - 1) {
+                glPoints.push(pixelHigh.x, pixelHigh.y, index - 2, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+                glPoints.push(pixelHigh.x, pixelHigh.y, index - 1, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+        
+            }
           }
-          
         }
-      }
-      let fault = this.createFaultObject(data[i], type, latlng)
-      faults.push(fault);
+        let fault = this.createFaultObject(data[i], type, latlng)
+        faults.push(fault); 
+      }    
     }
     return {vertices: glPoints, lengths: lengths, faults: faults};
   }

@@ -252,15 +252,15 @@ class App extends React.Component {
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
-    //let glShaderLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
+    let glLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
     //console.log(glShaderLines)
-    let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    
-    if (zoom) {
-      this.GLEngine.redraw(glPoints, glLines, true);
-    } else {
-      this.GLEngine.redraw(glPoints, glLines, false);
-    }
+    //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
+    this.GLEngine.redraw([], glLines, true);
+    // if (zoom) {
+    //   this.GLEngine.redraw(glPoints, glLines, true);
+    // } else {
+    //   this.GLEngine.redraw(glPoints, glLines, false);
+    // }
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
     //this.setState({glPoints: glPoints}); //Immutable reserve of original points
@@ -2203,6 +2203,7 @@ class App extends React.Component {
   }
 
   render() {
+    console.log("render")
     const centre = [this.state.location.lat, this.state.location.lng];
     let mode = this.state.projectMode; 
 
