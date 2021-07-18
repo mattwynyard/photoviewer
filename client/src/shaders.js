@@ -87,7 +87,7 @@ void main() {
     vec2 direction;
 	float length = 1.0;
     if (prev == current) {
-		vec2 lineA = normalize(next - current);
+		vec2 lineA = next - current;
 		direction = vec2(-lineA.y, lineA.x);
 	} else if (next == current) {
 		vec2 lineA = normalize(current - prev);
@@ -105,7 +105,7 @@ void main() {
 			//length = 1337.0;
 		}		
 	}
-    length *= thickness * 0.5;
+    //length *= thickness * 0.5;
 	vec2 ap = vec2(direction * thickness);
 	vec2 result = current; 
 	if (mod(index, 2.0) == 0.0) {

@@ -147,9 +147,11 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     this.gl.uniform1f(thickness, false, 0.00001); 
-    let verts = lines.vertices.concat(points.vertices);
+    //let verts = lines.vertices.concat(points.vertices);
+    let verts = lines.vertices;
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
+    console.log(verts);
     let numLineVerts = lines.vertices.length / VERTEX_SIZE;
     console.log(numLineVerts)
     //let numPointVerts = points.vertices.length / VERTEX_SIZE;
