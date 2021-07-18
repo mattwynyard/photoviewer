@@ -135,7 +135,7 @@ class App extends React.Component {
       hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      redraw: false,
+      bounds: null,
     };   
   }
 
@@ -143,12 +143,14 @@ class App extends React.Component {
     let host = this.getHost();
     let user = this.getUser();
     let projects = this.getProjects();
-    let token = window.sessionStorage.getItem('token')
+    let token = window.sessionStorage.getItem('token');
+    let bounds = window.sessionStorage.getItem('bounds');
     this.setState({
       host: host,
       token: token,
       login: user,
-      projects: projects
+      projects: projects,
+      bounds: bounds
     }, () => {
       if (this.state.login === "Login") {
         this.callBackendAPI()
@@ -161,7 +163,6 @@ class App extends React.Component {
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
@@ -176,12 +177,10 @@ class App extends React.Component {
     } 
   }
 
-  componentDidUpdate() {  
-  }
-
   componentWillUnmount() {
+    //this.bounds = this.leafletMap.getBounds();
+    window.sessionStorage.setItem('bounds', JSON.stringify(this.leafletMap.getBounds()));
     window.sessionStorage.setItem('state', JSON.stringify(this.state));
-    console.log("unmount");
   }
 
   initializeGL() {
@@ -267,6 +266,10 @@ class App extends React.Component {
     //this.setState({glLines: glLines}); //Immutable reserve of original points
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
+    // if (this.state.bounds) {
+    //   console.log(this.state.bounds);
+    //   this.leafletMap.fitBounds(this.state.bounds)
+    // }
   }
 
   setPriorityObject() {
@@ -611,7 +614,7 @@ class App extends React.Component {
       priorityDropdown: null, 
       filterPriorities: [],
       filterAges: [],
-    }, function() {
+    }, () => {
       this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
     })
   }
