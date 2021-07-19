@@ -22,7 +22,7 @@ body {
   border: 0;
   font-size: 22px !important;
   line-height: 2.0 !important;
-  letter-spacing: 5px;
+  letter-spacing: 4px;
   border-radius: 0;
 }
 
@@ -35,7 +35,7 @@ body {
   color: gray;
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 4px;
-  font-size: 18px !important;
+  font-size: 16px !important;
   white-space: nowrap;
   margin: 10px;
 }
@@ -154,7 +154,7 @@ body {
   z-index: 999;
   color: gray;
   left: 20px;
-  top: 120px;
+  top: 0px;
 }
 
 .toogle {
@@ -286,7 +286,7 @@ body {
 }
 
 .navdropdownitem {
-  font-size: 18px !important;
+  font-size: 16px !important;
 }
 
 .adminitem .adminitem:hover{
@@ -342,13 +342,9 @@ body {
   width: 103px;
 }
 
-
-
 .text {
   float: left;
 }
-
-
 
 .videoModal {
   /* height:75%; */

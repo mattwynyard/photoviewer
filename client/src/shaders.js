@@ -50,58 +50,23 @@ return program;
 export let vshaderLine = 
 `#version 300 es
 precision highp float;
+attribute vec3 a_vertex;
+attribute vec3 a_vertex_low;
+attribute float a_pointSize;
+attribute vec4 a_color;
+attribute vec3 a_prev;
+attribute vec3 a_prev_low;
+attribute vec3 a_next;
+attribute vec3 a_next_low;
 uniform mat4 u_matrix;
 uniform vec3 u_eyepos;
 uniform vec3 u_eyepos_low;
 uniform float thickness;
-in vec3 a_vertex;
-in vec3 a_vertex_low;
-in vec3 a_prev;
-in vec3 a_prev_low;
-in vec3 a_next;
-in vec3 a_next_low;
-in float a_pointSize;
-in vec4 a_color;
-out vec4 v_color;
-
-vec3 highPrescisionVertex(vec3 vertex, vec3 vertex_low) {
-    vec3 t1 = vertex_low - u_eyepos_low;
-    vec3 e = t1 - vertex_low;
-    vec3 t2 = ((-u_eyepos_low - e) + (vertex_low - (t1 - e))) + vertex - u_eyepos;
-    vec3 high_delta = t1 + t2;
-    vec3 low_delta = t2 - (high_delta - t1);
-    vec3 p = high_delta + low_delta;
-    return p;
-}
-
+varying vec4 v_color;
+varying float v_index;
 void main() {
-
-    float index = a_vertex.z;
-    vec3 current  = highPrescisionVertex(a_vertex, a_vertex_low);
-    vec3 prev = highPrescisionVertex(a_prev, a_prev_low);
-    vec3 next = highPrescisionVertex(a_next, a_next_low);
-    
-    vec2 ap;
-    if (prev == next) {
-        vec2 line = a_next.xy - a_vertex.xy;
-        vec2 normal = vec2(-line.y, line.x);
-        ap = normal;
-    } else if (next == current) {
-        vec2 line = a_vertex.xy - a_prev.xy;
-        vec2 normal = vec2(-line.y, line.x);
-        ap = -normal;
-    } else {
-
-    }
-    
-
-    vec2 p = a_vertex.xy - ap;
-    vec3 vertex  = highPrescisionVertex(vec3(p, 0), a_vertex_low);
-
-    gl_Position = u_matrix * vec4(vertex, 1.0);
-    gl_PointSize =  a_pointSize;
-    // pass the color to the fragment shader
-    v_color = a_color;
+// pass the color to the fragment shader
+v_color = a_color;
 }`
 
 export let vshader300 = 
@@ -115,19 +80,17 @@ in vec3 a_vertex_low;
 in float a_pointSize;
 in vec4 a_color;
 out vec4 v_color;
-
 void main() {
-
-    vec3 t1 = a_vertex_low - u_eyepos_low;
-    vec3 e = t1 - a_vertex_low;
-    vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
-    vec3 high_delta = t1 + t2;
-    vec3 low_delta = t2 - (high_delta - t1);
-    vec3 p = high_delta + low_delta;
-    gl_Position = u_matrix * vec4(p, 1.0);
-    gl_PointSize =  a_pointSize;
-    // pass the color to the fragment shader
-    v_color = a_color;
+vec3 t1 = a_vertex_low - u_eyepos_low;
+vec3 e = t1 - a_vertex_low;
+vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+vec3 high_delta = t1 + t2;
+vec3 low_delta = t2 - (high_delta - t1);
+vec3 p = high_delta + low_delta;
+gl_Position = u_matrix * vec4(p, 1.0);
+gl_PointSize =  a_pointSize;
+// pass the color to the fragment shader
+v_color = a_color;
 }`
 
 export let fshader300 = 
@@ -142,7 +105,6 @@ precision mediump float; // highp is not supported. floats have medium precision
 //precision highp float;
 in vec4 v_color;
 out vec4 frag_color;
-
 void main() {
 float border = 0.05;
 float radius = 0.5;
@@ -168,7 +130,6 @@ attribute vec3 a_vertex_low;
 attribute float a_pointSize;
 attribute vec4 a_color;
 varying vec4 v_color;
-
 void main() {
 vec3 t1 = a_vertex_low - u_eyepos_low;
 vec3 e = t1 - a_vertex_low;
@@ -193,7 +154,6 @@ precision mediump float; // highp is not supported. floats have medium precision
 #endif 
 //precision mediump float;
 varying vec4 v_color;
-
 void main() {
 float border = 0.05;
 float radius = 0.5;
