@@ -49,72 +49,56 @@ return program;
 
 export let vshaderLine = 
 `#version 300 es
-in highp float;
-
-in float a_pointSize;
-in vec4 a_color;
-
+precision highp float;
+uniform mat4 u_matrix;
+uniform vec3 u_eyepos;
+uniform vec3 u_eyepos_low;
+uniform float thickness;
 in vec3 a_vertex;
 in vec3 a_vertex_low;
 in vec3 a_prev;
 in vec3 a_prev_low;
 in vec3 a_next;
 in vec3 a_next_low;
-
-uniform mat4 u_matrix;
-uniform vec3 u_eyepos;
-uniform vec3 u_eyepos_low;
-uniform float thickness;
-
+in float a_pointSize;
+in vec4 a_color;
 out vec4 v_color;
 
-vec2 highPrescisionVertex(vec3 vertex, vec3 vertex_low) {
+vec3 highPrescisionVertex(vec3 vertex, vec3 vertex_low) {
     vec3 t1 = vertex_low - u_eyepos_low;
     vec3 e = t1 - vertex_low;
     vec3 t2 = ((-u_eyepos_low - e) + (vertex_low - (t1 - e))) + vertex - u_eyepos;
     vec3 high_delta = t1 + t2;
     vec3 low_delta = t2 - (high_delta - t1);
     vec3 p = high_delta + low_delta;
-    return p.xy;
+    return p;
 }
+
 void main() {
 
-    vec2 prev = highPrescisionVertex(a_prev, a_prev_low);
-    vec2 current = highPrescisionVertex(a_vertex, a_vertex_low);
-    vec2 next = highPrescisionVertex(a_next, a_next_low);
-
     float index = a_vertex.z;
-    vec2 direction;
-	float length = 1.0;
-    if (prev == current) {
-		vec2 lineA = next - current;
-		direction = vec2(-lineA.y, lineA.x);
-	} else if (next == current) {
-		vec2 lineA = normalize(current - prev);
-		direction = vec2(-lineA.y, lineA.x);
-	} else { // else use both segments and use a mither joint for the mesh
-		vec2 lineA = normalize(current - prev);
-		vec2 lineB = normalize(next - current);
-		vec2 tangent = normalize(lineA + lineB);
-		direction = vec2(-tangent.y, tangent.x);
-		float d = dot(direction, vec2(-lineA.y, lineA.x));
-		if (abs(d - 0.01) > 0.0) {
-			length = 1.0 / d;
-		} else {
-			// run around in circles, screaming ;)
-			//length = 1337.0;
-		}		
-	}
-    //length *= thickness * 0.5;
-	vec2 ap = vec2(direction * thickness);
-	vec2 result = current; 
-	if (mod(index, 2.0) == 0.0) {
-		result += ap;
-	} else {
-		result -= ap;
-	}
+    vec3 current  = highPrescisionVertex(a_vertex, a_vertex_low);
+    vec3 prev = highPrescisionVertex(a_prev, a_prev_low);
+    vec3 next = highPrescisionVertex(a_next, a_next_low);
+    
+    vec2 ap;
+    if (prev == next) {
+        vec2 line = a_next.xy - a_vertex.xy;
+        vec2 normal = vec2(-line.y, line.x);
+        ap = normal;
+    } else if (next == current) {
+        vec2 line = a_vertex.xy - a_prev.xy;
+        vec2 normal = vec2(-line.y, line.x);
+        ap = -normal;
+    } else {
 
-    gl_Position = u_matrix * vec4(result, 0.0, 1.0);
+    }
+    
+
+    vec2 p = a_vertex.xy - ap;
+    vec3 vertex  = highPrescisionVertex(vec3(p, 0), a_vertex_low);
+
+    gl_Position = u_matrix * vec4(vertex, 1.0);
     gl_PointSize =  a_pointSize;
     // pass the color to the fragment shader
     v_color = a_color;

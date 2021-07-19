@@ -3,6 +3,7 @@ import {LatLongToPixelXY, scaleMatrix} from  './util.js';
 import L from 'leaflet';
 import './L.CanvasOverlay';
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300, vshaderLine} from './shaders.js'
+import { ContactsOutlined } from '@ant-design/icons';
 
 const DUPLICATE_OFFSET = 0.00002;
 const ALPHA = 0.9;
@@ -150,7 +151,7 @@ export default class GLEngine {
     //let verts = lines.vertices.concat(points.vertices);
     let verts = lines.vertices;
     let vertBuffer = this.gl.createBuffer();
-    verts = this.reColorPoints(verts);
+    //verts = this.reColorPoints(verts);
     console.log(verts);
     let numLineVerts = lines.vertices.length / VERTEX_SIZE;
     console.log(numLineVerts)
@@ -160,26 +161,23 @@ export default class GLEngine {
     let bytesVertex = fsize * VERTEX_SIZE;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
-    this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0);
+    this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0); //0
     this.gl.enableVertexAttribArray(prevLoc);
     this.gl.vertexAttribPointer(prevLocLow, 2, this.gl.FLOAT, false, bytesVertex, fsize * 3);
     this.gl.enableVertexAttribArray(prevLocLow);
     // this.gl.vertexAttribPointer(prevColorLoc, 4, this.gl.FLOAT, false, bytesVertex, fsize * 5);
     // this.gl.enableVertexAttribArray(prevColorLoc);
-    this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex);
+    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
     this.gl.enableVertexAttribArray(vertLoc);
-    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + (fsize * 3));
+    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 3);
     this.gl.enableVertexAttribArray(vertLocLow);
-    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + (fsize * 5));
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 5);
     this.gl.enableVertexAttribArray(colorLoc);
 
-    this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
+    this.gl.vertexAttribPointer(nextLoc, 2, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
     this.gl.enableVertexAttribArray(nextLocLow);
-    //this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, bytesVertex + (fsize * 5));
-    //this.gl.enableVertexAttribArray(colorLoc);
-
 
     
     if (zoom) {
@@ -223,24 +221,25 @@ export default class GLEngine {
       // } else {
       //this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
       let offset  = numLineVerts;
-      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, numLineVerts - 4);
-      if (this.delegate.mouseClick !== null) {      
-        let pixel = new Uint8Array(4);
-        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-        this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = null;
-        if (pixel[3] === 255) {
-          index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-          ;
-        } else {
-          index = 0; //deals with edge cases from anti-aliasing 
-        }
-        this.delegate.mouseClick = null;
-        this.delegate.appDelegate.setIndex(index);   
-        this._redraw()
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, offset - 4);
+      // if (this.delegate.mouseClick !== null) {      
+      //   let pixel = new Uint8Array(4);
+      //   this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
+      //   this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+      //   let index = null;
+      //   if (pixel[3] === 255) {
+      //     index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+      //     ;
+      //   } else {
+      //     index = 0; //deals with edge cases from anti-aliasing 
+      //   }
+      //   this.delegate.mouseClick = null;
+      //   this.delegate.appDelegate.setIndex(index);   
+      //   this._redraw()
         
-      }
+      // }
     }
+    
   }
 
   drawLines(data, type, priorities, pointCount) {
