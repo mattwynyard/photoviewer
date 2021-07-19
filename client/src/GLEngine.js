@@ -210,14 +210,13 @@ export default class GLEngine {
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      //if (this._map.getZoom() <= 16) {
-      //console.log(this._map.getZoom());
-        // let offset = 0;
-        // for (var i = 0; i < lines.lengths.length; i += 1) {             
-        //   let count = lines.lengths[i];
-        //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
-        //   offset += count;
-        // }
+      // if (this._map.getZoom() <= 16) {
+      //   let offset = 0;
+      //   for (var i = 0; i < lines.lengths.length; i += 1) {             
+      //   let count = lines.lengths[i];
+      //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
+      //   offset += count;
+      //   }
       // } else {
       //this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
       let offset  = numLineVerts;

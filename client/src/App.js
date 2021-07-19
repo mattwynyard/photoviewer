@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, ButtonGroup, Modal, Button, Image, Form, Spinner, ToggleButtonGroup, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -19,9 +19,7 @@ import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
-import {CustomSVG} from './components/CustomSVG.js'
-import { Fragment } from 'react';
-import {FilterButton} from './components/FilterButton';
+
 
 const DIST_TOLERANCE = 20; //metres 
 
@@ -46,15 +44,18 @@ class App extends React.Component {
     this.toolsRef = React.createRef();
     this.antdrawer = React.createRef();
     this.searchRef = React.createRef();
-    this.applyRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
-    
-    this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
+    this.state = {
       location: {
         lat: -41.2728,
         lng: 173.2995,
       },
+      latitude: null,
+      longtitude: null,
+      high : true,
+      med : true,
+      low : true,
       admin : false,
       ruler: false,
       rulerOrigin: null,
@@ -69,9 +70,10 @@ class App extends React.Component {
       filterDropdowns: [],
       filterPriorities: [],
       filterAges: [],
-      host: null,
-      token: null,
-      login: null,
+      host: this.getHost(),
+      token: Cookies.get('token'),
+      login: this.getUser(),
+      loginModal: this.getLoginModal(this.getUser()),
       zIndex: 900,
       key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -81,6 +83,7 @@ class App extends React.Component {
       zoom: 8,
       index: null,
       centreData: [],
+      objData: [],
       fault: [],
       priority: [],
       sizes: [],
@@ -100,11 +103,12 @@ class App extends React.Component {
       showAdmin: false,
       modalPhoto: null,
       popover: false,
+      activeSelection: "Fault Type",
       photourl: null,
       amazon: null,
-     
+      user: this.getUser(),
       password: null,
-      projects: null, //all foootpath and road projects for the user
+      projects: this.getProjects(), //all foootpath and road projects for the user
       faultClass: [],
       activeProject: null,
       activeLayers: [], //layers displayed on the
@@ -115,8 +119,7 @@ class App extends React.Component {
       lineData: null,
       mouse: null,
       coordinates: null, //coordinates of clicked marker
-      glPoints: null,
-      glLines: null,
+      glpoints: null,
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
@@ -135,28 +138,16 @@ class App extends React.Component {
       hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      redraw: false,
     };   
   }
 
   componentDidMount() {
-    let host = this.getHost();
-    let user = this.getUser();
-    let projects = this.getProjects();
-    let token = window.sessionStorage.getItem('token')
-    this.setState({
-      host: host,
-      token: token,
-      login: user,
-      projects: projects
-    }, () => {
-      if (this.state.login === "Login") {
-        this.callBackendAPI()
-        .catch(err => alert(err));
-      }
-      this.customNav.current.setTitle(user);
-      this.customNav.current.setOnClick(this.getLoginModal(user));
-    });
+    this.customNav.current.setTitle(this.state.user);
+    this.customNav.current.setOnClick(this.state.loginModal);
+    if (this.state.login === "Login") {
+      this.callBackendAPI()
+      .catch(err => alert(err));
+    }
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
@@ -164,24 +155,35 @@ class App extends React.Component {
     //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
+    //this.searchRef.current.setLeaflet(this.map.leafletMap);
     this.rulerPolyline = null;
     this.distance = 0;
+    // if(this.glpoints !== null) {
+    //   console.log(this.glpoints.length)
+    //   this.GLEngine.redraw(this.glPoints, this.glLines, true);
+    // } else {
+    //   //console.log("not null");
+    // }
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     this.geojsonLayer = L.geoJSON().addTo(this.leafletMap);
     this.imageoverlay = L.imageOverlay
     L.Marker.prototype.options.icon = DefaultIcon;
-    if(this.state.objGLData.length !== 0) {
-      this.filterLayer(this.state.activeProject, true);
-    } 
   }
 
-  componentDidUpdate() {  
+  componentDidUpdate() {   
+
   }
 
   componentWillUnmount() {
-    window.sessionStorage.setItem('state', JSON.stringify(this.state));
     console.log("unmount");
+    if(this.state.glpoints === null) {
+      //console.log("null");
+    } else {
+      console.log("not null");
+      this.glpoints = this.state.glpoints;
+    }
+   
   }
 
   initializeGL() {
@@ -263,8 +265,7 @@ class App extends React.Component {
     // }
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
-    //this.setState({glPoints: glPoints}); //Immutable reserve of original points
-    //this.setState({glLines: glLines}); //Immutable reserve of original points
+    this.setState({glpoints: glPoints.points}); //Immutable reserve of original points
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
@@ -342,7 +343,7 @@ class App extends React.Component {
         break;
       case 'Ruler':
         let polyline = this.state.rulerPolyline;
-      if (polyline === null) {
+      if (polyline == null) {
         let points = [];
         points.push(e.latlng);
         polyline = new L.polyline(points, {
@@ -480,11 +481,11 @@ class App extends React.Component {
    }
 
   getProjects() {
-    let project = window.sessionStorage.getItem('projects');
-    if (!project) {
+    let cookie = Cookies.get('projects');
+    if (cookie === undefined) {
       return [];
     } else {
-      return JSON.parse(project);
+      return JSON.parse(cookie);
     }    
   }
   /**
@@ -492,11 +493,11 @@ class App extends React.Component {
    * Returns username in cookie if found else 'Login'
    */
   getUser() {
-    let user = window.sessionStorage.getItem('user');
-    if (!user) {
+    let cookie = Cookies.get('user');
+    if (cookie === undefined) {
       return "Login";
     } else {
-      return user;
+      return cookie;
     }    
   }
 
@@ -564,7 +565,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    //let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
+    let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
   }
 
@@ -589,15 +590,15 @@ class App extends React.Component {
    * resets to null state when user logouts
    */
   reset() {
-    window.sessionStorage.removeItem("token");
-    window.sessionStorage.removeItem("user");
-    window.sessionStorage.removeItem("project");
-    window.sessionStorage.removeItem("state");
+    Cookies.remove('token');
+    Cookies.remove('user');
+    Cookies.remove('projects');
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
     this.setState({
       activeProject: null,
       projects: [],
+      objData: [],
       login: "Login",
       priorites: [],
       objGLData: null,
@@ -625,12 +626,13 @@ class App extends React.Component {
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
       if (projects[i].surface === "road") {
+        //console.log(projects[i])
         obj.road.push(projects[i]);
       } else {
         obj.footpath.push(projects[i]);
       }
     }
-    window.sessionStorage.setItem('projects', JSON.stringify(obj));
+    Cookies.set('projects', JSON.stringify(obj), { expires: 7 })
     this.setState({projects: obj});
   }
 
@@ -971,8 +973,8 @@ class App extends React.Component {
       throw Error(body.message);   
     }  
     if (body.result) {
-      window.sessionStorage.setItem('token', body.token);
-      window.sessionStorage.setItem('user', body.user);
+      Cookies.set('token', body.token, { expires: 7 });
+      Cookies.set('user', body.user, { expires: 7 });
       this.setState({login: body.user});
       this.setState({token: body.token}); 
       this.buildProjects(body.projects);   
@@ -1051,7 +1053,7 @@ class App extends React.Component {
         dropdown.initialiseFilter();     
         dynamicDropdowns.push(dropdown);
       }
-      this.setState({filter: this.rebuildFilter()})
+      this.rebuildFilter();
       await this.getDistrict(project);
     } else {
       projects = this.state.projects.footpath;
@@ -1358,7 +1360,6 @@ class App extends React.Component {
    * @param {event} e  - the menu clicked
    */
   removeLayer(e) {
-    window.sessionStorage.removeItem("state");
     this.setState({objGLData: null});
     this.setState({glpoints: []});
     this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
@@ -1377,8 +1378,7 @@ class App extends React.Component {
     this.setState({activeLayers: layers}); 
     this.setState({activeLayer: null}); 
     this.setState({ages: layers}); 
-    this.setState({district: null});  
-
+    this.setState({district: null});    
   }
 
   getBody(project) {
@@ -1857,25 +1857,16 @@ class App extends React.Component {
    * adds or removes fault to array  which keeps track of which faults are checked in the filter modal
    * @param {event} e 
    */
-  clickCheck(e, value, input) {
+  clickCheck(e, value) {
     //if checked true we are adding values to arr
     if (value.filter.length <= 1 && e.target.checked) {
       return;
     }
-    this.applyRef.current.innerHTML = "Apply Filter";
-    if (e.target.checked) {
-      for (let i = 0; i < value.filter.length; i += 1) {
-          if (input === value.filter[i]) {
-              value.filter.splice(i, 1);
-              break;
-          }
-      }
-      e.target.checked = false;
-    } else {
-        value.filter.push(input);
-        e.target.checked = true;
+    value.updateFilter(e.target.id, e.target.checked); 
+    if (!e.target.checked) {
+      value.setActive(true);
     }
-    this.setState({filter: this.rebuildFilter()})
+    this.rebuildFilter();
   }
 
   clickActive(e, index) {
@@ -1883,13 +1874,21 @@ class App extends React.Component {
 
   }
 
-
+/**
+ * checks if each fault is checked by searching checkedFault array
+ * @param {the dropdown} value 
+ * * @param {the index of the fault within the dropdown} index 
+ * @return {}
+ */
+  isChecked(value, index) {
+    return value.isChecked(value.data.result[index]);
+  }
 
   isActive(value, index) {
     return this.state.filterDropdowns[index].isActive();
   }
 
-  changeActive(e) {
+  changeActive(e, index) {
     console.log(e.target);
   }
 
@@ -1939,41 +1938,18 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickApply(e) {
-    e.preventDefault();
-    if (e.target.innerHTML === "Apply Filter") {
-      e.target.innerHTML = "Clear Filter";
-      this.filterLayer(this.state.activeProject, false);
-    } else {
-      e.target.innerHTML = "Apply Filter";  
-      this.resetDropdowns();
-      let filter = this.rebuildFilter();
-      this.setState({
-        filter: filter
-      }, () => {
-        this.filterLayer(this.state.activeProject, false);
-      });  
-    }
+    this.filterLayer(this.state.activeProject, false);
   }
 
   clickSelect(e, value) {
-    this.applyRef.current.innerHTML = "Apply Filter";
     if (e.target.checked) {
-      value.filter = [];
-      value.active = false
+      this.onClear(e, value);
+      value.setActive(false);
     } else {
-      value.filter = [...value.data.result]
-      value.active = true;
+      this.onSelect(e, value);
+      value.setActive(true);
     }
-    this.setState({filter: this.rebuildFilter()});
-  }
-
-  resetDropdowns() {
-    let filter = [];
-    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      this.state.filterDropdowns[i].active = true;
-      this.state.filterDropdowns[i].filter = [...this.state.filterDropdowns[i].data.result];
-      filter.push(this.state.filterDropdowns[i].filter);
-    }
+    this.rebuildFilter();
   }
 
   rebuildFilter() {
@@ -1983,8 +1959,7 @@ class App extends React.Component {
         filter.push(this.state.filterDropdowns[i].filter[j]);
       }
     }
-    return filter 
-    
+    this.setState({filter: filter})
   }
 
   clickAges(e, index) {
@@ -2013,67 +1988,36 @@ class App extends React.Component {
   }
 
   /**
- * checks if each fault is checked by searching checkedFault array
- * @param {the dropdown} value 
- * * @param {the index of the fault within the dropdown} index 
- * @return {}
- */
-   isChecked(input, filter) {
-    if (filter.includes(input)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  isPriorityChecked(value) {
-    let filter = this.state.filterPriorities;
-    //console.log(filter);
-    let priority = this.parsePriority(value);
-    if (filter.includes(priority)) {
-      return true;
-    } else {
-      return false;
-    }  
-  }
-
-  parsePriority(id) {
-    let priority = null
-    if (id === "Signage") {
-      priority = 99;
-    } else if (id === "Completed") {
-      priority = 98;
-    } else {
-      let p = id.substring(id.length - 1, id.length)
-      priority = parseInt(p);
-    }
-    return priority;
-  }
-
-  /**
    * Adds or removes priorities to array for db query
    * @param {the button clicked} e 
    */
   clickPriority(e) {
     let query = this.state.filterPriorities;
-    let priority = this.parsePriority(e.target.id);
+    let priority = null;
+    if (e.target.id === "Signage") {
+      priority = 99;
+    } else if (e.target.id === "Completed") {
+      priority = 98;
+    } else {
+      let p = e.target.id.substring(e.target.id.length - 1, e.target.id.length)
+      priority = parseInt(p);
+    }
     if (query.length === 1) {
       if (e.target.checked) {
-        e.target.checked = true; 
+        query.push(priority);
       } else {
-        query.push(priority);     
+        e.target.checked = true;      
       }
     } else {
-      if (e.target.checked) { 
-        query.splice(query.indexOf(priority), 1 );
-      } else {     
+      if (e.target.checked) {
         query.push(priority);
+      } else {     
+        query.splice(query.indexOf(priority), 1 );
       }
     }
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
   }
-
 
   clickRuler(e) {
     this.setState({ruler: true});
@@ -2098,6 +2042,33 @@ class App extends React.Component {
     console.log(this.state.isVideo);
   }
 
+  /**
+   * Called from ToolsMenu component when user changes radio button
+   * @param {radio button clicked} value 
+   */
+  clickToolsRadio(value) {
+    console.log(value);
+    this.setState({toolsRadio: value});
+  }
+
+  /**
+   * Called when using opens or closes tools dropdown
+   * @param {true/false} isOpen 
+   */
+  toggleTools(isOpen) {    
+    if (!isOpen) {
+      console.log(this.state.toolsRadio);
+      this.setState({toolsRadio: null});
+      if (this.state.rulerPolyline != null) {
+        this.state.rulerPolyline.removeFrom(this.leafletMap);
+        
+        this.setState({rulerPolyline: null});
+        this.setState({showRuler: false});
+        this.setState({rulerDistance: 0});
+        this.setState({ruler: false});
+      }
+    }
+  }
 
   // async reverseLookup(data) {
   //   console.log(data);
@@ -2112,113 +2083,176 @@ class App extends React.Component {
   //   });  
   // }
 
-    /**
-   * gets the requested attribute from the fault object array
-   * @param {the index of marker} index 
-   * @param {the property of the fault} attribute 
+  /**
+   * Updates the string to searched
+   * @param {event} e 
    */
-  getGLFault(index, attribute) {
-    if (this.state.selectedGeometry.length !== 0 && index !== null) {
-      switch(attribute) {
-        case "type":
-          return  this.state.objGLData[index].type;
-        case "fault":
-          return  this.state.objGLData[index].fault;
-        case "priority":        
-          return  this.state.objGLData[index].priority;
-        case "inspection":        
-          return  this.state.objGLData[index].inspection;
-        case "location":
-          return  this.state.objGLData[index].location;
-        case "width":
-          return  this.state.objGLData[index].width;
-        case "length":
-          return  this.state.objGLData[index].length;
-        case "datetime":
-          return  this.state.objGLData[index].datetime;
-        case "photo":
-          return  this.state.objGLData[index].photo;
-        case "repair":
-            return  this.state.objGLData[index].repair;
-        case "comment":
-            return  this.state.objGLData[index].comment;
-        case "latlng":
-            return  this.state.objGLData[index].latlng;
-        default:
-          return this.state.objGLData[index]
-      }
-    } else {
-      return null;
-    }
+  changeSearch(e) {
+    this.setState({search: e.target.value});
   }
+
+  /**
+   * Breaks user input string into tokens on space character
+   * Sends get request to nominatim server. Centres map on bounding box from response
+   * @param {event} e - search button click
+   */
+  // async clickSearch(e) {
+  //   e.preventDefault();
+  //   let tokens = null
+  //   if (this.state.search !== null) {
+  //     tokens = this.state.search.split(" ");
+  //   }
+  //   if(!tokens) return;
+  //   let searchString = "";
+  //   for (let i = 0; i < tokens.length; i++) {
+  //     if (i !== tokens.length - 1) {
+  //       searchString += tokens[i] + "+";
+  //     } else {
+  //       searchString += tokens[i];
+  //     }
+  //   }
+  //   if (this.state.district !== null) {
+  //     searchString += "," + this.state.district
+  //   }
+  //   const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
+  //     method: 'GET',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //   });
+  //   const body = await response.json();
+  //   if (response.status !== 200) {
+  //     alert(response.status + " " + response.statusText);  
+  //     throw Error(body.message);    
+  //   } 
+  //   if (body.length !== 0) {
+  //     if (body[0] !== "undefined" || body[0] !== "") {
+  //       let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
+  //       let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
+  //       this.centreMap([latlng1, latlng2])
+  //     }
+  //   }
+    
+  // }
+
+
+  /**
+ * gets the requested attribute from the fault object array
+ * @param {the index of marker} index 
+ * @param {the property of the fault} attribute 
+ */
+getGLFault(index, attribute) {
+  if (this.state.selectedGeometry.length !== 0 && index !== null) {
+    switch(attribute) {
+      case "type":
+        return  this.state.objGLData[index].type;
+      case "fault":
+        return  this.state.objGLData[index].fault;
+      case "priority":        
+        return  this.state.objGLData[index].priority;
+      case "inspection":        
+        return  this.state.objGLData[index].inspection;
+      case "location":
+        return  this.state.objGLData[index].location;
+      case "width":
+        return  this.state.objGLData[index].width;
+      case "length":
+        return  this.state.objGLData[index].length;
+      case "datetime":
+        return  this.state.objGLData[index].datetime;
+      case "photo":
+        return  this.state.objGLData[index].photo;
+      case "repair":
+          return  this.state.objGLData[index].repair;
+      case "comment":
+          return  this.state.objGLData[index].comment;
+      case "latlng":
+          return  this.state.objGLData[index].latlng;
+      default:
+        return this.state.objGLData[index]
+    }
+  } else {
+    return null;
+  }
+}
 
 // Admin
-  addUser(e) {
-    this.customModal.current.setShow(true);
-    this.customModal.current.setState({name: 'user'});
-  }
 
-  addProject(e) {
-    this.customModal.current.setState({name: 'project'});
-    this.customModal.current.setShow(true);
-  }
+addUser(e) {
+  this.customModal.current.setShow(true);
+  this.customModal.current.setState({name: 'user'});
+}
 
-  importData(e) {
-    this.customModal.current.setState({name: 'import'});
-    this.customModal.current.setShow(true);
-  }
+addProject(e) {
+  this.customModal.current.setState({name: 'project'});
+  this.customModal.current.setShow(true);
 
-  fileLoaded(project, data, status) {
-    this.customModal.current.setShow(false);
-    if (status) {
-      this.sendData(project, data, '/update');
-    } else {
-      this.sendData(project, data, '/import');
-    }
-  }
+}
 
-  createUser = (name, password) => {
-    this.addNewUser(name, password);
-    this.customModal.current.setShow(false);
-  }
+importData(e) {
+  this.customModal.current.setState({name: 'import'});
+  this.customModal.current.setShow(true);
+}
 
-  deleteUser = (name) => {
-    this.deleteCurrentUser(name);
-    this.customModal.current.setShow(false);
+fileLoaded(project, data, status) {
+  this.customModal.current.setShow(false);
+  if (status) {
+    this.sendData(project, data, '/update');
+  } else {
+    this.sendData(project, data, '/import');
   }
+}
 
-  deleteProject = (project, parent) => {
-    console.log("delete")
-    this.deleteCurrentProject(project, parent);
-    this.customModal.current.setShow(false);
-  }
 
-  createProject = (code, client, description, date, tacode, amazon, surface) => {
-    this.addNewProject(code, client, description, date, tacode, amazon, surface);
-    this.customModal.current.setShow(false);
-  }
+createUser = (name, password) => {
+  this.addNewUser(name, password);
+  this.customModal.current.setShow(false);
 
-  updateStatus(marker, status) {
-    this.updateStatusAsync(marker, status);
-  }
+}
+
+deleteUser = (name) => {
+  this.deleteCurrentUser(name);
+  this.customModal.current.setShow(false);
+
+}
+
+deleteProject = (project, parent) => {
+  console.log("delete")
+  this.deleteCurrentProject(project, parent);
+  this.customModal.current.setShow(false);
+
+}
+
+createProject = (code, client, description, date, tacode, amazon, surface) => {
+  this.addNewProject(code, client, description, date, tacode, amazon, surface);
+  this.customModal.current.setShow(false);
+
+}
+
+updateStatus(marker, status) {
+  this.updateStatusAsync(marker, status);
+}
 
   render() {
     console.log("render")
     const centre = [this.state.location.lat, this.state.location.lng];
     let mode = this.state.projectMode; 
-
-    const LayerNav = (props) => { 
+    
+    
+    const LayerNav = function LayerNav(props) { 
       if (props.user === 'admin') {
         return (
           <Nav>       
           <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
-            <NavDropdown.Item  
+              <NavDropdown.Item  
               className="adminitem" 
-              title="Add New User" 
-              onClick={props.addUser}>
+                title="Add New User" 
+                onClick={props.addUser}>
               Manage User     
-            </NavDropdown.Item>
-            <NavDropdown.Divider />
+              </NavDropdown.Item>
+              <NavDropdown.Divider />
             <NavDropdown.Item
               title="Add New Project" 
               className="adminitem" 
@@ -2240,6 +2274,7 @@ class App extends React.Component {
         );
       } else {
         if (props.layers.length > 0) {
+          if(mode === "road") {
             return (
               <Nav>          
               <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
@@ -2249,22 +2284,52 @@ class App extends React.Component {
                   type={'road'} 
                   projects={props.projects.road} 
                   onClick={props.loadLayer}/>
-                  <NavDropdown.Divider />
+                <NavDropdown.Divider />
                 <CustomMenu 
                   title="Add Footpath Layer" 
                   className="navdropdownitem" 
                   type={'footpath'} 
                   projects={props.projects.footpath} 
                   onClick={props.loadFootpathLayer}/>
-                  <NavDropdown.Divider />
+                <NavDropdown.Divider />
                 <CustomMenu 
                   title="Remove Layer" 
                   className="navdropdownitem" 
                   projects={props.layers} 
                   onClick={props.removeLayer}/>
+                <NavDropdown.Divider />
               </NavDropdown>
             </Nav>
-            );     
+            );
+          } else {
+            return (
+              <Nav>          
+              <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
+                <CustomMenu 
+                  title="Add Roading Layer" 
+                  className="navdropdownitem" 
+                  type={'road'} 
+                  projects={props.projects.road} 
+                  onClick={props.loadLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Add Footpath Layer" 
+                  className="navdropdownitem" 
+                  type={'footpath'} 
+                  projects={props.projects.footpath} 
+                  onClick={props.loadFootpathLayer}/>
+                <NavDropdown.Divider />
+                <CustomMenu 
+                  title="Remove Layer" 
+                  className="navdropdownitem" 
+                  projects={props.layers} 
+                  onClick={props.removeLayer}/>
+                <NavDropdown.Divider />
+              </NavDropdown>
+            </Nav>
+            );
+          }
+          
         } else {
           return (
             <Nav>          
@@ -2276,6 +2341,7 @@ class App extends React.Component {
                 projects={props.projects.road} 
                 layers={props.layers} 
                 onClick={props.loadRoadLayer}/>
+              <NavDropdown.Divider/>
               <CustomMenu 
                 title="Add Footpath Layer" 
                 className="navdropdownitem" 
@@ -2298,19 +2364,17 @@ class App extends React.Component {
       } else {  
         return (        
           <NavDropdown title={props.title} className="navdropdownitem" drop="right">
-            {props.projects.map((value, index) =>  
-            <Fragment key={`${index}`}>
-  	          <NavDropdown.Item className="navdropdownitem"
-                key={`${index}`}
-                index={index}
-                title={value.code}
-                code={value.code}
-                onClick={props.onClick}>
-                {value.description + " " + value.date}
-              </NavDropdown.Item>
-            </Fragment>              
-            )}
-            <NavDropdown.Divider />
+          {props.projects.map((value, index) =>      
+            <NavDropdown.Item className="navdropdownitem"
+              key={`${index}`}
+              index={index}
+              title={value.code}
+              code={value.code}
+              onClick={props.onClick}>
+              {value.description + " " + value.date}
+              <NavDropdown.Divider />
+            </NavDropdown.Item>
+          )}
           </NavDropdown>
           );
       }
@@ -2342,6 +2406,140 @@ class App extends React.Component {
       );      
     }
 
+    const CustomSVG = (props) => {
+      if (!props.reverse) {
+        if (props.value === "Grade 1" || props.value === "Priority 1") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+            );
+        } else if (props.value === "Grade 2" || props.value === "Priority 2") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+          if (props.login === "chbdc") {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+        } else if (props.value === "Grade 5" || props.value === "Priority 5") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Signage") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Completed") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else {
+          if (props.value === props.bucket) {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
+        }
+
+      } else {
+        if (props.value === "Grade 5" || props.value === "Priority 5") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+            );
+        } else if (props.value === "Grade 4" || props.value === "Priority 4") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+          if (props.login === "chbdc") {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return ( 
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
+        } else if (props.value === "Grade 2" || props.value === "Priority 2") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Grade 1" || props.value === "Priority 1") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Signage") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="blue" fill="blue">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else if (props.value === "Completed") {
+          return (
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        } else {
+          if (props.value === props.bucket) {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          } else {
+            return (
+              <svg viewBox="1 1 10 10" x="16" width="16" stroke={props.color} opacity="0.4" fill={props.color}>
+                <circle cx="5" cy="5" r="3" />
+              </svg>
+            );
+          }
+          
+        }
+      }   
+    }
+
     const CustomSpinner = (props) => {
       if (props.show) {
         return(
@@ -2364,9 +2562,6 @@ class App extends React.Component {
     }
 
     const CustomLink = (props) => {
-      if (props.endpoint === "/data") {
-        return (null);
-      }
       if (this.state.activeLayer === null) {
         return(null);
       } else {
@@ -2376,7 +2571,7 @@ class App extends React.Component {
             to={{
               pathname: props.endpoint,
               login: this.customNav.current,
-              user: this.state.login,
+              user: this.state.user,
               data: this.state.objGLData,
               project: this.state.activeLayer
             }}
@@ -2402,42 +2597,42 @@ class App extends React.Component {
             </Navbar.Brand>
             <LayerNav 
               project={this.state.activeProject} 
-              projects={this.getProjects()} 
+              projects={this.state.projects} 
               layers={this.state.activeLayers}
               user={this.state.login}
               removeLayer={(e) => this.removeLayer(e)} 
               loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
               loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
+              addCentreline={(e) => this.loadCentreline(e)} 
               addUser={(e) => this.addUser(e)} 
               addProject={(e) => this.addProject(e)} 
               importData={(e) => this.importData(e)} 
               >
             </LayerNav>
             <Nav>              
-              <NavDropdown 
-                className="navdropdown" 
-                title="Data" 
-                id="basic-nav-dropdown"
-                >
-                <CustomLink 
+              <NavDropdown className="navdropdown" title="Data" id="basic-nav-dropdown">
+              <CustomLink 
                   className="dropdownlink" 
                   endpoint="/data"
                   label="Table View"
                   style={{ textDecoration: 'none' }}
                   >
-                 </CustomLink>      
+                 </CustomLink>
+                   <NavDropdown.Divider />         
               </NavDropdown>         
             </Nav>
             <Nav>
-              <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">         
-                  <CustomLink 
-                    className="dropdownlink" 
-                    endpoint="/statistics"
-                    label="Create Report"
-                    style={{ textDecoration: 'none' }}
-                    >
-                  </CustomLink>
-                {/* </NavDropdown.Item>  */}         
+            <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">  
+              <NavDropdown.Divider />         
+                <CustomLink 
+                  className="dropdownlink" 
+                  endpoint="/statistics"
+                  label="Create Report"
+                  style={{ textDecoration: 'none' }}
+                  >
+                 </CustomLink>
+              {/* </NavDropdown.Item>  */}
+                <NavDropdown.Divider />         
                 </NavDropdown>   
             </Nav>
             <Nav>
@@ -2475,6 +2670,8 @@ class App extends React.Component {
           <AntDrawer ref={this.antdrawer} video={this.state.hasVideo}>
           </AntDrawer>
           <ScaleControl className="scale"/>
+          <CustomSpinner show={this.state.spinner}>
+          </CustomSpinner>;
           <div className="btn-group">
           {this.state.filterDropdowns.map((value, indexNo) =>
             <Dropdown 
@@ -2486,8 +2683,8 @@ class App extends React.Component {
                   key={`${indexNo}`} 
                   id={value} 
                   type="checkbox" 
-                  checked={value.active} 
-                  onChange={(e) => this.changeActive(e)}
+                  checked={this.isInputActive(value)} 
+                  onChange={(e) => this.changeActive(e, indexNo)}
                   onClick={(e) => this.clickSelect(e, value)}
                   >
                 </input>
@@ -2500,8 +2697,9 @@ class App extends React.Component {
                       key={`${index}`} 
                       id={input} 
                       type="checkbox" 
-                      checked={this.isChecked(input, value.filter)} 
-                      onClick={(e) => this.clickCheck(e, value, input)}
+                      checked={this.isChecked(value, index)} 
+                      
+                      onClick={(e) => this.clickCheck(e, value)}
                       onChange={(e) => this.changeCheck(e)}
                       >
                     </input>{" " + input}<br></br>
@@ -2511,8 +2709,6 @@ class App extends React.Component {
               </Dropdown.Menu>
             </Dropdown>
           )}
-          <FilterButton ref={this.applyRef} layer={this.state.activeLayer} onClick={(e) => this.clickApply(e)}>  
-          </FilterButton>
           </div>
           <Dropdown className="Priority">
           <Dropdown.Toggle variant="light" size="sm" >
@@ -2531,10 +2727,8 @@ class App extends React.Component {
                     key={`${index}`} 
                     id={value} 
                     type="checkbox" 
-                    //defaultChecked
-                    checked={this.isPriorityChecked(value)} 
-                    onChange={(e) => this.changeCheck(e)} 
-                    onClick={(e) => this.clickPriority(e, value)}>
+                    defaultChecked 
+                    onClick={(e) => this.clickPriority(e)}>
                   </input>{" " + value}
                   <br></br>
                 </div> 
@@ -2585,23 +2779,32 @@ class App extends React.Component {
                 )}
             </Dropdown.Menu>
           </Dropdown>
-          
+          <Button
+            className="applyButton" 
+            variant="light" 
+            size="sm"
+            onClick={(e) => this.clickApply(e)}
+            >Apply Filter
+          </Button>
           {this.state.archiveMarker.map((position, idx) =>
             <Marker 
               key={`marker-${idx}`} 
               position={position}>
+
             </Marker>
           )}
           {this.state.carMarker.map((position, idx) =>
             <Marker 
               key={`marker-${idx}`} 
               position={position}>
+
             </Marker>
           )}
           {this.state.selectedCarriage.map((position, idx) =>
             <Polyline
               key={`marker-${idx}`} 
               position={position}>
+
             </Polyline>
           )}
           <VideoCard
@@ -2626,14 +2829,12 @@ class App extends React.Component {
          
       </LMap >    
       </div>
-      <CustomSpinner show={this.state.spinner}>
-          </CustomSpinner>
       <Image 
-        className="satellite" 
-        src={this.state.osmThumbnail} 
-        onClick={(e) => this.toogleMap(e)} 
-        thumbnail={true}
-      />
+            className="satellite" 
+            src={this.state.osmThumbnail} 
+            onClick={(e) => this.toogleMap(e)} 
+            thumbnail={true}
+          />
        {/* admin modal     */}
        <CustomModal 
         name={'user'}
@@ -2676,16 +2877,16 @@ class App extends React.Component {
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
         <Modal.Body >	
-          <b>Road Inspection Version 2.0</b><br></br>
+          <b>Road Inspection Version 1.3 (beta)</b><br></br>
           Relased: 23/04/2020<br></br>
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
-          <img src="logo192.png" alt="React logo"width="24" height="24"/> React<br></br>
-          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL<br></br>
-          <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap<br></br>
-          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet<br></br>
-          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap<br></br>
-          React-leaflet<br></br>
+          <img src="logo192.png" alt="React logo"width="24" height="24"/> React: 16.12.0<br></br>
+          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL: 2.0<br></br>
+          <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap: 4.4.0<br></br>
+          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet: 1.6.0<br></br>
+          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap: 1.3.0<br></br>
+          React-leaflet: 2.6.0<br></br>
 		    </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" size='sm' type="submit" onClick={(e) => this.clickClose(e)}>
