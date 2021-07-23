@@ -117,6 +117,27 @@ export default class GLEngine {
     return verts;
   }
 
+  shaderTest(verts) {
+    console.log(verts[10])
+
+      const stride = 10;
+      let thickness = 0.0000001
+      let curr = new Vector2D(verts[stride * 2], verts[stride * 2 + 1]);
+      let next = new Vector2D(verts[stride * 4], verts[stride * 4 + 1]);
+      console.log(curr)
+      console.log(next);
+      const line = Vector2D.subtract(next, curr);
+      
+      console.log(line)
+      const normal = new Vector2D(-line.y, line.x);
+      console.log(normal)
+      const nNormal = normal.normalize();
+      console.log(nNormal)
+      const vertex1 = Vector2D.subtract(curr, Vector2D.multiply(nNormal, thickness));
+  console.log(vertex1);
+  
+  }
+
   redraw(points, lines, zoom) {
     console.log(lines);
     this.glPoints = points;
@@ -147,12 +168,12 @@ export default class GLEngine {
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    this.gl.uniform1f(thickness, false, 0.00001); 
+    this.gl.uniform1f(thickness, 0.00001); 
     //let verts = lines.vertices.concat(points.vertices);
     let verts = lines.vertices;
     let vertBuffer = this.gl.createBuffer();
     //verts = this.reColorPoints(verts);
-    console.log(verts);
+    this.shaderTest(verts);
     let numLineVerts = lines.vertices.length / VERTEX_SIZE;
     console.log(numLineVerts)
     //let numPointVerts = points.vertices.length / VERTEX_SIZE;
@@ -167,14 +188,14 @@ export default class GLEngine {
     this.gl.enableVertexAttribArray(prevLocLow);
     // this.gl.vertexAttribPointer(prevColorLoc, 4, this.gl.FLOAT, false, bytesVertex, fsize * 5);
     // this.gl.enableVertexAttribArray(prevColorLoc);
-    this.gl.vertexAttribPointer(vertLoc, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
+    this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
     this.gl.enableVertexAttribArray(vertLoc);
     this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 3);
     this.gl.enableVertexAttribArray(vertLocLow);
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 5);
     this.gl.enableVertexAttribArray(colorLoc);
 
-    this.gl.vertexAttribPointer(nextLoc, 2, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
+    this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
     this.gl.enableVertexAttribArray(nextLocLow);
@@ -208,6 +229,7 @@ export default class GLEngine {
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
+      console.log(pixelOffset.x + " " + pixelOffset.y);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       //if (this._map.getZoom() <= 16) {
@@ -409,16 +431,16 @@ export default class GLEngine {
             const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
             const pixelHigh = {x: pixel.x, y: pixel.y};
             if (j === 0) {
-              glPoints.push(pixelHigh.x, pixelHigh.y, 0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-              glPoints.push(pixelHigh.x, pixelHigh.y, 1, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+              glPoints.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
             }
 
-            glPoints.push(pixelHigh.x, pixelHigh.y, index++, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-            glPoints.push(pixelHigh.x, pixelHigh.y, index++, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+            glPoints.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
 
             if (j === line.length - 1) {
-                glPoints.push(pixelHigh.x, pixelHigh.y, index - 2, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-                glPoints.push(pixelHigh.x, pixelHigh.y, index - 1, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+                glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
+                glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
         
             }
           }
@@ -468,15 +490,13 @@ export default class GLEngine {
   getMiter(p0, p1, p2, thickness) {
     let p2p1 = Vector2D.subtract(p2, p1);
     let p1p0 = Vector2D.subtract(p1, p0);
-    let y = p2p1.y * -1;
-    let normal = new Vector2D(y, p2p1.x);
+    let normal = new Vector2D(-p2p1.y, p2p1.x);
     let normalized = normal.normalize();
     p2p1.normalize();
     p1p0.normalize();
     p2p1 = Vector2D.subtract(p2, p1);
     let tangent = Vector2D.add(p2p1, p1p0);    
     let nTangent = tangent.normalize();
-    y = nTangent.y * -1;
     let miter = new Vector2D(-nTangent.y, nTangent.x);
     let length = thickness / Vector2D.dot(miter, normalized);
     let l = miter.multiply(length);
