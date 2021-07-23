@@ -236,7 +236,6 @@ class App extends React.Component {
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
     }
-    console.log(this.GLEngine.glLines);
     this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
   }
 
@@ -253,6 +252,8 @@ class App extends React.Component {
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
     let glLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
+    
+    
     //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
     //this.GLEngine.redraw([], glLines, true);
     if (zoom) {

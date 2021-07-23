@@ -127,15 +127,14 @@ export default class GLEngine {
     this.gl.useProgram(this.program);
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA); //<---?
     this.gl.enable(this.gl.BLEND);
-    // look up the locations for the inputs to our shaders.
+    // uniforms.
     let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
-    let u_eyepos = this.gl.getUniformLocation(this.program, "u_eyepos");
-    let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_eyepos_low");
+    let u_eyepos = this.gl.getUniformLocation(this.program, "u_offset");
+    let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_offset_low");
     let thickness = this.gl.getUniformLocation(this.program, "u_thickness")
-
+    //attributes
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
-    let pointVertexLoc = this.gl.getAttribLocation(this.program, "a_point_vertex");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
     let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
@@ -176,8 +175,6 @@ export default class GLEngine {
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
     this.gl.enableVertexAttribArray(nextLocLow);
-
-    
     if (zoom) {
       this.appDelegate.centreMap(this.latlngs);
     }
@@ -211,6 +208,7 @@ export default class GLEngine {
       this.delegate.setThickness(thickness, this._map.getZoom());
       let offset  = numLineVerts;
       this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, offset - 4);
+      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, offset + numPointVerts);
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
@@ -221,7 +219,6 @@ export default class GLEngine {
         } else {
           index = 0; //deals with edge cases from anti-aliasing 
         }
-        console.log(index);
         this.delegate.mouseClick = null;
         this.delegate.appDelegate.setIndex(index);   
         this._redraw()

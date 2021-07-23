@@ -51,9 +51,10 @@ export let vshaderLine =
 `#version 300 es
 precision highp float;
 uniform mat4 u_matrix;
-uniform vec3 u_eyepos;
-uniform vec3 u_eyepos_low;
+uniform vec3 u_offset;
+uniform vec3 u_offset_low;
 uniform float u_thickness;
+in vec3 a_point_vertex;
 in vec3 a_vertex;
 in vec3 a_vertex_low;
 in vec3 a_prev;
@@ -65,9 +66,9 @@ in vec4 a_color;
 out vec4 v_color;
 
 vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
-    vec2 t1 = vertex_low.xy - u_eyepos_low.xy;
+    vec2 t1 = vertex_low.xy - u_offset_low.xy;
     vec2 e = t1 - vertex_low.xy;
-    vec2 t2 = ((-u_eyepos_low.xy - e) + (vertex_low.xy - (t1 - e))) + vertex.xy - u_eyepos.xy;
+    vec2 t2 = ((-u_offset_low.xy - e) + (vertex_low.xy - (t1 - e))) + vertex.xy - u_offset.xy;
     vec2 high_delta = t1 + t2;
     vec2 low_delta = t2 - (high_delta - t1);
     vec2 p = high_delta + low_delta;
@@ -75,35 +76,38 @@ vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
 }
 
 void main() {
-
     highp int index = int(a_vertex.z);
-    vec2 prev = highPrescisionVertex(a_prev.xy, a_prev_low.xy);
-    vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
-    vec2 next = highPrescisionVertex(a_next.xy, a_next_low.xy);
-    
-   vec2 offset;
-    if (prev.xy == curr.xy) {
-        vec2 line = normalize(next - curr);
-        offset = vec2(-line.y, line.x) * u_thickness;
-    } else if (curr.xy == next.xy) {
-        vec2 line = normalize(curr - prev);
-        offset = vec2(-line.y, line.x) * u_thickness;
-    } 
-    else {
-        vec2 lineA = normalize(curr.xy - prev.xy);
-		vec2 lineB = normalize(next.xy - curr.xy);
-		vec2 tangent = normalize(lineA + lineB);
-        vec2 miter = vec2(-tangent.y, tangent.x);
-        vec2 normal =  vec2(-lineA.y, lineA.x);
-        float length = u_thickness / dot(miter, normal); 
-        offset = miter * length;
-    }  
     vec2 p;
-    if (index == 0) {
-		p = curr + offset;
-	} else {
-		p = curr - offset;
-	}
+    if (index < 0) { //point
+        vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
+        p = curr;
+    } else { //line
+        vec2 prev = highPrescisionVertex(a_prev.xy, a_prev_low.xy);
+        vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
+        vec2 next = highPrescisionVertex(a_next.xy, a_next_low.xy);
+        vec2 offset;
+        if (prev.xy == curr.xy) {
+            vec2 line = normalize(next - curr);
+            offset = vec2(-line.y, line.x) * u_thickness;
+        } else if (curr.xy == next.xy) {
+            vec2 line = normalize(curr - prev);
+            offset = vec2(-line.y, line.x) * u_thickness;
+        } 
+        else {
+            vec2 lineA = normalize(curr.xy - prev.xy);
+            vec2 lineB = normalize(next.xy - curr.xy);
+            vec2 tangent = normalize(lineA + lineB);
+            vec2 miter = vec2(-tangent.y, tangent.x);
+            vec2 normal =  vec2(-lineA.y, lineA.x);
+            float length = u_thickness / dot(miter, normal); 
+            offset = miter * length;
+        }  
+        if (index == 0) {
+            p = curr + offset;
+        } else {
+            p = curr - offset;
+        }
+    }
     gl_Position = u_matrix * vec4(p, 0.0, 1.0);
     gl_PointSize =  a_pointSize;
     // pass the color to the fragment shader
@@ -114,8 +118,8 @@ export let vshader300 =
 `#version 300 es
 precision highp float;
 uniform mat4 u_matrix;
-uniform vec3 u_eyepos;
-uniform vec3 u_eyepos_low;
+uniform vec3 u_offset;
+uniform vec3 u_offset_low;
 in vec3 a_vertex;
 in vec3 a_vertex_low;
 in float a_pointSize;
@@ -124,9 +128,9 @@ out vec4 v_color;
 
 void main() {
 
-    vec3 t1 = a_vertex_low - u_eyepos_low;
+    vec3 t1 = a_vertex_low - u_offset_low;
     vec3 e = t1 - a_vertex_low;
-    vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+    vec3 t2 = ((-u_offset_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_offset;
     vec3 high_delta = t1 + t2;
     vec3 low_delta = t2 - (high_delta - t1);
     vec3 p = high_delta + low_delta;
@@ -167,8 +171,8 @@ export let vshader =
 `
 precision highp float;
 uniform mat4 u_matrix;
-uniform vec3 u_eyepos;
-uniform vec3 u_eyepos_low;
+uniform vec3 u_offset;
+uniform vec3 u_offset_low;
 attribute vec3 a_vertex;
 attribute vec3 a_vertex_low;
 attribute float a_pointSize;
@@ -176,9 +180,9 @@ attribute vec4 a_color;
 varying vec4 v_color;
 
 void main() {
-vec3 t1 = a_vertex_low - u_eyepos_low;
+vec3 t1 = a_vertex_low - u_offset_low;
 vec3 e = t1 - a_vertex_low;
-vec3 t2 = ((-u_eyepos_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_eyepos;
+vec3 t2 = ((-u_offset_low - e) + (a_vertex_low - (t1 - e))) + a_vertex - u_offset;
 vec3 high_delta = t1 + t2;
 vec3 low_delta = t2 - (high_delta - t1);
 vec3 p = high_delta + low_delta;
