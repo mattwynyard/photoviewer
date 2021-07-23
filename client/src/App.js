@@ -236,6 +236,7 @@ class App extends React.Component {
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
     }
+    console.log(this.GLEngine.glLines);
     this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
   }
 
@@ -252,14 +253,13 @@ class App extends React.Component {
     const priorites = this.setPriorityObject();
     let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
     let glLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
-    //console.log(glShaderLines)
     //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    this.GLEngine.redraw([], glLines, true);
-    // if (zoom) {
-    //   this.GLEngine.redraw(glPoints, glLines, true);
-    // } else {
-    //   this.GLEngine.redraw(glPoints, glLines, false);
-    // }
+    //this.GLEngine.redraw([], glLines, true);
+    if (zoom) {
+      this.GLEngine.redraw(glPoints, glLines, true);
+    } else {
+      this.GLEngine.redraw(glPoints, glLines, false);
+    }
     let faults = glPoints.faults.concat(glLines.faults);
     this.setState({objGLData: faults});
     //this.setState({glPoints: glPoints}); //Immutable reserve of original points
@@ -365,6 +365,7 @@ class App extends React.Component {
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
+        console.log("click")
         this.setState({selectedIndex: null});
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;

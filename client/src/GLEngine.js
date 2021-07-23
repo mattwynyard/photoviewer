@@ -92,54 +92,32 @@ export default class GLEngine {
       if (this.appDelegate.state.selectedIndex === null) {
         return verts;
       } else {
-        for (let i = 0; i < verts.length; i += 9) {
-          if (verts[i + 8] === this.appDelegate.state.selectedIndex) {
-            verts[i + 4] = 1.0;
-            verts[i + 5] = 0;
+        for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
+          if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.state.selectedIndex) {
+            verts[i + 5] = 1.0;
             verts[i + 6] = 0;
-            verts[i + 7] = 1.0;
+            verts[i + 7] = 0;
+            verts[i + 8] = 1.0;
           }
         }
       }   
     } else {
-      for (let i = 0; i < verts.length; i += 9) {
-        let index = verts[i + 8];
+      for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
+        let index = verts[i +  VERTEX_SIZE - 1];
         //calculates r,g,b color from index
         let r = ((index & 0x000000FF) >>  0) / 255;
         let g = ((index & 0x0000FF00) >>  8) / 255;
         let b = ((index & 0x00FF0000) >> 16) / 255;
-        verts[i + 4] = r;
-        verts[i + 5] = g;
-        verts[i + 6] = b;
-        verts[i + 7] = 1.0; //alpha
+        verts[i + 5] = r;
+        verts[i + 6] = g;
+        verts[i + 7] = b;
+        verts[i + 8] = 1.0; //alpha
       }
     }
     return verts;
   }
 
-  shaderTest(verts) {
-    console.log(verts[10])
-
-      const stride = 10;
-      let thickness = 0.0000001
-      let curr = new Vector2D(verts[stride * 2], verts[stride * 2 + 1]);
-      let next = new Vector2D(verts[stride * 4], verts[stride * 4 + 1]);
-      console.log(curr)
-      console.log(next);
-      const line = Vector2D.subtract(next, curr);
-      
-      console.log(line)
-      const normal = new Vector2D(-line.y, line.x);
-      console.log(normal)
-      const nNormal = normal.normalize();
-      console.log(nNormal)
-      const vertex1 = Vector2D.subtract(curr, Vector2D.multiply(nNormal, thickness));
-  console.log(vertex1);
-  
-  }
-
   redraw(points, lines, zoom) {
-    console.log(lines);
     this.glPoints = points;
     this.glLines = lines;
     this.zoom = zoom;
@@ -157,6 +135,7 @@ export default class GLEngine {
 
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
+    let pointVertexLoc = this.gl.getAttribLocation(this.program, "a_point_vertex");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
     let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
@@ -168,15 +147,13 @@ export default class GLEngine {
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
-    this.gl.uniform1f(thickness, 0.00001); 
-    //let verts = lines.vertices.concat(points.vertices);
-    let verts = lines.vertices;
+    this.gl.uniform1f(thickness, 0.0006); 
+    let verts = lines.vertices.concat(points.vertices);
+    //let verts = lines.vertices;
     let vertBuffer = this.gl.createBuffer();
-    //verts = this.reColorPoints(verts);
-    this.shaderTest(verts);
+    verts = this.reColorPoints(verts);
     let numLineVerts = lines.vertices.length / VERTEX_SIZE;
-    console.log(numLineVerts)
-    //let numPointVerts = points.vertices.length / VERTEX_SIZE;
+    let numPointVerts = points.vertices.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     let bytesVertex = fsize * VERTEX_SIZE;
@@ -225,41 +202,31 @@ export default class GLEngine {
       let scale = Math.pow(2, this._map.getZoom());
       //console.log(this._map.getZoom());
       scaleMatrix(this.delegate.mapMatrix, scale, scale); //translation done in shader
-      let u_matLoc = this.delegate.gl.getUniformLocation(this.delegate.program, "u_matrix");
+      let u_matLoc = this.delegate.gl.getUniformLocation(this.delegate.program, "u_matrix"); 
       // -- attach matrix value to 'mapMatrix' uniform in shader
       this.delegate.gl.uniformMatrix4fv(u_matLoc, false, this.delegate.mapMatrix);
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
-      console.log(pixelOffset.x + " " + pixelOffset.y);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      //if (this._map.getZoom() <= 16) {
-      //console.log(this._map.getZoom());
-        // let offset = 0;
-        // for (var i = 0; i < lines.lengths.length; i += 1) {             
-        //   let count = lines.lengths[i];
-        //   this.delegate.gl.drawArrays(this.delegate.gl.LINE_STRIP, offset, count);
-        //   offset += count;
-        // }
-      // } else {
-      //this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLES, 0, numLineVerts); 
+      this.delegate.setThickness(thickness, this._map.getZoom());
       let offset  = numLineVerts;
-      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, 0, offset - 4);
-      // if (this.delegate.mouseClick !== null) {      
-      //   let pixel = new Uint8Array(4);
-      //   this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-      //   this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-      //   let index = null;
-      //   if (pixel[3] === 255) {
-      //     index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
-      //     ;
-      //   } else {
-      //     index = 0; //deals with edge cases from anti-aliasing 
-      //   }
-      //   this.delegate.mouseClick = null;
-      //   this.delegate.appDelegate.setIndex(index);   
-      //   this._redraw()
+      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, offset - 4);
+      if (this.delegate.mouseClick !== null) {      
+        let pixel = new Uint8Array(4);
+        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
+        this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+        let index = null;
+        if (pixel[3] === 255) {
+          index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
+        } else {
+          index = 0; //deals with edge cases from anti-aliasing 
+        }
+        console.log(index);
+        this.delegate.mouseClick = null;
+        this.delegate.appDelegate.setIndex(index);   
+        this._redraw()
         
-      // }
+      }
     }
     
   }
@@ -413,7 +380,7 @@ export default class GLEngine {
     let lengths = [];
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
-      if (data[i].id === "MDC_RD_0521_01740") {
+      if (data[i].id) {
         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
         this.latlngs.push(latlng);
         if (linestring !== null) {
@@ -421,7 +388,6 @@ export default class GLEngine {
           let line = linestring.coordinates;
           let colors = this.setColors(data[i], type, priorities);
           lengths.push(line.length);
-          let index = 0;
           for (let j = 0; j < line.length; j++) {
             const point = line[j];
             const lng = point[0];
@@ -430,6 +396,9 @@ export default class GLEngine {
             const pixel = LatLongToPixelXY(point[1], point[0]);
             const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
             const pixelHigh = {x: pixel.x, y: pixel.y};
+            if (i !== 0 && j === 0) {
+              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
+            }
             if (j === 0) {
               glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
               glPoints.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
@@ -441,7 +410,9 @@ export default class GLEngine {
             if (j === line.length - 1) {
                 glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
                 glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-        
+            }
+            if (i !== line.length - 1 && j === line.length - 1) {
+              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
             }
           }
         }
@@ -468,7 +439,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
+      points.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
         // let bucket = data[i].inspection;
         // if (bucket != null) {
         //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
@@ -485,6 +456,42 @@ export default class GLEngine {
       faults.push(fault);         
     }
     return { faults: faults, vertices: points, count: count}
+  }
+
+  setThickness(thickness, zoom) {
+    if (zoom == 1) {        
+      this.gl.uniform1f(thickness, 0.0004);
+    } else if (zoom == 6) {
+        this.gl.uniform1f(thickness, 0.001);
+    } else if (zoom == 7) {
+      thickness.gl.uniform1f(thickness, 0.0009);
+    } else if (zoom == 8) {
+      this.gl.uniform1f(thickness, 0.0008);
+    } else if (zoom == 9){
+      this.gl.uniform1f(thickness, 0.0006);
+    } else if (zoom == 10) {        
+      this.gl.uniform1f(thickness, 0.0004);
+    } else if (zoom == 11) {        
+      this.gl.uniform1f(thickness, 0.0002);
+    } else if (zoom == 12) {
+      this.gl.uniform1f(thickness, 0.0001);
+    } else if (zoom == 13) {
+      this.gl.uniform1f(thickness, 0.00008);
+    } else if (zoom == 14) {
+      this.gl.uniform1f(thickness, 0.00005);
+    } else if (zoom == 15) {
+      this.gl.uniform1f(thickness, 0.00003);
+    } else if (zoom == 16) {
+      this.gl.uniform1f(thickness, 0.00002);
+    } else if (zoom == 17) {
+      this.gl.uniform1f(thickness, 0.000015);
+    } else if (zoom == 18) {
+      this.gl.uniform1f(thickness, 0.00001);
+    } else if (zoom == 19) {
+      this.gl.uniform1f(thickness, 0.000009);
+    } else {
+      this.gl.uniform1f(thickness, 0.000008);
+    }
   }
 
   getMiter(p0, p1, p2, thickness) {
