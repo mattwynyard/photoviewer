@@ -57,6 +57,14 @@ precision mediump float; // highp is not supported. floats have medium precision
 #endif
 #endif 
 precision highp float;
+attribute vec3 a_vertex;
+attribute vec3 a_vertex_low;
+attribute float a_pointSize;
+attribute vec4 a_color;
+attribute vec3 a_prev;
+attribute vec3 a_prev_low;
+attribute vec3 a_next;
+attribute vec3 a_next_low;
 uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
@@ -134,7 +142,6 @@ precision mediump float; // highp is not supported. floats have medium precision
 //precision highp float;
 in vec4 v_color;
 out vec4 frag_color;
-
 void main() {
 float border = 0.05;
 float radius = 0.5;
@@ -159,7 +166,6 @@ attribute vec3 a_vertex_low;
 attribute float a_pointSize;
 attribute vec4 a_color;
 varying vec4 v_color;
-
 void main() {
 vec3 t1 = a_vertex_low - u_offset_low;
 vec3 e = t1 - a_vertex_low;
@@ -184,7 +190,6 @@ precision mediump float; // highp is not supported. floats have medium precision
 #endif 
 //precision mediump float;
 varying vec4 v_color;
-
 void main() {
 float border = 0.05;
 float radius = 0.5;

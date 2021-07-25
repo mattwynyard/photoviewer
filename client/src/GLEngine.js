@@ -2,12 +2,10 @@ import Vector2D from './Vector2D';
 import {LatLongToPixelXY, scaleMatrix} from  './util.js';
 import L from 'leaflet';
 import './L.CanvasOverlay';
-import {compileShader, createProgram, vshader, fshader, vshader300, fshader300, vshaderLine} from './shaders.js'
-import { ContactsOutlined } from '@ant-design/icons';
+import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
 
 const DUPLICATE_OFFSET = 0.00002;
 const ALPHA = 0.9;
-const VERTEX_SIZE = 10;
 
 export default class GLEngine {
  
@@ -49,7 +47,7 @@ export default class GLEngine {
       this.glLayer.delegate(this); 
       this.addEventListeners();
       if (this.webgl === 2) {
-        let vertexShader = compileShader(this.gl, vshaderLine, this.gl.VERTEX_SHADER);
+        let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
         let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
         this.program = createProgram(this.gl, vertexShader, fragmentShader);
       } else if (this.webgl === 1) {
@@ -135,12 +133,8 @@ export default class GLEngine {
     //attributes
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
+    //let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
     let vertLocLow = this.gl.getAttribLocation(this.program, "a_vertex_low");
-    let prevLoc = this.gl.getAttribLocation(this.program, "a_prev");
-    let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
-    let nextLoc = this.gl.getAttribLocation(this.program, "a_next");
-    let nextLocLow = this.gl.getAttribLocation(this.program, "a_next_low");
-
     this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
@@ -155,7 +149,6 @@ export default class GLEngine {
     let numPointVerts = points.vertices.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
-    let bytesVertex = fsize * VERTEX_SIZE;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0); //0
@@ -166,9 +159,10 @@ export default class GLEngine {
     // this.gl.enableVertexAttribArray(prevColorLoc);
     this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
     this.gl.enableVertexAttribArray(vertLoc);
-    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 3);
+    this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, fsize * 9, fsize * 2);
     this.gl.enableVertexAttribArray(vertLocLow);
-    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 5);
+    // -- offset for color buffer
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, fsize * 9, fsize * 4);
     this.gl.enableVertexAttribArray(colorLoc);
 
     this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
@@ -222,11 +216,9 @@ export default class GLEngine {
         }
         this.delegate.mouseClick = null;
         this.delegate.appDelegate.setIndex(index);   
-        this._redraw()
-        
+        this._redraw();
       }
     }
-    
   }
 
   drawLines(data, type, priorities, pointCount) {
@@ -347,7 +339,6 @@ export default class GLEngine {
     let lengths = [];
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
-      console.log(linestring)
       const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
       this.latlngs.push(latlng);
       if (linestring !== null) {

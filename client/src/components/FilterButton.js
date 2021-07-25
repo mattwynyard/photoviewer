@@ -1,7 +1,7 @@
 import React from 'react';
 import {Button}  from 'react-bootstrap';
 
-const FilterButton =React.forwardRef((props, ref) => {
+const FilterButton = React.forwardRef((props, ref) => {
 
     if(props.layer) {
         return (
