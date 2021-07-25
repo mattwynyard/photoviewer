@@ -6,7 +6,6 @@ import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
-import Cookies from 'js-cookie';
 import './L.CanvasOverlay';
 import GLEngine from './GLEngine.js';
 import './PositionControl';
@@ -89,7 +88,6 @@ class App extends React.Component {
       archiveMarker: [],
       carMarker: [], //position of current image in video
       layers: [],
-      bounds: {},
       show: false,
       showVideo: false,
       showRuler: false,
@@ -366,7 +364,6 @@ class App extends React.Component {
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
-        console.log("click")
         this.setState({selectedIndex: null});
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
@@ -1975,8 +1972,8 @@ class App extends React.Component {
   resetDropdowns() {
     let filter = [];
     for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      this.state.filterDropdowns[i].active = true;
-      this.state.filterDropdowns[i].filter = [...this.state.filterDropdowns[i].data.result];
+      this.state.filterDropdowns[i].setActive(true);
+      this.state.filterDropdowns[i].setFiltert([...this.state.filterDropdowns[i].data.result]);
       filter.push(this.state.filterDropdowns[i].filter);
     }
   }
@@ -2208,7 +2205,6 @@ class App extends React.Component {
   }
 
   render() {
-    console.log("render")
     const centre = [this.state.location.lat, this.state.location.lng];
     let mode = this.state.projectMode; 
 

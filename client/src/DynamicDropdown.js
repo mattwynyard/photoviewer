@@ -5,8 +5,28 @@ export default class DynamicDropdown {
         this.active = true;
     }
 
+    isActive() {
+        return this.active;
+    }
+
+    setActive(isActive) {
+        this.active = isActive;
+    }
+
+    getCode() {
+        return this.code;
+    }
+
     setCode(code) {
         this.code = code;
+    }
+
+    getName() {
+        return this.name
+    }
+
+    getData() {
+        return this.data;
     }
 
     setData(data) {
@@ -15,6 +35,10 @@ export default class DynamicDropdown {
 
     initialiseFilter() {
         this.filter = [...this.data.result];
+    }
+
+    setFilter(filter) {
+        this.filter = filter;
     }
 
     clearFilter() {
@@ -43,23 +67,5 @@ export default class DynamicDropdown {
         return found;
     }
 
-    isActive() {
-        return this.active;
-    }
-
-    setActive(active) {
-        this.active = active;
-    }
-
-    getCode() {
-        return this.code;
-    }
-
-    getName() {
-        return this.name
-    }
-
-    getData() {
-        return this.data;
-    }
+    
 }

@@ -206,8 +206,9 @@ export default class GLEngine {
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       this.delegate.setThickness(thickness, this._map.getZoom());
-      let offset  = numLineVerts;
-      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, offset - 4);
+      let offset  = numLineVerts - 4;
+      if (offset < 0) offset = 0;
+      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, offset);
       this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, offset + numPointVerts);
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
@@ -456,35 +457,35 @@ export default class GLEngine {
   }
 
   setThickness(thickness, zoom) {
-    if (zoom == 1) {        
+    if (zoom === 1) {        
       this.gl.uniform1f(thickness, 0.0004);
-    } else if (zoom == 6) {
+    } else if (zoom === 6) {
         this.gl.uniform1f(thickness, 0.001);
-    } else if (zoom == 7) {
+    } else if (zoom === 7) {
       thickness.gl.uniform1f(thickness, 0.0009);
-    } else if (zoom == 8) {
+    } else if (zoom === 8) {
       this.gl.uniform1f(thickness, 0.0008);
-    } else if (zoom == 9){
+    } else if (zoom === 9){
       this.gl.uniform1f(thickness, 0.0006);
-    } else if (zoom == 10) {        
+    } else if (zoom === 10) {        
       this.gl.uniform1f(thickness, 0.0004);
-    } else if (zoom == 11) {        
+    } else if (zoom === 11) {        
       this.gl.uniform1f(thickness, 0.0002);
-    } else if (zoom == 12) {
+    } else if (zoom === 12) {
       this.gl.uniform1f(thickness, 0.0001);
-    } else if (zoom == 13) {
+    } else if (zoom === 13) {
       this.gl.uniform1f(thickness, 0.00008);
-    } else if (zoom == 14) {
+    } else if (zoom === 14) {
       this.gl.uniform1f(thickness, 0.00005);
-    } else if (zoom == 15) {
+    } else if (zoom === 15) {
       this.gl.uniform1f(thickness, 0.00003);
-    } else if (zoom == 16) {
+    } else if (zoom === 16) {
       this.gl.uniform1f(thickness, 0.00002);
-    } else if (zoom == 17) {
+    } else if (zoom === 17) {
       this.gl.uniform1f(thickness, 0.000015);
-    } else if (zoom == 18) {
+    } else if (zoom === 18) {
       this.gl.uniform1f(thickness, 0.00001);
-    } else if (zoom == 19) {
+    } else if (zoom === 19) {
       this.gl.uniform1f(thickness, 0.000009);
     } else {
       this.gl.uniform1f(thickness, 0.000008);
