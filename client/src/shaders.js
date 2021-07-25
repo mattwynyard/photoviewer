@@ -57,14 +57,6 @@ precision mediump float; // highp is not supported. floats have medium precision
 #endif
 #endif 
 precision highp float;
-attribute vec3 a_vertex;
-attribute vec3 a_vertex_low;
-attribute float a_pointSize;
-attribute vec4 a_color;
-attribute vec3 a_prev;
-attribute vec3 a_prev_low;
-attribute vec3 a_next;
-attribute vec3 a_next_low;
 uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
@@ -79,7 +71,6 @@ in vec3 a_next_low;
 in float a_pointSize;
 in vec4 a_color;
 out vec4 v_color;
-
 vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
     vec2 t1 = vertex_low.xy - u_offset_low.xy;
     vec2 e = t1 - vertex_low.xy;
@@ -89,7 +80,6 @@ vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
     vec2 p = high_delta + low_delta;
     return p;
 }
-
 void main() {
     highp int index = int(a_vertex.z);
     vec2 p;
