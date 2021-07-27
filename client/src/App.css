@@ -113,6 +113,17 @@ body {
   top: 10px;
 }
 
+.centreline {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+  z-index: 999;
+  color: gray;
+  left: 1%;
+  top: 22%;
+}
+
 .custommenu {
   position: absolute;
   font-family: "Century Gothic", sans-serif;

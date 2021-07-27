@@ -460,27 +460,35 @@ export default class GLEngine {
 
   setThickness(thickness, zoom) {
     if (zoom === 1) {        
-      this.gl.uniform1f(thickness, 0.0004);
+      this.gl.uniform1f(thickness, 0.001);
+    } else if (zoom === 2) {
+      this.gl.uniform1f(thickness, 0.001);
+    } else if (zoom === 3) {
+      this.gl.uniform1f(thickness, 0.001);
+    } else if (zoom === 4) {
+      this.gl.uniform1f(thickness, 0.001);
+    } else if (zoom === 5) {
+      this.gl.uniform1f(thickness, 0.001);
     } else if (zoom === 6) {
         this.gl.uniform1f(thickness, 0.001);
     } else if (zoom === 7) {
-      thickness.gl.uniform1f(thickness, 0.0009);
+      this.gl.uniform1f(thickness, 0.001);
     } else if (zoom === 8) {
-      this.gl.uniform1f(thickness, 0.0008);
+      this.gl.uniform1f(thickness, 0.001);
     } else if (zoom === 9){
-      this.gl.uniform1f(thickness, 0.0006);
+      this.gl.uniform1f(thickness, 0.0008);
     } else if (zoom === 10) {        
-      this.gl.uniform1f(thickness, 0.0004);
+      this.gl.uniform1f(thickness, 0.0005);
     } else if (zoom === 11) {        
-      this.gl.uniform1f(thickness, 0.0002);
+      this.gl.uniform1f(thickness, 0.0003);
     } else if (zoom === 12) {
-      this.gl.uniform1f(thickness, 0.0001);
+      this.gl.uniform1f(thickness, 0.0002);
     } else if (zoom === 13) {
-      this.gl.uniform1f(thickness, 0.00008);
+      this.gl.uniform1f(thickness, 0.00009);
     } else if (zoom === 14) {
-      this.gl.uniform1f(thickness, 0.00005);
+      this.gl.uniform1f(thickness, 0.00006);
     } else if (zoom === 15) {
-      this.gl.uniform1f(thickness, 0.00003);
+      this.gl.uniform1f(thickness, 0.00004);
     } else if (zoom === 16) {
       this.gl.uniform1f(thickness, 0.00002);
     } else if (zoom === 17) {

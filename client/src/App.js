@@ -2478,7 +2478,15 @@ class App extends React.Component {
             <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
           </Navbar>         
         </div>      
-        <div className="map">      
+        <div className="map"> 
+        {/* <Dropdown className="centreline">
+          <Dropdown.Toggle variant="light" size="sm" >
+              Layers
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="custommenu">
+        
+            </Dropdown.Menu>
+          </Dropdown>    */}
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
@@ -2650,7 +2658,7 @@ class App extends React.Component {
       </LMap >    
       </div>
       <CustomSpinner show={this.state.spinner}>
-          </CustomSpinner>
+      </CustomSpinner>
       <Image 
         className="satellite" 
         src={this.state.osmThumbnail} 
