@@ -179,6 +179,7 @@ class App extends React.Component {
 
   componentWillUnmount() {
     window.sessionStorage.setItem('state', JSON.stringify(this.state));
+    this.removeEventListeners(); 
     console.log("unmount");
   }
 
@@ -298,7 +299,25 @@ class App extends React.Component {
     this.leafletMap.addEventListener('keydown', (event) => {
       this.onKeyPress(event.originalEvent);
     });
-   
+  }
+
+  
+  /**
+     * adds various event listeners to the canvas
+     */
+  removeEventListeners() {
+    this.leafletMap.removeEventListener('click', (event) => {
+      this.clickLeafletMap(event);
+    })
+    // this.leafletMap.addEventListener('dblclick', (event) => {
+    //   this.dblClickLeafletMap(event);
+    // });
+    this.leafletMap.removeEventListener('mousemove', (event) => {
+      this.onMouseMove(event);
+    });
+    this.leafletMap.removeEventListener('keydown', (event) => {
+      this.onKeyPress(event.originalEvent);
+    });
   }
 
   getPhotoBounds() {
@@ -1479,11 +1498,12 @@ class App extends React.Component {
                 await this.addGLGeometry(body.points, body.lines, body.type, zoom);
               }     
             }
-          }).catch((error) => {
-            console.log("error: " + error);
-            //alert(error);
-            return;
-          });   
+          })
+          // .catch((error) => {
+          //   console.log("error: " + error);
+          //   //alert(error);
+          //   return;
+          // });   
         }    
       //}
       
@@ -1970,7 +1990,7 @@ class App extends React.Component {
     let filter = [];
     for (let i = 0; i < this.state.filterDropdowns.length; i++) {
       this.state.filterDropdowns[i].setActive(true);
-      this.state.filterDropdowns[i].setFiltert([...this.state.filterDropdowns[i].data.result]);
+      this.state.filterDropdowns[i].setFilter([...this.state.filterDropdowns[i].data.result]);
       filter.push(this.state.filterDropdowns[i].filter);
     }
   }
@@ -2203,7 +2223,6 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-    let mode = this.state.projectMode; 
 
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
@@ -2674,7 +2693,7 @@ class App extends React.Component {
           <Modal.Title><h2>About</h2> </Modal.Title>
         </Modal.Header>
         <Modal.Body >	
-          <b>Road Inspection Version 2.0</b><br></br>
+          <b>Road Inspection Version 2.1</b><br></br>
           Relased: 23/04/2020<br></br>
           Company: Onsite Developments Ltd.<br></br>
           Software Developer: Matt Wynyard <br></br>
