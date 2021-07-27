@@ -383,7 +383,9 @@ class App extends React.Component {
         this.setState({selectedIndex: null});
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
-        this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
+        if (this.state.activeLayer) {
+          this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
+        }      
       }
         break;
       default:
@@ -2074,6 +2076,10 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
+    console.log(this.state.activeLayer)
+    if(this.state.activeLayer) {
+      return;
+    }
     let query = this.state.filterPriorities;
     let priority = this.parsePriority(e.target.id);
     if (query.length === 1) {

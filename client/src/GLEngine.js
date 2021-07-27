@@ -147,7 +147,13 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     this.gl.uniform1f(thickness, 0.0006); 
-    let verts = lines.vertices.concat(points.vertices);
+    let verts = null;
+    //console.log(points);
+    if (points.vertices.length !== 0) {
+      verts = lines.vertices.concat(points.vertices);
+    } else {
+      verts = [...lines.vertices];
+    }
     //let verts = lines.vertices;
     let vertBuffer = this.gl.createBuffer();
     verts = this.reColorPoints(verts);
@@ -162,15 +168,12 @@ export default class GLEngine {
     this.gl.enableVertexAttribArray(prevLoc);
     this.gl.vertexAttribPointer(prevLocLow, 2, this.gl.FLOAT, false, bytesVertex, fsize * 3);
     this.gl.enableVertexAttribArray(prevLocLow);
-    // this.gl.vertexAttribPointer(prevColorLoc, 4, this.gl.FLOAT, false, bytesVertex, fsize * 5);
-    // this.gl.enableVertexAttribArray(prevColorLoc);
     this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
     this.gl.enableVertexAttribArray(vertLoc);
     this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 3);
     this.gl.enableVertexAttribArray(vertLocLow);
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 5);
     this.gl.enableVertexAttribArray(colorLoc);
-
     this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
@@ -222,8 +225,7 @@ export default class GLEngine {
         }
         this.delegate.mouseClick = null;
         this.delegate.appDelegate.setIndex(index);   
-        this._redraw()
-        
+        this._redraw();      
       }
     }
     
