@@ -164,7 +164,7 @@ class App extends React.Component {
     //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
-    //this.roadLinesRef.current.setDelegate(this.GLEngine);
+    this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -178,14 +178,14 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {  
-    // this.roadLinesRef.current.setProject(
-    //   {
-    //     layer: this.state.activeLayer,
-    //     host: this.state.host,
-    //     login: this.state.login,
-    //     token: this.state.token,
-    //   }
-    //   );
+    this.roadLinesRef.current.setProject(
+      {
+        layer: this.state.activeLayer,
+        host: this.state.host,
+        login: this.state.login,
+        token: this.state.token,
+      }
+      );
   }
 
 
@@ -1131,7 +1131,7 @@ class App extends React.Component {
         await this.requestAge(project); 
       }
       this.filterLayer(project, true); //fetch layer 
-      //this.roadLinesRef.current.loadCentrelines(project); 
+      this.roadLinesRef.current.loadCentrelines(project); 
     });
   }
 
@@ -2500,12 +2500,12 @@ class App extends React.Component {
           </Navbar>         
         </div>      
         <div className="map"> 
-        {/* <Roadlines 
+        <Roadlines 
           ref={this.roadLinesRef} 
           login={this.state.login} 
           host={this.state.host}
           project={this.state.activeLayer}>
-        </Roadlines>   */}
+        </Roadlines>  
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
