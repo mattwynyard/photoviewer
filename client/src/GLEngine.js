@@ -117,9 +117,14 @@ export default class GLEngine {
     return verts;
   }
 
-  redraw(points, lines, zoom) {
-    this.glPoints = points;
-    this.glLines = lines;
+  
+  /**
+   * 
+   * @param {data object} data 
+   * @param {zoom to on redraw} zoom 
+   */
+  redraw(data, zoom) {
+    this.glData = data;
     this.zoom = zoom;
     this.glLayer.drawing(drawingOnCanvas); 
     let pixelsToWebGLMatrix = new Float32Array(16);
@@ -147,21 +152,23 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     this.gl.uniform1f(thickness, 0.0006); 
-    let verts = null;
-    //console.log(points);
-    if (points.vertices.length !== 0) {
-      verts = lines.vertices.concat(points.vertices);
+    let fverts = null; //faults
+    let cverts = data.centre; //centrelines
+    if (data.points.length !== 0) {
+      fverts = data.lines.concat(data.points);
     } else {
-      verts = [...lines.vertices];
+      fverts = [...data.lines];
     }
-    //let verts = lines.vertices;
-    let vertBuffer = this.gl.createBuffer();
-    verts = this.reColorPoints(verts);
-    let numLineVerts = lines.vertices.length / VERTEX_SIZE;
-    let numPointVerts = points.vertices.length / VERTEX_SIZE;
+    
+    fverts = this.reColorPoints(fverts);
+    let verts = cverts.concat(fverts);
+    let numCentreVerts = data.centre.length / VERTEX_SIZE;
+    let numLineVerts = data.lines.length / VERTEX_SIZE;
+    let numPointVerts = data.points.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     let bytesVertex = fsize * VERTEX_SIZE;
+    let vertBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0); //0
@@ -184,7 +191,7 @@ export default class GLEngine {
     this.glLayer.redraw();
 
     function drawingOnCanvas(canvasOverlay, params) {
-      if (this.delegate.gl == null)  {
+      if (!this.delegate.gl)  {
         return;
       }
       this.delegate.gl.clearColor(0, 0, 0, 0);
@@ -209,10 +216,19 @@ export default class GLEngine {
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       this.delegate.setThickness(thickness, this._map.getZoom());
-      let offset  = numLineVerts - 4;
-      if (offset < 0) offset = 0;
-      this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, offset);
-      this.delegate.gl.drawArrays(this.delegate.gl.POINTS, offset, offset + numPointVerts);
+      let centreCount  = numCentreVerts - 4;
+      let lineCount  = numLineVerts - 4;
+      let pointCount = numPointVerts;
+      if (centreCount > 0) {
+        this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
+      } 
+      if (lineCount > 0) {
+        this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
+      } 
+      if (numPointVerts !== 0) {
+        this.delegate.gl.drawArrays(this.delegate.gl.POINTS, numCentreVerts + numLineVerts , pointCount); 
+      }
+      
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
@@ -227,160 +243,122 @@ export default class GLEngine {
         this.delegate.appDelegate.setIndex(index);   
         this._redraw();      
       }
+    }   
+  }
+
+  loadLines(buffer, data, options) {
+    let faults = [];
+    let centre = [];
+    let lengths = [];
+    let count = options.count;
+    for (let i = 0; i < data.length; i++) {
+      const linestring = JSON.parse(data[i].st_asgeojson);
+      if (data[i].id) {
+        const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
+        this.latlngs.push(latlng);
+        if (linestring) {
+          let colors = null;  
+          let line = linestring.coordinates;
+          if (options.type !== "centreline") {
+            colors = this.setColors(data[i], options.type, options.priorities);
+            ++count;
+          } else {
+            colors = this.setCentreColors(data[i], options.value);
+            count = 0;
+            
+          }   
+          lengths.push(line.length);
+          for (let j = 0; j < line.length; j++) {
+            const point = line[j];
+            const lng = point[0];
+            const lat = point[1];
+            this.latlngs.push(L.latLng(lat, lng));
+            const pixel = LatLongToPixelXY(point[1], point[0]);
+            const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+            const pixelHigh = {x: pixel.x, y: pixel.y};
+            if (i !== 0 && j === 0) {
+              buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count);
+            }
+            if (j === 0) {
+              buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count);
+              buffer.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count);
+            }
+            buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count); 
+            buffer.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count); 
+
+            if (j === line.length - 1) {
+              buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count); 
+              buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count);
+            }
+            if (i !== line.length - 1 && j === line.length - 1) {
+              buffer.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, count);
+            }
+          }
+        }
+        if (options.type === "centreline") {
+
+        } else {
+          let fault = this.createFaultObject(data[i], options.type, latlng)
+          faults.push(fault); 
+        }
+        
+      }    
+    }
+    if (options.type === "centreline") {
+      return {vertices: buffer, lengths: lengths, centre: centre, count: count};
+    } else {
+      return {vertices: buffer, lengths: lengths, faults: faults, count: count};
     }
     
   }
 
-  // drawLines(data, type, priorities, pointCount) {
-  //   const thickness = 0.00001;
-  //   let glPoints = [];
-  //   let lengths = [];
-  //   let faults = [];
-  //   for (let i = 0; i < data.length; i++) {
-  //       const linestring = JSON.parse(data[i].st_asgeojson);
-  //       if (linestring !== null) { 
-  //         ++pointCount;  
-  //         let line = linestring.coordinates;
-  //         let colors = this.setColors(data[i], type, priorities);
-  //         if (line.length < 2) {
-  //           console.log(line[i]);
-  //           continue;
-  //         }
-  //         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-  //         this.latlngs.push(latlng)
-  //         for (let j = 0; j < line.length; j += 1) {
-  //           if (j === 0  || j === line.length - 1) { 
-  //             const point0 = line[0];
-  //             const point1 = line[1];
-  //             const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
-  //             const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
-  //             const p0 = new Vector2D(pixel0.x, pixel0.y);
-  //             const p1 = new Vector2D(pixel1.x, pixel1.y);
-  //             if (p0.equals(p1)) {
-  //               //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
-  //               continue;
-  //             }
-  //             const pixelLine = Vector2D.subtract(p1, p0);
-  //             const normal = new Vector2D(-pixelLine.y, pixelLine.x)
-  //             const normalized = normal.normalize();
-  //             const vertex1 = Vector2D.subtract(p0, Vector2D.multiply(normalized, thickness));
-  //             const vertex2 = Vector2D.add(p0,  Vector2D.multiply(normalized, thickness));
-  //             const vertex3 = Vector2D.subtract(p1, Vector2D.multiply(normalized, thickness));
-  //             const vertex4 =  Vector2D.add(p1, Vector2D.multiply(normalized, thickness));
-  //             //const l = Vector2D.subtract(vertex1, vertex2).length(); //<thickness of line
-  //             //console.log("thickness " + l);
-  //             const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
-  //             const vertex1High = {x: vertex1.x, y: vertex1.y};
-  //             const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
-  //             const vertex2High = {x: vertex2.x, y: vertex2.y};
-  //             const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
-  //             const vertex3High = {x: vertex3.x, y: vertex3.y};
-  //             const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
-  //             const vertex4High = {x: vertex4.x, y: vertex4.y};       
-  //             glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);  
-  //           //6 * 9 = 54 elements per two point line
-  //           } else {
-  //             const point0 = line[j - 1];
-  //             const point1 = line[j];
-  //             const point2 = line[j + 1];
-  //             const pixel0 = LatLongToPixelXY(point0[1], point0[0]);
-  //             const pixel1 = LatLongToPixelXY(point1[1], point1[0]);
-  //             const pixel2 = LatLongToPixelXY(point2[1], point2[0]);
-  //             let p0 = new Vector2D(pixel0.x, pixel0.y);
-  //             let p1 = new Vector2D(pixel1.x, pixel1.y);
-  //             let p2 = new Vector2D(pixel2.x, pixel2.y);
-  //             if (p0.equals(p1)) {
-  //               //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
-  //               continue;
-  //             }
-  //             if (p1.equals(p2)) {
-  //               //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
-  //               continue;
-  //             }
-  //             if (p0.equals(p2)) {
-  //               //console.log(data[i].id + " " + data[i].fault +  " (" + line + ")");
-  //               continue;
-  //             }
-  //             let miter = this.getMiter(p0, p1, p2, thickness);
-  //             let vertex1 = Vector2D.add(p1, miter);
-  //             let vertex2 = Vector2D.subtract(p1, miter);
-  //             let pixelLine = Vector2D.subtract(p2, p1);
-  //             let normal = new Vector2D(-pixelLine.y, pixelLine.x)
-  //             let normalized = normal.normalize();
-  //             let vertex3 = Vector2D.add(p2, Vector2D.multiply(normalized, thickness));
-  //             let vertex4 = Vector2D.subtract(p2, Vector2D.multiply(normalized, thickness));
-  //             const vertex1Low = { x: vertex1.x - Math.fround(vertex1.x), y: vertex1.y - Math.fround(vertex1.y) };
-  //             const vertex1High = {x: vertex1.x, y: vertex1.y};
-  //             const vertex2Low = { x: vertex2.x - Math.fround(vertex2.x), y: vertex2.y - Math.fround(vertex2.y) };
-  //             const vertex2High = {x: vertex2.x, y: vertex2.y};
-  //             const vertex3Low = { x: vertex3.x - Math.fround(vertex3.x), y: vertex3.y - Math.fround(vertex3.y) };
-  //             const vertex3High = {x: vertex3.x, y: vertex3.y};
-  //             const vertex4Low = { x: vertex4.x - Math.fround(vertex4.x), y: vertex4.y - Math.fround(vertex4.y) };
-  //             const vertex4High = {x: vertex4.x, y: vertex4.y};
-  //             glPoints.push(vertex1High.x, vertex1High.y, vertex1Low.x, vertex1Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex2High.x, vertex2High.y, vertex2Low.x, vertex2Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex3High.x, vertex3High.y, vertex3Low.x, vertex3Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-  //             glPoints.push(vertex4High.x, vertex4High.y, vertex4Low.x, vertex4Low.y, colors.r, colors.g, colors.b, colors.a, pointCount);    
-  //           }
-  //         }
-  //         let fault = this.createFaultObject(data[i], type, latlng)
-  //         faults.push(fault);
-  //       } 
-  //   }
-  //   return {vertices: glPoints, lengths: lengths, faults: faults}
-  // }
+  loadPoints(buffer, points, options) {
+    let faults = []; 
+    let count = options.count;
+    let pointSet = new Set();
+    for (let i = 0; i < points.length; i++) { //start at one index 0 will be black
+      const position = JSON.parse(points[i].st_asgeojson);
+      let colors = this.setColors(points[i], options.type, options.priorities);
+      const lng = position.coordinates[0];
+      const lat = position.coordinates[1];
+      const latlng = L.latLng(lat, lng);
+      this.latlngs.push(latlng);
+      this.addToSet(pointSet, L.latLng(lat, lng));
+      const pixel = LatLongToPixelXY(lat, lng);
+      const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
+      const pixelHigh = {x: pixel.x, y: pixel.y};
+      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
+        // let bucket = data[i].inspection;
+        // if (bucket != null) {
+        //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+        //   if (bucket !== suffix) {
+        //     alpha = 0.5;
+        //   }
+        // }
+        // if (this.state.login === "chbdc") {
+        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
+        // } else {
+        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
+        // }  
+      let fault = this.createFaultObject(points[i], options.type, latlng)
+      faults.push(fault);         
+    }
+    return { faults: faults, vertices: buffer, count: count}
+  }
 
-  /**
+    /**
  * Loops through json objects and extracts fault information
  * Builds object containing fault information and calls redraw
  * @param {JSON array of fault objects received from db} data 
  * @param {String type of data ie. road or footpath} type
  */
-  drawThinLines(data, type, priorities, pointCount) {
-    let faults = [];
-    let glPoints = [];
-    let lengths = [];
-    for (let i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson);
-      console.log(linestring)
-      const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-      this.latlngs.push(latlng);
-      if (linestring !== null) {
-        ++pointCount;   
-        let line = linestring.coordinates;
-        let colors = this.setColors(data[i], type, priorities);
-        lengths.push(line.length);
-        for (let j = 0; j < line.length; j++) {
-          const point = line[j];
-          const lng = point[0];
-          const lat = point[1];
-          this.latlngs.push(L.latLng(lat, lng));
-          const pixel = LatLongToPixelXY(point[1], point[0]);
-          const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
-          const pixelHigh = {x: pixel.x, y: pixel.y};
-          glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-        }
-      }
-      let fault = this.createFaultObject(data[i], type, latlng)
-      faults.push(fault);
-    }
-    return {vertices: glPoints, lengths: lengths, faults: faults};
-  }
-
-  drawShaderLines(data, type, priorities, pointCount) {
-    let faults = [];
-    let glPoints = [];
-    let lengths = [];
-    for (let i = 0; i < data.length; i++) {
-      const linestring = JSON.parse(data[i].st_asgeojson);
-      if (data[i].id) {
+     drawThinLines(data, type, priorities, pointCount) {
+      let faults = [];
+      let glPoints = [];
+      let lengths = [];
+      for (let i = 0; i < data.length; i++) {
+        const linestring = JSON.parse(data[i].st_asgeojson);
+        console.log(linestring)
         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
         this.latlngs.push(latlng);
         if (linestring !== null) {
@@ -396,67 +374,14 @@ export default class GLEngine {
             const pixel = LatLongToPixelXY(point[1], point[0]);
             const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
             const pixelHigh = {x: pixel.x, y: pixel.y};
-            if (i !== 0 && j === 0) {
-              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-            }
-            if (j === 0) {
-              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-              glPoints.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-            }
-
-            glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-            glPoints.push(pixelHigh.x, pixelHigh.y, 1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-
-            if (j === line.length - 1) {
-                glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
-                glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-            }
-            if (i !== line.length - 1 && j === line.length - 1) {
-              glPoints.push(pixelHigh.x, pixelHigh.y, 0.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount);
-            }
+            glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
           }
         }
         let fault = this.createFaultObject(data[i], type, latlng)
-        faults.push(fault); 
-      }    
+        faults.push(fault);
+      }
+      return {vertices: glPoints, lengths: lengths, faults: faults};
     }
-    return {vertices: glPoints, lengths: lengths, faults: faults};
-  }
-
-  buildPoints(data, type, priorities) {
-    let faults = []; 
-    let points = []; //TODO change to Float32Array to make selection faster
-    let count = 0;
-    let pointSet = new Set();
-    for (let i = 0; i < data.length; i++) { //start at one index 0 will be black
-      const position = JSON.parse(data[i].st_asgeojson);
-      let colors = this.setColors(data[i], type, priorities);
-      const lng = position.coordinates[0];
-      const lat = position.coordinates[1];
-      const latlng = L.latLng(lat, lng);
-      this.latlngs.push(latlng);
-      this.addToSet(pointSet, L.latLng(lat, lng));
-      const pixel = LatLongToPixelXY(lat, lng);
-      const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
-      const pixelHigh = {x: pixel.x, y: pixel.y};
-      points.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
-        // let bucket = data[i].inspection;
-        // if (bucket != null) {
-        //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        //   if (bucket !== suffix) {
-        //     alpha = 0.5;
-        //   }
-        // }
-        // if (this.state.login === "chbdc") {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
-        // } else {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
-        // }  
-      let fault = this.createFaultObject(data[i], type, latlng)
-      faults.push(fault);         
-    }
-    return { faults: faults, vertices: points, count: count}
-  }
 
   setThickness(thickness, zoom) {
     if (zoom === 1) {        
@@ -592,12 +517,134 @@ export default class GLEngine {
     return obj;
   }
 
+  setCentreColors(data, value) {
+    let colors = {r: null, g: null, b: null, a: null};
+    let _alpha = 0.75;
+    switch(value) {
+      case 'Pavement':
+        if (data.pavement === 'Unsealed') {
+          colors.r = 1.0;
+          colors.g = 0.5;
+          colors.b = 0.0;
+          colors.a = _alpha;
+        } else if (data.pavement === 'Thin Surfaced Flexible') {
+          colors.r = 0.0;
+          colors.g = 0.5;
+          colors.b = 0.5;
+          colors.a = _alpha;
+        }  else if (data.pavement === 'Bridge') {
+          colors.r = 0.0;
+          colors.g = 0.0;
+          colors.b = 0.8;
+          colors.a = _alpha;
+        } else if (data.pavement === 'Concrete') {
+          colors.r = 0.75;
+          colors.g = 0.75;
+          colors.b = 0.75;
+          colors.a = _alpha;
+        } else {
+          colors.r = 0.0;
+          colors.g = 0.0;
+          colors.b = 0.8;
+          colors.a = _alpha;
+        }
+      break;
+    case 'Hierarchy':
+      if (data.heirarchy === 'LOCAL') {
+        colors.r = 1.0;
+        colors.g = 1.0;
+        colors.b = 0.2;
+        colors.a = _alpha;
+      } else if (data.heirarchy === 'DISTRIBUTOR') {
+        colors.r = 0.0;
+        colors.g = 0.5;
+        colors.b = 0.5;
+        colors.a = _alpha;
+        console.log(data.heirarchy);
+      }  else if (data.heirarchy === 'ARTERIAL') {
+        colors.r = 0.8;
+        colors.g = 0.0;
+        colors.b = 0.0;
+        colors.a = _alpha;
+      } else if (data.heirarchy === 'ACCESS LOW VOL') {
+        colors.r = 0.2;
+        colors.g = 0.2;
+        colors.b = 1.0;
+        colors.a = _alpha;
+      } else if (data.heirarchy === 'STRATEGIC 1') {
+        colors.r = 0.0;
+        colors.g = 0.0;
+        colors.b = 0.8;
+        colors.a = _alpha;
+      } else if (data.heirarchy === 'STRATEGIC 2') {
+        colors.r = 0.0;
+        colors.g = 0.0;
+        colors.b = 0.8;
+        colors.a = _alpha;
+      } else {
+        colors.r = 0.25;
+        colors.g = 0.25;
+        colors.b = 0.25;
+        colors.a = _alpha;      
+      }
+      break;
+    case 'Zone':
+      if (data.zone === 'Urban') {
+        colors.r = 1.0;
+        colors.g = 1.0;
+        colors.b = 0.2;
+        colors.a = _alpha;
+      } else if (data.zone === 'Rural') {
+        colors.r = 0.2;
+        colors.g = 0.2;
+        colors.b = 1.0;
+        colors.a = _alpha;
+      } else {
+        colors.r = 0.25;
+        colors.g = 0.25;
+        colors.b = 0.25;
+        colors.a = _alpha;
+      }
+      break;
+      case 'Owner':
+      if (data.owner === 'Crown') {
+        colors.r = 1.0;
+        colors.g = 1.0;
+        colors.b = 0.2;
+        colors.a = _alpha;
+      } else if (data.owner === 'Local Authority') {
+        colors.r = 0.2;
+        colors.g = 0.2;
+        colors.b = 1.0;
+        colors.a = _alpha;
+      } else if (data.owner === 'Private') {
+        colors.r = 0.2;
+        colors.g = 0.2;
+        colors.b = 1.0;
+        colors.a = _alpha;
+      }
+      else {
+        colors.r = 0.25;
+        colors.g = 0.25;
+        colors.b = 0.25;
+        colors.a = _alpha;
+      }
+      break;
+    default:
+      colors.r = 0.25;
+      colors.g = 0.25;
+      colors.b = 0.25;
+      colors.a = _alpha;
+  }
+    return colors;
+  }
+
     setColors(geometry, type, priorities) {
       let colors = {r: null, b: null, g: null, a: null}
-      let priority = null
+      let priority = null;
       if (type === "road") {
         priority = geometry.priority;
-      } else {
+      } else if (type === "road") {
         priority = geometry.grade;
       }
       if (geometry.status === "active") {

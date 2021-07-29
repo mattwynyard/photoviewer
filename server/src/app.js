@@ -14,7 +14,6 @@ const jwtExpirySeconds = 10000;
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
-const { Console } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
@@ -304,6 +303,27 @@ app.post('/carriage', async(req, res) => {
         res.send({success: false, data: null});
       }
     } 
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/centrelines', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    let result = await db.roadLines(req.body.project);
+    //console.log(result)
+    if (result.rowCount != 0) {
+      res.send({success: true, data: result.rows});
+    } else {
+      res.send({success: false, data: []});
+    }
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});

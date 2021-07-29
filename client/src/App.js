@@ -21,6 +21,7 @@ import SearchBar from './components/SearchBar.jsx'
 import {CustomSVG} from './components/CustomSVG.js'
 import { Fragment } from 'react';
 import {FilterButton} from './components/FilterButton';
+import Roadlines from './components/Roadlines';
 
 const DIST_TOLERANCE = 20; //metres 
 
@@ -46,6 +47,7 @@ class App extends React.Component {
     this.antdrawer = React.createRef();
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
+    this.roadLinesRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     
@@ -162,6 +164,7 @@ class App extends React.Component {
     //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
+    //this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -175,7 +178,16 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {  
+    // this.roadLinesRef.current.setProject(
+    //   {
+    //     layer: this.state.activeLayer,
+    //     host: this.state.host,
+    //     login: this.state.login,
+    //     token: this.state.token,
+    //   }
+    //   );
   }
+
 
   componentWillUnmount() {
     window.sessionStorage.setItem('state', JSON.stringify(this.state));
@@ -236,7 +248,7 @@ class App extends React.Component {
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
     }
-    this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
+    this.GLEngine.redraw(this.GLEngine.glData, false);
   }
 
  /**
@@ -249,25 +261,27 @@ class App extends React.Component {
   addGLGeometry(points, lines, type, zoom) {
     this.minMaxLine = this.GLEngine.minMaxLineSize();
     this.minMaxPoint = this.GLEngine.minMaxPointSize();
-    const priorites = this.setPriorityObject();
-    let glPoints = this.GLEngine.buildPoints(points, type, priorites); 
-    let glLines = this.GLEngine.drawShaderLines(lines, type, priorites, glPoints.count);
+    const priorities = this.setPriorityObject();
+    let options = {type: type, priorities: priorities, count: 0};
+    let buffer = [];
+    let glLines = this.GLEngine.loadLines(buffer, lines, options);
+    options = {type: type, priorities: priorities, count: glLines.count};
+    buffer = [];
+    let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
     
-    
-    //let glLines = this.GLEngine.drawLines(lines, type, priorites, glPoints.count);
-    //this.GLEngine.redraw([], glLines, true);
+    let glData = {centre: [], points: glPoints.vertices, lines: glLines.vertices}
     if (zoom) {
-      this.GLEngine.redraw(glPoints, glLines, true);
+      this.GLEngine.redraw(glData, true);
     } else {
-      this.GLEngine.redraw(glPoints, glLines, false);
+      this.GLEngine.redraw(glData, false);
     }
-    let faults = glPoints.faults.concat(glLines.faults);
+    let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    //this.setState({glPoints: glPoints}); //Immutable reserve of original points
-    //this.setState({glLines: glLines}); //Immutable reserve of original points
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
+
+  
 
   setPriorityObject() {
     let obj = {}
@@ -377,6 +391,10 @@ class App extends React.Component {
       }
         break;
       case 'Map':
+      console.log(e.latlng)
+      if (this.state.erp) {
+
+      }
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
         }
@@ -384,7 +402,7 @@ class App extends React.Component {
         this.setState({selectedGeometry: []});
         this.GLEngine.mouseClick = e;
         if (this.state.activeLayer) {
-          this.GLEngine.redraw(this.GLEngine.glPoints, this.GLEngine.glLines, false);
+          this.GLEngine.redraw(this.GLEngine.glData, false);
         }      
       }
         break;
@@ -620,7 +638,7 @@ class App extends React.Component {
       projects: [],
       login: "Login",
       priorites: [],
-      objGLData: null,
+      objGLData: [],
       glpoints: [],
       activeLayers: [],
       activeLayer: null,
@@ -632,7 +650,8 @@ class App extends React.Component {
       filterPriorities: [],
       filterAges: [],
     }, function() {
-      this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
+      let glData = {centre: [], points: [], lines: []}
+      this.GLEngine.redraw(glData, false);
     })
   }
 
@@ -1050,7 +1069,7 @@ class App extends React.Component {
   async loadLayer(e, type) { 
     e.persist();
     this.setState({projectMode: type});
-    for(let i = 0; i < this.state.activeLayers.length; i += 1) { //check if loaded
+    for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
@@ -1111,7 +1130,8 @@ class App extends React.Component {
       if (type === "road") {
         await this.requestAge(project); 
       }
-      this.filterLayer(project, true); //fetch layer  
+      this.filterLayer(project, true); //fetch layer 
+      //this.roadLinesRef.current.loadCentrelines(project); 
     });
   }
 
@@ -1379,9 +1399,10 @@ class App extends React.Component {
    */
   removeLayer(e) {
     window.sessionStorage.removeItem("state");
-    this.setState({objGLData: null});
+    this.setState({objGLData: []});
     this.setState({glpoints: []});
-    this.GLEngine.redraw({vertices: []}, {vertices: []}, false);
+    let glData = {centre: [], points: [], lines: []}
+      this.GLEngine.redraw(glData, false); //TODO fix up engine state
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -2479,14 +2500,12 @@ class App extends React.Component {
           </Navbar>         
         </div>      
         <div className="map"> 
-        {/* <Dropdown className="centreline">
-          <Dropdown.Toggle variant="light" size="sm" >
-              Layers
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="custommenu">
-        
-            </Dropdown.Menu>
-          </Dropdown>    */}
+        {/* <Roadlines 
+          ref={this.roadLinesRef} 
+          login={this.state.login} 
+          host={this.state.host}
+          project={this.state.activeLayer}>
+        </Roadlines>   */}
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"

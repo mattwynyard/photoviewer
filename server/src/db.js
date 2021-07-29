@@ -640,6 +640,20 @@ module.exports = {
         });
     },
 
+    roadLines: (project) => {
+        return new Promise((resolve, reject) => {
+            connection.query("SELECT id, project, roadid, carriageid, roadname, starterp, enderp, startname, endname, lanes, pavement, owner, "
+            + "heirarchy, zone, direction, width, ST_AsGeoJSON(geom) FROM roadlines WHERE project = '" + project + "'", (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let data = resolve(result);
+                return data;
+            });
+        });
+    },
+
     updateLayerCount: (layer) => {
         return new Promise((resolve, reject) => { 
             try {
