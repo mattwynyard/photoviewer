@@ -105,7 +105,7 @@ module.exports = {
 
     settings : (project) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT priority, reverse, hasvideo FROM projects WHERE code = $1::text';
+            let sql = 'SELECT priority, reverse, hasvideo, centreline FROM projects WHERE code = $1::text';
             connection.query(sql, [project], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

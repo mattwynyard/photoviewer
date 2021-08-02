@@ -18,6 +18,7 @@
 ./server/*.env
 server/server.key
 server/server.cert
+client/.eslintcache
 
 # dependencies
 client/node_modules

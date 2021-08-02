@@ -185,6 +185,7 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {  
+    if (this.state.erp)
     this.roadLinesRef.current.setProject(
       {
         layer: this.state.activeLayer,
@@ -680,6 +681,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("user");
     window.sessionStorage.removeItem("project");
     window.sessionStorage.removeItem("state");
+    window.sessionStorage.removeItem("centrelines");
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
     this.setState({
@@ -1076,7 +1078,6 @@ class App extends React.Component {
     }      
   }
   
-
   async getDistrict(project) {  
     await fetch('https://' + this.state.host + '/district', {
       method: 'POST',
@@ -1179,8 +1180,11 @@ class App extends React.Component {
       if (type === "road") {
         await this.requestAge(project); 
       }
-      this.filterLayer(project, true); //fetch layer 
-      this.roadLinesRef.current.loadCentrelines(project); 
+      this.filterLayer(project, true); //fetch layer
+      if (this.state.erp) {
+        this.roadLinesRef.current.loadCentrelines(project); 
+      }
+      
     });
   }
 
@@ -1214,6 +1218,11 @@ class App extends React.Component {
       this.setState({hasVideo: true});
     } else {
       this.setState({hasVideo: false});
+    }
+    if(body.centreline) {
+      this.setState({erp: true});
+    } else {
+      this.setState({erp: false});
     }
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
@@ -1448,6 +1457,7 @@ class App extends React.Component {
    */
   removeLayer(e) {
     window.sessionStorage.removeItem("state");
+    window.sessionStorage.removeItem("centrelines");
     this.setState({objGLData: []});
     this.setState({glpoints: []});
     let glData = {centre: [], points: [], lines: []}
