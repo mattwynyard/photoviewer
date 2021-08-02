@@ -113,6 +113,12 @@ body {
   top: 10px;
 }
 
+.notification {
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+}
+
 .centreline {
   position: absolute;
   font-family: "Century Gothic", sans-serif;

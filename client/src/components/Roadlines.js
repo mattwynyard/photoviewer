@@ -1,6 +1,6 @@
-import { CodepenOutlined, TrophyFilled } from '@ant-design/icons';
 import React, { Component } from 'react';
 import {Dropdown}  from 'react-bootstrap';
+import {haversineDistance} from  '../util.js';
 
 export default class Roadlines extends Component {
 
@@ -9,12 +9,20 @@ export default class Roadlines extends Component {
         this.state = {
             project: null,
             login: null,
+            token: null,
             host: null,
             menu: ["Pavement", "Owner", "Hierarchy", "Zone"],
             filter: [],
-            data: null
-
+            data: JSON.parse(window.sessionStorage.getItem('centrelines')) || null,
         }
+    }
+
+    componentDidMount() {
+
+    }
+
+    componentWillUnmount() {
+      window.sessionStorage.setItem('centrelines', JSON.stringify(this.state.data));
     }
 
     setProject(project) {
@@ -22,12 +30,20 @@ export default class Roadlines extends Component {
       this.setState({login: project.login});
       this.setState({host: project.host});
       this.setState({token: project.token});
+
     }
 
     setDelegate(delegate) {
       this.delegate = delegate;
     }
     
+    redraw = (value) => {
+        let options = {type: "centreline", value: value}
+        let centrelines = this.delegate.loadLines([], this.state.data, options);
+        let glData = this.delegate.glData;
+        glData.centre = centrelines.vertices;
+        this.delegate.redraw(glData, false);   
+    }
 
     async loadCentrelines(project) {
       //if (this.state.login !== "Login") {
@@ -75,8 +91,63 @@ export default class Roadlines extends Component {
           glData.centre = centrelines.vertices;
           this.delegate.redraw(glData, false);
         });
-     }
-      
+     }     
+    }
+
+    erp = (geometry, erp, latlng) => {
+      let distance = erp.start;
+      for (let i= 0; i < geometry.coordinates.length - 1; i++) { //check if on line
+        let dxl = geometry.coordinates[i + 1][0] - geometry.coordinates[i][0];
+        let dyl = geometry.coordinates[i + 1][1] - geometry.coordinates[i][1];
+        let box = {
+          point1: geometry.coordinates[i],
+          point2: geometry.coordinates[i + 1]
+        }
+        let result = this.inBoundingBox(dxl, dyl, box, latlng);
+        if (result) {
+          let d = haversineDistance(geometry.coordinates[i][1], geometry.coordinates[i][0], latlng.lat, latlng.lng)
+          distance += d;
+          break;
+        } else {
+          let d = haversineDistance(geometry.coordinates[i][1], geometry.coordinates[i][0], geometry.coordinates[i + 1][1], geometry.coordinates[i + 1][0])
+          distance += d;
+        }
+      }
+      return distance;
+    }
+
+    inBoundingBox(dxl, dyl, box, point) {
+      if (Math.abs(dxl) >= Math.abs(dyl)) {
+        return dxl > 0 ? 
+        box.point1[0] <= point.lng && point.lng <= box.point2[0] :
+        box.point2[0] <= point.lng && point.lng <= box.point1[0];        
+      } else {
+        return dyl > 0 ? 
+        box.point1[1] <= point.lat && point.lat <= box.point2[1] :
+        box.point2[1] <= point.lat && point.lat <= box.point1[1];
+      }
+    }
+
+    /**
+     * 
+     * @param {line start point} a 
+     * @param {line end point} b 
+     * @param {point to check} c 
+     * @returns 
+     */
+    inBetween(a, b , c) {
+      let crossproduct = (c.lat - a[1]) * (b[0] - a[0]) - (c.lng - a[0]) * (b[1] - a[1]);
+      console.log(crossproduct)
+      let epsilon = 0.000001;
+      if (Math.abs(crossproduct) > epsilon)
+          return false
+      let dotproduct = (c.lng - a[0]) * (b[0] - a[0]) + (c.lat - a[1]) * (b[1] - a[1])
+      if (dotproduct < 0)
+          return false;
+      let squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
+      if (dotproduct > squaredlengthba)
+          return false;
+      return true;
     }
 
     changeCheck = (value) => {

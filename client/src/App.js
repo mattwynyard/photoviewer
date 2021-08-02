@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Spinner}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Spinner, Toast}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -22,6 +22,10 @@ import {CustomSVG} from './components/CustomSVG.js'
 import { Fragment } from 'react';
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
+import {Fetcher} from './components/Fetcher';
+import { notification } from 'antd';
+
+
 
 const DIST_TOLERANCE = 20; //metres 
 
@@ -48,6 +52,7 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
+    this.notificationRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
     
@@ -135,7 +140,8 @@ class App extends React.Component {
       hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      redraw: false,
+      erp: true,
+      notificationKey: null,
     };   
   }
 
@@ -164,6 +170,7 @@ class App extends React.Component {
     //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
+    
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
@@ -184,15 +191,12 @@ class App extends React.Component {
         host: this.state.host,
         login: this.state.login,
         token: this.state.token,
-      }
-      );
+      });
   }
-
 
   componentWillUnmount() {
     window.sessionStorage.setItem('state', JSON.stringify(this.state));
     this.removeEventListeners(); 
-    console.log("unmount");
   }
 
   initializeGL() {
@@ -345,8 +349,9 @@ class App extends React.Component {
    * Handles click events on lealfet map
    * @param {event - the mouse event} e 
    */
-  clickLeafletMap(e) {
-    switch(this.antdrawer.current.getMode()) {
+  clickLeafletMap = async (e) => {
+    let mode = this.antdrawer.current.getMode();
+    switch(mode) {
       case 'Video':
         if(this.vidPolyline === null) {  
           this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
@@ -391,9 +396,51 @@ class App extends React.Component {
       }
         break;
       case 'Map':
-      console.log(e.latlng)
+      if (!this.state.activeLayer) return;
       if (this.state.erp) {
+        const login = {
+          user: this.state.login, 
+          project: this.state.activeLayer.code,
+          token: this.state.token,
 
+        }
+        let address = this.state.host + "/carriageway";
+        let query = {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng
+        }
+        let response = await Fetcher(address, login, query);
+        let geometry = JSON.parse(response.data.geojson);
+        let erp = {
+          start: response.data.starterp,
+          end: response.data.enderp
+        }
+        if (response.data.dist < 0.00003) { //distance tolerance
+          let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+          if (this.state.notificationKey) {
+            if (response.data.carriageid !== this.state.notificationKey.carriage) 
+            notification.close(this.state.notificationKey.id);
+          }
+          let distance = dist.toFixed(); //string
+          notification.open({
+            className: "notification",
+            key: response.data.id,
+            message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+            description: 
+              <div><b>Road ID: {response.data.roadid}<br></br></b>
+                <b>Carriage ID: {response.data.carriageid + '\n'}<br></br></b>
+                <b>Start: {response.data.starterp + ' m' + '\t'}</b>
+                <b>End: {response.data.enderp + ' m'}<br></br></b>
+                <b>Width: {response.data.width + ' m'}<br></br></b>
+                <b><br></br></b>
+              </div>,
+            placement: 'bottomRight',
+            duration: 10,
+            onClose: () => {this.setState({notificationKey: null})},
+          });
+          let key = {id: response.data.id, carriage: response.data.carriageid}
+          this.setState({notificationKey: key});
+        }     
       }
       if (this.state.glpoints !== null) {
         if (this.state.selectedCarriage !== null) {
@@ -405,6 +452,8 @@ class App extends React.Component {
           this.GLEngine.redraw(this.GLEngine.glData, false);
         }      
       }
+
+
         break;
       default:
         break;
@@ -1455,7 +1504,6 @@ class App extends React.Component {
 
   async sendData(project, data, endpoint) {
     if (this.state.login !== "Login") {
-      console.log('https://' + this.state.host + endpoint);
       await fetch('https://' + this.state.host + endpoint, {
       method: 'POST',
       headers: {
@@ -2248,6 +2296,14 @@ class App extends React.Component {
     this.updateStatusAsync(marker, status);
   }
 
+  CLNotificaton = (props) => {
+    if (props.show) {
+
+    } else {
+      return null;
+    }
+  };
+
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
 
@@ -2431,6 +2487,8 @@ class App extends React.Component {
       }      
     }
 
+    
+
     return ( 
       <> 
         <div>        
@@ -2501,11 +2559,11 @@ class App extends React.Component {
         </div>      
         <div className="map"> 
         <Roadlines 
-          ref={this.roadLinesRef} 
-          login={this.state.login} 
-          host={this.state.host}
-          project={this.state.activeLayer}>
-        </Roadlines>  
+          ref={this.roadLinesRef} >
+        </Roadlines> 
+       {/* <ERPNotification ref={this.notificationRef} show={true}>
+
+       </ERPNotification> */}
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"

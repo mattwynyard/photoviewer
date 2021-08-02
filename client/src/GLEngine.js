@@ -522,22 +522,22 @@ export default class GLEngine {
     let _alpha = 0.75;
     switch(value) {
       case 'Pavement':
-        if (data.pavement === 'Unsealed') {
+        if (data.pavement.toUpperCase().replace(/\s/g, "") === 'UNSEALED') {
           colors.r = 1.0;
           colors.g = 0.5;
           colors.b = 0.0;
           colors.a = _alpha;
-        } else if (data.pavement === 'Thin Surfaced Flexible') {
+        } else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'THINSURFACEFLEXIBLE') {
           colors.r = 0.0;
           colors.g = 0.5;
           colors.b = 0.5;
           colors.a = _alpha;
-        }  else if (data.pavement === 'Bridge') {
+        }  else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'BRIDGE') {
           colors.r = 0.0;
           colors.g = 0.0;
           colors.b = 0.8;
           colors.a = _alpha;
-        } else if (data.pavement === 'Concrete') {
+        } else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'CONCRETE') {
           colors.r = 0.75;
           colors.g = 0.75;
           colors.b = 0.75;
@@ -550,33 +550,32 @@ export default class GLEngine {
         }
       break;
     case 'Hierarchy':
-      if (data.heirarchy === 'LOCAL') {
-        colors.r = 1.0;
-        colors.g = 1.0;
-        colors.b = 0.2;
+      if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'LOCAL') {
+        colors.r = 0.75;
+        colors.g = 0.4;
+        colors.b = 1.0;
         colors.a = _alpha;
-      } else if (data.heirarchy === 'DISTRIBUTOR') {
+      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'DISTRIBUTOR') {
         colors.r = 0.0;
         colors.g = 0.5;
         colors.b = 0.5;
         colors.a = _alpha;
-        console.log(data.heirarchy);
-      }  else if (data.heirarchy === 'ARTERIAL') {
+      }  else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'ARTERIAL') {
         colors.r = 0.8;
         colors.g = 0.0;
         colors.b = 0.0;
         colors.a = _alpha;
-      } else if (data.heirarchy === 'ACCESS LOW VOL') {
-        colors.r = 0.2;
-        colors.g = 0.2;
+      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'ACCESSLOWVOL') {
+        colors.r = 0.0;
+        colors.g = 1.0;
         colors.b = 1.0;
         colors.a = _alpha;
-      } else if (data.heirarchy === 'STRATEGIC 1') {
+      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'STRATEGIC1') {
         colors.r = 0.0;
         colors.g = 0.0;
         colors.b = 0.8;
         colors.a = _alpha;
-      } else if (data.heirarchy === 'STRATEGIC 2') {
+      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'STRATEGIC2') {
         colors.r = 0.0;
         colors.g = 0.0;
         colors.b = 0.8;
@@ -589,12 +588,12 @@ export default class GLEngine {
       }
       break;
     case 'Zone':
-      if (data.zone === 'Urban') {
+      if (data.zone.toUpperCase().replace(/\s/g, "") === 'URBAN') {
         colors.r = 1.0;
         colors.g = 1.0;
         colors.b = 0.2;
         colors.a = _alpha;
-      } else if (data.zone === 'Rural') {
+      } else if (data.zone.toUpperCase().replace(/\s/g, "") === 'RURAL') {
         colors.r = 0.2;
         colors.g = 0.2;
         colors.b = 1.0;
@@ -607,17 +606,17 @@ export default class GLEngine {
       }
       break;
       case 'Owner':
-      if (data.owner === 'Crown') {
+      if (data.owner.toUpperCase().replace(/\s/g, "") === 'CROWN') {
         colors.r = 1.0;
         colors.g = 1.0;
         colors.b = 0.2;
         colors.a = _alpha;
-      } else if (data.owner === 'Local Authority') {
+      } else if (data.owner.toUpperCase().replace(/\s/g, "") === 'LOCALAUTHORITY') {
         colors.r = 0.2;
         colors.g = 0.2;
         colors.b = 1.0;
         colors.a = _alpha;
-      } else if (data.owner === 'Private') {
+      } else if (data.owner.toUpperCase().replace(/\s/g, "") === 'PRIVATE') {
         colors.r = 0.2;
         colors.g = 0.2;
         colors.b = 1.0;

@@ -39,6 +39,19 @@ const RDP = (l, eps) => {
     return pixel;
   };
 
+  let haversineDistance = (lat1, lon1, lat2, lon2) => {
+      let dLat = Math.PI / 180.0 * (lat2 - lat1);
+      let dLon = Math.PI / 180.0 * (lon2 - lon1);
+      lat1 = Math.PI / 180.0 * (lat1);
+      lat2 = Math.PI / 180.0 * (lat2);
+
+      let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+        let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        let d = EARTH_RADIUS * c;
+      return d;
+  };
+
   /**
    * Calculates distance on earth surface
    */
@@ -136,4 +149,4 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
+  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
