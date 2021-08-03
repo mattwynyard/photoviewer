@@ -643,11 +643,11 @@ export default class GLEngine {
       let priority = null;
       if (type === "road") {
         priority = geometry.priority;
-      } else if (type === "road") {
+      } else {
         priority = geometry.grade;
       }
       if (geometry.status === "active") {
-        if(priority === priorities.high) {
+        if(priority === priorities.high) { //magenta
           colors.r = 1.0;
           colors.g = 0.0;
           colors.b = 1.0;

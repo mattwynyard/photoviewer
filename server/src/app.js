@@ -638,7 +638,7 @@ app.post('/settings', async (req, res) => {
     let project = req.body.project;
     let result = await db.settings(project);
     res.set('Content-Type', 'application/json'); 
-    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo});  
+    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, centreline: result.rows[0].centreline});  
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});

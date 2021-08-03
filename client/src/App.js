@@ -185,6 +185,7 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {  
+    if (this.state.erp)
     this.roadLinesRef.current.setProject(
       {
         layer: this.state.activeLayer,
@@ -272,8 +273,15 @@ class App extends React.Component {
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    
-    let glData = {centre: [], points: glPoints.vertices, lines: glLines.vertices}
+    let centreData = this.roadLinesRef.current.state.data;
+    let value = this.roadLinesRef.current.state.filter[0]
+    let vertCentre = []
+    if (value) {
+      let options = {type: "centreline", value: value}
+      let data = this.GLEngine.loadLines([], centreData, options);
+      vertCentre = data.vertices
+    } 
+    let glData = {centre: vertCentre, points: glPoints.vertices, lines: glLines.vertices}
     if (zoom) {
       this.GLEngine.redraw(glData, true);
     } else {
@@ -284,8 +292,6 @@ class App extends React.Component {
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
-
-  
 
   setPriorityObject() {
     let obj = {}
@@ -397,7 +403,7 @@ class App extends React.Component {
         break;
       case 'Map':
       if (!this.state.activeLayer) return;
-      if (this.state.erp) {
+      if (this.roadLinesRef.current.isActive()) {
         const login = {
           user: this.state.login, 
           project: this.state.activeLayer.code,
@@ -415,7 +421,7 @@ class App extends React.Component {
           start: response.data.starterp,
           end: response.data.enderp
         }
-        if (response.data.dist < 0.00003) { //distance tolerance
+        if (response.data.dist < 0.00002) { //distance tolerance
           let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
           if (this.state.notificationKey) {
             if (response.data.carriageid !== this.state.notificationKey.carriage) 
@@ -678,8 +684,9 @@ class App extends React.Component {
   reset() {
     window.sessionStorage.removeItem("token");
     window.sessionStorage.removeItem("user");
-    window.sessionStorage.removeItem("project");
+    window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
+    window.sessionStorage.removeItem("centrelines");
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
     this.customNav.current.setTitle("Login");
     this.setState({
@@ -1076,7 +1083,6 @@ class App extends React.Component {
     }      
   }
   
-
   async getDistrict(project) {  
     await fetch('https://' + this.state.host + '/district', {
       method: 'POST',
@@ -1179,8 +1185,10 @@ class App extends React.Component {
       if (type === "road") {
         await this.requestAge(project); 
       }
-      this.filterLayer(project, true); //fetch layer 
-      this.roadLinesRef.current.loadCentrelines(project); 
+      this.filterLayer(project, true); //fetch layer
+      if (this.state.erp) {
+        this.roadLinesRef.current.loadCentrelines(project); 
+      }
     });
   }
 
@@ -1214,6 +1222,11 @@ class App extends React.Component {
       this.setState({hasVideo: true});
     } else {
       this.setState({hasVideo: false});
+    }
+    if(body.centreline) {
+      this.setState({erp: true});
+    } else {
+      this.setState({erp: false});
     }
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
@@ -1448,6 +1461,8 @@ class App extends React.Component {
    */
   removeLayer(e) {
     window.sessionStorage.removeItem("state");
+    window.sessionStorage.removeItem("centrelines");
+    this.roadLinesRef.current.reset();
     this.setState({objGLData: []});
     this.setState({glpoints: []});
     let glData = {centre: [], points: [], lines: []}
@@ -1545,6 +1560,9 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoom) {
+    // if (this.roadLinesRef.current.isActive()) {
+    //   this.roadLinesRef.current.draw();
+    // }
     this.setState({spinner: true});
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -1949,9 +1967,9 @@ class App extends React.Component {
    */
   clickCheck(e, value, input) {
     //if checked true we are adding values to arr
-    if (value.filter.length <= 1 && e.target.checked) {
-      return;
-    }
+    // if (value.filter.length <= 1 && e.target.checked) {
+    //   return;
+    // }
     this.applyRef.current.innerHTML = "Apply Filter";
     if (e.target.checked) {
       for (let i = 0; i < value.filter.length; i += 1) {
@@ -1960,10 +1978,10 @@ class App extends React.Component {
               break;
           }
       }
-      e.target.checked = false;
+      //e.target.checked = false;
     } else {
         value.filter.push(input);
-        e.target.checked = true;
+        //e.target.checked = true;
     }
     this.setState({filter: this.rebuildFilter()})
   }
@@ -2116,9 +2134,12 @@ class App extends React.Component {
     }
   }
 
+  changeCheck(e) {
+
+  }
+
   isPriorityChecked(value) {
     let filter = this.state.filterPriorities;
-    //console.log(filter);
     let priority = this.parsePriority(value);
     if (filter.includes(priority)) {
       return true;
@@ -2145,8 +2166,8 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    console.log(this.state.activeLayer)
-    if(this.state.activeLayer) {
+    console.log(e.target.checked)
+    if(!this.state.activeLayer) {
       return;
     }
     let query = this.state.filterPriorities;
@@ -2166,6 +2187,7 @@ class App extends React.Component {
     }
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
+
   }
 
 
@@ -2561,9 +2583,6 @@ class App extends React.Component {
         <Roadlines 
           ref={this.roadLinesRef} >
         </Roadlines> 
-       {/* <ERPNotification ref={this.notificationRef} show={true}>
-
-       </ERPNotification> */}
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
