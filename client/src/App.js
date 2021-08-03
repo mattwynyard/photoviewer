@@ -273,8 +273,15 @@ class App extends React.Component {
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    
-    let glData = {centre: [], points: glPoints.vertices, lines: glLines.vertices}
+    let centreData = this.roadLinesRef.current.state.data;
+    let value = this.roadLinesRef.current.state.filter[0]
+    let vertCentre = []
+    if (value) {
+      let options = {type: "centreline", value: value}
+      let data = this.GLEngine.loadLines([], centreData, options);
+      vertCentre = data.vertices
+    } 
+    let glData = {centre: vertCentre, points: glPoints.vertices, lines: glLines.vertices}
     if (zoom) {
       this.GLEngine.redraw(glData, true);
     } else {
@@ -285,8 +292,6 @@ class App extends React.Component {
     this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
-
-  
 
   setPriorityObject() {
     let obj = {}
@@ -398,7 +403,7 @@ class App extends React.Component {
         break;
       case 'Map':
       if (!this.state.activeLayer) return;
-      if (this.state.erp) {
+      if (this.roadLinesRef.current.isActive()) {
         const login = {
           user: this.state.login, 
           project: this.state.activeLayer.code,
@@ -679,7 +684,7 @@ class App extends React.Component {
   reset() {
     window.sessionStorage.removeItem("token");
     window.sessionStorage.removeItem("user");
-    window.sessionStorage.removeItem("project");
+    window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.customNav.current.setOnClick((e) => this.clickLogin(e));
@@ -1184,7 +1189,6 @@ class App extends React.Component {
       if (this.state.erp) {
         this.roadLinesRef.current.loadCentrelines(project); 
       }
-      
     });
   }
 
@@ -1458,6 +1462,7 @@ class App extends React.Component {
   removeLayer(e) {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
+    this.roadLinesRef.current.reset();
     this.setState({objGLData: []});
     this.setState({glpoints: []});
     let glData = {centre: [], points: [], lines: []}
@@ -1555,6 +1560,9 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoom) {
+    // if (this.roadLinesRef.current.isActive()) {
+    //   this.roadLinesRef.current.draw();
+    // }
     this.setState({spinner: true});
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -1963,7 +1971,7 @@ class App extends React.Component {
     //   return;
     // }
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (!e.target.checked) {
+    if (e.target.checked) {
       for (let i = 0; i < value.filter.length; i += 1) {
           if (input === value.filter[i]) {
               value.filter.splice(i, 1);
@@ -2057,7 +2065,7 @@ class App extends React.Component {
 
   clickSelect(e, value) {
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (!e.target.checked) {
+    if (e.target.checked) {
       value.filter = [];
       value.active = false
     } else {
@@ -2158,6 +2166,7 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
+    console.log(e.target.checked)
     if(!this.state.activeLayer) {
       return;
     }
@@ -2170,7 +2179,7 @@ class App extends React.Component {
         query.push(priority);     
       }
     } else {
-      if (!e.target.checked) { 
+      if (e.target.checked) { 
         query.splice(query.indexOf(priority), 1 );
       } else {     
         query.push(priority);
@@ -2178,6 +2187,7 @@ class App extends React.Component {
     }
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
+
   }
 
 
