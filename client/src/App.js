@@ -421,7 +421,7 @@ class App extends React.Component {
           start: response.data.starterp,
           end: response.data.enderp
         }
-        if (response.data.dist < 0.00003) { //distance tolerance
+        if (response.data.dist < 0.00002) { //distance tolerance
           let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
           if (this.state.notificationKey) {
             if (response.data.carriageid !== this.state.notificationKey.carriage) 
