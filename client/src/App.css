@@ -107,7 +107,7 @@ body {
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   font-size: 16px !important;
-  z-index: 999;
+  z-index: 1000;
   color: gray;
   left: 50px;
   top: 10px;
@@ -124,10 +124,22 @@ body {
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   font-size: 16px !important;
-  z-index: 999;
+  z-index: 900;
   color: gray;
   left: 5px;
-  top: 210px;
+  top: 230px;
+}
+
+.centrelinemenu {
+  position: absolute;
+  font-family: "Century Gothic", sans-serif;
+  letter-spacing: 1px;
+  z-index: 900;
+  color: gray;
+  width: auto;
+  padding: 10px;
+  font-size: 14px !important;
+  white-space: nowrap;
 }
 
 .custommenu {

@@ -1959,21 +1959,21 @@ class App extends React.Component {
    */
   clickCheck(e, value, input) {
     //if checked true we are adding values to arr
-    if (value.filter.length <= 1 && e.target.checked) {
-      return;
-    }
+    // if (value.filter.length <= 1 && e.target.checked) {
+    //   return;
+    // }
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (e.target.checked) {
+    if (!e.target.checked) {
       for (let i = 0; i < value.filter.length; i += 1) {
           if (input === value.filter[i]) {
               value.filter.splice(i, 1);
               break;
           }
       }
-      e.target.checked = false;
+      //e.target.checked = false;
     } else {
         value.filter.push(input);
-        e.target.checked = true;
+        //e.target.checked = true;
     }
     this.setState({filter: this.rebuildFilter()})
   }
@@ -2057,7 +2057,7 @@ class App extends React.Component {
 
   clickSelect(e, value) {
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (e.target.checked) {
+    if (!e.target.checked) {
       value.filter = [];
       value.active = false
     } else {
@@ -2126,9 +2126,12 @@ class App extends React.Component {
     }
   }
 
+  changeCheck(e) {
+
+  }
+
   isPriorityChecked(value) {
     let filter = this.state.filterPriorities;
-    //console.log(filter);
     let priority = this.parsePriority(value);
     if (filter.includes(priority)) {
       return true;
@@ -2155,8 +2158,7 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    console.log(this.state.activeLayer)
-    if(this.state.activeLayer) {
+    if(!this.state.activeLayer) {
       return;
     }
     let query = this.state.filterPriorities;
@@ -2168,7 +2170,7 @@ class App extends React.Component {
         query.push(priority);     
       }
     } else {
-      if (e.target.checked) { 
+      if (!e.target.checked) { 
         query.splice(query.indexOf(priority), 1 );
       } else {     
         query.push(priority);
@@ -2571,9 +2573,6 @@ class App extends React.Component {
         <Roadlines 
           ref={this.roadLinesRef} >
         </Roadlines> 
-       {/* <ERPNotification ref={this.notificationRef} show={true}>
-
-       </ERPNotification> */}
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
