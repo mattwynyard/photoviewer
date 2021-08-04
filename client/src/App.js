@@ -24,7 +24,6 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
-// import 'antd/lib/spin/style/index.css';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -1962,12 +1961,8 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickCheck(e, value, input) {
-    //if checked true we are adding values to arr
-    // if (value.filter.length <= 1 && e.target.checked) {
-    //   return;
-    // }
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (e.target.checked) {
+    if (value.active) {
       for (let i = 0; i < value.filter.length; i += 1) {
           if (input === value.filter[i]) {
               value.filter.splice(i, 1);
@@ -1986,8 +1981,6 @@ class App extends React.Component {
     e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
 
   }
-
-
 
   isActive(value, index) {
     return this.state.filterDropdowns[index].isActive();
@@ -2059,23 +2052,29 @@ class App extends React.Component {
     }
   }
 
+  /**
+   * 
+   * @param {event} e 
+   * @param {tick box clicked} value 
+   */
   clickSelect(e, value) {
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (e.target.checked) {
+    if (value.active) {
       value.filter = [];
       value.active = false
     } else {
       value.filter = [...value.data.result]
       value.active = true;
     }
-    this.setState({filter: this.rebuildFilter()});
+    let filter = this.rebuildFilter()
+    this.setState({filter: filter});
   }
 
   resetDropdowns() {
     let filter = [];
     for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      this.state.filterDropdowns[i].setActive(true);
-      this.state.filterDropdowns[i].setFilter([...this.state.filterDropdowns[i].data.result]);
+      this.state.filterDropdowns[i].active = true;
+      this.state.filterDropdowns[i].filter = [...this.state.filterDropdowns[i].data.result];
       filter.push(this.state.filterDropdowns[i].filter);
     }
   }
@@ -2087,8 +2086,7 @@ class App extends React.Component {
         filter.push(this.state.filterDropdowns[i].filter[j]);
       }
     }
-    return filter 
-    
+    return filter   
   }
 
   clickAges(e, index) {
@@ -2134,9 +2132,13 @@ class App extends React.Component {
 
   }
 
-  isPriorityChecked(value) {
-    let filter = this.state.filterPriorities;
-    let priority = this.parsePriority(value);
+  isPriorityChecked(value, filter, parse) {
+    let priority = null;
+    if (parse) {
+      priority = this.parsePriority(value);
+    } else {
+      priority = value;
+    }
     if (filter.includes(priority)) {
       return true;
     } else {
@@ -2162,20 +2164,19 @@ class App extends React.Component {
    * @param {the button clicked} e 
    */
   clickPriority(e) {
-    console.log(e.target.checked)
     if(!this.state.activeLayer) {
       return;
     }
     let query = this.state.filterPriorities;
     let priority = this.parsePriority(e.target.id);
     if (query.length === 1) {
-      if (e.target.checked) {
+      if (this.isPriorityChecked(priority, query , false)) {
         e.target.checked = true; 
       } else {
         query.push(priority);     
       }
     } else {
-      if (e.target.checked) { 
+      if (this.isPriorityChecked(priority, query, false)) { 
         query.splice(query.indexOf(priority), 1 );
       } else {     
         query.push(priority);
@@ -2656,7 +2657,7 @@ class App extends React.Component {
                     id={value} 
                     type="checkbox" 
                     //defaultChecked
-                    checked={this.isPriorityChecked(value)} 
+                    checked={this.isPriorityChecked(value, this.state.filterPriorities, true)} 
                     onChange={(e) => this.changeCheck(e)} 
                     onClick={(e) => this.clickPriority(e, value)}>
                   </input>{" " + value}

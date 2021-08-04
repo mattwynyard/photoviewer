@@ -269,7 +269,7 @@ body {
 
 .satellite {
   position: absolute;
-  bottom: 5vw;
+  bottom: 80px;
   left: 15px;
   z-index: 999;
 }
@@ -329,14 +329,11 @@ body {
 }
 
 .title {
-  /* width: 100%; 
-  overflow: hidden; */
   display: flex;
 }
 
 .titleLeft {
   width: 400px;
-  /* float: left; */
 }
 
 .titleRight {
@@ -376,7 +373,6 @@ body {
 }
 
 .videoModal {
-  /* height:75%; */
   width: 45%;
   position: absolute;
   margin: 0px;
