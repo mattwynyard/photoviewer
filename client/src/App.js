@@ -24,11 +24,9 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
-
-
+// import 'antd/lib/spin/style/index.css';
 
 const DIST_TOLERANCE = 20; //metres 
-
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -167,10 +165,8 @@ class App extends React.Component {
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    //this.photoModal.current.delegate(this);
     this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
-    
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
@@ -2466,17 +2462,18 @@ class App extends React.Component {
 
     const CustomSpinner = (props) => {
       if (props.show) {
+
         return(
           <div className="spinner">
-          <Spinner
-          as="span"
-          animation="border"
-          variant="secondary"
-          size="lg"
-          role="status"
-          ></Spinner>
-          <p>Loading...</p>
+            <Spinner
+            animation="border"
+            variant="secondary"
+            size="lg"
+            role="status"
+            ></Spinner>
+            <p>Loading...</p>
           </div>
+          //<Spin show={"true"} spinning={true} tip="Loading..." size="large" />
         );
       } else {
         return(
@@ -2750,11 +2747,11 @@ class App extends React.Component {
             )}
           </LayerGroup>
           {/* notworking!! */}
-         
+          <CustomSpinner show={this.state.spinner}>
+      </CustomSpinner>
       </LMap >    
       </div>
-      <CustomSpinner show={this.state.spinner}>
-      </CustomSpinner>
+      
       <Image 
         className="satellite" 
         src={this.state.osmThumbnail} 
