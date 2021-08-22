@@ -35,11 +35,17 @@ export default class GLEngine {
       this.gl = this.canvas.getContext('webgl', { antialias: true }, {preserveDrawingBuffer: false});
       this.webgl = 1;
       console.log("Cannot load webgl2.0 using webgl instead");
-    }  
+    } else {
+      console.log("Using webgl2.0");
+    } 
     if (!this.gl) {
       this.gl = this.canvas.getContext('experimental-webgl', { antialias: true }, {preserveDrawingBuffer: false});
       console.log("Cannot load webgl1.0 using experimental-webgl instead");
-      this.webgl = 1;
+      if (this.gl) {
+        this.webgl = 1;
+        console.log("Using webgl1.0");
+      } 
+      
     } 
     if (!this.gl) {
       let message = "Error: Failed to load webgl.\n Your browser may not support webgl - this web app will not work correctly.\n Please use a modern web browser."
@@ -136,7 +142,7 @@ export default class GLEngine {
     let u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
     let u_eyepos = this.gl.getUniformLocation(this.program, "u_offset");
     let u_eyeposLow = this.gl.getUniformLocation(this.program, "u_offset_low");
-    let thickness = this.gl.getUniformLocation(this.program, "u_thickness")
+    let thickness = this.gl.getUniformLocation(this.program, "u_thickness");
     //attributes
     let colorLoc = this.gl.getAttribLocation(this.program, "a_color");
     let vertLoc = this.gl.getAttribLocation(this.program, "a_vertex");
@@ -145,8 +151,7 @@ export default class GLEngine {
     let prevLocLow = this.gl.getAttribLocation(this.program, "a_prev_low");
     let nextLoc = this.gl.getAttribLocation(this.program, "a_next");
     let nextLocLow = this.gl.getAttribLocation(this.program, "a_next_low");
-
-    this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
+   
     pixelsToWebGLMatrix.set([2 / this.canvas.width, 0, 0, 0, 0, -2 / this.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
     // Set the matrix to some that makes 1 unit 1 pixel.
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -172,19 +177,19 @@ export default class GLEngine {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertArray, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(prevLoc, 3, this.gl.FLOAT, false, bytesVertex, 0); //0
-    this.gl.enableVertexAttribArray(prevLoc);
     this.gl.vertexAttribPointer(prevLocLow, 2, this.gl.FLOAT, false, bytesVertex, fsize * 3);
-    this.gl.enableVertexAttribArray(prevLocLow);
     this.gl.vertexAttribPointer(vertLoc, 3, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex); //64
-    this.gl.enableVertexAttribArray(vertLoc);
     this.gl.vertexAttribPointer(vertLocLow, 2, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 3);
-    this.gl.enableVertexAttribArray(vertLocLow);
     this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, bytesVertex, 2 * bytesVertex + fsize * 5);
-    this.gl.enableVertexAttribArray(colorLoc);
     this.gl.vertexAttribPointer(nextLoc, 3, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex);
+    this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, 4 * bytesVertex + fsize * 3);
+    this.gl.enableVertexAttribArray(vertLoc);
+    this.gl.enableVertexAttribArray(vertLocLow);
+    this.gl.enableVertexAttribArray(colorLoc); 
+    this.gl.enableVertexAttribArray(prevLoc);
+    this.gl.enableVertexAttribArray(prevLocLow);
     this.gl.enableVertexAttribArray(nextLoc);
-    this.gl.vertexAttribPointer(nextLocLow, 2, this.gl.FLOAT, false, bytesVertex, (4 * bytesVertex) + (fsize * 3));
-    this.gl.enableVertexAttribArray(nextLocLow);
+    this.gl.enableVertexAttribArray(nextLocLow);  
     if (zoom) {
       this.appDelegate.centreMap(this.latlngs);
     }
@@ -198,8 +203,7 @@ export default class GLEngine {
       this.delegate.gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
       pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
       this.delegate.gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
-      this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
+      
       // -- set base matrix to translate canvas pixel coordinates -> webgl coordinates
       this.delegate.mapMatrix.set(pixelsToWebGLMatrix);
       let bounds = this._map.getBounds();
@@ -216,19 +220,22 @@ export default class GLEngine {
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
       this.delegate.setThickness(thickness, this._map.getZoom());
-      let centreCount  = numCentreVerts - 4;
+      let centreCount  = numCentreVerts - 4; //ignores last four points as next is duplcate of current
       let lineCount  = numLineVerts - 4;
-      let pointCount = numPointVerts;
+      let pointCount = numPointVerts - 4; //last four null points ignored
       if (centreCount > 0) {
         this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
       } 
       if (lineCount > 0) {
         this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
       } 
+      let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
+
+      this.delegate.gl.aPointSize = this.delegate.gl.getAttribLocation(this.delegate.program, "a_pointSize");
+      this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
       if (numPointVerts !== 0) {
         this.delegate.gl.drawArrays(this.delegate.gl.POINTS, numCentreVerts + numLineVerts , pointCount); 
-      }
-      
+      }   
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
@@ -343,6 +350,10 @@ export default class GLEngine {
       let fault = this.createFaultObject(points[i], options.type, latlng)
       faults.push(fault);         
     }
+    buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0); //push four null points to align point count to traingle draw arrays
+    buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0); //handles problem of data not displaying on apple products
+    buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0);
+    buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0);
     return { faults: faults, vertices: buffer, count: count}
   }
 

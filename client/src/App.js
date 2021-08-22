@@ -104,7 +104,6 @@ class App extends React.Component {
       popover: false,
       photourl: null,
       amazon: null,
-     
       password: null,
       projects: null, //all foootpath and road projects for the user
       faultClass: [],
@@ -146,7 +145,7 @@ class App extends React.Component {
     let host = this.getHost();
     let user = this.getUser();
     let projects = this.getProjects();
-    let token = window.sessionStorage.getItem('token')
+    let token = window.sessionStorage.getItem('token');
     this.setState({
       host: host,
       token: token,
@@ -158,7 +157,7 @@ class App extends React.Component {
         .catch(err => alert(err));
       }
       this.customNav.current.setTitle(user);
-      this.customNav.current.setOnClick(this.getLoginModal(user));
+      this.customNav.current.setOnClick(this.getLoginModal(user));   
     });
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
@@ -176,7 +175,7 @@ class App extends React.Component {
     L.Marker.prototype.options.icon = DefaultIcon;
     if(this.state.objGLData.length !== 0) {
       this.filterLayer(this.state.activeProject, true);
-    } 
+    }      
   }
 
   componentDidUpdate() {  

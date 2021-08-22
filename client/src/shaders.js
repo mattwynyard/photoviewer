@@ -60,7 +60,6 @@ uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
 uniform float u_thickness;
-in vec3 a_point_vertex;
 in vec3 a_vertex;
 in vec3 a_vertex_low;
 in vec3 a_prev;
@@ -70,6 +69,8 @@ in vec3 a_next_low;
 in float a_pointSize;
 in vec4 a_color;
 out vec4 v_color;
+out vec2 v_index;
+
 vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
     vec2 t1 = vertex_low.xy - u_offset_low.xy;
     vec2 e = t1 - vertex_low.xy;
@@ -81,15 +82,15 @@ vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
 }
 void main() {
     highp int index = int(a_vertex.z);
+    vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
     vec2 p;
     if (index < 0) { //point
-        vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
         p = curr;
+        gl_PointSize =  a_pointSize;
     } else { //line
-        vec2 prev = highPrescisionVertex(a_prev.xy, a_prev_low.xy);
-        vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
-        vec2 next = highPrescisionVertex(a_next.xy, a_next_low.xy);
         vec2 offset;
+        vec2 prev = highPrescisionVertex(a_prev.xy, a_prev_low.xy);
+        vec2 next = highPrescisionVertex(a_next.xy, a_next_low.xy);
         if (prev.xy == curr.xy) {
             vec2 line = normalize(next - curr);
             offset = vec2(-line.y, line.x) * u_thickness;
@@ -113,8 +114,8 @@ void main() {
         }
     }
     gl_Position = u_matrix * vec4(p, 0.0, 1.0);
-    gl_PointSize =  a_pointSize;
     // pass the color to the fragment shader
+    v_index = vec2(index, 0);
     v_color = a_color;
 }`
 
@@ -130,18 +131,25 @@ precision mediump float; // highp is not supported. floats have medium precision
 #endif 
 //precision highp float;
 in vec4 v_color;
+in vec2 v_index;
 out vec4 frag_color;
 void main() {
-float border = 0.05;
-float radius = 0.5;
-vec2 m = gl_PointCoord.xy - vec2(0.5, 0.5);
-float dist = radius - sqrt(m.x * m.x + m.y * m.y);
-float t = 0.0;
-if (dist > border)
-    t = 1.0;
-    else if (dist > 0.0)
-    t = dist / border;
-    frag_color = mix(vec4(0), v_color, t);
+    highp int index = int(v_index[0]);
+    if (index < 0) {
+        float border = 0.05;
+        float radius = 0.5;
+        vec2 m = gl_PointCoord.xy - vec2(0.5, 0.5);
+        float dist = radius - sqrt(m.x * m.x + m.y * m.y);
+        float t = 0.0;
+        if (dist > border)
+            t = 1.0;
+            else if (dist > 0.0)
+            t = dist / border;
+            frag_color = mix(vec4(0), v_color, t);
+    } else {
+        frag_color = v_color;
+    }
+    
 }`;
 
 export let vshader = 
@@ -157,7 +165,6 @@ uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
 uniform float u_thickness;
-attribute vec3 a_point_vertex;
 attribute vec3 a_vertex;
 attribute vec3 a_vertex_low;
 attribute vec3 a_prev;
@@ -182,6 +189,7 @@ void main() {
     if (index < 0) { //point
         vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
         p = curr;
+        gl_PointSize =  a_pointSize;
     } else { //line
         vec2 prev = highPrescisionVertex(a_prev.xy, a_prev_low.xy);
         vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
@@ -210,7 +218,6 @@ void main() {
         }
     }
     gl_Position = u_matrix * vec4(p, 0.0, 1.0);
-    gl_PointSize =  a_pointSize;
     // pass the color to the fragment shader
     v_color = a_color;
 }`
@@ -243,5 +250,5 @@ export let fshaderSquare =
 `precision mediump float;
 varying vec4 v_color;
 void main() {
-gl_FragColor = v_color;  
+    gl_FragColor = v_color;  
 }`;
