@@ -354,7 +354,33 @@ app.post('/centrelines', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
+    //need hasRating? data query 
     let result = await db.roadLines(req.body.project);
+    //let result = await db.rating(req.body.project);
+    //console.log(result)
+    if (result.rowCount != 0) {
+      res.send({success: true, data: result.rows});
+    } else {
+      res.send({success: false, data: []});
+    }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+/**
+ * endpoint for returning carriage rating data
+ */
+app.post('/rating', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    let result = await db.rating(req.body.project);
     //console.log(result)
     if (result.rowCount != 0) {
       res.send({success: true, data: result.rows});

@@ -1,6 +1,6 @@
-import Vector2D from './Vector2D';
 import {LatLongToPixelXY, scaleMatrix} from  './util.js';
 import L from 'leaflet';
+import Gradient from "javascript-color-gradient";
 import './L.CanvasOverlay';
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
 
@@ -18,9 +18,18 @@ export default class GLEngine {
         this.glLines = [];
         this.latlngs = [];
         this.webgl = 2;
+        this.colorGradient = new Gradient();
         this.zoom = false;
-        this.intializeGL();    
-    }
+        this.intializeGL();
+        this.intializeColor();
+  }
+
+  intializeColor() {
+    const color1 = "#fff5f0";
+    const color2 = "#b11117";
+    this.colorGradient.setGradient(color1, color2);
+    this.colorGradient.setMidpoint(50);  
+  }
 
   intializeGL() {
     if (this.gl == null) {
@@ -158,18 +167,24 @@ export default class GLEngine {
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     this.gl.uniform1f(thickness, 0.0006); 
     let fverts = null; //faults
-    let cverts = data.centre; //centrelines
-    if (data.points.length !== 0) {
-      fverts = data.lines.concat(data.points);
+    let cverts = data.layers[0].geometry; //centrelines
+    let zIndex = data.layers[0].z;
+    if (data.faults.points.length !== 0) {
+      fverts = data.faults.lines.concat(data.faults.points);
     } else {
       fverts = [...data.lines];
     }
     
     fverts = this.reColorPoints(fverts);
-    let verts = cverts.concat(fverts);
-    let numCentreVerts = data.centre.length / VERTEX_SIZE;
-    let numLineVerts = data.lines.length / VERTEX_SIZE;
-    let numPointVerts = data.points.length / VERTEX_SIZE;
+    let verts = null;
+    if (zIndex === 0) {
+      verts = cverts.concat(fverts);
+    } else {
+      verts = fverts.concat(cverts);
+    }
+    let numCentreVerts = data.layers[0].geometry.length / VERTEX_SIZE;
+    let numLineVerts = data.faults.lines.length / VERTEX_SIZE;
+    let numPointVerts = data.faults.points.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     let bytesVertex = fsize * VERTEX_SIZE;
@@ -219,23 +234,49 @@ export default class GLEngine {
       this.delegate.gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       this.delegate.gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      this.delegate.setThickness(thickness, this._map.getZoom());
+      let t = this.delegate.setThickness(this._map.getZoom());
+      
       let centreCount  = numCentreVerts - 4; //ignores last four points as next is duplcate of current
       let lineCount  = numLineVerts - 4;
       let pointCount = numPointVerts - 4; //last four null points ignored
-      if (centreCount > 0) {
-        this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
-      } 
-      if (lineCount > 0) {
-        this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
-      } 
-      let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
-
-      this.delegate.gl.aPointSize = this.delegate.gl.getAttribLocation(this.delegate.program, "a_pointSize");
-      this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
-      if (numPointVerts !== 0) {
-        this.delegate.gl.drawArrays(this.delegate.gl.POINTS, numCentreVerts + numLineVerts , pointCount); 
-      }   
+      // if (centreCount > 0) {
+      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
+      // } 
+      if (zIndex === 1) {
+        this.delegate.gl.uniform1f(thickness, t);
+        if (lineCount > 0) {
+          this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, lineCount);
+        } 
+        if (numPointVerts > 0) {
+          let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
+          this.delegate.gl.aPointSize = this.delegate.gl.getAttribLocation(this.delegate.program, "a_pointSize");
+          this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
+          this.delegate.gl.drawArrays(this.delegate.gl.POINTS, numLineVerts, pointCount); 
+        } 
+        this.delegate.gl.uniform1f(thickness, t * 2);
+        if (centreCount > 0) {
+          
+          this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, numLineVerts +  numPointVerts, centreCount); //centrelines
+        }
+      } else {
+        this.delegate.gl.uniform1f(thickness, t * 2);
+        if (centreCount > 0) {
+          
+          this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
+        }
+        this.delegate.gl.uniform1f(thickness, t);
+        if (lineCount > 0) {
+          this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
+        } 
+        if (numPointVerts > 0) {
+          let pointSize = Math.max(this._map.getZoom() - 8.0, 1.0);
+          this.delegate.gl.aPointSize = this.delegate.gl.getAttribLocation(this.delegate.program, "a_pointSize");
+          this.delegate.gl.vertexAttrib1f(this.delegate.gl.aPointSize, pointSize);
+          this.delegate.gl.drawArrays(this.delegate.gl.POINTS, numCentreVerts + numLineVerts, pointCount); 
+        } 
+        
+      }
+        
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
@@ -254,10 +295,12 @@ export default class GLEngine {
   }
 
   loadLines(buffer, data, options) {
+    
     let faults = [];
     let centre = [];
     let lengths = [];
     let count = options.count;
+   
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
       if (data[i].id) {
@@ -394,65 +437,49 @@ export default class GLEngine {
       return {vertices: glPoints, lengths: lengths, faults: faults};
     }
 
-  setThickness(thickness, zoom) {
+  setThickness(zoom) {
     if (zoom === 1) {        
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.002;
     } else if (zoom === 2) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 3) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 4) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 5) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 6) {
-        this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 7) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 8) {
-      this.gl.uniform1f(thickness, 0.001);
+      return 0.001;
     } else if (zoom === 9){
-      this.gl.uniform1f(thickness, 0.0008);
+      return 0.0008;
     } else if (zoom === 10) {        
-      this.gl.uniform1f(thickness, 0.0005);
+      return 0.0005;
     } else if (zoom === 11) {        
-      this.gl.uniform1f(thickness, 0.0003);
+      return 0.0003;
     } else if (zoom === 12) {
-      this.gl.uniform1f(thickness, 0.0002);
+      return 0.0002;
     } else if (zoom === 13) {
-      this.gl.uniform1f(thickness, 0.00009);
+      return 0.00009;
     } else if (zoom === 14) {
-      this.gl.uniform1f(thickness, 0.00006);
+      return 0.00006;
     } else if (zoom === 15) {
-      this.gl.uniform1f(thickness, 0.00004);
+      return 0.00004;
     } else if (zoom === 16) {
-      this.gl.uniform1f(thickness, 0.00002);
+      return 0.00002;
     } else if (zoom === 17) {
-      this.gl.uniform1f(thickness, 0.000015);
+      return 0.000015;
     } else if (zoom === 18) {
-      this.gl.uniform1f(thickness, 0.00001);
+      return 0.00001;
     } else if (zoom === 19) {
-      this.gl.uniform1f(thickness, 0.000009);
+      return 0.000009;
     } else {
-      this.gl.uniform1f(thickness, 0.000008);
+      return 0.000008;
     }
   }
-
-  getMiter(p0, p1, p2, thickness) {
-    let p2p1 = Vector2D.subtract(p2, p1);
-    let p1p0 = Vector2D.subtract(p1, p0);
-    let normal = new Vector2D(-p2p1.y, p2p1.x);
-    let normalized = normal.normalize();
-    p2p1.normalize();
-    p1p0.normalize();
-    p2p1 = Vector2D.subtract(p2, p1);
-    let tangent = Vector2D.add(p2p1, p1p0);    
-    let nTangent = tangent.normalize();
-    let miter = new Vector2D(-nTangent.y, nTangent.x);
-    let length = thickness / Vector2D.dot(miter, normalized);
-    let l = miter.multiply(length);
-    return new Vector2D(l.x, l.y);  
-  } 
 
   createFaultObject(data, type, latlng) {
     let id = data.id.split('_');
@@ -531,6 +558,9 @@ export default class GLEngine {
   setCentreColors(data, value) {
     let colors = {r: null, g: null, b: null, a: null};
     let _alpha = 0.75;
+    let index = null;
+    let rgb = null;
+    let hex = null;
     switch(value) {
       case 'Pavement':
         if (data.pavement.toUpperCase().replace(/\s/g, "") === 'UNSEALED') {
@@ -560,86 +590,34 @@ export default class GLEngine {
           colors.a = _alpha;
         }
       break;
-    case 'Hierarchy':
-      if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'LOCAL') {
-        colors.r = 0.75;
-        colors.g = 0.4;
-        colors.b = 1.0;
-        colors.a = _alpha;
-      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'DISTRIBUTOR') {
-        colors.r = 0.0;
-        colors.g = 0.5;
-        colors.b = 0.5;
-        colors.a = _alpha;
-      }  else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'ARTERIAL') {
-        colors.r = 0.8;
-        colors.g = 0.0;
-        colors.b = 0.0;
-        colors.a = _alpha;
-      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'ACCESSLOWVOL') {
-        colors.r = 0.0;
-        colors.g = 1.0;
-        colors.b = 1.0;
-        colors.a = _alpha;
-      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'STRATEGIC1') {
-        colors.r = 0.0;
-        colors.g = 0.0;
-        colors.b = 0.8;
-        colors.a = _alpha;
-      } else if (data.heirarchy.toUpperCase().replace(/\s/g, "") === 'STRATEGIC2') {
-        colors.r = 0.0;
-        colors.g = 0.0;
-        colors.b = 0.8;
-        colors.a = _alpha;
-      } else {
-        colors.r = 0.25;
-        colors.g = 0.25;
-        colors.b = 0.25;
-        colors.a = _alpha;      
-      }
+      case 'Structural Rating':
+        index = data.structural * 10;
+        hex = this.colorGradient.getColor(index + 1)
+        rgb = this.hexToRgb(hex)
+        colors.r = rgb.r / 255;
+        colors.g = rgb.g / 255;
+        colors.b = rgb.b / 255;
+        colors.a = 1.0;
+        break;
+      case 'Surface Rating':
+        index = data.surface * 10;
+        hex = this.colorGradient.getColor(index + 1)
+        rgb = this.hexToRgb(hex)
+        colors.r = rgb.r / 255;
+        colors.g = rgb.g / 255;
+        colors.b = rgb.b / 255;
+        colors.a = 1.0;
+        break;
+      case 'Drainage Rating':
+        index = data.drainage * 10;
+        hex = this.colorGradient.getColor(index + 1)
+        rgb = this.hexToRgb(hex)
+        colors.r = rgb.r / 255;
+        colors.g = rgb.g / 255;
+        colors.b = rgb.b / 255;
+        colors.a = 1.0;
       break;
-    case 'Zone':
-      if (data.zone.toUpperCase().replace(/\s/g, "") === 'URBAN') {
-        colors.r = 1.0;
-        colors.g = 1.0;
-        colors.b = 0.2;
-        colors.a = _alpha;
-      } else if (data.zone.toUpperCase().replace(/\s/g, "") === 'RURAL') {
-        colors.r = 0.2;
-        colors.g = 0.2;
-        colors.b = 1.0;
-        colors.a = _alpha;
-      } else {
-        colors.r = 0.25;
-        colors.g = 0.25;
-        colors.b = 0.25;
-        colors.a = _alpha;
-      }
-      break;
-      case 'Owner':
-      if (data.owner.toUpperCase().replace(/\s/g, "") === 'CROWN') {
-        colors.r = 1.0;
-        colors.g = 1.0;
-        colors.b = 0.2;
-        colors.a = _alpha;
-      } else if (data.owner.toUpperCase().replace(/\s/g, "") === 'LOCALAUTHORITY') {
-        colors.r = 0.2;
-        colors.g = 0.2;
-        colors.b = 1.0;
-        colors.a = _alpha;
-      } else if (data.owner.toUpperCase().replace(/\s/g, "") === 'PRIVATE') {
-        colors.r = 0.2;
-        colors.g = 0.2;
-        colors.b = 1.0;
-        colors.a = _alpha;
-      }
-      else {
-        colors.r = 0.25;
-        colors.g = 0.25;
-        colors.b = 0.25;
-        colors.a = _alpha;
-      }
-      break;
+    
     default:
       colors.r = 0.25;
       colors.g = 0.25;
@@ -714,6 +692,21 @@ export default class GLEngine {
       } else {
         set.add(latlng.lat.toString() + latlng.lng.toString());
       }
+    }
+
+    hexToRgb(hex) {
+      // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+      var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+        return r + r + g + g + b + b;
+      });
+    
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
     }
 
     minMaxLineSize() {

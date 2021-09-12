@@ -650,10 +650,26 @@ module.exports = {
         });
     },
 
+    // roadLines: (project) => {
+    //     return new Promise((resolve, reject) => {
+    //         connection.query("SELECT id, project, roadid, carriageid, roadname, starterp, enderp, startname, endname, lanes, pavement, owner, "
+    //         + "heirarchy, zone, direction, width, ST_AsGeoJSON(geom) FROM roadlines WHERE project = '" + project + "'", (err, result) => {
+    //             if (err) {
+    //                 console.error('Error executing query', err.stack)
+    //                 return reject(err);
+    //             }
+    //             let data = resolve(result);
+    //             return data;
+    //         });
+    //     });
+    // },
+
     roadLines: (project) => {
         return new Promise((resolve, reject) => {
-            connection.query("SELECT id, project, roadid, carriageid, roadname, starterp, enderp, startname, endname, lanes, pavement, owner, "
-            + "heirarchy, zone, direction, width, ST_AsGeoJSON(geom) FROM roadlines WHERE project = '" + project + "'", (err, result) => {
+            connection.query("SELECT l.id, l.project, l.roadid, l.carriageid, l.roadname, l.starterp, l.enderp, l.startname, l.endname, "
+            + "l.lanes, l.pavement, l.owner, l.heirarchy, l.zone, l.direction, CAST (l.width AS DOUBLE PRECISION), CAST (r.structural AS DOUBLE PRECISION), "
+            + "CAST (r.surface AS DOUBLE PRECISION), CAST (r.drainage AS DOUBLE PRECISION), ST_AsGeoJSON(l.geom) "
+            + "FROM roadlines as l, rating as r WHERE r.project = '" + project + "' and r.id = l.id", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);

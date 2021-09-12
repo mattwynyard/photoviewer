@@ -230,6 +230,7 @@ class App extends React.Component {
   setIndex(index) {
     if (index !== 0) {
       this.setState({selectedIndex: index});
+      console.log(this.state.objGLData)
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
@@ -275,7 +276,18 @@ class App extends React.Component {
       let data = this.GLEngine.loadLines([], centreData, options);
       vertCentre = data.vertices
     } 
-    let glData = {centre: vertCentre, points: glPoints.vertices, lines: glLines.vertices}
+    let glData = {
+      layers: [{
+        type: "line",
+        geometry: vertCentre,
+        z: 0
+      }],
+      faults: {
+        points: glPoints.vertices,
+        lines: glLines.vertices
+      }
+    }
+
     if (zoom) {
       this.GLEngine.redraw(glData, true);
     } else {
@@ -396,64 +408,62 @@ class App extends React.Component {
       }
         break;
       case 'Map':
-      if (!this.state.activeLayer) return;
-      if (this.roadLinesRef.current.isActive()) {
-        const login = {
-          user: this.state.login, 
-          project: this.state.activeLayer.code,
-          token: this.state.token,
+        if (!this.state.activeLayer) return;
+        if (this.roadLinesRef.current.isActive()) {
+          const login = {
+            user: this.state.login, 
+            project: this.state.activeLayer.code,
+            token: this.state.token,
 
-        }
-        let address = this.state.host + "/carriageway";
-        let query = {
-          lat: e.latlng.lat,
-          lng: e.latlng.lng
-        }
-        let response = await Fetcher(address, login, query);
-        let geometry = JSON.parse(response.data.geojson);
-        let erp = {
-          start: response.data.starterp,
-          end: response.data.enderp
-        }
-        if (response.data.dist < 0.00002) { //distance tolerance
-          let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
-          if (this.state.notificationKey) {
-            if (response.data.carriageid !== this.state.notificationKey.carriage) 
-            notification.close(this.state.notificationKey.id);
           }
-          let distance = dist.toFixed(); //string
-          notification.open({
-            className: "notification",
-            key: response.data.id,
-            message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
-            description: 
-              <div><b>Road ID: {response.data.roadid}<br></br></b>
-                <b>Carriage ID: {response.data.carriageid + '\n'}<br></br></b>
-                <b>Start: {response.data.starterp + ' m' + '\t'}</b>
-                <b>End: {response.data.enderp + ' m'}<br></br></b>
-                <b>Width: {response.data.width + ' m'}<br></br></b>
-                <b><br></br></b>
-              </div>,
-            placement: 'bottomRight',
-            duration: 10,
-            onClose: () => {this.setState({notificationKey: null})},
-          });
-          let key = {id: response.data.id, carriage: response.data.carriageid}
-          this.setState({notificationKey: key});
-        }     
-      }
-      if (this.state.glpoints !== null) {
-        if (this.state.selectedCarriage !== null) {
+          let address = this.state.host + "/carriageway";
+          let query = {
+            lat: e.latlng.lat,
+            lng: e.latlng.lng
+          }
+          let response = await Fetcher(address, login, query);
+          let geometry = JSON.parse(response.data.geojson);
+          let erp = {
+            start: response.data.starterp,
+            end: response.data.enderp
+          }
+          if (response.data.dist < 0.00004) { //distance tolerance
+            let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+            if (this.state.notificationKey) {
+              if (response.data.carriageid !== this.state.notificationKey.carriage) 
+              notification.close(this.state.notificationKey.id);
+            }
+            let distance = dist.toFixed(); //string
+            notification.open({
+              className: "notification",
+              key: response.data.id,
+              message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+              description: 
+                <div><b>Road ID: {response.data.roadid}<br></br></b>
+                  <b>Carriage ID: {response.data.carriageid + '\n'}<br></br></b>
+                  <b>Start: {response.data.starterp + ' m' + '\t'}</b>
+                  <b>End: {response.data.enderp + ' m'}<br></br></b>
+                  <b>Width: {response.data.width + ' m'}<br></br></b>
+                  <b><br></br></b>
+                </div>,
+              placement: 'bottomRight',
+              duration: 10,
+              onClose: () => {this.setState({notificationKey: null})},
+            });
+            let key = {id: response.data.id, carriage: response.data.carriageid}
+            this.setState({notificationKey: key});
+          }     
         }
-        this.setState({selectedIndex: null});
-        this.setState({selectedGeometry: []});
-        this.GLEngine.mouseClick = e;
-        if (this.state.activeLayer) {
-          this.GLEngine.redraw(this.GLEngine.glData, false);
-        }      
-      }
-
-
+        if (this.state.glData !== null) {
+          this.setState({selectedIndex: null});
+          this.setState({selectedGeometry: []});
+          if (this.roadLinesRef.current.isActive()) {
+            this.GLEngine.mouseClick = null;
+          } else {
+            this.GLEngine.mouseClick = e;
+          }
+          this.GLEngine.redraw(this.GLEngine.glData, false);     
+        }
         break;
       default:
         break;

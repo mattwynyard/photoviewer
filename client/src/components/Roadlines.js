@@ -12,7 +12,7 @@ export default class Roadlines extends Component {
             login: null,
             token: null,
             host: null,
-            menu: ["Pavement", "Owner", "Hierarchy", "Zone"],
+            menu: ["Pavement Type", "Structural Rating", "Surface Rating", "Drainage Rating"],
             filter: [],
             active: false,
             data: JSON.parse(window.sessionStorage.getItem('centrelines')) || null,
@@ -94,7 +94,7 @@ export default class Roadlines extends Component {
    clickCheck = (e, value) => {
      if (this.isChecked(value)) {
       this.setState({filter: []});
-      this.delegate.glData.centre = [];
+      this.delegate.glData.layers[0].geometry = [];
       let glData = this.delegate.glData;
       this.setState({active: false});
       this.delegate.redraw(glData, false);
@@ -106,19 +106,11 @@ export default class Roadlines extends Component {
           let options = {type: "centreline", value: value}
           let centrelines = this.delegate.loadLines([], this.state.data, options);
           let glData = this.delegate.glData;
-          glData.centre = centrelines.vertices;
+          glData.layers[0].geometry = centrelines.vertices;
           this.delegate.redraw(glData, false);
         });
      }     
     }
-
-    // draw = () => {
-    //   let options = {type: "centreline", value: this.state.filter[0]}
-    //       let centrelines = this.delegate.loadLines([], this.state.data, options);
-    //       let glData = this.delegate.glData;
-    //       glData.centre = centrelines.vertices;
-    //       this.delegate.redraw(glData, false);
-    // }
 
     erp = (geometry, erp, latlng) => {
       let distance = erp.start;
