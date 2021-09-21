@@ -12,7 +12,7 @@ export default class Roadlines extends Component {
             login: null,
             token: null,
             host: null,
-            menu: ["Pavement Type", "Structural Rating", "Surface Rating", "Drainage Rating"],
+            menu: ["Structural Rating", "Surface Rating", "Drainage Rating"],
             filter: [],
             active: false,
             data: JSON.parse(window.sessionStorage.getItem('centrelines')) || null,
@@ -185,7 +185,7 @@ export default class Roadlines extends Component {
         return (
           <Dropdown className="centreline">
           <Dropdown.Toggle variant="light" size="sm" >
-              Centrelines
+              Rating
             </Dropdown.Toggle>
             <Dropdown.Menu className="centrelinemenu">
               {this.state.menu.map((value, index) =>

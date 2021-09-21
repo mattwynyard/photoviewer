@@ -102,7 +102,7 @@ export default class GLEngine {
    * @param {the point data} data 
    * @returns vertices data as Float32 array
    */
-  reColorPoints(verts) {
+  reColorFaults(verts) {
     if (this.mouseClick === null) {
       if (this.appDelegate.state.selectedIndex === null) {
         return verts;
@@ -166,25 +166,32 @@ export default class GLEngine {
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix); 
     this.gl.uniform1f(thickness, 0.0006); 
-    let fverts = null; //faults
-    let cverts = data.layers[0].geometry; //centrelines
-    let zIndex = data.layers[0].z;
-    if (data.faults.points.length !== 0) {
-      fverts = data.faults.lines.concat(data.faults.points);
-    } else {
-      fverts = [...data.lines];
-    }
-    
-    fverts = this.reColorPoints(fverts);
     let verts = null;
-    if (zIndex === 0) {
-      verts = cverts.concat(fverts);
+    let zIndex = null;
+    let numCentreVerts = 0;
+    let numLineVerts = 0;
+    let numPointVerts = 0;
+    if (data) {
+      let fverts = null; //faults
+      let cverts = data.layers[0].geometry; //centrelines
+      zIndex = data.layers[0].z;
+      if (data.faults.points.length !== 0) {
+        fverts = data.faults.lines.concat(data.faults.points);
+      } else {
+        fverts = [...data.lines];
+      }
+      fverts = this.reColorFaults(fverts);
+      if (zIndex === 0) {
+        verts = cverts.concat(fverts);
+      } else {
+        verts = fverts.concat(cverts);
+      }
+      numCentreVerts = data.layers[0].geometry.length / VERTEX_SIZE;
+      numLineVerts = data.faults.lines.length / VERTEX_SIZE;
+      numPointVerts = data.faults.points.length / VERTEX_SIZE;
     } else {
-      verts = fverts.concat(cverts);
+      verts = [];
     }
-    let numCentreVerts = data.layers[0].geometry.length / VERTEX_SIZE;
-    let numLineVerts = data.faults.lines.length / VERTEX_SIZE;
-    let numPointVerts = data.faults.points.length / VERTEX_SIZE;
     let vertArray = new Float32Array(verts);
     let fsize = vertArray.BYTES_PER_ELEMENT;
     let bytesVertex = fsize * VERTEX_SIZE;
@@ -627,49 +634,61 @@ export default class GLEngine {
     return colors;
   }
 
-    setColors(geometry, type, priorities) {
-      let colors = {r: null, b: null, g: null, a: null}
-      let priority = null;
-      if (type === "road") {
-        priority = geometry.priority;
-      } else {
-        priority = geometry.grade;
-      }
-      if (geometry.status === "active") {
-        if(priority === priorities.high) { //magenta
-          colors.r = 1.0;
-          colors.g = 0.0;
-          colors.b = 1.0;
-          colors.a = ALPHA;
-        } else if(priority === priorities.med) {
-          colors.r = 1.0;
-          colors.g = 0.5;
-          colors.b = 0.0;
-          colors.a = ALPHA;
-        } else if (priority === priorities.low) {
-          colors.r = 0.0;
-          colors.g = 0.8;
-          colors.b = 0.0;
-          colors.a = ALPHA;
-        } else if (priority === 99) {
-          colors.r = 0.0;
-          colors.g = 0.0;
-          colors.b = 1.0;
-          colors.a = ALPHA;
-        } else {
-          colors.r = 0.0;
-          colors.g = 0.8;
-          colors.b = 0.8;
-          colors.a = ALPHA;
-        }
-      } else {
-        colors.r = 0.5;
-        colors.g = 0.5;
-        colors.b = 0.5;
-        colors.a = 0.8
-      }
-      return colors;
+  setColors(geometry, type, priorities) {
+    let colors = {r: null, b: null, g: null, a: null}
+    let priority = null;
+    if (type === "road") {
+      priority = geometry.priority;
+    } else {
+      priority = geometry.grade;
     }
+
+    if (geometry.status === "active") {
+      if(priority === priorities.high) { //magenta
+        colors.r = 1.0;
+        colors.g = 0.0;
+        colors.b = 1.0;
+        colors.a = ALPHA;  
+      } else if(priority === priorities.med) {
+        colors.r = 1.0;
+        colors.g = 0.5;
+        colors.b = 0.0;
+        colors.a = ALPHA;
+      } else if (priority === priorities.low) {
+        colors.r = 0.0;
+        colors.g = 0.8;
+        colors.b = 0.0;
+        colors.a = ALPHA;
+      } else if (priority === 99) {
+        colors.r = 0.0;
+        colors.g = 0.0;
+        colors.b = 1.0;
+        colors.a = ALPHA;
+      } else {
+        colors.r = 0.0;
+        colors.g = 0.8;
+        colors.b = 0.8;
+        colors.a = ALPHA;
+      }
+    } else if (geometry.status === "programmed") {
+      colors.r = 0.5;
+      colors.g = 0.5;
+      colors.b = 0.5;
+      colors.a = ALPHA;
+    } else if (geometry.status === "completed") {
+      colors.r = 0.75;
+      colors.g = 0.75;
+      colors.b = 0.75;
+      colors.a = ALPHA;
+    } else {
+      colors.r = 1.0;
+      colors.g = 0.0;
+      colors.b = 0.0;
+      colors.a = ALPHA
+    }
+    return colors;
+  }
+  
 
     addToSet(set, latlng) {
       if (set.has(latlng.lat.toString() + latlng.lng.toString())) {

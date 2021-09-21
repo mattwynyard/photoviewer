@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
+const axios = require('axios');
 const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
@@ -14,9 +15,11 @@ const jwtExpirySeconds = 10000;
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const { debug } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
+const rammURL = "https://map-auea.ramm.com/v2/mapping/settingdata/1/31dc372b-4473-4d5c-945a-d6c53f60a657/?format=geojson&projection=nztm&forcePoint=false&description=Road%20Survey%20Results"
 
 
 // comment out create server code below when deploying to server
@@ -36,6 +39,40 @@ if(environment === 'production') {
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
+}
+
+const requestStatus = async () => {
+  let values = "";
+  axios.get(rammURL)
+  .then( async (response) => {
+    let data = response.data.features;
+    let count = 0; 
+    for (let i = 0; i < data.length; i++) {
+      let status = data[i].properties.fault_status;
+      let id = "'" + "MDC_RD_0521_" + String(data[i].properties.supplier_fault_id).padStart(5, '0') + "'";
+      if (status.toLowerCase() === "programmed") {
+        values += "(" + id + ", 'programmed'), ";
+        count++;
+      } else if (status.toLowerCase().includes("completed")) {
+        values += "(" + id + ", 'completed'), ";
+        count++;
+      } else if (status.toLowerCase() === "no action required") {
+        values += "(" + id + ", 'no action required'), ";
+        count++;
+      } else {
+
+      }
+      if (i === data.length - 1) {
+        values = values.substring(0, values.length - 2)
+      }
+    }
+
+    let res = await db.updateStatus(values);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+  
 }
 
 app.use(cors());
@@ -60,6 +97,7 @@ app.get('/api', async (req, res) => {
 });
 
 app.post('/login', async (request, response) => {
+  requestStatus();
   let password = request.body.key;
   let user = request.body.user;
   let p = await db.password(user);
@@ -590,15 +628,16 @@ app.post('/district', async (req, res) => {
  */
 app.post('/class', async (req, res) => {
   let result = false;
+  let project = req.body.project
   if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
+    result = await db.isPublic(project);
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let isArchive = await db.isArchive(req.body.project); 
+    let isArchive = await db.isArchive(project); 
     let archive = isArchive.rows[0].isarchive
-    let fclass = await db.class(req.body.project, archive);
+    let fclass = await db.class(project, archive);
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {
@@ -613,15 +652,16 @@ app.post('/class', async (req, res) => {
  */
 app.post('/faults', async (req, res) => {
   let result = false;
+  let project = req.body.project;
   if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
+    result = await db.isPublic(project);
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let isarchive = await db.isArchive(req.body.project); 
+    let isarchive = await db.isArchive(project); 
     let archive = isarchive.rows[0].isarchive
-    let faults = await db.faults(req.body.project, req.body.code, archive);
+    let faults = await db.faults(project, req.body.code, archive);
     let result = [];
     for (let i = 0; i < faults.rows.length; i++) {
       result.push(faults.rows[i].fault)
@@ -664,7 +704,8 @@ app.post('/settings', async (req, res) => {
     let project = req.body.project;
     let result = await db.settings(project);
     res.set('Content-Type', 'application/json'); 
-    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, centreline: result.rows[0].centreline});  
+    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, 
+      centreline: result.rows[0].centreline, ramm: result.rows[0].ramm});  
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -746,7 +787,6 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let filterObj = req.body.filterObj;
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
@@ -758,25 +798,28 @@ app.post('/layer', async (req, res) => {
     let isCompleted = false;
     let finalPoints = null;
     let finalLines = null;
-    let dbPriority = [];
+    let options = {priority: [], status: []};
     let surface = await db.projecttype(project);
     let isarchive = await db.isArchive(project); 
-    let archive = isarchive.rows[0].isarchive
+    let archive = isarchive.rows[0].isarchive;
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
-        isCompleted = true
+        options.status.push("completed");
+        isCompleted = true;
+      } 
+      else if (priority[i] === 97) {
+        options.status.push("programmed")
       } else {
-        dbPriority.push(priority[i])
+        options.priority.push(priority[i])
       }
     }
-
     let activePoints = [];
     let activeLines = [];
     let completedPoints = [];
     let completedLines = [];
     if (surface.rows[0].surface === "footpath") { ///**** FIX FOOTPATH QUERY */
-      if (dbPriority.length !== 0) {
-        let geometry = await db.footpath(project, dbPriority, assets, faults, types, causes);
+      if (options.priority.length !== 0) {
+        let geometry = await db.footpath(project, options, assets, faults, types, causes);
         activePoints = geometry.rows;
         activeLines = [];
       } 
@@ -787,36 +830,31 @@ app.post('/layer', async (req, res) => {
       }
       finalPoints = activePoints.concat(completedPoints);
     } else if (surface.rows[0].surface === "road") {
-        if (dbPriority.length !== 0) {
-          if (archive) {
-            let points = await db.layer(project, filter, dbPriority, inspection);
-            activePoints = points.rows;
-            activeLines = [];
-          } else {
-            let points = await db.geometries(project, filter, dbPriority, inspection, "ST_Point", 'active');
-            let lines = await db.geometries(project, filter, dbPriority, inspection, "ST_LineString", 'active');
-            activePoints = points.rows;
-            activeLines = lines.rows;
-          }   
-        } 
-        if (isCompleted) { //**** db.geometries to include status */
-          if (archive) {
-            let points = await db.layerCompleted(project, filter, inspection);
+        if (archive) {
+          let points = await db.road(project, filter, options, inspection);
+          activePoints = points.rows;
+          activeLines = [];
+          points = await db.roadCompleted(project, filter, inspection);
+          completedPoints = points.rows;
+          completedLines = [];
+        } else {
+          let points = await db.geometries(project, filter, options, inspection, "ST_Point", 'active');
+          let lines = await db.geometries(project, filter, options, inspection, "ST_LineString", 'active');
+          activePoints = points.rows;
+          activeLines = lines.rows;
+          if (options.status.length !== 0) {
+            let points = await db.geometries(project, filter, options, inspection, "ST_Point", 'completed');
+            let lines = await db.geometries(project, filter, options, inspection, "ST_LineString", 'completed');
             completedPoints = points.rows;
-            completedLines = [];
-          } else {
-            let points = await db.geometries(project, filter, null, inspection, "ST_Point", 'completed');
-            let lines = await db.geometries(project, filter, null, inspection, "ST_LineString", 'completed');
-            completedPoints = points.rows;
-            completedLines = lines.rows;
-          } 
-          
-        }
+            completedLines = lines.rows; 
+          }  
+        }      
     } else {
       res.send({error: "Layer not found"});
     }  
     finalPoints = activePoints.concat(completedPoints);
     finalLines = activeLines.concat(completedLines);
+    
     res.set('Content-Type', 'application/json');
     res.send({type: surface.rows[0].surface, points: finalPoints, lines: finalLines});
   } else {
@@ -959,7 +997,6 @@ app.post('/import', async (req, res) => {
 
 //builds address for photo 
 function formatData(data) {
-  //console.log(data);
   let address = buildAddress([data.house, data.street, data.suburb, data.town]);
   let obj = {photo: data.photo, roadid: data.roadid, erp: data.erp, footpathid: data.footpathid, 
     side: data.side, latitude: data.latitude, longitude: data.longitude, dist: data.dist, address: address, ramm: data.ramm};
@@ -973,8 +1010,7 @@ function buildAddress(data) {
       address += element + " ";
     }
   });
-    //console.log(address);
-    return address;
+  return address;
 }
 function formatDate(date) {
   let tokens = null;

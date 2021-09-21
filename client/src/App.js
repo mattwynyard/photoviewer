@@ -138,6 +138,7 @@ class App extends React.Component {
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       erp: true,
       notificationKey: null,
+      ramm: false
     };   
   }
 
@@ -280,7 +281,7 @@ class App extends React.Component {
       layers: [{
         type: "line",
         geometry: vertCentre,
-        z: 0
+        z: 1
       }],
       faults: {
         points: glPoints.vertices,
@@ -710,7 +711,7 @@ class App extends React.Component {
       filterPriorities: [],
       filterAges: [],
     }, function() {
-      let glData = {centre: [], points: [], lines: []}
+      let glData = null
       this.GLEngine.redraw(glData, false);
     })
   }
@@ -1232,6 +1233,11 @@ class App extends React.Component {
     } else {
       this.setState({erp: false});
     }
+    if(body.ramm) {
+      this.setState({ramm: true});
+    } else {
+      this.setState({ramm: false});
+    }
     if (response.status !== 200) {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);    
@@ -1453,6 +1459,12 @@ class App extends React.Component {
       }
     }
     arr.sort();
+    if(this.state.ramm) {
+      arr.push("Programmed");
+      arrb.push(97);
+    }
+    
+  
     arr.push("Completed");
     arrb.push(98);
     this.setState({filterPriorities: arrb});
@@ -1469,8 +1481,9 @@ class App extends React.Component {
     this.roadLinesRef.current.reset();
     this.setState({objGLData: []});
     this.setState({glpoints: []});
-    let glData = {centre: [], points: [], lines: []}
-      this.GLEngine.redraw(glData, false); //TODO fix up engine state
+    //let glData = {centre: [], points: [], lines: []}
+    let glData = null;
+      this.GLEngine.redraw(glData, false); 
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1564,9 +1577,6 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   async filterLayer(project, zoom) {
-    // if (this.roadLinesRef.current.isActive()) {
-    //   this.roadLinesRef.current.draw();
-    // }
     this.setState({spinner: true});
       let body = this.getBody(project);
       if (typeof body !== 'undefined') {
@@ -1591,15 +1601,8 @@ class App extends React.Component {
                 await this.addGLGeometry(body.points, body.lines, body.type, zoom);
               }     
             }
-          })
-          // .catch((error) => {
-          //   console.log("error: " + error);
-          //   //alert(error);
-          //   return;
-          // });   
-        }    
-      //}
-      
+          })   
+        }         
   }
 
   async loadCentreline(e) {
@@ -2161,6 +2164,8 @@ class App extends React.Component {
       priority = 99;
     } else if (id === "Completed") {
       priority = 98;
+    } else if (id === "Programmed") {
+      priority = 97;
     } else {
       let p = id.substring(id.length - 1, id.length)
       priority = parseInt(p);
