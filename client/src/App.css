@@ -103,14 +103,14 @@ body {
 }
 
 .Priority { 
-  position: absolute;
+  position: relative;
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   font-size: 16px !important;
   z-index: 1000;
   color: gray;
-  left: 50px;
-  top: 10px;
+  left: 10px;
+  top: 20%;
 }
 
 .notification {

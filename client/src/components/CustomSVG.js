@@ -40,9 +40,15 @@ const CustomSVG = (props) => {
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
+      } else if (props.value === "Programmed") {
+        return (
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="gray" fill="gray" opacity="0.8">
+            <circle cx="5" cy="5" r="3" />
+          </svg>
+        );
       } else if (props.value === "Completed") {
         return (
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="lightgray" fill="lightgray" opacity="0.8">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
