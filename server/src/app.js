@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
+const ramm = require('./ramm.js');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
@@ -15,11 +16,10 @@ const jwtExpirySeconds = 10000;
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
-const { debug } = require('console');
 const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
-const rammURL = "https://map-auea.ramm.com/v2/mapping/settingdata/1/31dc372b-4473-4d5c-945a-d6c53f60a657/?format=geojson&projection=nztm&forcePoint=false&description=Road%20Survey%20Results"
+const schedule = require('node-schedule');
 
 
 // comment out create server code below when deploying to server
@@ -41,37 +41,45 @@ if(environment === 'production') {
     });
 }
 
-const requestStatus = async () => {
-  let values = "";
-  axios.get(rammURL)
-  .then( async (response) => {
-    let data = response.data.features;
-    let count = 0; 
-    for (let i = 0; i < data.length; i++) {
-      let status = data[i].properties.fault_status;
-      let id = "'" + "MDC_RD_0521_" + String(data[i].properties.supplier_fault_id).padStart(5, '0') + "'";
-      if (status.toLowerCase() === "programmed") {
-        values += "(" + id + ", 'programmed'), ";
-        count++;
-      } else if (status.toLowerCase().includes("completed")) {
-        values += "(" + id + ", 'completed'), ";
-        count++;
-      } else if (status.toLowerCase() === "no action required") {
-        values += "(" + id + ", 'no action required'), ";
-        count++;
-      } else {
+schedule.scheduleJob('0 0 6 * * *', async () => {
+  await updateStatus();
+}) 
 
-      }
-      if (i === data.length - 1) {
-        values = values.substring(0, values.length - 2)
-      }
-    }
 
-    let res = await db.updateStatus(values);
-  })
-  .catch(error => {
-    console.log(error);
-  });
+const updateStatus = async () => {
+  let urls = ramm.getMap();
+  for (let [key, value] of urls) {
+    let values = "";
+    let project = key;
+    axios.get(value)
+    .then(async (response) => {
+      let data = response.data.features;
+      for (let i = 0; i < data.length; i++) {
+        let status = data[i].properties.fault_status;
+        let id = "'" + project + "_" + String(data[i].properties.supplier_fault_id).padStart(5, '0') + "'";
+        if (status.toLowerCase() === "programmed") {
+          values += "(" + id + ", 'programmed'), ";
+        } else if (status.toLowerCase().includes("completed")) {
+          values += "(" + id + ", 'completed'), ";
+        } else if (status.toLowerCase() === "no action required") {
+          values += "(" + id + ", 'no action required'), ";
+        } else {
+
+        }
+        if (i === data.length - 1) {
+          values = values.substring(0, values.length - 2)
+        }
+      }
+      let res = await db.updateStatus(project, values);
+      let message = `Updated ${res.rowCount} rows for ${project} @${new Date().toString()} \n`;
+      fs.appendFile('./log.txt', message, function (err) {
+        if (err) throw err;
+        console.log('Saved!');
+      });
+    }).catch(error => {
+      console.log(error);
+    });
+  }
   
 }
 
@@ -97,7 +105,6 @@ app.get('/api', async (req, res) => {
 });
 
 app.post('/login', async (request, response) => {
-  requestStatus();
   let password = request.body.key;
   let user = request.body.user;
   let p = await db.password(user);
