@@ -183,7 +183,7 @@ export default class Roadlines extends Component {
     render() {
       if (this.state.project) {
         return (
-          <Dropdown className="centreline">
+          <Dropdown className="centreline"  drop={'right'}>
           <Dropdown.Toggle variant="light" size="sm" >
               Rating
             </Dropdown.Toggle>

@@ -1,11 +1,11 @@
 body {
-  margin: 0px;
-  width: 100vw;
-  height: 90vh;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 #root {
-  height: 90vh;
+  height: 100vh;
 }
 
 .leaflet-container {
@@ -13,36 +13,123 @@ body {
 }
 
 .map {
-  height: 100%;
+  position: absolute;
+  height: 90%;
+  width: 100%;
+  left: 20%;
   z-index: 1;
 }
 
-.navbar {
-  margin-bottom: 0;
-  border: 0;
-  font-size: 22px !important;
-  line-height: 2.0 !important;
-  letter-spacing: 4px;
-  border-radius: 0;
+.panel {
+  position: absolute;
+  height: 90%;
+  width: 20%;
 }
 
- .navbarbrand {
+
+
+.appcontainer {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+.navbar {
+  font-size: 20px !important; 
+}
+
+.navdropdown {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 22px !important;
+  white-space: nowrap;
+  padding: 1%;
+  letter-spacing: 2px;
+}
+
+.navdropdownitem {
+  font-size: 16px !important;
+}
+
+.navbarbrand {
   background-color: transparent;
   color: #fff;
 }
 
+
+
+.layerstitle {
+  position: relative;
+  height: 10%;
+  width: 90%;
+  font-family: "Century Gothic", sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: gray;
+  text-align: center;
+  margin: 5px;
+}
+
+.filterstitle {
+  position: relative;
+  background-color: transparent;
+  height: 10%;
+  width: 100%;
+  letter-spacing: 3px;
+  font-size: 18px;
+  color: gray;
+  text-align: center;
+}
+
+.layers {
+  font-family: "Century Gothic", sans-serif;
+  position: relative;
+  height: 50%;
+  width: 100%;
+  background-color: snow;
+  padding: 5px;
+}
+
+.filters {
+  font-family: "Century Gothic", sans-serif;
+  position: relative;
+  top: 50%;
+  height: 50%;
+  width: 100%;
+  /* border-style: solid; */
+  background-color: snow;
+  padding: 5px;
+}
+
+.sidebar-line {
+  position: relative;
+  top: 50%;
+  height:2px;
+  color:black;
+  z-index: 900;
+}
+
+
 .dropdownlink {
   color: gray;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 4px;
   font-size: 16px !important;
   white-space: nowrap;
   margin: 10px;
 }
 
+
+
+
+
+
+.apply-btn {
+  position: relative;
+}
+
 .button {
   padding-left: 3px;
   padding-right: 5px;
+  z-index: 999;
 }
 
 .spinner {
@@ -102,15 +189,11 @@ body {
   color: gray;
 }
 
-.Priority { 
+.priority { 
   position: relative;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   font-size: 16px !important;
-  z-index: 1000;
   color: gray;
-  left: 10px;
-  top: 20%;
 }
 
 .notification {
@@ -120,20 +203,17 @@ body {
 }
 
 .centreline {
-  position: absolute;
+  position: relative;
   font-family: "Century Gothic", sans-serif;
   letter-spacing: 1px;
   font-size: 16px !important;
-  z-index: 900;
   color: gray;
   left: 5px;
-  top: 230px;
 }
 
 .centrelinemenu {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   z-index: 900;
   color: gray;
   width: auto;
@@ -145,8 +225,6 @@ body {
 .custommenu {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  z-index: 1000;
   color: gray;
   width: auto;
   padding: 10px;
@@ -157,7 +235,6 @@ body {
 .agemenu {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   z-index: 1000;
   color: gray;
   width: auto;
@@ -169,7 +246,6 @@ body {
 .Age {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   font-size: 16px !important;
   color: gray;
   left: 135px;
@@ -177,13 +253,11 @@ body {
 }
 
 .applyButton {
-  position: absolute;
+  position: relative;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  z-index: 999;
   color: gray;
-  left: 20px;
-  top: 0px;
+  left: 20%;
+  top: 5px;
 }
 
 .toogle {
@@ -194,16 +268,12 @@ body {
 .layers {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   font-size: 12px !important;
-  top: 10px;
-  right: 20px;
   z-index: 999;
   color: gray;
 }
 
 .layermenu {
-  letter-spacing: 1px;
   font-size: 12px !important;
   z-index: 999;
   color: gray;
@@ -220,7 +290,6 @@ body {
 .list {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   font-size: 12px !important;
   top: 10px;
   left: 50px;
@@ -231,17 +300,13 @@ body {
 .btn-group {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   font-size: 12px !important;
-  top: 10px;
-  left: 280px;
   z-index: 999;
   color: gray;
 }
 
 .toolsmenu {
   font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
   color: gray;
   width: auto;
   padding: 10px;
@@ -306,26 +371,10 @@ body {
   font-family: "Century Gothic", sans-serif;
 }
 
-.navdropdown {
-  font-size: 22px !important;
-  white-space: nowrap;
-  margin: 10x;
-  z-index: 1000;
-
-}
-
-.navdropdownitem {
-  font-size: 16px !important;
-}
-
 .adminitem .adminitem:hover{
   font-size: 18px !important;
   margin: 10x;
   white-space: nowrap;
-}
-
-.dropdown{
-  z-index: 1000;
 }
 
 .title {

@@ -1974,19 +1974,40 @@ class App extends React.Component {
    */
   clickCheck(e, value, input) {
     this.applyRef.current.innerHTML = "Apply Filter";
-    if (value.active) {
-      for (let i = 0; i < value.filter.length; i += 1) {
-          if (input === value.filter[i]) {
-              value.filter.splice(i, 1);
-              break;
-          }
-      }
-      //e.target.checked = false;
-    } else {
+    if (value.active) { //dropdown active
+      let index = this.searchArray(value.filter, input)
+      if (index !== - 1)  {
+        value.filter.splice(index, 1);
+        value.active = false;
+      } else {
         value.filter.push(input);
-        //e.target.checked = true;
+      }
+    } else {
+      let index = this.searchArray(value.filter, input) 
+      if (index !== - 1)  {
+        value.filter.splice(index, 1);
+      } else {
+        value.filter.push(input);
+        if (value.data.result.length === value.filter.length) value.active = true;
+      }  
     }
     this.setState({filter: this.rebuildFilter()})
+  }
+
+  /**
+   * 
+   * @param {array to search} arr 
+   * @param {value to search for} value 
+   * @returns {-1 if not found else index of input
+   */
+  searchArray(arr, value) {
+    let found = -1;
+    for (let i = 0; i < arr.length; i += 1) {
+      if (value === arr[i]) {
+        found = i;
+      }    
+    }
+    return found;
   }
 
   clickActive(e, index) {
@@ -1999,7 +2020,6 @@ class App extends React.Component {
   }
 
   changeActive(e) {
-    console.log(e.target);
   }
 
   /**
@@ -2432,7 +2452,6 @@ class App extends React.Component {
         return (        
           <NavDropdown title={props.title} className="navdropdownitem" drop="right">
             {props.projects.map((value, index) =>  
-            <Fragment key={`${index}`}>
   	          <NavDropdown.Item className="navdropdownitem"
                 key={`${index}`}
                 index={index}
@@ -2440,8 +2459,7 @@ class App extends React.Component {
                 code={value.code}
                 onClick={props.onClick}>
                 {value.description + " " + value.date}
-              </NavDropdown.Item>
-            </Fragment>              
+              </NavDropdown.Item>             
             )}
             <NavDropdown.Divider />
           </NavDropdown>
@@ -2590,11 +2608,100 @@ class App extends React.Component {
             <CustomNav ref={this.customNav} className="navdropdown"/>
             <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
           </Navbar>         
-        </div>      
-        <div className="map"> 
-        <Roadlines 
-          ref={this.roadLinesRef} >
-        </Roadlines> 
+        </div>   
+        <div className="appcontainer">    
+          <div className="panel">
+            <div className="layers">
+              <div className="layerstitle">
+                <p>Layers</p>
+              </div>
+              <Dropdown className="priority" drop='right'>
+                <Dropdown.Toggle variant="light" size="sm" >
+                  {this.state.activeProject}
+                </Dropdown.Toggle>
+                  <Dropdown.Menu className="custommenu">
+                  {this.state.priorities.map((value, index) =>
+                      <div key={`${index}`}>
+                      <CustomSVG 
+                      login={this.state.login}
+                      value={value}
+                      reverse={this.state.reverse}
+                      >
+                      </CustomSVG>
+                        <input
+                          key={`${index}`} 
+                          id={value} 
+                          type="checkbox" 
+                          //defaultChecked
+                          checked={this.isPriorityChecked(value, this.state.filterPriorities, true)} 
+                          onChange={(e) => this.changeCheck(e)} 
+                          onClick={(e) => this.clickPriority(e, value)}>
+                        </input>{" " + value}
+                        <br></br>
+                      </div> 
+                      )}
+                  </Dropdown.Menu>
+                </Dropdown>
+                <Roadlines
+                  className={"rating"}
+                  ref={this.roadLinesRef} >
+                </Roadlines> 
+            </div>
+            <hr className='sidebar-line'>
+            </hr>
+            <div className="filters">
+              <div className="filterstitle">
+                <p>Filters</p>
+              </div>
+              <div className="filter-group">
+                {this.state.filterDropdowns.map((value, indexNo) =>
+                  <Dropdown 
+                    className="dropdown"
+                    key={`${indexNo}`} 
+                    drop={'right'}  
+                    >                
+                    <Dropdown.Toggle variant="light" size="sm">
+                      <input
+                        key={`${indexNo}`} 
+                        id={value} 
+                        type="checkbox" 
+                        checked={value.active} 
+                        onChange={(e) => this.changeActive(e)}
+                        onClick={(e) => this.clickSelect(e, value)}
+                        >
+                      </input>
+                      {value.name}         
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="custommenu">
+                      {value.data.result.map((input, index) =>
+                        <div key={`${index}`}>
+                          <input
+                            key={`${index}`} 
+                            id={input} 
+                            type="checkbox" 
+                            checked={this.isChecked(input, value.filter)} 
+                            onClick={(e) => this.clickCheck(e, value, input)}
+                            onChange={(e) => this.changeCheck(e)}
+                            >
+                          </input>{" " + input}<br></br>
+                        </div> 
+                        )}
+                      <Dropdown.Divider />
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
+              </div>
+              <FilterButton
+                className="apply-btn" 
+                ref={this.applyRef} 
+                layer={this.state.activeLayer} 
+                onClick={(e) => this.clickApply(e)}>  
+              </FilterButton>
+            </div>
+          </div>   
+        {/* <div className="map">  */}
+         
+       
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
@@ -2614,72 +2721,8 @@ class App extends React.Component {
           <AntDrawer ref={this.antdrawer} video={this.state.hasVideo}>
           </AntDrawer>
           <ScaleControl className="scale"/>
-          <div className="btn-group">
-          {this.state.filterDropdowns.map((value, indexNo) =>
-            <Dropdown 
-              className="button"
-              key={`${indexNo}`}     
-              >                
-              <Dropdown.Toggle variant="light" size="sm">
-                <input
-                  key={`${indexNo}`} 
-                  id={value} 
-                  type="checkbox" 
-                  checked={value.active} 
-                  onChange={(e) => this.changeActive(e)}
-                  onClick={(e) => this.clickSelect(e, value)}
-                  >
-                </input>
-                {value.name}         
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="custommenu">
-                {value.data.result.map((input, index) =>
-                  <div key={`${index}`}>
-                    <input
-                      key={`${index}`} 
-                      id={input} 
-                      type="checkbox" 
-                      checked={this.isChecked(input, value.filter)} 
-                      onClick={(e) => this.clickCheck(e, value, input)}
-                      onChange={(e) => this.changeCheck(e)}
-                      >
-                    </input>{" " + input}<br></br>
-                  </div> 
-                  )}
-                <Dropdown.Divider />
-              </Dropdown.Menu>
-            </Dropdown>
-          )}
-          <FilterButton ref={this.applyRef} layer={this.state.activeLayer} onClick={(e) => this.clickApply(e)}>  
-          </FilterButton>
-          </div>
-          <Dropdown className="Priority">
-          <Dropdown.Toggle variant="light" size="sm" >
-              {this.state.priorityMode}
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="custommenu">
-            {this.state.priorities.map((value, index) =>
-                <div key={`${index}`}>
-                 <CustomSVG 
-                 login={this.state.login}
-                 value={value}
-                 reverse={this.state.reverse}
-                 >
-                 </CustomSVG>
-                  <input
-                    key={`${index}`} 
-                    id={value} 
-                    type="checkbox" 
-                    //defaultChecked
-                    checked={this.isPriorityChecked(value, this.state.filterPriorities, true)} 
-                    onChange={(e) => this.changeCheck(e)} 
-                    onClick={(e) => this.clickPriority(e, value)}>
-                  </input>{" " + value}
-                  <br></br>
-                </div> 
-                )}
-            </Dropdown.Menu>
-          </Dropdown>
+          
+
           <Dropdown
             className="Age">
           <Dropdown.Toggle variant="light" size="sm" >
@@ -2761,18 +2804,19 @@ class App extends React.Component {
             </CustomPopup>
             )}
           </LayerGroup>
+          <Image 
+            className="satellite" 
+            src={this.state.osmThumbnail} 
+            onClick={(e) => this.toogleMap(e)} 
+            thumbnail={true}
+          />
           {/* notworking!! */}
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
       </LMap >    
-      </div>
+      {/* </div> */}
       
-      <Image 
-        className="satellite" 
-        src={this.state.osmThumbnail} 
-        onClick={(e) => this.toogleMap(e)} 
-        thumbnail={true}
-      />
+      
        {/* admin modal     */}
        <CustomModal 
         name={'user'}
@@ -2877,6 +2921,7 @@ class App extends React.Component {
         project={this.state.activeLayer}
       >
       </ArchivePhotoModal>
+      </div> 
       </>
     );
   }
