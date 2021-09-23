@@ -24,22 +24,22 @@ const schedule = require('node-schedule');
 
 // comment out create server code below when deploying to server
 // server created in index.js
-// const options = {
-//   key: fs.readFileSync('./server.key', 'utf8'),
-//   cert: fs.readFileSync('./server.cert', 'utf8')
-// }
-// console.log("mode: " + environment);
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function(req, res) {
-//   }).listen(port, hostname, () => {
-//       console.log(`Listening: http://${hostname}:${port}`);
-//    });
-// } else {
-//   https.createServer(options, app).listen(port, () => {
-//     console.log(`Listening: https://${host}:${port}`);
-//     });
-// }
+const options = {
+  key: fs.readFileSync('./server.key', 'utf8'),
+  cert: fs.readFileSync('./server.cert', 'utf8')
+}
+console.log("mode: " + environment);
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 schedule.scheduleJob('0 0 6 * * *', async () => {
   await updateStatus();
@@ -101,6 +101,7 @@ app.use((req, res, next) => {
 
 app.get('/api', async (req, res) => {
   let result = await db.public();
+  console.log(result)
   res.send({ projects: result });
 });
 
