@@ -24,26 +24,26 @@ const schedule = require('node-schedule');
 
 // comment out create server code below when deploying to server
 // server created in index.js
-const options = {
-  key: fs.readFileSync('./server.key', 'utf8'),
-  cert: fs.readFileSync('./server.cert', 'utf8')
-}
-console.log("mode: " + environment);
-if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function(req, res) {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
-} else {
-  https.createServer(options, app).listen(port, () => {
-    console.log(`Listening: https://${host}:${port}`);
-    });
-}
+// const options = {
+//   key: fs.readFileSync('./server.key', 'utf8'),
+//   cert: fs.readFileSync('./server.cert', 'utf8')
+// }
+// console.log("mode: " + environment);
+// if(environment === 'production') {
+//   let hostname = "localhost";
+//  http.createServer(function(req, res) {
+//   }).listen(port, hostname, () => {
+//       console.log(`Listening: http://${hostname}:${port}`);
+//    });
+// } else {
+//   https.createServer(options, app).listen(port, () => {
+//     console.log(`Listening: https://${host}:${port}`);
+//     });
+// }
 
 schedule.scheduleJob('0 0 6 * * *', async () => {
   await updateStatus();
-}) 
+});
 
 
 const updateStatus = async () => {
@@ -789,6 +789,7 @@ app.post('/dropdown', async (req, res) => {
  */
 app.post('/layer', async (req, res) => {
   let result = false;
+  
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project);
   } else {
@@ -839,7 +840,7 @@ app.post('/layer', async (req, res) => {
       finalPoints = activePoints.concat(completedPoints);
     } else if (surface.rows[0].surface === "road") {
         if (archive) {
-          let points = await db.road(project, filter, options, inspection);
+          let points = await db.layer(project, filter, options, inspection);
           activePoints = points.rows;
           activeLines = [];
           points = await db.roadCompleted(project, filter, inspection);
