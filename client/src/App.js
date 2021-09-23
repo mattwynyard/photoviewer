@@ -231,7 +231,6 @@ class App extends React.Component {
   setIndex(index) {
     if (index !== 0) {
       this.setState({selectedIndex: index});
-      console.log(this.state.objGLData)
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
       let bucket = this.getGLFault(index - 1, 'inspection');
       if (this.state.projectMode === "road") {
