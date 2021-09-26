@@ -4,7 +4,6 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
-const ramm = require('./ramm.js');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
@@ -24,35 +23,42 @@ const schedule = require('node-schedule');
 
 // comment out create server code below when deploying to server
 // server created in index.js
-// const options = {
-//   key: fs.readFileSync('./server.key', 'utf8'),
-//   cert: fs.readFileSync('./server.cert', 'utf8')
-// }
-// console.log("mode: " + environment);
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function(req, res) {
-//   }).listen(port, hostname, () => {
-//       console.log(`Listening: http://${hostname}:${port}`);
-//    });
-// } else {
-//   https.createServer(options, app).listen(port, () => {
-//     console.log(`Listening: https://${host}:${port}`);
-//     });
-// }
+const options = {
+  key: fs.readFileSync('./server.key', 'utf8'),
+  cert: fs.readFileSync('./server.cert', 'utf8')
+}
+console.log("mode: " + environment);
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function(req, res) {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 schedule.scheduleJob('0 0 6 * * *', async () => {
-  await updateStatus();
+  updateStatus();
 });
 
-
 const updateStatus = async () => {
-  let urls = ramm.getMap();
-  for (let [key, value] of urls) {
+  let res = await db.urls();
+  let data = res.rows;
+  for (let url of data) {
     let values = "";
-    let project = key;
-    axios.get(value)
+    
+    axios.get(url.ramm)
     .then(async (response) => {
+      let project = null;
+      let client = url.username;
+      if (client === 'rdc') {
+        project = 'RDC_RD_0521';
+      } else {
+        project = 'MDC_RD_0521';
+      }
       let data = response.data.features;
       for (let i = 0; i < data.length; i++) {
         let status = data[i].properties.fault_status;
@@ -74,20 +80,19 @@ const updateStatus = async () => {
       let message = `Updated ${res.rowCount} rows for ${project} @${new Date().toString()} \n`;
       fs.appendFile('./log.txt', message, function (err) {
         if (err) throw err;
-        console.log('Saved!');
+        console.log(message)
       });
     }).catch(error => {
       console.log(error);
     });
-  }
-  
+  } 
 }
 
 app.use(cors());
-app.use(morgan('dev'));
+//app.use(morgan('dev'));
 app.use(helmet());
 // Parse URL-encoded bodies (as sent by HTML forms)
-app.use(express.json({limit: '50mb', extended: false}));
+app.use(express.json({limit: '50mb', extended: false, strict: true}));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: false }))
 // Parse JSON bodies (as sent by API clients)
 
@@ -101,7 +106,6 @@ app.use((req, res, next) => {
 
 app.get('/api', async (req, res) => {
   let result = await db.public();
-  console.log(result)
   res.send({ projects: result });
 });
 
@@ -122,7 +126,6 @@ app.post('/login', async (request, response) => {
           algorithm: 'HS256',
           expiresIn: jwtExpirySeconds
       });
-        //succeded = true;
         count = count += 1;
         await db.updateCount(count, user);
         this.token = token;
@@ -400,7 +403,6 @@ app.post('/centrelines', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-    //need hasRating? data query 
     let result = await db.roadLines(req.body.project);
     //let result = await db.rating(req.body.project);
     //console.log(result)
@@ -427,7 +429,6 @@ app.post('/rating', async(req, res) => {
   }
   if (security) {
     let result = await db.rating(req.body.project);
-    //console.log(result)
     if (result.rowCount != 0) {
       res.send({success: true, data: result.rows});
     } else {
