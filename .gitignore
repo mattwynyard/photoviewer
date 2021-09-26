@@ -16,6 +16,7 @@
 .pdf
 .docx
 ./server/*.env
+server/log.txt
 server/server.key
 server/server.cert
 client/.eslintcache

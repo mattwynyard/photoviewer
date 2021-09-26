@@ -103,6 +103,20 @@ module.exports = {
         });
     },
 
+    urls: () => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT username, ramm FROM users WHERE ramm IS NOT NULL';
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let urls = resolve(result);
+                return urls;
+            });
+        });
+    },
+
     settings : (project) => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT priority, reverse, hasvideo, isarchive, centreline, ramm FROM projects WHERE code = $1::text';
@@ -137,6 +151,7 @@ module.exports = {
     },
 
     updateStatus: (project, values) => {
+        console.log(project)
         let sql = "UPDATE roadfaults as t SET status = c.status from (values " + values + ") as c(id, status) where t.project = '" + project + "' and c.id = t.id";
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
