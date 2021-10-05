@@ -22,7 +22,7 @@ import {CustomSVG} from './components/CustomSVG.js'
 import { Fragment } from 'react';
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
-import {Fetcher} from './components/Fetcher';
+import {Fetcher, PostFetch} from './components/Fetcher';
 import { notification } from 'antd';
 
 const DIST_TOLERANCE = 20; //metres 
