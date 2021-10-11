@@ -82,11 +82,10 @@ export default class GLEngine {
  * adds various event listeners to the canvas
  */
   addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", function(event) {
-    event.preventDefault();
+    this.canvas.addEventListener("webglcontextlost", () => {
     console.log("CRASH--recovering GL")
     }, false);
-    this.canvas.addEventListener("webglcontextrestored", function(event) {
+    this.canvas.addEventListener("webglcontextrestored", () => {
         this.intializeGL();
     }, false);
   }

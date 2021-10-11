@@ -24,6 +24,7 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
 import { notification } from 'antd';
+import ErrorBoundary from 'antd/lib/alert/ErrorBoundary';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -1197,21 +1198,11 @@ class App extends React.Component {
   }
 
   async getSettings(project) {
-    const response = await fetch("https://" + this.state.host + '/settings', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-      
-      })
+    let address = this.state.host + '/settings';
+    let body = PostFetch(address, this.state.token, {user: this.state.login, project: project}).catch(error => {
+      console.log(error)
+      return;
     });
-    const body = await response.json();
     if (body.priority) {
       this.setState({priorityMode: "Priority"});
     } else {
@@ -1237,10 +1228,10 @@ class App extends React.Component {
     } else {
       this.setState({ramm: false});
     }
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
+    // if (response.status !== 200) {
+    //   alert(response.status + " " + response.statusText);  
+    //   throw Error(body.message);    
+    // } 
   }
 
   async buildView(project) {
@@ -1304,7 +1295,6 @@ class App extends React.Component {
 
   async requestFaults(project, code) {
     let result = null
-    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/faults', {
       method: 'POST',
       headers: {
@@ -1335,7 +1325,6 @@ class App extends React.Component {
         alert(error);
         return;
       });
-    //}
     return result;
   }
 
@@ -1369,11 +1358,9 @@ class App extends React.Component {
         alert(error);
         return;
       }); 
-    //}
   }
 
   async requestPriority(project) {
-    //if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/priority', {
       method: 'POST',
       headers: {
@@ -1403,7 +1390,6 @@ class App extends React.Component {
         alert(error);
         return;
       }); 
-    //}
   }
 
   buildAge(ages) {
