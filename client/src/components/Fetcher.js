@@ -26,7 +26,6 @@ const Fetcher = async (address, login, query) => {
  * @returns 
  */
 export default async function PostFetch(address, token, _body) {
-
     const response = await fetch("https://" + address, {
         method: 'POST',
         credentials: 'same-origin',
@@ -35,15 +34,15 @@ export default async function PostFetch(address, token, _body) {
             'Accept': 'application/json',
             'Content-Type': 'application/json',        
         },
-        body: JSON.stringify(_body)
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
-    } 
-    return body;
+        body: JSON.stringify(_body),      
+    })
+    if (!response.ok) {
+        alert(`An error has occured: ${response.status}`);
+        throw Error(`An error has occured: ${response.status}`);
+    } else {
+        const body = await response.json();
+        return body;
+    }
 }
-
 export {Fetcher, PostFetch};
 
