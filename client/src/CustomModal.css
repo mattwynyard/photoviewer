@@ -1,0 +1,11 @@
+.checkbox {
+    width: 30px; 
+    height: 30px;
+}
+
+.label {
+    font-family: "Century Gothic", sans-serif;
+    font-size: 14px !important;
+    white-space: nowrap;
+    letter-spacing: 2px;
+}

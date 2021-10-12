@@ -1693,7 +1693,6 @@ class App extends React.Component {
   }
 
   getClient = async () => {
-    console.log("get client")
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/usernames', {
         method: 'POST',
@@ -1747,7 +1746,6 @@ class App extends React.Component {
         } else {
           if (body.success) {
             console.log(body);
-            //this.customModal.current.setUsernames(body.usernames);
           }
         }   
       })
@@ -1867,63 +1865,6 @@ class App extends React.Component {
       });
     }
   }
-
-  async updateStatusAsync(marker, status, date) {
-    if (date === "") {
-      date = null;
-    }
-    if (status === "active") {
-      date = null;
-    }
-    if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/status', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.state.login,
-          project: this.state.activeProject,
-          status: status,
-          marker: marker,
-          date: date
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        console.log(body);
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.rows != null) {
-            this.filterLayer(this.state.activeProject, false);
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  /**
-   * Shows modal to update fault status
-   * @param {event} e 
-   */
-  // clickUpdateFaultStatus(e) {
-    
-  //   if (this.state.activeLayers.length > 0) {
-  //     this.customModal.current.setState({name: 'import'});
-  //     this.customModal.current.setProject(this.state.activeLayers[0].code);
-  //     this.customModal.current.setShow(true);
-  //   } else {
-  //     //Todo add alert
-  //   }
-    
-  // }
 
   clickLogin(e) {
     e.preventDefault();
@@ -2329,18 +2270,6 @@ class App extends React.Component {
     this.addNewProject(code, client, description, date, tacode, amazon, surface);
     this.customModal.current.setShow(false);
   }
-
-  updateStatus(marker, status) {
-    this.updateStatusAsync(marker, status);
-  }
-
-  CLNotificaton = (props) => {
-    if (props.show) {
-
-    } else {
-      return null;
-    }
-  };
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
