@@ -1826,7 +1826,7 @@ class App extends React.Component {
     }
   }
 
-  async addNewProject(code, client, description, date, tacode, amazon, surface) {
+  async addNewProject(project) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
@@ -1838,13 +1838,16 @@ class App extends React.Component {
         body: JSON.stringify({
           user: this.state.login,
           type: "insert",
-          code: code,
-          client: client,
-          description: description,
-          date: date,
-          tacode: tacode,
-          amazon: amazon,
-          surface: surface
+          code: project.code,
+          client: project.client,
+          description: project.description,
+          date: project.date,
+          tacode: project.tacode,
+          amazon: project.amazon,
+          surface: project.surface,
+          public: project.public,
+          priority: project.priority,
+          reverse: project.reverse
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1852,9 +1855,9 @@ class App extends React.Component {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.success) {
-            alert("Project: " + code + " created")
+            alert("Project: " + project.code + " created")
           } else {
-            alert("Project: " + code + "  failed to create")
+            alert("Project: " + project.code + "  failed to create")
           }
         }   
       })
@@ -2266,8 +2269,8 @@ class App extends React.Component {
     this.customModal.current.setShow(false);
   }
 
-  createProject = (code, client, description, date, tacode, amazon, surface) => {
-    this.addNewProject(code, client, description, date, tacode, amazon, surface);
+  createProject = (project) => {
+    this.addNewProject(project);
     this.customModal.current.setShow(false);
   }
 

@@ -253,7 +253,7 @@ app.post('/project', async (req, res) => {
   if(result) {
       if (req.body.type === "insert") {
         try {
-          let q = await db.addProject(req.body);    
+          let q = await db.addProject(req.body); 
           if(q.rowCount === 1) {
             res.send({success: true})
           } else {
@@ -261,7 +261,7 @@ app.post('/project', async (req, res) => {
           }
         } catch (err) {
           res.set('Content-Type', 'application/json');
-          res.send({error: err.err.detail});
+          res.send({error: err.detail});
         }
       } else {
         try {

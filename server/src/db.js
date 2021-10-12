@@ -1008,12 +1008,12 @@ module.exports = {
     },
 
     addProject: (body) => {
-        //console.log(body);
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO projects(" +
-                "code, client, description, date, tacode, active, amazon, layercount, layermodified, filtercount, lastfilter, surface)" +
-                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date + "', '" + body.tacode + 
-                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "')";
+                "code, client, description, date, active, amazon, layercount, layermodified, " +
+                "filtercount, lastfilter, surface, public, priority, reverse)" +
+                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
+                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + body.priority + ", " + body.reverse + ")";
 
             connection.query(sql, (err, results) => {
                 if (err) {

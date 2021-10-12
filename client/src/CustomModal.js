@@ -87,6 +87,7 @@ export default class CustomModal extends React.Component {
         this.setState({date: e.target.value});
     }
 
+    //checkboxes
     changePublic(e) {
         this.setState({public: e.target.checked});
     }
@@ -98,6 +99,7 @@ export default class CustomModal extends React.Component {
     changePriority(e) {
         this.setState({priority: e.target.checked});
     }
+    ///
 
     changeAmazon(e) {
         this.setState({amazon: e.target.value});
@@ -116,7 +118,19 @@ export default class CustomModal extends React.Component {
     }
 
     createProject(e) {
-        this.props.callbackProject(this.state.code, this.state.client, this.state.description, this.state.date, this.state.tacode, this.state.amazon, this.state.surface);
+        let project = {
+            code: this.state.code,
+            client: this.state.client,
+            description: this.state.description,
+            date: this.state.date,
+            tacode: this.state.tacode,
+            amazon: this.state.amazon,
+            surface: this.state.surface,
+            priority: this.state.priority,
+            reverse: this.state.reverse,
+            public: this.state.public
+        }
+        this.props.callbackProject(project);
     }
 
     deleteProject(e) {
@@ -150,8 +164,7 @@ export default class CustomModal extends React.Component {
 
     clickCascade(e) {
         if (this.state.cascade) {
-            this.setState(() => ({
-                
+            this.setState(() => ({ 
               cascade: false, 
             }));  
           } else {
@@ -362,7 +375,7 @@ export default class CustomModal extends React.Component {
                                         <Form.Control 
                                             type="text" 
                                             size='sm'
-                                            placeholder="code eg ASU_0921" 
+                                            placeholder="project code eg ASU_0921" 
                                             onChange={(e) => this.changeCode(e)}
                                         >
                                         </Form.Control>
@@ -385,7 +398,7 @@ export default class CustomModal extends React.Component {
                                     <Form.Control 
                                         type="text" 
                                         size='sm'
-                                        placeholder="Enter client code eg: ASU_0921" 
+                                        placeholder="client login code eg: asu" 
                                         onChange={(e) => this.changeClient(e)}
                                     >
                                     </Form.Control>
