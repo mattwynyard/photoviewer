@@ -25,6 +25,7 @@ import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
 import { notification } from 'antd';
 import ErrorBoundary from 'antd/lib/alert/ErrorBoundary';
+import { ContactsOutlined } from '@ant-design/icons';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -231,23 +232,27 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      this.setState({selectedIndex: index});
-      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-      let bucket = this.getGLFault(index - 1, 'inspection');
+      
+      let bucket = this.state.objGLData[index - 1].inspection;
       if (this.state.projectMode === "road") {
         if (bucket !== null) {
           let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
+          console.log(suffix)
           if (suffix !== bucket) {
             let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
-            console.log(prefix + bucket + "/")
-            this.setState({amazon: prefix + bucket + "/"});
+            //console.log(prefix + bucket + "/");
+            console.log(this.state.objGLData[index - 1])
+            //this.setState({amazon: prefix + bucket + "/"});
+            console.log(this.state.amazon + this.state.objGLData[index - 1].bucket)
+            this.setState({selectedIndex: index});
+            this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
           }
         }
-      } else {
-      }    
+      }     
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
+      this.GLEngine.redraw(this.GLEngine.glData, false);
     }
     this.GLEngine.redraw(this.GLEngine.glData, false);
   }
@@ -662,7 +667,6 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    //let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
     this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
   }
 
@@ -1173,10 +1177,10 @@ class App extends React.Component {
       if (projects[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, 
           date: projects[i].date, surface: projects[i].surface, visible: true} //build project object
+          console.log(projects[i].amazon)
         this.setState({amazon: projects[i].amazon});
         layers.push(project);
         this.setState({activeLayer: project});
-        //await this.buildView(project);
         break;
         }
     }
@@ -1578,6 +1582,7 @@ class App extends React.Component {
               throw new Error(response.status);
             } else {
               const body = await response.json();
+              console.log(body)
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
@@ -2187,46 +2192,6 @@ class App extends React.Component {
   //     },
   //   });  
   // }
-
-    /**
-   * gets the requested attribute from the fault object array
-   * @param {the index of marker} index 
-   * @param {the property of the fault} attribute 
-   */
-  getGLFault(index, attribute) {
-    if (this.state.selectedGeometry.length !== 0 && index !== null) {
-      switch(attribute) {
-        case "type":
-          return  this.state.objGLData[index].type;
-        case "fault":
-          return  this.state.objGLData[index].fault;
-        case "priority":        
-          return  this.state.objGLData[index].priority;
-        case "inspection":        
-          return  this.state.objGLData[index].inspection;
-        case "location":
-          return  this.state.objGLData[index].location;
-        case "width":
-          return  this.state.objGLData[index].width;
-        case "length":
-          return  this.state.objGLData[index].length;
-        case "datetime":
-          return  this.state.objGLData[index].datetime;
-        case "photo":
-          return  this.state.objGLData[index].photo;
-        case "repair":
-            return  this.state.objGLData[index].repair;
-        case "comment":
-            return  this.state.objGLData[index].comment;
-        case "latlng":
-            return  this.state.objGLData[index].latlng;
-        default:
-          return this.state.objGLData[index]
-      }
-    } else {
-      return null;
-    }
-  }
 
 // Admin
   addUser(e) {

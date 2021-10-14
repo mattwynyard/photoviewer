@@ -245,9 +245,6 @@ export default class GLEngine {
       let centreCount  = numCentreVerts - 4; //ignores last four points as next is duplcate of current
       let lineCount  = numLineVerts - 4;
       let pointCount = numPointVerts - 4; //last four null points ignored
-      // if (centreCount > 0) {
-      //   this.delegate.gl.drawArrays(this.delegate.gl.TRIANGLE_STRIP, 0, centreCount); //centrelines
-      // } 
       if (zIndex === 1) {
         this.delegate.gl.uniform1f(thickness, t);
         if (lineCount > 0) {
