@@ -19,13 +19,10 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import {CustomSVG} from './components/CustomSVG.js'
-import { Fragment } from 'react';
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
 import { notification } from 'antd';
-import ErrorBoundary from 'antd/lib/alert/ErrorBoundary';
-import { ContactsOutlined } from '@ant-design/icons';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -74,9 +71,9 @@ class App extends React.Component {
       filterDropdowns: [],
       filterPriorities: [],
       filterAges: [],
-      host: null,
-      token: null,
-      login: null,
+      host: null, //domain
+      token: null, //security token
+      login: null, //username
       zIndex: 900,
       key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -232,23 +229,11 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      
-      let bucket = this.state.objGLData[index - 1].inspection;
-      if (this.state.projectMode === "road") {
-        if (bucket !== null) {
-          let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-          console.log(suffix)
-          if (suffix !== bucket) {
-            let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
-            //console.log(prefix + bucket + "/");
-            console.log(this.state.objGLData[index - 1])
-            //this.setState({amazon: prefix + bucket + "/"});
-            console.log(this.state.amazon + this.state.objGLData[index - 1].bucket)
-            this.setState({selectedIndex: index});
-            this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-          }
-        }
-      }     
+      this.setState({selectedIndex: index});
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
+      if (this.state.login === 'asu') {
+        console.log(this.state.objGLData[index - 1]);
+      }    
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
@@ -2350,6 +2335,14 @@ class App extends React.Component {
     }
 
     const CustomPopup = (props) => {
+      let src = null;
+      console.log(props)
+      if (props.login === "asu") {
+        src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
+      } else {
+        src = props.src;
+      }
+      console.log(src)
       let location = props.data.location;
       if (props.data.type === "footpath") {
         location = props.data.roadname;
@@ -2365,7 +2358,7 @@ class App extends React.Component {
             </p>
             <div>
               <Image className="thumbnail" 
-                src={props.src}
+                src={src}
                 onClick={props.onClick} 
                 thumbnail={true}>
               </Image >
@@ -2680,8 +2673,10 @@ class App extends React.Component {
             <CustomPopup 
               key={`${index}`} 
               data={obj}
+              login={this.state.login}
               position={obj.latlng}
               src={this.state.amazon + obj.photo + ".jpg"} 
+              amazon={this.state.amazon}
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}
