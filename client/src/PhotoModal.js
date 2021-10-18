@@ -18,13 +18,19 @@ export default class PhotoModal extends React.Component {
         }
     }
 
-    showModal(show, marker, amazon) {
+    showModal(show, login, marker, amazon) {
       this.setState({marker: marker});
       this.setState({photo: marker[0].photo});
       this.setState({date: marker[0].datetime.split('T')[0]});
       this.setState({time: marker[0].datetime.split('T')[1].substr(0,8)});
-      this.setState({amazon: amazon});
-      this.setState({show: show});
+      if (login === 'asu') {
+        this.setState({amazon: amazon + marker[0].inspection + "/"});
+        this.setState({show: show});
+      } else {
+        this.setState({amazon: amazon});
+        this.setState({show: show});
+      }
+      
 
     }
 

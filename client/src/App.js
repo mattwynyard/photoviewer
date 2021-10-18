@@ -230,10 +230,7 @@ class App extends React.Component {
   setIndex(index) {
     if (index !== 0) {
       this.setState({selectedIndex: index});
-      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-      if (this.state.login === 'asu') {
-        console.log(this.state.objGLData[index - 1]);
-      }    
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});    
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
@@ -652,7 +649,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
+    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.amazon);
   }
 
   getPhoto(direction) {
@@ -1567,7 +1564,6 @@ class App extends React.Component {
               throw new Error(response.status);
             } else {
               const body = await response.json();
-              console.log(body)
               if (body.error != null) {
                 alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
                 let e = document.createEvent("MouseEvent");
@@ -2336,13 +2332,11 @@ class App extends React.Component {
 
     const CustomPopup = (props) => {
       let src = null;
-      console.log(props)
       if (props.login === "asu") {
         src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
       } else {
         src = props.src;
       }
-      console.log(src)
       let location = props.data.location;
       if (props.data.type === "footpath") {
         location = props.data.roadname;
