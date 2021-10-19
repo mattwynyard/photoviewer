@@ -150,8 +150,7 @@ module.exports = {
     },
 
     updateStatus: (project, values) => {
-        let table = user === 'asu' ? 'asufaults' : 'roadfaults'
-
+        //let table = user === 'asu' ? 'asufaults' : 'roadfaults'
         let sql = "UPDATE roadfaults as t SET status = c.status from (values " + values + ") as c(id, status) where t.project = '" + project + "' and c.id = t.id";
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {

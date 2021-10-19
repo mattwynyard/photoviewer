@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal}  from 'react-bootstrap';
+import {Modal, Row, Col}  from 'react-bootstrap';
 import { Button} from 'antd';
 import {pad} from  './util.js';
 import './PhotoModal.css';
@@ -14,7 +14,6 @@ export default class PhotoModal extends React.Component {
             photo: null,
             date: null,
             time: null
-
         }
     }
 
@@ -30,8 +29,6 @@ export default class PhotoModal extends React.Component {
         this.setState({amazon: amazon});
         this.setState({show: show});
       }
-      
-
     }
 
     setArchiveModal(show, marker, amazon) {
@@ -39,7 +36,6 @@ export default class PhotoModal extends React.Component {
       this.setState({amazon: amazon});
       this.setState({photo: marker[0].photo});
       this.setState({show: show});
-
     }
 
     getPhoto(direction) {
@@ -105,7 +101,7 @@ export default class PhotoModal extends React.Component {
       const CustomTable = (props) => {
         if(props.obj.type === "road") {
           return (
-            <div className="container" >
+            <div className="col-md-8"  >
                   <DataColumn data={[
                     {name: "Fault ID: ", data: props.obj.id},
                     {name: "Priority: ", data: props.obj.priority},
@@ -132,13 +128,12 @@ export default class PhotoModal extends React.Component {
                     >Copy
                   </Button> 
                   </div>     
-
               </div>
           );
         } else if(props.obj.type === "footpath") {      
           return (
             <div className="container">
-              <DataColumn className="col-md-4" data={[
+              <DataColumn className="col-md-8" data={[
                 {name: "Fault ID: ", data: props.obj.id},
                 {name: "Grade: ", data: props.obj.grade},
                 {name: "Road ID: ", data: props.obj.roadid},
@@ -180,32 +175,32 @@ export default class PhotoModal extends React.Component {
           centered={true}
           onHide={this.closePhotoModal}
       >
-      <Modal.Body >	
+        <Modal.Body >	
           <div>
-          <img className="photo" 
-            alt="fault"
-            src={this.state.amazon + this.state.photo + ".jpg"} 
-            >  
-          </img>
-          <img 
-            className="leftArrow" 
-            src={"leftArrow_128.png"} 
-            alt="left arrow"
-            onClick={this.clickPrev}/> 
-          <img 
-            className="rightArrow" 
-            src={"rightArrow_128.png"} 
-            alt="right arrow"
-            onClick={this.clickNext}/>  
-          <div className="dataTable">   
-          <CustomTable 
-            obj={this.state.marker[0]}
-            copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
-          </CustomTable >
-          </div >
+            <img className="photo" 
+              
+              alt="fault"
+              src={this.state.amazon + this.state.photo + ".jpg"} 
+              />  
+            <div className="dataTable">   
+            <CustomTable 
+              obj={this.state.marker[0]}
+              copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
+            </CustomTable>
+          </div > 
+            <img 
+              className="leftArrow" 
+              src={"leftArrow_128.png"} 
+              alt="left arrow"
+              onClick={this.clickPrev}/> 
+            <img 
+              className="rightArrow" 
+              src={"rightArrow_128.png"} 
+              alt="right arrow"
+              onClick={this.clickNext}/>  
           
         </div>
-      </Modal.Body >
+        </Modal.Body >
     </Modal>
     );
   }
