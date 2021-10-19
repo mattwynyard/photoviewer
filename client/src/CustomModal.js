@@ -1,6 +1,7 @@
 import React from 'react';
-import {Modal, Button, Form, Dropdown, DropdownButton}  from 'react-bootstrap';
+import {Modal, Button, Form, Dropdown, DropdownButton, Container, Row, Col}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
+import './CustomModal.css'
 
 
 export default class CustomModal extends React.Component {
@@ -27,7 +28,10 @@ export default class CustomModal extends React.Component {
             currentUser: "client",
             disabled: false,
             status: false, //set to true if updating fault status false if db data import
-            cascade: false //cascade delete project deletes project and its data if true
+            cascade: false, //cascade delete project deletes project and its data if true
+            reverse: false,
+            priority: true,
+            public: false,
         } 
     }
 
@@ -83,9 +87,19 @@ export default class CustomModal extends React.Component {
         this.setState({date: e.target.value});
     }
 
-    changeTA(e) {
-        this.setState({tacode: e.target.value});
+    //checkboxes
+    changePublic(e) {
+        this.setState({public: e.target.checked});
     }
+
+    changeReverse(e) {
+        this.setState({reverse: e.target.checked});
+    }
+
+    changePriority(e) {
+        this.setState({priority: e.target.checked});
+    }
+    ///
 
     changeAmazon(e) {
         this.setState({amazon: e.target.value});
@@ -104,7 +118,19 @@ export default class CustomModal extends React.Component {
     }
 
     createProject(e) {
-        this.props.callbackProject(this.state.code, this.state.client, this.state.description, this.state.date, this.state.tacode, this.state.amazon, this.state.surface);
+        let project = {
+            code: this.state.code,
+            client: this.state.client,
+            description: this.state.description,
+            date: this.state.date,
+            tacode: this.state.tacode,
+            amazon: this.state.amazon,
+            surface: this.state.surface,
+            priority: this.state.priority,
+            reverse: this.state.reverse,
+            public: this.state.public
+        }
+        this.props.callbackProject(project);
     }
 
     deleteProject(e) {
@@ -138,8 +164,7 @@ export default class CustomModal extends React.Component {
 
     clickCascade(e) {
         if (this.state.cascade) {
-            this.setState(() => ({
-                
+            this.setState(() => ({ 
               cascade: false, 
             }));  
           } else {
@@ -156,35 +181,15 @@ export default class CustomModal extends React.Component {
 
     render() {
 
-        const Slider = function(props) {
-            return (
-              <div>
-                <label className="lbstatus">
-                  <b>Delete parent project:</b> {props.status}
-                </label>
-                <label 
-                  className="switch">
-                  <input 
-                    type="checkbox"
-                    checked={props.checked}
-                    onChange={props.onChange}
-                    onClick={props.onClick}
-                  >
-                  </input>
-                  <span className="slider round"></span>
-                </label>
-              </div>
-            );
-          }
-
         if (this.state.name === 'user') {
             if(this.state.mode === 'Insert') {
                 return (
                     <Modal 
-                    show={this.state.show} 
-                    size={'md'} 
-                    centered={true}
-                    onHide={() => this.setState({show: false})}>
+                        show={this.state.show} 
+                        size={'md'} 
+                        centered={true}
+                        onHide={() => this.setState({show: false})}
+                        >
                     <Modal.Header>
                         <Modal.Title>Add New User</Modal.Title>
                         <Dropdown>
@@ -342,89 +347,142 @@ export default class CustomModal extends React.Component {
                     show={this.state.show} 
                     size={'lg'} 
                     centered={true}
-                    onHide={() => this.setState({show: false})}>
+                    onHide={() => this.setState({show: false})}
+                    >
                     <Modal.Header>
                         <div>
                             <Modal.Title>Add New Project</Modal.Title>
                         </div>     
                         <Dropdown className="dropdownproject">
-                                <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                    {this.state.mode}
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
+                            <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                {this.state.mode}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
                                 <Dropdown.Item
                                     onClick={(e) => this.changeMode("Delete")}
                                     >
                                     Delete
                                 </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>	
+                            </Dropdown.Menu>
+                        </Dropdown>	
                     </Modal.Header>
                     <Modal.Body >
                         <Form>
-                        <Form.Group controlId="code">
-                            <Form.Label>Code:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter project code" 
-                            onChange={(e) => this.changeCode(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Text className= "message"></Form.Text>
-                        <Form.Group controlId="client">
-                            <Form.Label>Client:</Form.Label>           
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter client name" 
-                            onChange={(e) => this.changeClient(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Group controlId="description">
-                            <Form.Label>Description:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter project description" 
-                            onChange={(e) => this.changeDescription(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Group controlId="date">
-                            <Form.Label>Date:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter date (MMM yyyy)" 
-                            onChange={(e) => this.changeDate(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Group controlId="tacode">
-                            <Form.Label>TA Code:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter ta code" 
-                            onChange={(e) => this.changeTA(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Group controlId="surface">
-                            <Form.Label>Surface:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter surface (road/footpath)" 
-                            onChange={(e) => this.changeSurface(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Form.Group controlId="amazon">
-                            <Form.Label>Amazon URL:</Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter amazon url" 
-                            onChange={(e) => this.changeAmazon(e)}>
-                            </Form.Control>
-                        </Form.Group>
+                        <Container className="container">
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="code">
+                                    <Form.Label className="label">Project Code:</Form.Label>
+                                        <Form.Control 
+                                            type="text" 
+                                            size='sm'
+                                            placeholder="project code eg ASU_0921" 
+                                            onChange={(e) => this.changeCode(e)}
+                                        >
+                                        </Form.Control>
+                                </Form.Group>
+                                <Form.Group as={Col} controlId="public">
+                                    <Form.Label className="label">Public:</Form.Label>
+                                        <Form.Control 
+                                            className="checkbox"
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={this.state.public} 
+                                            onChange={(e) => this.changePublic(e)}
+                                        >
+                                        </Form.Control>
+                                </Form.Group>  
+                            </Row>
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="client">
+                                    <Form.Label className="label">Client:</Form.Label>           
+                                    <Form.Control 
+                                        type="text" 
+                                        size='sm'
+                                        placeholder="client login code eg: asu" 
+                                        onChange={(e) => this.changeClient(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                                <Form.Group as={Col} controlId="priority">
+                                    <Form.Label className="label">Priority:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={this.state.priority}
+                                            onChange={(e) => this.changePriority(e)}
+                                        >
+                                        </Form.Control>
+                                </Form.Group>    
+                            </Row>
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="description">
+                                    <Form.Label className="label">Description:</Form.Label>
+                                    <Form.Control 
+                                        type="text" 
+                                        size='sm'
+                                        placeholder="Enter project description" 
+                                        onChange={(e) => this.changeDescription(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                                <Form.Group as={Col} controlId="priority">
+                                <Form.Label className="label">Reverse:</Form.Label>
+                                    <Form.Control
+                                        className="checkbox" 
+                                        type="checkbox" 
+                                        size='sm'
+                                        checked={this.state.reverse}
+                                        onChange={(e) => this.changeReverse(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                            </Row>
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="date">
+                                    <Form.Label className="label">Date:</Form.Label>
+                                    <Form.Control 
+                                        type="text" 
+                                        size='sm'
+                                        placeholder="Enter date (MMM yyyy)" 
+                                        onChange={(e) => this.changeDate(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                            </Row>
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="surface">
+                                    <Form.Label className="label">Surface:</Form.Label>
+                                    <Form.Control 
+                                        type="text" 
+                                        size='sm'
+                                        placeholder="Enter surface (road/footpath)" 
+                                        onChange={(e) => this.changeSurface(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                            </Row>
+                            <Row>
+                                <Form.Group xs={6} md={8} as={Col} controlId="amazon">
+                                    <Form.Label className="label">Amazon URL:</Form.Label>
+                                    <Form.Control 
+                                        type="text" 
+                                        size='sm'
+                                        placeholder="Enter amazon url" 
+                                        onChange={(e) => this.changeAmazon(e)}
+                                    >
+                                    </Form.Control>
+                                </Form.Group>
+                            </Row>
                         <Button 
-                            variant="primary" 
-                            onClick={(e) => this.createProject(e)}>
+                                variant="primary" 
+                                onClick={(e) => this.createProject(e)}
+                            >
                             Submit
                         </Button>
+                        </Container>
                         </Form>
+                        
                     </Modal.Body>
                     <Modal.Footer>
                     </Modal.Footer>
@@ -474,12 +532,6 @@ export default class CustomModal extends React.Component {
                             onChange={(e) => this.changeProject(e)}>
                             </Form.Control>
                         </Form.Group>
-                        <Slider
-                            checked={this.state.cascade}
-                            onClick={(e) => this.clickCascade(e)} 
-                            onChange={(e) => this.changeCascade(e)}              
-                        >
-                        </Slider>
                         <Button 
                             variant="primary" 
                             onClick={(e) => this.deleteProject(e)}>

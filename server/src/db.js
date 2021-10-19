@@ -24,10 +24,8 @@ function parseInteger(x) {
 
 function parseString(s) { 
     if (s.indexOf('\'') >= 0) {
-        //console.log(s);
         let index = s.indexOf('\'');
         let str = s.substring(0, index) + s.substring(index + 1, s.length);
-        //console.log(str);
         return parseString(str);
     } else {
         return "'" + s + "'";
@@ -131,13 +129,14 @@ module.exports = {
         });
     },
 
-    priority: (project, archive) => {
+    priority: (user, project, archive) => {
         return new Promise((resolve, reject) => {
             let sql = null;
+            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
             if (archive) {
                 sql = "SELECT priority FROM carriageways WHERE project = '" + project + "' GROUP BY priority";
             } else {
-                sql = "SELECT priority FROM roadfaults WHERE project = '" + project + "' GROUP BY priority";
+                sql = `SELECT priority FROM ${table} WHERE project = '${project}' GROUP BY priority`;
             }
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -151,7 +150,7 @@ module.exports = {
     },
 
     updateStatus: (project, values) => {
-        console.log(project)
+        //let table = user === 'asu' ? 'asufaults' : 'roadfaults'
         let sql = "UPDATE roadfaults as t SET status = c.status from (values " + values + ") as c(id, status) where t.project = '" + project + "' and c.id = t.id";
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
@@ -308,13 +307,14 @@ module.exports = {
         });
     },
 
-    inspection: (project, isArchive) => {
+    inspection: (user, project, isArchive) => {
         return new Promise((resolve, reject) => {
             let sql = null;
+            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
             if (isArchive) {
                 sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
             } else {
-                sql = "SELECT inspection FROM roadfaults WHERE project = '" + project + "' GROUP BY inspection";
+                sql = `SELECT inspection FROM ${table} WHERE project = '${project}' GROUP BY inspection`;
             }           
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -355,15 +355,16 @@ module.exports = {
     //     });
     // },
 
-    class: (project, isArchive) => {
+    class: (user, project, isArchive) => {
         return new Promise((resolve, reject) => {
             let sql = null;
+            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
             if (isArchive) {
                 sql = "SELECT code, description FROM assetclass WHERE code IN "
                 + "(SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
             } else {
-                sql = "SELECT code, description FROM assetclass WHERE code IN "
-                + "(SELECT class FROM roadfaults WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+                sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
+                    WHERE project = '${project}' GROUP BY class) ORDER BY priority`
             }
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -404,13 +405,14 @@ module.exports = {
         });
     },
 
-    faults: (project, code, archive) => {
+    faults: (user, project, code, archive) => {
         return new Promise((resolve, reject) => {
             let sql = null;
+            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
             if (archive) {
                 sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
             } else {
-                sql = "SELECT fault FROM roadfaults WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
+                sql = `SELECT fault FROM ${table} WHERE project = '${project}' AND class = '${code}' GROUP BY fault`;
             }
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -821,9 +823,10 @@ module.exports = {
      * @param {'active' or 'completed'} status
      * @returns 
      */
-    geometries: (layer, filter, options, inspection, type, status) => { 
+    geometries: (user, layer, filter, options, inspection, type, status) => { 
         let pCodes = null;
         let qOptions = null;
+        let table = user === 'asu' ? 'asufaults' : 'roadfaults'
         if (options.priority.length !== 0) {
             pCodes = buildQuery(options.priority);
         }
@@ -835,15 +838,15 @@ module.exports = {
             if (filter.length == 0) {
                 let sql = null;
                 if (status === 'active') {
-                    sql = "SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, "
-                    + "faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                    + "FROM roadfaults WHERE project = '" + layer + "' AND priority IN (" + pCodes + ") AND  ST_GeometryType(geom) = '" + type + "'"
-                    + "AND inspection IN (" + qAge + ") AND status = 'active'";
+                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                    faulttime, status, ST_AsGeoJSON(geom)
+                    FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
+                    AND inspection IN (${qAge}) AND status = 'active'`; 
                 } else {
-                    sql = "SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, "
-                    + "faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                    + "FROM roadfaults WHERE project = '" + layer + "' AND status IN (" + qOptions + ") AND ST_GeometryType(geom) = '" + type + "'"
-                    + "AND inspection IN (" + qAge + ") ";
+                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                    faulttime, status, ST_AsGeoJSON(geom)
+                    FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
+                    AND inspection IN (${qAge})`;
                 }
                 connection.query(sql, (err, result) => {
                 if (err) {
@@ -857,13 +860,13 @@ module.exports = {
                 let sql = null;
                 let condition = buildQuery(filter);
                 if (status === 'active') {
-                    sql = "SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, "
-                    + "faulttime, status, datefixed, ST_AsGeoJSON(geom) FROM roadfaults WHERE project = '" + layer + "' AND fault IN (" + condition + ")"
-                    + "AND priority IN (" + pCodes + ") AND inspection IN (" + qAge + ") AND  status = 'active' AND  ST_GeometryType(geom) = '" + type + "'";
+                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                    faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                    AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
                 } else {
-                    sql = "SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, "
-                    + "faulttime, status, datefixed, ST_AsGeoJSON(geom) FROM roadfaults WHERE project = '" + layer + "' AND fault IN (" + condition + ")"
-                    + "AND inspection IN (" + qAge + ") AND status != 'active' AND ST_GeometryType(geom) = '" + type + "'";
+                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                    faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                    AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
                 }
                 connection.query(sql, (err, result) => {
                 if (err) {
@@ -1008,12 +1011,12 @@ module.exports = {
     },
 
     addProject: (body) => {
-        //console.log(body);
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO projects(" +
-                "code, client, description, date, tacode, active, amazon, layercount, layermodified, filtercount, lastfilter, surface)" +
-                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date + "', '" + body.tacode + 
-                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "')";
+                "code, client, description, date, active, amazon, layercount, layermodified, " +
+                "filtercount, lastfilter, surface, public, priority, reverse)" +
+                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
+                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + body.priority + ", " + body.reverse + ")";
 
             connection.query(sql, (err, results) => {
                 if (err) {

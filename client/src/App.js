@@ -19,12 +19,10 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import {CustomSVG} from './components/CustomSVG.js'
-import { Fragment } from 'react';
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
 import { notification } from 'antd';
-import ErrorBoundary from 'antd/lib/alert/ErrorBoundary';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -73,9 +71,9 @@ class App extends React.Component {
       filterDropdowns: [],
       filterPriorities: [],
       filterAges: [],
-      host: null,
-      token: null,
-      login: null,
+      host: null, //domain
+      token: null, //security token
+      login: null, //username
       zIndex: 900,
       key: process.env.REACT_APP_MAPBOX,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -232,22 +230,11 @@ class App extends React.Component {
   setIndex(index) {
     if (index !== 0) {
       this.setState({selectedIndex: index});
-      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]}); 
-      let bucket = this.getGLFault(index - 1, 'inspection');
-      if (this.state.projectMode === "road") {
-        if (bucket !== null) {
-          let suffix= this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-          if (suffix !== bucket) {
-            let prefix = this.state.amazon.substring(0, this.state.amazon.length - 8);
-            console.log(prefix + bucket + "/")
-            this.setState({amazon: prefix + bucket + "/"});
-          }
-        }
-      } else {
-      }    
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});    
     } else {//user selected screen only - no marker
       this.setState({selectedIndex: null});
       this.setState({selectedGeometry: []});
+      this.GLEngine.redraw(this.GLEngine.glData, false);
     }
     this.GLEngine.redraw(this.GLEngine.glData, false);
   }
@@ -662,8 +649,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    //let photo = this.getGLFault(this.state.selectedIndex - 1, 'photo');
-    this.photoModal.current.showModal(true, this.state.selectedGeometry, this.state.amazon);
+    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.amazon);
   }
 
   getPhoto(direction) {
@@ -1173,10 +1159,10 @@ class App extends React.Component {
       if (projects[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, 
           date: projects[i].date, surface: projects[i].surface, visible: true} //build project object
+          console.log(projects[i].amazon)
         this.setState({amazon: projects[i].amazon});
         layers.push(project);
         this.setState({activeLayer: project});
-        //await this.buildView(project);
         break;
         }
     }
@@ -1693,7 +1679,6 @@ class App extends React.Component {
   }
 
   getClient = async () => {
-    console.log("get client")
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/usernames', {
         method: 'POST',
@@ -1747,7 +1732,6 @@ class App extends React.Component {
         } else {
           if (body.success) {
             console.log(body);
-            //this.customModal.current.setUsernames(body.usernames);
           }
         }   
       })
@@ -1828,7 +1812,7 @@ class App extends React.Component {
     }
   }
 
-  async addNewProject(code, client, description, date, tacode, amazon, surface) {
+  async addNewProject(project) {
     if (this.state.login !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
@@ -1840,13 +1824,16 @@ class App extends React.Component {
         body: JSON.stringify({
           user: this.state.login,
           type: "insert",
-          code: code,
-          client: client,
-          description: description,
-          date: date,
-          tacode: tacode,
-          amazon: amazon,
-          surface: surface
+          code: project.code,
+          client: project.client,
+          description: project.description,
+          date: project.date,
+          tacode: project.tacode,
+          amazon: project.amazon,
+          surface: project.surface,
+          public: project.public,
+          priority: project.priority,
+          reverse: project.reverse
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1854,9 +1841,9 @@ class App extends React.Component {
           alert(`Error: ${body.error}\n`);
         } else {
           if (body.success) {
-            alert("Project: " + code + " created")
+            alert("Project: " + project.code + " created")
           } else {
-            alert("Project: " + code + "  failed to create")
+            alert("Project: " + project.code + "  failed to create")
           }
         }   
       })
@@ -1867,63 +1854,6 @@ class App extends React.Component {
       });
     }
   }
-
-  async updateStatusAsync(marker, status, date) {
-    if (date === "") {
-      date = null;
-    }
-    if (status === "active") {
-      date = null;
-    }
-    if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/status', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.state.login,
-          project: this.state.activeProject,
-          status: status,
-          marker: marker,
-          date: date
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        console.log(body);
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.rows != null) {
-            this.filterLayer(this.state.activeProject, false);
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  /**
-   * Shows modal to update fault status
-   * @param {event} e 
-   */
-  // clickUpdateFaultStatus(e) {
-    
-  //   if (this.state.activeLayers.length > 0) {
-  //     this.customModal.current.setState({name: 'import'});
-  //     this.customModal.current.setProject(this.state.activeLayers[0].code);
-  //     this.customModal.current.setShow(true);
-  //   } else {
-  //     //Todo add alert
-  //   }
-    
-  // }
 
   clickLogin(e) {
     e.preventDefault();
@@ -2244,46 +2174,6 @@ class App extends React.Component {
   //   });  
   // }
 
-    /**
-   * gets the requested attribute from the fault object array
-   * @param {the index of marker} index 
-   * @param {the property of the fault} attribute 
-   */
-  getGLFault(index, attribute) {
-    if (this.state.selectedGeometry.length !== 0 && index !== null) {
-      switch(attribute) {
-        case "type":
-          return  this.state.objGLData[index].type;
-        case "fault":
-          return  this.state.objGLData[index].fault;
-        case "priority":        
-          return  this.state.objGLData[index].priority;
-        case "inspection":        
-          return  this.state.objGLData[index].inspection;
-        case "location":
-          return  this.state.objGLData[index].location;
-        case "width":
-          return  this.state.objGLData[index].width;
-        case "length":
-          return  this.state.objGLData[index].length;
-        case "datetime":
-          return  this.state.objGLData[index].datetime;
-        case "photo":
-          return  this.state.objGLData[index].photo;
-        case "repair":
-            return  this.state.objGLData[index].repair;
-        case "comment":
-            return  this.state.objGLData[index].comment;
-        case "latlng":
-            return  this.state.objGLData[index].latlng;
-        default:
-          return this.state.objGLData[index]
-      }
-    } else {
-      return null;
-    }
-  }
-
 // Admin
   addUser(e) {
     this.customModal.current.setShow(true);
@@ -2325,22 +2215,10 @@ class App extends React.Component {
     this.customModal.current.setShow(false);
   }
 
-  createProject = (code, client, description, date, tacode, amazon, surface) => {
-    this.addNewProject(code, client, description, date, tacode, amazon, surface);
+  createProject = (project) => {
+    this.addNewProject(project);
     this.customModal.current.setShow(false);
   }
-
-  updateStatus(marker, status) {
-    this.updateStatusAsync(marker, status);
-  }
-
-  CLNotificaton = (props) => {
-    if (props.show) {
-
-    } else {
-      return null;
-    }
-  };
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
@@ -2453,6 +2331,12 @@ class App extends React.Component {
     }
 
     const CustomPopup = (props) => {
+      let src = null;
+      if (props.login === "asu") {
+        src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
+      } else {
+        src = props.src;
+      }
       let location = props.data.location;
       if (props.data.type === "footpath") {
         location = props.data.roadname;
@@ -2468,7 +2352,7 @@ class App extends React.Component {
             </p>
             <div>
               <Image className="thumbnail" 
-                src={props.src}
+                src={src}
                 onClick={props.onClick} 
                 thumbnail={true}>
               </Image >
@@ -2783,8 +2667,10 @@ class App extends React.Component {
             <CustomPopup 
               key={`${index}`} 
               data={obj}
+              login={this.state.login}
               position={obj.latlng}
               src={this.state.amazon + obj.photo + ".jpg"} 
+              amazon={this.state.amazon}
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}
