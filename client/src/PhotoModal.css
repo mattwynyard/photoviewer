@@ -1,18 +1,44 @@
-.dataTable {
+@media screen and (min-width: 1201px) {
+  .dataTable {
+    position: absolute;
+    right: 1%;
+    top: 2%;
+    max-width: 15%;
+    height: 100%;
+    overflow: scroll;
+    font-size: small;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .dataTable {
   position: absolute;
   right: 1%;
   top: 2%;
-  max-width: 20%;
+  max-width: 15%;
   height: 100%;
   overflow: scroll;
+  font-size: x-small;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .dataTable {
+    position: absolute;
+    right: 1%;
+    top: 2%;
+    max-width: 15%;
+    height: 100%;
+    overflow: scroll;
+    font-size: xx-small;
+  }
 }
 
 .photo {
-  max-width: 80%;
+  max-width: 85%;
   height: 100%;
   overflow: auto;
 }
-
 
 .leftArrow {
   position: absolute;
@@ -25,7 +51,7 @@
   position: absolute;
   height: 3.1vw;
   width: 3.1vw;
-  right: 13%;
+  right: 17.5%;
   bottom: 50%;
 
 }
