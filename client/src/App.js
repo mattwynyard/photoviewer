@@ -1159,7 +1159,6 @@ class App extends React.Component {
       if (projects[i].code === e.target.attributes.code.value) {  //if found
         let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, 
           date: projects[i].date, surface: projects[i].surface, visible: true} //build project object
-          console.log(projects[i].amazon)
         this.setState({amazon: projects[i].amazon});
         layers.push(project);
         this.setState({activeLayer: project});
@@ -1185,7 +1184,7 @@ class App extends React.Component {
 
   async getSettings(project) {
     let address = this.state.host + '/settings';
-    let body = PostFetch(address, this.state.token, {user: this.state.login, project: project}).catch(error => {
+    let body = await PostFetch(address, this.state.token, {user: this.state.login, project: project}).catch(error => {
       console.log(error)
       return;
     });
@@ -1214,10 +1213,6 @@ class App extends React.Component {
     } else {
       this.setState({ramm: false});
     }
-    // if (response.status !== 200) {
-    //   alert(response.status + " " + response.statusText);  
-    //   throw Error(body.message);    
-    // } 
   }
 
   async buildView(project) {
@@ -2407,8 +2402,6 @@ class App extends React.Component {
         );
       }      
     }
-
-    
 
     return ( 
       <> 

@@ -631,6 +631,7 @@ export default class GLEngine {
   }
 
   setColors(geometry, type, priorities) {
+
     let colors = {r: null, b: null, g: null, a: null}
     let priority = null;
     if (type === "road") {
