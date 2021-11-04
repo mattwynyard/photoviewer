@@ -85,9 +85,7 @@ class App extends React.Component {
       centreData: [],
       fault: [],
       priority: [],
-      sizes: [],
       photos: [],
-      currentFault: [],
       archiveMarker: [],
       carMarker: [], //position of current image in video
       layers: [],
@@ -110,10 +108,7 @@ class App extends React.Component {
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
       bucket: null,
-      clearDisabled: true,
       message: "",
-      lineData: null,
-      mouse: null,
       coordinates: null, //coordinates of clicked marker
       glPoints: null,
       glLines: null,
@@ -123,10 +118,7 @@ class App extends React.Component {
       selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
-      selectedStatus: null,
       projectMode: null, //the type of project being displayed footpath or road     
-      newUser: null,
-      newPassword: null,
       search: null,
       district: null,
       spinner: false,
@@ -308,9 +300,6 @@ class App extends React.Component {
     this.leafletMap.addEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
-    // this.leafletMap.addEventListener('dblclick', (event) => {
-    //   this.dblClickLeafletMap(event);
-    // });
     this.leafletMap.addEventListener('mousemove', (event) => {
       this.onMouseMove(event);
     });
@@ -327,9 +316,6 @@ class App extends React.Component {
     this.leafletMap.removeEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
-    // this.leafletMap.addEventListener('dblclick', (event) => {
-    //   this.dblClickLeafletMap(event);
-    // });
     this.leafletMap.removeEventListener('mousemove', (event) => {
       this.onMouseMove(event);
     });
