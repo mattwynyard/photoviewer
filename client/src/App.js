@@ -18,6 +18,7 @@ import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
+import Modals from './Modals.js';
 import {CustomSVG} from './components/CustomSVG.js'
 import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
@@ -2473,6 +2474,7 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
+
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
       </LMap >    
@@ -2492,50 +2494,16 @@ class App extends React.Component {
         callbackGetProjects={this.selectProjects}
         >
        </CustomModal>
-      <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-          By using this software you confirm you have read and agreed to the Onsite Developments Ltd. <a href={"https://osmium.nz/?#terms"}> Click for terms of use.</a><br></br>
-          All data on this site from Land Information New Zealand is made available under a Creative Commons Attribution Licence.<br></br>
-          <span >&copy; 2019 Onsite Developments Ltd. All rights reserved.</span><br></br>
-		    </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="primary" 
-            type="submit" 
-            onClick={(e) => this.clickClose(e)}>
-              Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      <Modal 
-        className="aboutModal" 
-        show={this.state.showAbout} 
-        size={'md'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><h2>About</h2> </Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-          <b>Road Inspection Version 2.2</b><br></br>
-          Relased: 23/04/2020<br></br>
-          Company: Onsite Developments Ltd.<br></br>
-          Software Developer: Matt Wynyard <br></br>
-          <img src="logo192.png" alt="React logo"width="24" height="24"/> React<br></br>
-          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL<br></br>
-          <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap<br></br>
-          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet<br></br>
-          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap<br></br>
-          React-leaflet<br></br>
-		    </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" size='sm' type="submit" onClick={(e) => this.clickClose(e)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      {/* login modal     */}
-      </Modal>
+       <Modals
+        type='terms'
+        show={this.state.showTerms}
+        onClick={(e)=> this.clickClose(e)} 
+      />
+      <Modals
+        type='about'
+        show={this.state.showAbout}
+        onClick={(e)=> this.clickClose(e)} 
+      />
       <Modal show={this.state.showLogin} size={'sm'} centered={true}>
         <Modal.Header>
           <Modal.Title><img src="padlock.png" alt="padlock" width="42" height="42"/> Login </Modal.Title>
