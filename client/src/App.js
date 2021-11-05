@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from "react-router-dom";
-import { Map as LMap, TileLayer, Popup, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Spinner, Toast}  from 'react-bootstrap';
+
+import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -18,7 +18,9 @@ import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, formatDate, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
+import Modals from './Modals.js';
 import {CustomSVG} from './components/CustomSVG.js'
+import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
@@ -70,7 +72,7 @@ class App extends React.Component {
       ages: [],
       filterDropdowns: [],
       filterPriorities: [],
-      filterAges: [],
+      inspections: [],
       host: null, //domain
       token: null, //security token
       login: null, //username
@@ -85,9 +87,7 @@ class App extends React.Component {
       centreData: [],
       fault: [],
       priority: [],
-      sizes: [],
       photos: [],
-      currentFault: [],
       archiveMarker: [],
       carMarker: [], //position of current image in video
       layers: [],
@@ -110,10 +110,7 @@ class App extends React.Component {
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
       bucket: null,
-      clearDisabled: true,
       message: "",
-      lineData: null,
-      mouse: null,
       coordinates: null, //coordinates of clicked marker
       glPoints: null,
       glLines: null,
@@ -123,10 +120,7 @@ class App extends React.Component {
       selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
-      selectedStatus: null,
       projectMode: null, //the type of project being displayed footpath or road     
-      newUser: null,
-      newPassword: null,
       search: null,
       district: null,
       spinner: false,
@@ -170,8 +164,6 @@ class App extends React.Component {
     this.distance = 0;
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
-    this.geojsonLayer = L.geoJSON().addTo(this.leafletMap);
-    this.imageoverlay = L.imageOverlay
     L.Marker.prototype.options.icon = DefaultIcon;
     if(this.state.objGLData.length !== 0) {
       this.filterLayer(this.state.activeProject, true);
@@ -218,7 +210,6 @@ class App extends React.Component {
    * @param {int - calculates the index from r,g,b color} color 
    */
   getIndex(color) { 
-    console.log(color)
     return color[0] + color[1] * 256 + color[2] * 256 * 256 + color[3] * 256 * 256 * 256;
   }
 
@@ -247,8 +238,6 @@ class App extends React.Component {
  *  @param {Boolean zoom to extents when data loads} zoom
  */
   addGLGeometry(points, lines, type, zoom) {
-    this.minMaxLine = this.GLEngine.minMaxLineSize();
-    this.minMaxPoint = this.GLEngine.minMaxPointSize();
     const priorities = this.setPriorityObject();
     let options = {type: type, priorities: priorities, count: 0};
     let buffer = [];
@@ -308,9 +297,6 @@ class App extends React.Component {
     this.leafletMap.addEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
-    // this.leafletMap.addEventListener('dblclick', (event) => {
-    //   this.dblClickLeafletMap(event);
-    // });
     this.leafletMap.addEventListener('mousemove', (event) => {
       this.onMouseMove(event);
     });
@@ -327,9 +313,6 @@ class App extends React.Component {
     this.leafletMap.removeEventListener('click', (event) => {
       this.clickLeafletMap(event);
     })
-    // this.leafletMap.addEventListener('dblclick', (event) => {
-    //   this.dblClickLeafletMap(event);
-    // });
     this.leafletMap.removeEventListener('mousemove', (event) => {
       this.onMouseMove(event);
     });
@@ -695,7 +678,7 @@ class App extends React.Component {
       filter: [], //filter for db request
       priorityDropdown: null, 
       filterPriorities: [],
-      filterAges: [],
+      inspections: [],
     }, function() {
       let glData = null
       this.GLEngine.redraw(glData, false);
@@ -1373,27 +1356,24 @@ class App extends React.Component {
       }); 
   }
 
+
+  /**
+   * Sets inspections array for use in filter
+   * @param {*} ages JSON object inspection array
+   */
   buildAge(ages) {
-    let arr = [];
-    let arrb = [];
+    let inspections = [];
     if (ages[0].inspection === null) {
-      let filter = [];
-      this.setState({filterAges: filter});
-      return;
-    }
-    for (let i = 0; i < ages.length; i++) {
-      let inspection = ages[i].inspection; 
-      if (inspection !== null) {
-        arrb.push(inspection);       
-        if(inspection === this.state.bucket ) {
-          arr.push(formatDate(inspection));  
-        } else {
-          arr.push("pre-" + formatDate(this.state.bucket));  
-        }
-      }          
-    }
-    this.setState({filterAges: arrb})
-    this.setState({ages: arr});
+      this.setState({inspections: []});
+    } else {
+      for (let i = 0; i < ages.length; i++) {
+        let inspection = ages[i].inspection; 
+        if (inspection !== null) {
+          inspections.push(inspection);       
+        }          
+      }
+      this.setState({inspections: inspections})
+    }   
   }
 
   /**
@@ -1476,7 +1456,7 @@ class App extends React.Component {
         project: project,
         filter: this.state.filter,
         priority: this.state.filterPriorities,
-        inspection: this.state.filterAges
+        inspection: this.state.inspections
       })   
     } else {
       let filterObj = [];
@@ -2031,31 +2011,6 @@ class App extends React.Component {
     return filter   
   }
 
-  clickAges(e, index) {
-    let query = this.state.filterAges;
-    let date = null;
-    if (index === 1) {
-      console.log(e.target.id);
-      date = this.state.bucket;
-    } else {
-      date = '2020_02';
-    }
-    if (query.length === 1) {
-      if (e.target.checked) {
-        query.push(date);
-      } else {
-        e.target.checked = true; 
-      }
-    } else {
-      if (e.target.checked) {
-        query.push(date);
-      } else {
-        query.splice(query.indexOf(date), 1 );
-      }
-    }
-    this.filterLayer(this.state.activeProject, false); //fetch layer  
-  }
-
   /**
  * checks if each fault is checked by searching checkedFault array
  * @param {the dropdown} value 
@@ -2129,11 +2084,6 @@ class App extends React.Component {
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
 
-  }
-
-
-  clickRuler(e) {
-    this.setState({ruler: true});
   }
 
   clickArchive(e) {
@@ -2301,107 +2251,6 @@ class App extends React.Component {
       }
       
     }
-    const CustomMenu = (props) => {
-      if (typeof props.projects === 'undefined' || props.projects.length === 0) {
-          return (  
-            null  
-            );
-      } else {  
-        return (        
-          <NavDropdown title={props.title} className="navdropdownitem" drop="right">
-            {props.projects.map((value, index) =>  
-  	          <NavDropdown.Item className="navdropdownitem"
-                key={`${index}`}
-                index={index}
-                title={value.code}
-                code={value.code}
-                onClick={props.onClick}>
-                {value.description + " " + value.date}
-              </NavDropdown.Item>             
-            )}
-            <NavDropdown.Divider />
-          </NavDropdown>
-          );
-      }
-    }
-
-    const CustomPopup = (props) => {
-      let src = null;
-      if (props.login === "asu") {
-        src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
-      } else {
-        src = props.src;
-      }
-      let location = props.data.location;
-      if (props.data.type === "footpath") {
-        location = props.data.roadname;
-      }
-      return (
-        <Popup className="popup" position={props.position}>
-          <div>
-            <p className="faulttext">
-            <b>{"ID: "}</b>{props.data.id}<br></br>
-              <b>{"Type: "}</b>{props.data.fault}<br></br>
-              <b>{"Location: "}</b>{location}<br></br>
-              <b>{"Date: "}</b>{props.data.datetime} 
-            </p>
-            <div>
-              <Image className="thumbnail" 
-                src={src}
-                onClick={props.onClick} 
-                thumbnail={true}>
-              </Image >
-            </div>          
-          </div>
-        </Popup>  
-      );      
-    }
-
-    const CustomSpinner = (props) => {
-      if (props.show) {
-
-        return(
-          <div className="spinner">
-            <Spinner
-            animation="border"
-            variant="secondary"
-            size="lg"
-            role="status"
-            ></Spinner>
-            <p>Loading...</p>
-          </div>
-          //<Spin show={"true"} spinning={true} tip="Loading..." size="large" />
-        );
-      } else {
-        return(
-          null
-        );    
-      }  
-    }
-
-    const CustomLink = (props) => {
-      if (props.endpoint === "/data") {
-        return (null);
-      }
-      if (this.state.activeLayer === null) {
-        return(null);
-      } else {
-        return (
-          <Link 
-            className="dropdownlink" 
-            to={{
-              pathname: props.endpoint,
-              login: this.customNav.current,
-              user: this.state.login,
-              data: this.state.objGLData,
-              project: this.state.activeLayer
-            }}
-            style={{ textDecoration: 'none' }}
-            >{props.label}
-          </Link>
-        );
-      }      
-    }
 
     return ( 
       <> 
@@ -2452,8 +2301,7 @@ class App extends React.Component {
                     label="Create Report"
                     style={{ textDecoration: 'none' }}
                     >
-                  </CustomLink>
-                {/* </NavDropdown.Item>  */}         
+                  </CustomLink>       
                 </NavDropdown>   
             </Nav>
             <Nav>
@@ -2561,9 +2409,7 @@ class App extends React.Component {
               </FilterButton>
             </div>
           </div>   
-        {/* <div className="map">  */}
-         
-       
+   
         <LMap        
           ref={(ref) => {this.map = ref;}}
           className="map"
@@ -2583,52 +2429,6 @@ class App extends React.Component {
           <AntDrawer ref={this.antdrawer} video={this.state.hasVideo}>
           </AntDrawer>
           <ScaleControl className="scale"/>
-          
-
-          <Dropdown
-            className="Age">
-          <Dropdown.Toggle variant="light" size="sm" >
-              Inspection Date
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="agemenu">
-            {this.state.ages.map((value, index) =>
-                <div key={`${index}`}>
-                 <CustomSVG
-                  login={this.state.login}
-                  value={value}
-                  color={"magenta"}
-                  bucket={formatDate(this.state.bucket)}>
-                 </CustomSVG>
-                 <CustomSVG 
-                  login={this.state.login}
-                  value={value}
-                  color={"darkorange"}
-                  bucket={formatDate(this.state.bucket)}>
-                 </CustomSVG>
-                 <CustomSVG 
-                  login={this.state.login}
-                  value={value}
-                  color={"limegreen"}
-                  bucket={formatDate(this.state.bucket)}>
-                </CustomSVG>
-                <CustomSVG 
-                  login={this.state.login}
-                  value={value}
-                  color={"blue"}
-                  bucket={formatDate(this.state.bucket)}> 
-                 </CustomSVG>
-                  <input
-                    key={`${index}`} 
-                    id={value} 
-                    type="checkbox" 
-                    defaultChecked 
-                    onClick={(e) => this.clickAges(e, index)}>
-                  </input>{" " + value}
-                  <br></br>
-                </div> 
-                )}
-            </Dropdown.Menu>
-          </Dropdown>
           
           {this.state.archiveMarker.map((position, idx) =>
             <Marker 
@@ -2674,13 +2474,10 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-          {/* notworking!! */}
+
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
       </LMap >    
-      {/* </div> */}
-      
-      
        {/* admin modal     */}
        <CustomModal 
         name={'user'}
@@ -2697,50 +2494,16 @@ class App extends React.Component {
         callbackGetProjects={this.selectProjects}
         >
        </CustomModal>
-      <Modal className="termsModal" show={this.state.showTerms} size={'md'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-          By using this software you confirm you have read and agreed to the Onsite Developments Ltd. <a href={"https://osmium.nz/?#terms"}> Click for terms of use.</a><br></br>
-          All data on this site from Land Information New Zealand is made available under a Creative Commons Attribution Licence.<br></br>
-          <span >&copy; 2019 Onsite Developments Ltd. All rights reserved.</span><br></br>
-		    </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="primary" 
-            type="submit" 
-            onClick={(e) => this.clickClose(e)}>
-              Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      <Modal 
-        className="aboutModal" 
-        show={this.state.showAbout} 
-        size={'md'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><h2>About</h2> </Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-          <b>Road Inspection Version 2.2</b><br></br>
-          Relased: 23/04/2020<br></br>
-          Company: Onsite Developments Ltd.<br></br>
-          Software Developer: Matt Wynyard <br></br>
-          <img src="logo192.png" alt="React logo"width="24" height="24"/> React<br></br>
-          <img src="webgl.png" alt="WebGL logo" width="60" height="24"/> WebGL<br></br>
-          <img src="bootstrap.png" alt="Bootstrap logo" width="24" height="24"/> Bootstrap<br></br>
-          <img src="leafletlogo.png" alt="Leaflet logo" width="60" height="16"/> Leaflet<br></br>
-          <img src="reactbootstrap.png" alt="React-Bootstrap logo" width="24" height="24"/> React-bootstrap<br></br>
-          React-leaflet<br></br>
-		    </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" size='sm' type="submit" onClick={(e) => this.clickClose(e)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      {/* login modal     */}
-      </Modal>
+       <Modals
+        type='terms'
+        show={this.state.showTerms}
+        onClick={(e)=> this.clickClose(e)} 
+      />
+      <Modals
+        type='about'
+        show={this.state.showAbout}
+        onClick={(e)=> this.clickClose(e)} 
+      />
       <Modal show={this.state.showLogin} size={'sm'} centered={true}>
         <Modal.Header>
           <Modal.Title><img src="padlock.png" alt="padlock" width="42" height="42"/> Login </Modal.Title>
