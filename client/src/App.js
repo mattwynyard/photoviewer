@@ -1171,6 +1171,7 @@ class App extends React.Component {
       console.log(error)
       return;
     });
+    if (!body) return;
     if (body.priority) {
       this.setState({priorityMode: "Priority"});
     } else {
@@ -1409,8 +1410,6 @@ class App extends React.Component {
       arr.push("Programmed");
       arrb.push(97);
     }
-    
-  
     arr.push("Completed");
     arrb.push(98);
     this.setState({filterPriorities: arrb});
@@ -1437,6 +1436,7 @@ class App extends React.Component {
         break;
       }
     }
+
     //TODO clear the filter
     this.setState({priorities: []});
     this.setState({filter: []});
@@ -1902,7 +1902,6 @@ class App extends React.Component {
 
   clickActive(e, index) {
     e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
-
   }
 
   isActive(value, index) {
