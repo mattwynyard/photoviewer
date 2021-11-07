@@ -16,10 +16,11 @@ import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
-import {pad, formatDate, calcGCDistance} from  './util.js';
+import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import {CustomSVG} from './components/CustomSVG.js'
+import PriorityDropdown from './components/PriorityDropdown.js'
 import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
@@ -2028,61 +2029,9 @@ class App extends React.Component {
 
   }
 
-  isPriorityChecked(value, filter, parse) {
-    let priority = null;
-    if (parse) {
-      priority = this.parsePriority(value);
-    } else {
-      priority = value;
-    }
-    if (filter.includes(priority)) {
-      return true;
-    } else {
-      return false;
-    }  
-  }
-
-  parsePriority(id) {
-    let priority = null
-    if (id === "Signage") {
-      priority = 99;
-    } else if (id === "Completed") {
-      priority = 98;
-    } else if (id === "Programmed") {
-      priority = 97;
-    } else {
-      let p = id.substring(id.length - 1, id.length)
-      priority = parseInt(p);
-    }
-    return priority;
-  }
-
-  /**
-   * Adds or removes priorities to array for db query
-   * @param {the button clicked} e 
-   */
-  clickPriority(e) {
-    if(!this.state.activeLayer) {
-      return;
-    }
-    let query = this.state.filterPriorities;
-    let priority = this.parsePriority(e.target.id);
-    if (query.length === 1) {
-      if (this.isPriorityChecked(priority, query , false)) {
-        e.target.checked = true; 
-      } else {
-        query.push(priority);     
-      }
-    } else {
-      if (this.isPriorityChecked(priority, query, false)) { 
-        query.splice(query.indexOf(priority), 1 );
-      } else {     
-        query.push(priority);
-      }
-    }
+  updatePriority = (query) => {
     this.setState({filterPriorities: query})
     this.filterLayer(this.state.activeProject, false);
-
   }
 
   clickArchive(e) {
@@ -2166,7 +2115,6 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
         return (
@@ -2324,37 +2272,19 @@ class App extends React.Component {
               <div className="layerstitle">
                 <p>Layers</p>
               </div>
-              <Dropdown className="priority" drop='right'>
-                <Dropdown.Toggle variant="light" size="sm" >
-                  {this.state.activeProject}
-                </Dropdown.Toggle>
-                  <Dropdown.Menu className="custommenu">
-                  {this.state.priorities.map((value, index) =>
-                      <div key={`${index}`}>
-                      <CustomSVG 
-                      login={this.state.login}
-                      value={value}
-                      reverse={this.state.reverse}
-                      >
-                      </CustomSVG>
-                        <input
-                          key={`${index}`} 
-                          id={value} 
-                          type="checkbox" 
-                          //defaultChecked
-                          checked={this.isPriorityChecked(value, this.state.filterPriorities, true)} 
-                          onChange={(e) => this.changeCheck(e)} 
-                          onClick={(e) => this.clickPriority(e, value)}>
-                        </input>{" " + value}
-                        <br></br>
-                      </div> 
-                      )}
-                  </Dropdown.Menu>
-                </Dropdown>
-                <Roadlines
-                  className={"rating"}
-                  ref={this.roadLinesRef} >
-                </Roadlines> 
+              <PriorityDropdown
+                layer={this.state.activeLayer}
+                title={this.state.priorityMode}
+                priorities={this.state.priorities}
+                login={this.state.login}
+                reverse={this.state.reverse}
+                filter={this.state.filterPriorities} 
+                onClick={this.updatePriority}
+              />
+              <Roadlines
+                className={"rating"}
+                ref={this.roadLinesRef} >
+              </Roadlines> 
             </div>
             <hr className='sidebar-line'>
             </hr>
