@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Card}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -19,9 +19,8 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
-import {CustomSVG} from './components/CustomSVG.js'
 import PriorityDropdown from './components/PriorityDropdown.js'
-import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
+import {CustomSpinner, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
@@ -2115,6 +2114,31 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
+
+    const CustomLink = (props) => {
+      if (props.endpoint === "/data") {
+        return (null);
+      }
+      if (this.state.activeLayer === null) {
+        return(null);
+      } else {
+        return (
+          <Link 
+            className="dropdownlink" 
+            to={{
+              pathname: props.endpoint,
+              login: this.customNav.current,
+              user: this.state.login,
+              data: this.state.objGLData,
+              project: this.state.activeLayer
+            }}
+            style={{ textDecoration: 'none' }}
+            >{props.label}
+          </Link>
+        );
+      }      
+    }
+
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
         return (
@@ -2246,6 +2270,7 @@ class App extends React.Component {
                     className="dropdownlink" 
                     endpoint="/statistics"
                     label="Create Report"
+                    data={this.state.objGLData}
                     login={this.customNav.current}
                     style={{ textDecoration: 'none' }}
                     >
