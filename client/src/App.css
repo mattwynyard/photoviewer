@@ -50,9 +50,18 @@ body {
 .navbarbrand {
   background-color: transparent;
   color: #fff;
+  padding: 1%;
 }
 
+.layercard-body {
+  padding: 3px;
+}
 
+.layercard-title {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 16px !important;
+  padding: 1px;
+}
 
 .layerstitle {
   position: relative;

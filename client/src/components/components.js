@@ -34,6 +34,7 @@ const CustomPopup = (props) => {
     } else {
       src = props.src;
     }
+
     let location = props.data.location;
     if (props.data.type === "footpath") {
       location = props.data.roadname;
@@ -80,10 +81,11 @@ const CustomSpinner = (props) => {
   }
 
   const CustomLink = (props) => {
+    console.log(props)
     if (props.endpoint === "/data") {
       return (null);
     }
-    if (this.state.activeLayer === null) {
+    if (props.activeLayer === null) {
       return(null);
     } else {
       return (
@@ -91,10 +93,10 @@ const CustomSpinner = (props) => {
           className="dropdownlink" 
           to={{
             pathname: props.endpoint,
-            login: this.customNav.current,
-            user: this.state.login,
-            data: this.state.objGLData,
-            project: this.state.activeLayer
+            login: props.login,
+            user: props.login,
+            data: props.objGLData,
+            project: props.activeLayer
           }}
           style={{ textDecoration: 'none' }}
           >{props.label}
