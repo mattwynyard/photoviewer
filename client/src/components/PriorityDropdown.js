@@ -42,6 +42,7 @@ export default function PriorityDropdown(props) {
    * @param {the button clicked} e 
    */
   const clickPriority = (e) => {
+      e.preventDefault();
     if(!props.layer) {
       return;
     }

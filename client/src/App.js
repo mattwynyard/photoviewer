@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Card}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -2114,6 +2114,7 @@ class App extends React.Component {
   }
 
   render() {
+    console.log(this.state)
     const centre = [this.state.location.lat, this.state.location.lng];
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
@@ -2272,19 +2273,24 @@ class App extends React.Component {
               <div className="layerstitle">
                 <p>Layers</p>
               </div>
-              <PriorityDropdown
-                layer={this.state.activeLayer}
-                title={this.state.priorityMode}
-                priorities={this.state.priorities}
-                login={this.state.login}
-                reverse={this.state.reverse}
-                filter={this.state.filterPriorities} 
-                onClick={this.updatePriority}
-              />
-              <Roadlines
-                className={"rating"}
-                ref={this.roadLinesRef} >
-              </Roadlines> 
+              <Card className='layercard'>
+                <Card.Body>
+                  <Card.Title>{this.state.activeLayer !== null ? this.state.activeLayer.description: ''}</Card.Title>
+                  <PriorityDropdown
+                  layer={this.state.activeLayer}
+                  title={this.state.priorityMode}
+                  priorities={this.state.priorities}
+                  login={this.state.login}
+                  reverse={this.state.reverse}
+                  filter={this.state.filterPriorities} 
+                  onClick={this.updatePriority}
+                  />
+                  <Roadlines
+                    className={"rating"}
+                    ref={this.roadLinesRef} >
+                  </Roadlines> 
+                </Card.Body>
+              </Card>
             </div>
             <hr className='sidebar-line'>
             </hr>
