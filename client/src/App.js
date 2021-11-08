@@ -2247,6 +2247,9 @@ class App extends React.Component {
                     endpoint="/statistics"
                     label="Create Report"
                     login={this.customNav.current}
+                    user={this.state.login}
+                    data={this.state.objGLData}
+                    activeLayer={this.state.activeLayer}
                     style={{ textDecoration: 'none' }}
                     >
                   </CustomLink>       

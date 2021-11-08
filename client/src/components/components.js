@@ -81,7 +81,6 @@ const CustomSpinner = (props) => {
   }
 
   const CustomLink = (props) => {
-    console.log(props)
     if (props.endpoint === "/data") {
       return (null);
     }
@@ -94,8 +93,8 @@ const CustomSpinner = (props) => {
           to={{
             pathname: props.endpoint,
             login: props.login,
-            user: props.login,
-            data: props.objGLData,
+            user: props.user,
+            data: props.data,
             project: props.activeLayer
           }}
           style={{ textDecoration: 'none' }}
