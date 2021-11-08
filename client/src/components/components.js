@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from "react-router-dom";
+
 import {Spinner, Image, NavDropdown}  from 'react-bootstrap';
 import {Popup}  from 'react-leaflet';
 
@@ -34,6 +34,7 @@ const CustomPopup = (props) => {
     } else {
       src = props.src;
     }
+
     let location = props.data.location;
     if (props.data.type === "footpath") {
       location = props.data.roadname;
@@ -79,28 +80,29 @@ const CustomSpinner = (props) => {
     }  
   }
 
-  const CustomLink = (props) => {
-    if (props.endpoint === "/data") {
-      return (null);
-    }
-    if (this.state.activeLayer === null) {
-      return(null);
-    } else {
-      return (
-        <Link 
-          className="dropdownlink" 
-          to={{
-            pathname: props.endpoint,
-            login: this.customNav.current,
-            user: this.state.login,
-            data: this.state.objGLData,
-            project: this.state.activeLayer
-          }}
-          style={{ textDecoration: 'none' }}
-          >{props.label}
-        </Link>
-      );
-    }      
-  }
+  // const CustomLink = (props) => {
+  //   console.log(props)
+  //   if (props.endpoint === "/data") {
+  //     return (null);
+  //   }
+  //   if (props.activeLayer === null) {
+  //     return(null);
+  //   } else {
+  //     return (
+  //       <Link 
+  //         className="dropdownlink" 
+  //         to={{
+  //           pathname: props.endpoint,
+  //           login: props.login,
+  //           user: props.login.state.user,
+  //           data: props.objGLData,
+  //           project: props.activeLayer
+  //         }}
+  //         style={{ textDecoration: 'none' }}
+  //         >{props.label}
+  //       </Link>
+  //     );
+  //   }      
+  // }
 
-  export {CustomLink, CustomSpinner, CustomPopup, CustomMenu}
+  export {CustomSpinner, CustomPopup, CustomMenu}
