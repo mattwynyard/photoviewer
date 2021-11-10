@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function ClassDropdown(props) {

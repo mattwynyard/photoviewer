@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Card}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -19,8 +19,6 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
-import PriorityDropdown from './components/PriorityDropdown.js';
-import ClassDropdown from './components/ClassDropdown.js';
 import LayerCard from './components/LayerCard.js';
 import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
