@@ -80,29 +80,28 @@ const CustomSpinner = (props) => {
     }  
   }
 
-  // const CustomLink = (props) => {
-  //   console.log(props)
-  //   if (props.endpoint === "/data") {
-  //     return (null);
-  //   }
-  //   if (props.activeLayer === null) {
-  //     return(null);
-  //   } else {
-  //     return (
-  //       <Link 
-  //         className="dropdownlink" 
-  //         to={{
-  //           pathname: props.endpoint,
-  //           login: props.login,
-  //           user: props.login.state.user,
-  //           data: props.objGLData,
-  //           project: props.activeLayer
-  //         }}
-  //         style={{ textDecoration: 'none' }}
-  //         >{props.label}
-  //       </Link>
-  //     );
-  //   }      
-  // }
+  const CustomLink = (props) => {
+    if (props.endpoint === "/data") {
+      return (null);
+    }
+    if (props.activeLayer === null) {
+      return(null);
+    } else {
+      return (
+        <Link 
+          className="dropdownlink" 
+          to={{
+            pathname: props.endpoint,
+            login: props.login,
+            user: props.user,
+            data: props.data,
+            project: props.activeLayer
+          }}
+          style={{ textDecoration: 'none' }}
+          >{props.label}
+        </Link>
+      );
+    }      
+  }
 
   export {CustomSpinner, CustomPopup, CustomMenu}

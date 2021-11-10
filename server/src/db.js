@@ -640,20 +640,6 @@ module.exports = {
         });
     },
 
-    // roadLines: (project) => {
-    //     return new Promise((resolve, reject) => {
-    //         connection.query("SELECT id, project, roadid, carriageid, roadname, starterp, enderp, startname, endname, lanes, pavement, owner, "
-    //         + "heirarchy, zone, direction, width, ST_AsGeoJSON(geom) FROM roadlines WHERE project = '" + project + "'", (err, result) => {
-    //             if (err) {
-    //                 console.error('Error executing query', err.stack)
-    //                 return reject(err);
-    //             }
-    //             let data = resolve(result);
-    //             return data;
-    //         });
-    //     });
-    // },
-
     roadLines: (project) => {
         return new Promise((resolve, reject) => {
             connection.query("SELECT l.id, l.project, l.roadid, l.carriageid, l.roadname, l.starterp, l.enderp, l.startname, l.endname, "
@@ -716,6 +702,35 @@ module.exports = {
             }); 
         });
 
+    },
+
+    hasClass: (project) => {
+        return new Promise((resolve, reject) => {
+            connection.query("SELECT rmclass FROM projects WHERE code = '" + project + "'", (err, result) => {
+            if (err) {
+                console.error('Error executing query', err.stack)
+                return reject(err);
+            }
+            let rmclass = resolve(result);          
+            return rmclass;
+            }); 
+        });
+
+    },
+
+    rmclass: (project, user) => {
+        return new Promise((resolve, reject) => {
+            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
+            let sql = `SELECT rclass FROM ${table} WHERE project = '${project}' GROUP BY rclass ORDER BY rclass ASC`;
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let priority = resolve(result);
+                return priority;
+            });
+        });
     },
 
     client: (project) => {
@@ -823,9 +838,10 @@ module.exports = {
      * @param {'active' or 'completed'} status
      * @returns 
      */
-    geometries: (user, layer, filter, options, inspection, type, status) => { 
+    geometries: (user, layer, filter, options, inspection, rclass, type, status) => { 
         let pCodes = null;
         let qOptions = null;
+        let rmclass = null;
         let table = user === 'asu' ? 'asufaults' : 'roadfaults'
         if (options.priority.length !== 0) {
             pCodes = buildQuery(options.priority);
@@ -834,20 +850,38 @@ module.exports = {
             qOptions = buildQuery(options.status)
         } 
         let qAge = buildQuery(inspection);
+        if (rclass) {
+            rmclass = buildQuery(rclass)
+        }
         return new Promise((resolve, reject) => {
             if (filter.length == 0) {
                 let sql = null;
-                if (status === 'active') {
-                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
-                    faulttime, status, ST_AsGeoJSON(geom)
-                    FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
-                    AND inspection IN (${qAge}) AND status = 'active'`; 
+                if (rmclass) {
+                    if (status === 'active') {
+                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom)
+                        FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status = 'active'`; 
+                    } else {
+                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom)
+                        FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass})`;
+                    }
                 } else {
-                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
-                    faulttime, status, ST_AsGeoJSON(geom)
-                    FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
-                    AND inspection IN (${qAge})`;
+                    if (status === 'active') {
+                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom)
+                        FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
+                        AND inspection IN (${qAge}) AND status = 'active'`; 
+                    } else {
+                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom)
+                        FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
+                        AND inspection IN (${qAge})`;
+                    }
                 }
+                
                 connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -859,15 +893,28 @@ module.exports = {
             } else {
                 let sql = null;
                 let condition = buildQuery(filter);
-                if (status === 'active') {
-                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
-                    faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                    AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
+                if (rmclass) {
+                    if (status === 'active') {
+                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                        AND priority IN (${pCodes}) AND rclass IN (${rmclass}) AND inspection IN (${qAge}) AND status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
+                    } else {
+                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
+                    }
                 } else {
-                    sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
-                    faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                    AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
+                    if (status === 'active') {
+                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                        AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
+                    } else {
+                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
+                        AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
+                    }
                 }
+                
                 connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
