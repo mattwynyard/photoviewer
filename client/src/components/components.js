@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Link } from "react-router-dom";
 import {Spinner, Image, NavDropdown}  from 'react-bootstrap';
 import {Popup}  from 'react-leaflet';
 
@@ -93,6 +93,8 @@ const CustomSpinner = (props) => {
           to={{
             pathname: props.endpoint,
             login: props.login,
+            user: props.login,
+            data: props.objGLData,
             user: props.user,
             data: props.data,
             project: props.activeLayer
@@ -104,4 +106,4 @@ const CustomSpinner = (props) => {
     }      
   }
 
-  export {CustomSpinner, CustomPopup, CustomMenu}
+  export {CustomSpinner, CustomLink, CustomPopup, CustomMenu}
