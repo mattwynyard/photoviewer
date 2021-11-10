@@ -39,35 +39,33 @@ export default function ClassDropdown(props) {
         }   
     }
 
-        if (props.items.length > 0) {
-            return (
-                <Dropdown className="RMClass" drop='right'>
-                    <Dropdown.Toggle variant="light" size="sm" >
-                        {props.title}
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu className="custommenu">
-                        {props.items.map((value, index) =>
-                        <div 
-                            key={`${index}`}
+    if (props.items.length > 0) {
+        return (
+            <Dropdown className="RMClass" drop='right'>
+                <Dropdown.Toggle variant="light" size="sm" >
+                    {props.title}
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="custommenu">
+                    {props.items.map((value, index) =>
+                    <div 
+                        key={`${index}`}
+                        >
+                        <input
+                            key={`${index}`} 
+                            id={value} 
+                            type="checkbox" 
+                            checked={isChecked(value)} 
+                            onChange={onChange} 
+                            onClick={(e) => onClick(e, value)}
                             >
-                            <input
-                                key={`${index}`} 
-                                id={value} 
-                                type="checkbox" 
-                                checked={isChecked(value)} 
-                                onChange={onChange} 
-                                onClick={(e) => onClick(e, value)}
-                                >
-                            </input>{" " + value}
-                            <br></br>
-                        </div> 
-                        )}
-                    </Dropdown.Menu>
-                </Dropdown>
-            )
-        } else {
-            return null;
-        }      
-
-    
+                        </input>{" " + value}
+                        <br></br>
+                    </div> 
+                    )}
+                </Dropdown.Menu>
+            </Dropdown>
+        )
+    } else {
+        return null;
+    }      
 }

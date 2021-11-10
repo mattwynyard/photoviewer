@@ -5,19 +5,6 @@ import PriorityDropdown from './PriorityDropdown.js';
 
 export default function LayerCard(props) {
 
-    // prioritylayer={this.state.activeLayer}
-    //             prioritytitle={this.state.priorityMode}
-    //             priorityitems={this.state.priorities}
-    //             prioritylogin={this.state.login}
-    //             priorityreverse={this.state.reverse}
-    //             priorityfilter={this.state.filterPriorities} 
-    //             priorityonClick={this.updatePriority}
-    //             cardlayer={this.state.activeLayer}
-    //             cardtitle={'RM Class'}
-    //             carditems={this.state.rmclass}
-    //             cardlogin={this.state.login}
-    //             cardfilter={this.state.filterRMClass} 
-    //             cardonClick={this.updateRMClass}
     if (props.layer) {
         return (
             <Card className='layercard' >
