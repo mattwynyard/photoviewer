@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from "react-router-dom";
+
 import {Spinner, Image, NavDropdown}  from 'react-bootstrap';
 import {Popup}  from 'react-leaflet';
 
@@ -104,4 +104,4 @@ const CustomSpinner = (props) => {
     }      
   }
 
-  export {CustomLink, CustomSpinner, CustomPopup, CustomMenu}
+  export {CustomSpinner, CustomPopup, CustomMenu}

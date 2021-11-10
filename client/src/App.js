@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Link } from "react-router-dom";
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -2149,6 +2149,31 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
+
+    const CustomLink = (props) => {
+      if (props.endpoint === "/data") {
+        return (null);
+      }
+      if (this.state.activeLayer === null) {
+        return(null);
+      } else {
+        return (
+          <Link 
+            className="dropdownlink" 
+            to={{
+              pathname: props.endpoint,
+              login: this.customNav.current,
+              user: this.state.login,
+              data: this.state.objGLData,
+              project: this.state.activeLayer
+            }}
+            style={{ textDecoration: 'none' }}
+            >{props.label}
+          </Link>
+        );
+      }      
+    }
+
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
         return (
@@ -2280,6 +2305,7 @@ class App extends React.Component {
                     className="dropdownlink" 
                     endpoint="/statistics"
                     label="Create Report"
+                    data={this.state.objGLData}
                     login={this.customNav.current}
                     user={this.state.login}
                     data={this.state.objGLData}

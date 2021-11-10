@@ -11,6 +11,7 @@ const NO_COLORS = 9;
 class Report extends React.Component {
 
     constructor(props) {
+        console.log(props)
         super(props);
         this.state = {
             mode: props.location.project.surface,
