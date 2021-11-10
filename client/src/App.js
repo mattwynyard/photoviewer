@@ -19,8 +19,9 @@ import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
-import {CustomSVG} from './components/CustomSVG.js'
-import PriorityDropdown from './components/PriorityDropdown.js'
+import PriorityDropdown from './components/PriorityDropdown.js';
+import ClassDropdown from './components/ClassDropdown.js';
+import LayerCard from './components/LayerCard.js';
 import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
@@ -73,6 +74,8 @@ class App extends React.Component {
       ages: [],
       filterDropdowns: [],
       filterPriorities: [],
+      filterRMClass: [],
+      rmclass: [], //immutable array for different rmclasses used for dropdown items
       inspections: [],
       host: null, //domain
       token: null, //security token
@@ -84,7 +87,6 @@ class App extends React.Component {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       mode: "map",
       zoom: 8,
-      index: null,
       centreData: [],
       fault: [],
       priority: [],
@@ -112,7 +114,7 @@ class App extends React.Component {
       activeLayer: null, //the layer in focus
       bucket: null,
       message: "",
-      coordinates: null, //coordinates of clicked marker
+      // coordinates: null, //coordinates of clicked marker
       glPoints: null,
       glLines: null,
       selectedIndex: null,
@@ -132,7 +134,8 @@ class App extends React.Component {
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       erp: true,
       notificationKey: null,
-      ramm: false
+      ramm: false,
+     
     };   
   }
 
@@ -180,6 +183,8 @@ class App extends React.Component {
         login: this.state.login,
         token: this.state.token,
       });
+      
+      //window.sessionStorage.setItem('state', JSON.stringify(this.state));
   }
 
   componentWillUnmount() {
@@ -679,8 +684,11 @@ class App extends React.Component {
       filter: [], //filter for db request
       priorityDropdown: null, 
       filterPriorities: [],
+      filterRMClass: [],
+      rmclass: [],
+      faultClass: [],
       inspections: [],
-    }, function() {
+    }, () => {
       let glData = null
       this.GLEngine.redraw(glData, false);
     })
@@ -1155,7 +1163,7 @@ class App extends React.Component {
       activeProject: e.target.attributes.code.value,
       bucket: this.buildBucket(project)
     }), async function() { 
-      await this.requestPriority(project);
+      await this.requestLayerDropdowns(project);
       if (type === "road") {
         await this.requestAge(project); 
       }
@@ -1326,8 +1334,8 @@ class App extends React.Component {
       }); 
   }
 
-  async requestPriority(project) {
-      await fetch('https://' + this.state.host + '/priority', {
+  async requestLayerDropdowns(project) {
+      await fetch('https://' + this.state.host + '/layerdropdowns', {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -1348,7 +1356,9 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.buildPriority(body.priority);      
+            this.buildPriority(body.priority); 
+            this.setState({rmclass: body.rmclass});
+            this.setState({filterRMClass: body.rmclass})   
           }     
         }
       }).catch((error) => {
@@ -1427,7 +1437,6 @@ class App extends React.Component {
     this.roadLinesRef.current.reset();
     this.setState({objGLData: []});
     this.setState({glpoints: []});
-    //let glData = {centre: [], points: [], lines: []}
     let glData = null;
       this.GLEngine.redraw(glData, false); 
     let layers = this.state.activeLayers;
@@ -1439,15 +1448,25 @@ class App extends React.Component {
     }
 
     //TODO clear the filter
-    this.setState({priorities: []});
-    this.setState({filter: []});
-    this.setState({filterDropdowns: []})
-    this.setState({filterPriorities: []})
-    this.setState({activeLayers: layers}); 
-    this.setState({activeLayer: null}); 
-    this.setState({ages: layers}); 
-    this.setState({district: null});  
-
+    this.setState(
+      {priorities: [],
+      filter: [],
+      filterDropdowns: [],
+      filterPriorities: [],
+      filterRMClass: [],
+      rmclass: [],
+      faultClass: [],
+      amazon: null,
+      activeLayers: layers,
+      inspections: [],
+      bucket: null,
+      activeProject: null,
+      activeLayer: null,
+      ages: layers,
+      district: null}, () => {
+        console.log(this.state)
+      }
+      );  
   }
 
   getBody(project) {
@@ -1457,6 +1476,7 @@ class App extends React.Component {
         project: project,
         filter: this.state.filter,
         priority: this.state.filterPriorities,
+        rmclass: this.state.filterRMClass,
         inspection: this.state.inspections
       })   
     } else {
@@ -2029,9 +2049,25 @@ class App extends React.Component {
 
   }
 
+    /**
+   * callback for prioritydropdwon to update priority filter
+   * @param {array} query 
+   */
   updatePriority = (query) => {
-    this.setState({filterPriorities: query})
-    this.filterLayer(this.state.activeProject, false);
+    this.setState({filterPriorities: query}, () => {
+      this.filterLayer(this.state.activeProject, false);
+    });
+    
+  }
+  /**
+   * callback for classdropdown to update class filter
+   * @param {array} query 
+   */
+  updateRMClass = (query) => {
+    this.setState({filterRMClass: query}, () => {
+      this.filterLayer(this.state.activeProject, false);
+    });
+    
   }
 
   clickArchive(e) {
@@ -2276,24 +2312,25 @@ class App extends React.Component {
               <div className="layerstitle">
                 <p>Layers</p>
               </div>
-              <Card className='layercard'>
-                <Card.Body className='layercard-body'>
-                  <Card.Title className='layercard-title'>{this.state.activeLayer !== null ? this.state.activeLayer.description: ''}</Card.Title>
-                  <PriorityDropdown
-                  layer={this.state.activeLayer}
-                  title={this.state.priorityMode}
-                  priorities={this.state.priorities}
-                  login={this.state.login}
-                  reverse={this.state.reverse}
-                  filter={this.state.filterPriorities} 
-                  onClick={this.updatePriority}
-                  />
-                  <Roadlines
+              <LayerCard
+                layer={this.state.activeLayer}
+                prioritytitle={this.state.priorityMode}
+                priorityitems={this.state.priorities}
+                prioritylogin={this.state.login}
+                priorityreverse={this.state.reverse}
+                priorityfilter={this.state.filterPriorities} 
+                priorityonClick={this.updatePriority}
+                classtitle={'RM Class'}
+                classitems={this.state.rmclass}
+                classlogin={this.state.login}
+                classfilter={this.state.filterRMClass} 
+                classonClick={this.updateRMClass}
+              >
+              </LayerCard>
+              <Roadlines
                     className={"rating"}
                     ref={this.roadLinesRef} >
                   </Roadlines> 
-                </Card.Body>
-              </Card>
             </div>
             <hr className='sidebar-line'>
             </hr>

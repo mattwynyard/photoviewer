@@ -721,7 +721,7 @@ app.post('/settings', async (req, res) => {
 } 
 });
 
-app.post('/priority', async (req, res) => { 
+app.post('/layerdropdowns', async (req, res) => { 
   let result = false;
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project);
@@ -731,7 +731,18 @@ app.post('/priority', async (req, res) => {
   if (result) {
     let project = req.body.project;
     let surface = await db.projecttype(project);
-    let archive = await db.isArchive(project); 
+    let archive = await db.isArchive(project);
+    let hasClass = await db.hasClass(project);
+    let rmclass = [];
+    if (hasClass.rows[0].rmclass) {
+      let result = await db.rmclass(project, req.body.user);
+      let values = [];
+      for (let i = 0; i < result.rows.length; i++) {
+        let value = Object.values(result.rows[i]);
+        values.push(value[0]);
+      }
+      rmclass = values;
+    }
     if (surface.rows[0].surface === "footpath") {
       let result = await db.filters(project, "grade", archive.rows[0].isarchive);
       let grade = []
@@ -753,7 +764,7 @@ app.post('/priority', async (req, res) => {
         priority.push(value[0]);
       }
       res.set('Content-Type', 'application/json'); 
-      res.send({priority: priority});        
+      res.send({priority: priority, rmclass: rmclass});        
     }    
   } else {
     res.set('Content-Type', 'application/json');
@@ -800,6 +811,7 @@ app.post('/layer', async (req, res) => {
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
+    let rclass = req.body.rmclass;
     let inspection = req.body.inspection;
     let faults = req.body.faults;
     let assets = req.body.assets;;
@@ -848,13 +860,13 @@ app.post('/layer', async (req, res) => {
           completedPoints = points.rows;
           completedLines = [];
         } else {
-          let points = await db.geometries(req.body.user, project, filter, options, inspection, "ST_Point", 'active');
-          let lines = await db.geometries(req.body.user, project, filter, options, inspection, "ST_LineString", 'active');
+          let points = await db.geometries(req.body.user, project, filter, options, inspection, rclass, "ST_Point", 'active');
+          let lines = await db.geometries(req.body.user, project, filter, options, inspection, rclass, "ST_LineString", 'active');
           activePoints = points.rows;
           activeLines = lines.rows;
           if (options.status.length !== 0) {
-            let points = await db.geometries(req.body.user, project, filter, options, inspection, "ST_Point", 'completed');
-            let lines = await db.geometries(req.body.user, project, filter, options, inspection, "ST_LineString", 'completed');
+            let points = await db.geometries(req.body.user, project, filter, options, inspection, rclass, "ST_Point", 'completed');
+            let lines = await db.geometries(req.body.user, project, filter, options, inspection, rclass, "ST_LineString", 'completed');
             completedPoints = points.rows;
             completedLines = lines.rows; 
           }  
