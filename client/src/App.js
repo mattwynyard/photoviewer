@@ -1462,7 +1462,6 @@ class App extends React.Component {
       activeLayer: null,
       ages: layers,
       district: null}, () => {
-        console.log(this.state)
       }
       );  
   }

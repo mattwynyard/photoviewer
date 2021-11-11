@@ -49,7 +49,6 @@ export default function PriorityDropdown(props) {
         e.preventDefault();
         let query = [...props.filter]
         let parsedValue = parsePriority(value);
-        console.log(query)
         if (query.length === 1) {
             if (query.includes(parsedValue)) {
                 return;
