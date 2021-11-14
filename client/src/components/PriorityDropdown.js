@@ -66,58 +66,35 @@ export default function PriorityDropdown(props) {
             props.onClick(query)
         }   
     }
-
-    // const clickPriority = (e) => {
-    //     e.preventDefault();
-    //     if(!props.layer) {
-    //     return;
-    //     }
-    //     let query = props.filter;
-    //     let priority = parsePriority(e.target.id);
-    //     if (query.length === 1) {
-    //     if (isPriorityChecked(priority, query , false)) {
-    //         e.target.checked = true; 
-    //     } else {
-    //         query.push(priority);     
-    //     }
-    //     } else {
-    //     if (isPriorityChecked(priority, query, false)) { 
-    //         query.splice(query.indexOf(priority), 1 );
-    //     } else {     
-    //         query.push(priority);
-    //     }
-    //     }
-    //     props.onClick(query)
-
-    // }
-        return (
-            <Dropdown className="priority" drop='right'>
-                <Dropdown.Toggle variant="light" size="sm" >
-                    {props.title}
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="custommenu">
-                    {props.items.map((value, index) =>
-                    <div 
-                        key={`${index}`}
-                        >
-                        <CustomSVG 
-                        login={props.login}
-                        value={value}
-                        reverse={props.reverse}
-                        >
-                        </CustomSVG>
-                        <input
-                            key={`${index}`} 
-                            id={value} 
-                            type="checkbox" 
-                            checked={isChecked(value, true)} 
-                            onChange={onChange} 
-                            onClick={(e) => onClick(e, value)}>
-                        </input>{" " + value}
-                        <br></br>
-                    </div> 
-                    )}
-                </Dropdown.Menu>
-            </Dropdown>
-        )
+    
+    return (
+        <Dropdown className="priority" drop='right'>
+            <Dropdown.Toggle variant="light" size="sm" >
+                {props.title}
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="custommenu">
+                {props.items.map((value, index) =>
+                <div 
+                    key={`${index}`}
+                    >
+                    <CustomSVG 
+                    login={props.login}
+                    value={value}
+                    reverse={props.reverse}
+                    >
+                    </CustomSVG>
+                    <input
+                        key={`${index}`} 
+                        id={value} 
+                        type="checkbox" 
+                        checked={isChecked(value, true)} 
+                        onChange={onChange} 
+                        onClick={(e) => onClick(e, value)}>
+                    </input>{" " + value}
+                    <br></br>
+                </div> 
+                )}
+            </Dropdown.Menu>
+        </Dropdown>
+    );
 }

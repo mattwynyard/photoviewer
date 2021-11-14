@@ -20,6 +20,7 @@ import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
+import Filter from './components/Filter.js';
 import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
@@ -106,7 +107,9 @@ class App extends React.Component {
       amazon: null,
       password: null,
       projects: null, //all foootpath and road projects for the user
-      faultClass: [],
+      faultClass: [], //store for fault data
+      faultFilter: [], //active fault classes
+      classActive: [], //active fault classes
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
@@ -1117,16 +1120,17 @@ class App extends React.Component {
     this.antdrawer.current.setVideo(this.state.hasVideo);
     if (type === "road") {
       projects = this.state.projects.road;
-      await this.loadFilters(project);    
-      for (let i = 0; i < this.state.faultClass.length; i++) {
-        let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
-        dropdown.setCode(this.state.faultClass[i].code);
-        let result = await this.requestFaults(project, this.state.faultClass[i].code);
-        dropdown.setData(result);
-        dropdown.initialiseFilter();     
-        dynamicDropdowns.push(dropdown);
-      }
-      this.setState({filter: this.rebuildFilter()})
+      //await this.loadFilters(project); 
+      await this.requestFilters(project);    
+      // for (let i = 0; i < this.state.faultClass.length; i++) {
+      //   let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
+      //   dropdown.setCode(this.state.faultClass[i].code);
+      //   let result = await this.requestFaults(project, this.state.faultClass[i].code);
+      //   dropdown.setData(result);
+      //   dropdown.initialiseFilter();     
+      //   dynamicDropdowns.push(dropdown);
+      // }
+      // this.setState({filter: this.rebuildFilter()})
       await this.getDistrict(project);
     } else {
       projects = this.state.projects.footpath;
@@ -1284,6 +1288,7 @@ class App extends React.Component {
           throw new Error(response.status);
         } else {
           const body = await response.json();
+          console.log(body)
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
@@ -1619,6 +1624,7 @@ class App extends React.Component {
           })
         }).then(async (response) => {
           const body = await response.json();
+          console.log(body)
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
@@ -1635,6 +1641,42 @@ class App extends React.Component {
        
       } 
   }
+
+  async requestFilters(project) {
+    if (this.state.projectMode === "footpath") {
+      return;
+    } else {
+      await fetch('https://' + this.state.host + '/faultclass', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: this.state.login,
+          project: project
+        })
+      }).then(async (response) => {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else {
+          this.setState({faultClass: body});         
+          let classes = body.map(value => value.code)
+          this.setState({classActive: classes});
+        }   
+      })
+      .catch((error) => {
+        console.log("error: " + error);
+        alert(error);
+        return;
+      }) 
+     
+    } 
+}
 
   async addNewUser(client, password) {
     if (this.state.login !== "Login") {
@@ -1848,6 +1890,10 @@ class App extends React.Component {
     }
   }
 
+  updateClasses = (values) => {
+    this.setState({classActive: values})
+  }
+
   clickLogin(e) {
     e.preventDefault();
     this.setState({showLogin: true});   
@@ -2028,19 +2074,19 @@ class App extends React.Component {
     return filter   
   }
 
-  /**
- * checks if each fault is checked by searching checkedFault array
- * @param {the dropdown} value 
- * * @param {the index of the fault within the dropdown} index 
- * @return {}
- */
-   isChecked(input, filter) {
-    if (filter.includes(input)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+//   /**
+//  * checks if each fault is checked by searching checkedFault array
+//  * @param {the dropdown} value 
+//  * * @param {the index of the fault within the dropdown} index 
+//  * @return {}
+//  */
+//    isChecked(input, filter) {
+//     if (filter.includes(input)) {
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   }
 
   changeCheck(e) {
 
@@ -2148,30 +2194,6 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-
-    // const CustomLink = (props) => {
-    //   if (props.endpoint === "/data") {
-    //     return (null);
-    //   }
-    //   if (this.state.activeLayer === null) {
-    //     return(null);
-    //   } else {
-    //     return (
-    //       <Link 
-    //         className="dropdownlink" 
-    //         to={{
-    //           pathname: props.endpoint,
-    //           login: this.customNav.current,
-    //           user: this.state.login,
-    //           data: this.state.objGLData,
-    //           project: this.state.activeLayer
-    //         }}
-    //         style={{ textDecoration: 'none' }}
-    //         >{props.label}
-    //       </Link>
-    //     );
-    //   }      
-    // }
 
     const LayerNav = (props) => { 
       if (props.user === 'admin') {
@@ -2351,9 +2373,10 @@ class App extends React.Component {
               >
               </LayerCard>
               <Roadlines
-                    className={"rating"}
-                    ref={this.roadLinesRef} >
-                  </Roadlines> 
+                className={"rating"}
+                ref={this.roadLinesRef} 
+              >
+              </Roadlines> 
             </div>
             <hr className='sidebar-line'>
             </hr>
@@ -2361,44 +2384,12 @@ class App extends React.Component {
               <div className="filterstitle">
                 <p>Filters</p>
               </div>
-              <div className="filter-group">
-                {this.state.filterDropdowns.map((value, indexNo) =>
-                  <Dropdown 
-                    className="dropdown"
-                    key={`${indexNo}`} 
-                    drop={'right'}  
-                    >                
-                    <Dropdown.Toggle variant="light" size="sm">
-                      <input
-                        key={`${indexNo}`} 
-                        id={value} 
-                        type="checkbox" 
-                        checked={value.active} 
-                        onChange={(e) => this.changeActive(e)}
-                        onClick={(e) => this.clickSelect(e, value)}
-                        >
-                      </input>
-                      {value.name}         
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu className="custommenu">
-                      {value.data.result.map((input, index) =>
-                        <div key={`${index}`}>
-                          <input
-                            key={`${index}`} 
-                            id={input} 
-                            type="checkbox" 
-                            checked={this.isChecked(input, value.filter)} 
-                            onClick={(e) => this.clickCheck(e, value, input)}
-                            onChange={(e) => this.changeCheck(e)}
-                            >
-                          </input>{" " + input}<br></br>
-                        </div> 
-                        )}
-                      <Dropdown.Divider />
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
-              </div>
+             
+                <Filter
+                  values={this.state.faultClass}
+                  classes={this.state.classActive}
+                  update={this.updateClasses}
+                />
               <FilterButton
                 className="apply-btn" 
                 ref={this.applyRef} 

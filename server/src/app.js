@@ -654,6 +654,36 @@ app.post('/class', async (req, res) => {
     res.send({error: "Invalid token"});
   } 
 });
+
+/**
+ * Gets fault classes from db
+ * i.e. user clicked filter from menu
+ */
+ app.post('/faultclass', async (req, res) => {
+  let result = false;
+  let project = req.body.project
+  if (req.body.user === 'Login') {
+    result = await db.isPublic(project);
+  } else {
+    result = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (result) {
+    let isArchive = await db.isArchive(project); 
+    let archive = isArchive.rows[0].isarchive
+    let fclass = await db.class(req.body.user, project, archive);
+    //console.log(fclass)
+    for (let i = 0; i < fclass.rows.length; i++) {
+      let faults = await db.faults(req.body.user, project, fclass.rows[i].code, archive);
+      fclass.rows[i].data = faults.rows;
+    }
+    console.log(fclass.rows)
+    res.set('Content-Type', 'application/json')
+    res.send(fclass.rows);
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  } 
+});
   
 /**
  * gets faults for specific class
