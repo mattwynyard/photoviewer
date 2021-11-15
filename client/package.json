@@ -45,18 +45,6 @@
     "@babel/preset-react": "^7.16.0",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
-    "enzyme-to-json": "^3.6.2",
-    "jest": "^27.3.1"
-  },
-  "jest": {
-    "verbose": true,
-    "snapshotSerializers": ["enzyme-to-json/serializer"],
-    "transformIgnorePatterns": [
-      "node_modules"
-    ],
-    "moduleNameMapper": {
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/src/fileMock.js",
-      "\\.(css|less)$": "<rootDir>/src/styleMock.js"
-    }
+    "enzyme-to-json": "^3.6.2"
   }
 }

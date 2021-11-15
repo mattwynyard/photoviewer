@@ -107,9 +107,13 @@ class App extends React.Component {
       amazon: null,
       password: null,
       projects: null, //all foootpath and road projects for the user
-      faultClass: [], //store for fault data
+      faultData: [], //store for fault data
       faultFilter: [], //active fault classes
       classActive: [], //active fault classes
+      //classStore: [], //active fault classes
+      faultActive: [],
+      faultStore: [],
+
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
@@ -687,7 +691,7 @@ class App extends React.Component {
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
-      faultClass: [],
+      faultData: [],
       inspections: [],
     }, () => {
       let glData = null
@@ -1120,32 +1124,22 @@ class App extends React.Component {
     this.antdrawer.current.setVideo(this.state.hasVideo);
     if (type === "road") {
       projects = this.state.projects.road;
-      //await this.loadFilters(project); 
       await this.requestFilters(project);    
-      // for (let i = 0; i < this.state.faultClass.length; i++) {
-      //   let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
-      //   dropdown.setCode(this.state.faultClass[i].code);
-      //   let result = await this.requestFaults(project, this.state.faultClass[i].code);
-      //   dropdown.setData(result);
-      //   dropdown.initialiseFilter();     
-      //   dynamicDropdowns.push(dropdown);
-      // }
-      // this.setState({filter: this.rebuildFilter()})
       await this.getDistrict(project);
     } else {
       projects = this.state.projects.footpath;
       this.setState({priorityMode: "Grade"});
-      let filters = ["Asset", "Fault", "Type", "Cause"];
-      for (let i = 0; i < filters.length; i++) {
-        let dropdown = new DynamicDropdown(filters[i]);
-        let result = await this.requestDropdown(project, filters[i]);
-        //console.log(result);
-        if (result != null) {
-          dropdown.setData(result);
-        }
-        dropdown.initialiseFilter();    
-        dynamicDropdowns.push(dropdown);
-      }
+      this.setState({classActive: ["Asset", "Fault", "Type", "Cause"]});
+      // for (let i = 0; i < filters.length; i++) {
+      //   let dropdown = new DynamicDropdown(filters[i]);
+      //   let result = await this.requestDropdown(project, filters[i]);
+      //   //console.log(result);
+      //   if (result != null) {
+      //     dropdown.setData(result);
+      //   }
+      //   dropdown.initialiseFilter();    
+      //   dynamicDropdowns.push(dropdown);
+      // }
       await this.getDistrict(project);
     }
     let layers = this.state.activeLayers;
@@ -1232,78 +1226,78 @@ class App extends React.Component {
     } 
   }
 
-  async requestDropdown(project, code) {
-    let result = null
-    if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/dropdown', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-        code: code
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            result = body;   
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-    return result;
-  }
+  // async requestDropdown(project, code) {
+  //   let result = null
+  //   if (this.state.login !== "Login") {
+  //     await fetch('https://' + this.state.host + '/dropdown', {
+  //     method: 'POST',
+  //     headers: {
+  //       "authorization": this.state.token,
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify({
+  //       user: this.state.login,
+  //       project: project,
+  //       code: code
+  //     })
+  //     }).then(async (response) => {
+  //       if(!response.ok) {
+  //         throw new Error(response.status);
+  //       } else {
+  //         const body = await response.json();
+  //         if (body.error != null) {
+  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+  //           let e = document.createEvent("MouseEvent");
+  //           await this.logout(e);
+  //         } else {
+  //           result = body;   
+  //         }     
+  //       }
+  //     }).catch((error) => {
+  //       console.log("error: " + error);
+  //       alert(error);
+  //       return;
+  //     });
+  //   }
+  //   return result;
+  // }
 
-  async requestFaults(project, code) {
-    let result = null
-      await fetch('https://' + this.state.host + '/faults', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-        code: code
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          console.log(body)
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            result = body;     
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    return result;
-  }
+  // async requestFaults(project, code) {
+  //   let result = null
+  //     await fetch('https://' + this.state.host + '/faults', {
+  //     method: 'POST',
+  //     headers: {
+  //       "authorization": this.state.token,
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify({
+  //       user: this.state.login,
+  //       project: project,
+  //       code: code
+  //     })
+  //     }).then(async (response) => {
+  //       if(!response.ok) {
+  //         throw new Error(response.status);
+  //       } else {
+  //         const body = await response.json();
+  //         console.log(body)
+  //         if (body.error != null) {
+  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+  //           let e = document.createEvent("MouseEvent");
+  //           await this.logout(e);
+  //         } else {
+  //           result = body;     
+  //         }     
+  //       }
+  //     }).catch((error) => {
+  //       console.log("error: " + error);
+  //       alert(error);
+  //       return;
+  //     });
+  //   return result;
+  // }
 
   async requestAge(project) {
       await fetch('https://' + this.state.host + '/age', {
@@ -1458,7 +1452,7 @@ class App extends React.Component {
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
-      faultClass: [],
+      faultData: [],
       amazon: null,
       activeLayers: layers,
       inspections: [],
@@ -1476,7 +1470,7 @@ class App extends React.Component {
       return JSON.stringify({
         user: this.state.login,
         project: project,
-        filter: this.state.filter,
+        filter: this.state.faultActive,
         priority: this.state.filterPriorities,
         rmclass: this.state.filterRMClass,
         inspection: this.state.inspections
@@ -1630,7 +1624,7 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.setState({faultClass: body});
+            this.setState({faultData: body});
           }   
         })
         .catch((error) => {
@@ -1664,9 +1658,14 @@ class App extends React.Component {
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
-          this.setState({faultClass: body});         
+          this.setState({faultData: body});         
           let classes = body.map(value => value.code)
+          let fault2d = body.map(value => value.data.map(fault => fault.fault));
+          let faults = [].concat(...fault2d)
+          //this.setState({classStore: classes});
           this.setState({classActive: classes});
+          this.setState({faultStore: faults});
+          this.setState({faultActive: faults})
         }   
       })
       .catch((error) => {
@@ -1890,8 +1889,10 @@ class App extends React.Component {
     }
   }
 
-  updateClasses = (values) => {
-    this.setState({classActive: values})
+  updateFaultFilter = (query, filter) => {
+    this.setState({classActive: query, faultActive: filter}, () => {
+      this.filterLayer(this.state.activeProject, false);
+    });
   }
 
   clickLogin(e) {
@@ -1917,64 +1918,6 @@ class App extends React.Component {
     this.setState({showTerms: false});    
   }
 
-  clickPage(index) {
-    this.setState({pageActive: index});
-    this.getFaultTypes(this.state.faultClass[index].code);
-  }
-
-  /**
-   * adds or removes fault to array  which keeps track of which faults are checked in the filter modal
-   * @param {event} e 
-   */
-  clickCheck(e, value, input) {
-    this.applyRef.current.innerHTML = "Apply Filter";
-    if (value.active) { //dropdown active
-      let index = this.searchArray(value.filter, input)
-      if (index !== - 1)  {
-        value.filter.splice(index, 1);
-        value.active = false;
-      } else {
-        value.filter.push(input);
-      }
-    } else {
-      let index = this.searchArray(value.filter, input) 
-      if (index !== - 1)  {
-        value.filter.splice(index, 1);
-      } else {
-        value.filter.push(input);
-        if (value.data.result.length === value.filter.length) value.active = true;
-      }  
-    }
-    this.setState({filter: this.rebuildFilter()})
-  }
-
-  /**
-   * 
-   * @param {array to search} arr 
-   * @param {value to search for} value 
-   * @returns {-1 if not found else index of input
-   */
-  searchArray(arr, value) {
-    let found = -1;
-    for (let i = 0; i < arr.length; i += 1) {
-      if (value === arr[i]) {
-        found = i;
-      }    
-    }
-    return found;
-  }
-
-  clickActive(e, index) {
-    e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
-  }
-
-  isActive(value, index) {
-    return this.state.filterDropdowns[index].isActive();
-  }
-
-  changeActive(e) {
-  }
-
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1989,31 +1932,6 @@ class App extends React.Component {
   selectLayer(e, index) {
     console.log(this.state.activeLayers[index]);
     this.setState({activeLayer: this.state.activeLayers[index]});
-  }
-/**
- * Clears all the checkboxes and filter for that dropdown
- * @param {event} e 
- * @param {DynmaicDropdown} value 
- */
-  onClear(e, value) {
-    value.clearFilter();
-  }
-
-  /**
-   * Checks is dropdown box is checked or unchecked
-   * @param {DynmaicDropdown} value 
-   */
-  isInputActive(value) {
-    return value.active
-  }
-
-  /**
- * Selects all the checkboxes and filter for that dropdown
- * @param {event} e 
- * @param {DynmaicDropdown} value 
- */
-  onSelect(e, value) {
-    value.initialiseFilter();
   }
 
   /**
@@ -2035,61 +1953,6 @@ class App extends React.Component {
         this.filterLayer(this.state.activeProject, false);
       });  
     }
-  }
-
-  /**
-   * 
-   * @param {event} e 
-   * @param {tick box clicked} value 
-   */
-  clickSelect(e, value) {
-    this.applyRef.current.innerHTML = "Apply Filter";
-    if (value.active) {
-      value.filter = [];
-      value.active = false
-    } else {
-      value.filter = [...value.data.result]
-      value.active = true;
-    }
-    let filter = this.rebuildFilter()
-    this.setState({filter: filter});
-  }
-
-  resetDropdowns() {
-    let filter = [];
-    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      this.state.filterDropdowns[i].active = true;
-      this.state.filterDropdowns[i].filter = [...this.state.filterDropdowns[i].data.result];
-      filter.push(this.state.filterDropdowns[i].filter);
-    }
-  }
-
-  rebuildFilter() {
-    let filter = [];
-    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      for (let j = 0; j < this.state.filterDropdowns[i].filter.length; j++) {
-        filter.push(this.state.filterDropdowns[i].filter[j]);
-      }
-    }
-    return filter   
-  }
-
-//   /**
-//  * checks if each fault is checked by searching checkedFault array
-//  * @param {the dropdown} value 
-//  * * @param {the index of the fault within the dropdown} index 
-//  * @return {}
-//  */
-//    isChecked(input, filter) {
-//     if (filter.includes(input)) {
-//       return true;
-//     } else {
-//       return false;
-//     }
-//   }
-
-  changeCheck(e) {
-
   }
 
     /**
@@ -2386,9 +2249,11 @@ class App extends React.Component {
               </div>
              
                 <Filter
-                  values={this.state.faultClass}
+                  values={this.state.faultData}
                   classes={this.state.classActive}
-                  update={this.updateClasses}
+                  //store={this.state.classStore}
+                  faults={this.state.faultActive}
+                  update={this.updateFaultFilter}
                 />
               <FilterButton
                 className="apply-btn" 

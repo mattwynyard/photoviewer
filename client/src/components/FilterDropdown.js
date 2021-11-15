@@ -2,6 +2,7 @@ import React from 'react';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function FilterDropdown(props) {
+  console.log(props)
   /**
  * checks if each fault is checked by searching checkedFault array
  * @param {the dropdown} value 
@@ -15,6 +16,8 @@ export default function FilterDropdown(props) {
   //     return false;
   //   }
   // }
+  const onChange = () => {
+  }
 
     return (    
       <Dropdown 
@@ -28,7 +31,7 @@ export default function FilterDropdown(props) {
             id={props.value.description} 
             type="checkbox" 
             checked={props.checked} 
-            // onChange={(e) => this.changeActive(e)}
+            onChange={onChange}
             onClick={(e) => props.onClick(e, props.value.code)}
             >
           </input>
