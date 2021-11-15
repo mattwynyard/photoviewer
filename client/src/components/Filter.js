@@ -3,8 +3,7 @@ import {React, useEffect, useState} from 'react';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function Filter(props) {
-
-    const [filter, setFilter] = useState([])
+    console.log(props)
 
     const isClassChecked = (value) => {
         if (props.classes.includes(value)) {

@@ -4,7 +4,6 @@ import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
 
 export default function LayerCard(props) {
-
     if (props.layer) {
         return (
             <Card className='layercard' >

@@ -676,7 +676,6 @@ app.post('/class', async (req, res) => {
       let faults = await db.faults(req.body.user, project, fclass.rows[i].code, archive);
       fclass.rows[i].data = faults.rows;
     }
-    console.log(fclass.rows)
     res.set('Content-Type', 'application/json')
     res.send(fclass.rows);
   } else {

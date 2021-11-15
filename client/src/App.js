@@ -1130,16 +1130,7 @@ class App extends React.Component {
       projects = this.state.projects.footpath;
       this.setState({priorityMode: "Grade"});
       this.setState({classActive: ["Asset", "Fault", "Type", "Cause"]});
-      // for (let i = 0; i < filters.length; i++) {
-      //   let dropdown = new DynamicDropdown(filters[i]);
-      //   let result = await this.requestDropdown(project, filters[i]);
-      //   //console.log(result);
-      //   if (result != null) {
-      //     dropdown.setData(result);
-      //   }
-      //   dropdown.initialiseFilter();    
-      //   dynamicDropdowns.push(dropdown);
-      // }
+
       await this.getDistrict(project);
     }
     let layers = this.state.activeLayers;
@@ -1226,79 +1217,6 @@ class App extends React.Component {
     } 
   }
 
-  // async requestDropdown(project, code) {
-  //   let result = null
-  //   if (this.state.login !== "Login") {
-  //     await fetch('https://' + this.state.host + '/dropdown', {
-  //     method: 'POST',
-  //     headers: {
-  //       "authorization": this.state.token,
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify({
-  //       user: this.state.login,
-  //       project: project,
-  //       code: code
-  //     })
-  //     }).then(async (response) => {
-  //       if(!response.ok) {
-  //         throw new Error(response.status);
-  //       } else {
-  //         const body = await response.json();
-  //         if (body.error != null) {
-  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-  //           let e = document.createEvent("MouseEvent");
-  //           await this.logout(e);
-  //         } else {
-  //           result = body;   
-  //         }     
-  //       }
-  //     }).catch((error) => {
-  //       console.log("error: " + error);
-  //       alert(error);
-  //       return;
-  //     });
-  //   }
-  //   return result;
-  // }
-
-  // async requestFaults(project, code) {
-  //   let result = null
-  //     await fetch('https://' + this.state.host + '/faults', {
-  //     method: 'POST',
-  //     headers: {
-  //       "authorization": this.state.token,
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify({
-  //       user: this.state.login,
-  //       project: project,
-  //       code: code
-  //     })
-  //     }).then(async (response) => {
-  //       if(!response.ok) {
-  //         throw new Error(response.status);
-  //       } else {
-  //         const body = await response.json();
-  //         console.log(body)
-  //         if (body.error != null) {
-  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-  //           let e = document.createEvent("MouseEvent");
-  //           await this.logout(e);
-  //         } else {
-  //           result = body;     
-  //         }     
-  //       }
-  //     }).catch((error) => {
-  //       console.log("error: " + error);
-  //       alert(error);
-  //       return;
-  //     });
-  //   return result;
-  // }
-
   async requestAge(project) {
       await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
@@ -1353,9 +1271,11 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.buildPriority(body.priority); 
-            this.setState({rmclass: body.rmclass});
-            this.setState({filterRMClass: body.rmclass})   
+            this.buildPriority(body.priority);
+            if (body.rmclass) {
+              this.setState({rmclass: body.rmclass});
+              this.setState({filterRMClass: body.rmclass})   
+            }         
           }     
         }
       }).catch((error) => {
@@ -1476,25 +1396,13 @@ class App extends React.Component {
         inspection: this.state.inspections
       })   
     } else {
-      let filterObj = [];
-
-      for (let i = 0; i <  this.state.filterDropdowns.length; i++) {
-        let obj = {name: this.state.filterDropdowns[i].name, filter: this.state.filterDropdowns[i].filter}
-        filterObj.push(obj)
-      }
-      if (filterObj.length !==0) {
         return JSON.stringify({
           user: this.state.login,
           project: project,
           filter: this.state.filter,
-          //TODO temp hack should be dymnic array to hold footpath filters
-          priority: this.state.filterPriorities,
-          assets: this.state.filterDropdowns[0].filter,
-          faults: this.state.filterDropdowns[1].filter,
-          types: this.state.filterDropdowns[2].filter,
-          causes: this.state.filterDropdowns[3].filter})
+          priority: this.state.filterPriorities})
       }
-    }     
+         
   }
 
   async sendData(project, data, endpoint) {
@@ -1542,6 +1450,7 @@ class App extends React.Component {
   async filterLayer(project, zoom) {
     this.setState({spinner: true});
       let body = this.getBody(project);
+      console.log(body)
       if (typeof body !== 'undefined') {
         await fetch('https://' + this.state.host + '/layer', {
           method: 'POST',
@@ -2229,7 +2138,7 @@ class App extends React.Component {
                 priorityfilter={this.state.filterPriorities} 
                 priorityonClick={this.updatePriority}
                 classtitle={'RM Class'}
-                classitems={this.state.rmclass}
+                classitems={this.state.rmclass ? this.state.rmclass: []}
                 classlogin={this.state.login}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
