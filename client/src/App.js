@@ -1355,8 +1355,10 @@ class App extends React.Component {
             await this.logout(e);
           } else {
             this.buildPriority(body.priority); 
-            this.setState({rmclass: body.rmclass});
-            this.setState({filterRMClass: body.rmclass})   
+            if (body.rmclass) {
+              this.setState({rmclass: body.rmclass});
+              this.setState({filterRMClass: body.rmclass})  
+            }  
           }     
         }
       }).catch((error) => {
