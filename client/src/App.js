@@ -1270,11 +1270,11 @@ class App extends React.Component {
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.buildPriority(body.priority);
+            this.buildPriority(body.priority); 
             if (body.rmclass) {
               this.setState({rmclass: body.rmclass});
-              this.setState({filterRMClass: body.rmclass})   
-            }         
+              this.setState({filterRMClass: body.rmclass})  
+            }  
           }     
         }
       }).catch((error) => {
