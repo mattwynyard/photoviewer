@@ -108,6 +108,7 @@ class App extends React.Component {
       password: null,
       projects: null, //all foootpath and road projects for the user
       faultData: [], //store for fault data
+      filterData: [],
       faultFilter: [], //active fault classes
       classActive: [], //active fault classes
       //classStore: [], //active fault classes
@@ -1119,20 +1120,19 @@ class App extends React.Component {
     }
     let projects = null;
     let project = e.target.attributes.code.value;   
-    let dynamicDropdowns = [];
     await this.getSettings(project);
     this.antdrawer.current.setVideo(this.state.hasVideo);
     if (type === "road") {
       projects = this.state.projects.road;
-      await this.requestFilters(project);    
-      await this.getDistrict(project);
+      await this.requestFilters(project);
+      
     } else {
       projects = this.state.projects.footpath;
-      this.setState({priorityMode: "Grade"});
-      this.setState({classActive: ["Asset", "Fault", "Type", "Cause"]});
-
-      await this.getDistrict(project);
+      let filters = ["Asset", "Fault", "Type", "Cause"]
+      await this.requestFilters(project, ); 
     }
+    await this.requestFilters(project); 
+    await this.getDistrict(project);
     let layers = this.state.activeLayers;
     for (let i = 0; i < projects.length; i++) { //find project
       if (projects[i].code === e.target.attributes.code.value) {  //if found
@@ -1145,7 +1145,6 @@ class App extends React.Component {
         }
     }
     this.setState(() => ({
-      filterDropdowns: dynamicDropdowns,
       activeLayers: layers,
       activeProject: e.target.attributes.code.value,
       bucket: this.buildBucket(project)
@@ -1450,7 +1449,6 @@ class App extends React.Component {
   async filterLayer(project, zoom) {
     this.setState({spinner: true});
       let body = this.getBody(project);
-      console.log(body)
       if (typeof body !== 'undefined') {
         await fetch('https://' + this.state.host + '/layer', {
           method: 'POST',
@@ -1567,13 +1565,13 @@ class App extends React.Component {
           let e = document.createEvent("MouseEvent");
           await this.logout(e);
         } else {
-          this.setState({faultData: body});         
+          this.setState({faultData: body});
+          this.setState({filterData: body});       
           let classes = body.map(value => value.code)
           let fault2d = body.map(value => value.data.map(fault => fault.fault));
           let faults = [].concat(...fault2d)
           //this.setState({classStore: classes});
           this.setState({classActive: classes});
-          this.setState({faultStore: faults});
           this.setState({faultActive: faults})
         }   
       })
@@ -2156,13 +2154,13 @@ class App extends React.Component {
               <div className="filterstitle">
                 <p>Filters</p>
               </div>
-             
                 <Filter
                   values={this.state.faultData}
                   classes={this.state.classActive}
-                  //store={this.state.classStore}
+                  mode={this.state.projectMode}
                   faults={this.state.faultActive}
                   update={this.updateFaultFilter}
+                  //filter={}
                 />
               <FilterButton
                 className="apply-btn" 

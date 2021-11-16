@@ -1,9 +1,9 @@
-import {React, useEffect, useState} from 'react';
-//import FilterDropdown from './FilterDropdown';
+import {React} from 'react';
+import FilterMenu from './FilterMenu';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function Filter(props) {
-    console.log(props)
+    //console.log(props)
 
     const isClassChecked = (value) => {
         if (props.classes.includes(value)) {
@@ -30,7 +30,6 @@ export default function Filter(props) {
     }
 
     const onFaultClick = (value) => {
-
         let filter = [...props.faults]
         if (filter.includes(value)) {
             const index = filter.indexOf(value);
@@ -68,9 +67,57 @@ export default function Filter(props) {
         console.log(filter.length)
         props.update(query, filter)      
     }
+    if (props.mode === "road") {
+        return(
+            <div className="filter-group">
+                {props.values.map((value) =>
+                <Dropdown 
+                className="dropdown"
+                key={value.code} 
+                drop={'right'}  
+                >                
+                <Dropdown.Toggle variant="light" size="sm">
+                  <input
+                    key={value.code} 
+                    id={value.description} 
+                    type="checkbox" 
+                    checked={isClassChecked(value.code)} 
+                    onChange={onChange}
+                    onClick={() => onClassClick(value)}
+                    >
+                  </input>
+                  {value.description}         
+                </Dropdown.Toggle>
+                <FilterMenu
+                  code={value.code}
+                  description={value.description}
+                  data={value.data}
+                  items={value.data.map(item => item.fault)}
 
-    return(
-        <div className="filter-group">
+                />
+                {/* <Dropdown.Menu className="custommenu">
+                  {value.data.map((input, index) =>
+                    <div key={`${index}`}>
+                      <input
+                        key={`${index}`} 
+                        id={input.fault} 
+                        type="checkbox" 
+                        checked={isFaultChecked(input.fault)} 
+                        onClick={(e) => onFaultClick(input.fault)}
+                        onChange={onFaultChange}
+                        >
+                      </input>{" " + input.fault}<br></br>
+                    </div> 
+                    )}
+                  <Dropdown.Divider />
+                </Dropdown.Menu> */}
+              </Dropdown> 
+                )}
+            </div>
+        );
+    } else {
+        return (
+            <div className="filter-group">
             {props.values.map((value) =>
             <Dropdown 
             className="dropdown"
@@ -82,31 +129,33 @@ export default function Filter(props) {
                 key={value.code} 
                 id={value.description} 
                 type="checkbox" 
-                checked={isClassChecked(value.code)} 
-                onChange={onChange}
-                onClick={() => onClassClick(value)}
+                //checked={isClassChecked(value.code)} 
+                //onChange={onChange}
+                //onClick={() => onClassClick(value)}
                 >
               </input>
               {value.description}         
             </Dropdown.Toggle>
-            <Dropdown.Menu className="custommenu">
+            {/* <Dropdown.Menu className="custommenu">
               {value.data.map((input, index) =>
                 <div key={`${index}`}>
                   <input
                     key={`${index}`} 
                     id={input.fault} 
                     type="checkbox" 
-                    checked={isFaultChecked(input.fault)} 
-                    onClick={(e) => onFaultClick(input.fault)}
-                    onChange={onFaultChange}
+                    //checked={isFaultChecked(input.fault)} 
+                    //onClick={(e) => onFaultClick(input.fault)}
+                    //onChange={onFaultChange}
                     >
                   </input>{" " + input.fault}<br></br>
                 </div> 
                 )}
               <Dropdown.Divider />
-            </Dropdown.Menu>
+            </Dropdown.Menu> */}
           </Dropdown> 
             )}
         </div>
-    );
+        )
+    }
+    
 }
