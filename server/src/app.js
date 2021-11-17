@@ -743,7 +743,7 @@ app.post('/settings', async (req, res) => {
     let result = await db.settings(project);
     res.set('Content-Type', 'application/json'); 
     res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, 
-      centreline: result.rows[0].centreline, ramm: result.rows[0].ramm});  
+      centreline: result.rows[0].centreline, ramm: result.rows[0].ramm, rmclass: result.rows[0].rmclass});  
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -836,7 +836,6 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    console.log(req.body)
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
@@ -850,9 +849,9 @@ app.post('/layer', async (req, res) => {
     let finalPoints = null;
     let finalLines = null;
     let options = {priority: [], status: []};
-    let surface = await db.projecttype(project);
-    let isarchive = await db.isArchive(project); 
-    let archive = isarchive.rows[0].isarchive;
+    let surface = req.body.surface;
+    let archive = req.body.archive;
+    console.log(archive) 
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
         options.status.push("completed");
@@ -868,7 +867,7 @@ app.post('/layer', async (req, res) => {
     let activeLines = [];
     let completedPoints = [];
     let completedLines = [];
-    if (surface.rows[0].surface === "footpath") { ///**** FIX FOOTPATH QUERY */
+    if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (options.priority.length !== 0) {
         let geometry = await db.footpath(project, options, assets, faults, types, causes);
         activePoints = geometry.rows;
@@ -880,7 +879,7 @@ app.post('/layer', async (req, res) => {
         completedLines = [];
       }
       finalPoints = activePoints.concat(completedPoints);
-    } else if (surface.rows[0].surface === "road") {
+    } else if (surface === "road") {
         if (archive) {
           let points = await db.layer(project, filter, options, inspection);
           activePoints = points.rows;
@@ -907,7 +906,7 @@ app.post('/layer', async (req, res) => {
     finalLines = activeLines.concat(completedLines);
     
     res.set('Content-Type', 'application/json');
-    res.send({type: surface.rows[0].surface, points: finalPoints, lines: finalLines});
+    res.send({type: surface, points: finalPoints, lines: finalLines});
   } else {
     res.send({error: "Invalid token"});
   } 

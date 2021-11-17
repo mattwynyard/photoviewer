@@ -70,7 +70,7 @@ class App extends React.Component {
       priorityMode: "Priority", //whether we use priority or grade
       reverse: false,
       priorities: [], 
-      ages: [],
+      //ages: [],
       filterDropdowns: [],
       filterPriorities: [],
       filterRMClass: [],
@@ -685,7 +685,7 @@ class App extends React.Component {
       activeLayers: [],
       activeLayer: null,
       filterDropdowns: [],
-      ages: [],
+      //ages: [],
       rulerPoints: [],
       filter: [], //filter for db request
       priorityDropdown: null, 
@@ -1072,92 +1072,81 @@ class App extends React.Component {
     }      
   }
   
-  async getDistrict(project) {  
-    await fetch('https://' + this.state.host + '/district', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json(); 
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else { 
-            this.setState({district: body.district})
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
-  }
+  
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  async loadLayer(e, type) { 
+  async loadLayer(e, mode) { 
     e.persist();
-    this.setState({projectMode: type});
+    let projectCode = e.target.attributes.code.value;
+    let project = null;
     for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
       if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
         return;
       }
-    }
-    let projects = null;
-    let project = e.target.attributes.code.value;   
-    await this.getSettings(project);
-    this.antdrawer.current.setVideo(this.state.hasVideo);
-    if (type === "road") {
-      projects = this.state.projects.road;
-      await this.requestFilters(project);
-      
+    }   
+    if (mode === "road") {
+      project = this.findProject(this.state.projects.road, projectCode);  
+      if (!project) return;
     } else {
-      projects = this.state.projects.footpath;
-      let filters = ["Asset", "Fault", "Type", "Cause"]
-      await this.requestFilters(project, ); 
-    }
-    await this.requestFilters(project); 
-    await this.getDistrict(project);
+      project = this.findProject(this.state.projects.footpath, projectCode);  
+      let filters = ["Asset", "Fault", "Type", "Cause"] 
+    } 
+    let inspectionsBody = await this.requestInspections(projectCode, mode)
+    let inspections = this.buildInspections(inspectionsBody)
+    let district = await this.requestDistrict(projectCode); 
+    let filters = await this.requestFilters(projectCode);
+    let classes = filters.map(value => value.code)
+    let fault2d = filters.map(value => value.data.map(fault => fault.fault));
+    let faults = [].concat(...fault2d)
+    this.antdrawer.current.setVideo(this.state.hasVideo);
+    
     let layers = this.state.activeLayers;
-    for (let i = 0; i < projects.length; i++) { //find project
-      if (projects[i].code === e.target.attributes.code.value) {  //if found
-        let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, 
-          date: projects[i].date, surface: projects[i].surface, visible: true} //build project object
-        this.setState({amazon: projects[i].amazon});
-        layers.push(project);
-        this.setState({activeLayer: project});
-        break;
-        }
-    }
+    layers.push(project);
+
+    let dropdownBody = await this.requestLayerDropdowns(projectCode);
+    let priorities = this.buildPriority(dropdownBody.priority, project.priority, project.ramm); 
+    if (dropdownBody.rmclass) {
+      this.setState({rmclass: dropdownBody.rmclass});
+      this.setState({filterRMClass: dropdownBody.rmclass})  
+    } 
+            
     this.setState(() => ({
+      filterPriorities: priorities.filter, 
+      priorities: priorities.priorities,
+      rmclass: dropdownBody.rmclass,
+      filterRMClass: dropdownBody.rmclass,
+      classActive: classes,
+      faultActive: faults,
+      amazon: project.amazon,
+      activeLayer: project,
       activeLayers: layers,
-      activeProject: e.target.attributes.code.value,
-      bucket: this.buildBucket(project)
+      district: district,
+      inspections: inspections,
+      activeProject: projectCode,
+      faultData: filters,
+      filterData: filters,
+      bucket: this.buildBucket(projectCode),
+      amazon: project.amazon
     }), async function() { 
-      await this.requestLayerDropdowns(project);
-      if (type === "road") {
-        await this.requestAge(project); 
-      }
+
       this.filterLayer(project, true); //fetch layer
       if (this.state.erp) {
-        this.roadLinesRef.current.loadCentrelines(project); 
+        this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
     });
+  }
+
+  findProject(projects, code) {
+    for (let i = 0; i < projects.length; i++) { //find project
+      if (projects[i].code === code) {  //if found
+        return projects[i]
+        }
+    }
+    return null;
   }
 
   async getSettings(project) {
@@ -1167,31 +1156,7 @@ class App extends React.Component {
       return;
     });
     if (!body) return;
-    if (body.priority) {
-      this.setState({priorityMode: "Priority"});
-    } else {
-      this.setState({priorityMode: "Grade"});
-    }
-    if (body.reverse) {
-      this.setState({reverse: true});
-    } else {
-      this.setState({reverse: false});
-    }
-    if (body.video) {
-      this.setState({hasVideo: true});
-    } else {
-      this.setState({hasVideo: false});
-    }
-    if(body.centreline) {
-      this.setState({erp: true});
-    } else {
-      this.setState({erp: false});
-    }
-    if(body.ramm) {
-      this.setState({ramm: true});
-    } else {
-      this.setState({ramm: false});
-    }
+    return body;
   }
 
   async buildView(project) {
@@ -1216,8 +1181,9 @@ class App extends React.Component {
     } 
   }
 
-  async requestAge(project) {
-      await fetch('https://' + this.state.host + '/age', {
+  async requestInspections(project, mode) {
+      if (mode === "footpath") return;
+      const response = await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -1228,80 +1194,125 @@ class App extends React.Component {
         user: this.state.login,
         project: project,
       })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
+    });
+      if(response.ok) {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
         } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            this.buildAge(body.result);              
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
-  }
+          return body.result;            
+        }     
+      } else {
+        console.log(response);
 
-  async requestLayerDropdowns(project) {
-      await fetch('https://' + this.state.host + '/layerdropdowns', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            this.buildPriority(body.priority); 
-            if (body.rmclass) {
-              this.setState({rmclass: body.rmclass});
-              this.setState({filterRMClass: body.rmclass})  
-            }  
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
+      }
   }
-
 
   /**
    * Sets inspections array for use in filter
    * @param {*} ages JSON object inspection array
    */
-  buildAge(ages) {
+   buildInspections(values) {
     let inspections = [];
-    if (ages[0].inspection === null) {
+    if (values[0].inspection === null) {
       this.setState({inspections: []});
     } else {
-      for (let i = 0; i < ages.length; i++) {
-        let inspection = ages[i].inspection; 
+      for (let i = 0; i < values.length; i++) {
+        let inspection = values[i].inspection; 
         if (inspection !== null) {
           inspections.push(inspection);       
         }          
       }
-      this.setState({inspections: inspections})
+      return inspections;
     }   
+  }
+
+  async requestDistrict(project) {  
+    let response = await fetch('https://' + this.state.host + '/district', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project
+      })
+    });
+    if(!response.ok) {
+      throw new Error(response.status);
+    } else {
+      const body = await response.json(); 
+      if (body.error != null) {
+        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+        let e = document.createEvent("MouseEvent");
+        await this.logout(e);
+      } else { 
+        return body.district
+      }     
+    }
+  }
+
+  async requestFilters(project) {
+    if (this.state.projectMode === "footpath") {
+      return;
+    } else {
+      let response = await fetch('https://' + this.state.host + '/faultclass', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: this.state.login,
+          project: project
+        })
+      });
+      if(!response.ok) {
+        throw new Error(response.status);
+      } else {
+        const body = await response.json(); 
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else { 
+          return body;
+        }     
+      } 
+    } 
+}
+
+  async requestLayerDropdowns(project) {
+    let response = await fetch('https://' + this.state.host + '/layerdropdowns', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      })
+    });
+    if(!response.ok) {
+      throw new Error(response.status);
+    } else {
+      const body = await response.json(); 
+      if (body.error != null) {
+        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+        let e = document.createEvent("MouseEvent");
+        await this.logout(e);
+      } else { 
+        return body;
+      }     
+    } 
   }
 
   /**
@@ -1320,27 +1331,28 @@ class App extends React.Component {
     return year + "_" + month;
   }
 
-  buildPriority(priority) {
-    let arr = [];
-    let arrb = [];
+  buildPriority(priority, isPriority, ramm) {
+    let priorities = [];
+    let filter = [];
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 99) {
-        arr.push("Signage");
-        arrb.push(99);
+        priorities.push("Signage");
+        filter.push(99);
       } else {
-        arr.push(this.state.priorityMode + " " + priority[i])
-        arrb.push(priority[i]);
+        let mode = isPriority ? "Priority": "Grade";
+        let number = priority[i]
+        priorities.push(`${mode} ${number}`)
+        filter.push(number);
       }
     }
-    arr.sort();
-    if(this.state.ramm) {
-      arr.push("Programmed");
-      arrb.push(97);
+    priorities.sort();
+    if(ramm) {
+      priorities.push("Programmed");
+      filter.push(97);
     }
-    arr.push("Completed");
-    arrb.push(98);
-    this.setState({filterPriorities: arrb});
-    this.setState({priorities: arr});
+    priorities.push("Completed");
+    filter.push(98);
+    return ({filter: filter, priorities: priorities})
   }
 
   /**
@@ -1385,14 +1397,16 @@ class App extends React.Component {
   }
 
   getBody(project) {
-    if (this.state.projectMode === "road") {
+    if (project.surface === "road") {
       return JSON.stringify({
         user: this.state.login,
-        project: project,
+        project: project.code,
         filter: this.state.faultActive,
         priority: this.state.filterPriorities,
+        archive: project.isarchive,
+        surface: project.surface,
         rmclass: this.state.filterRMClass,
-        inspection: this.state.inspections
+        inspection: this.state.inspections,
       })   
     } else {
         return JSON.stringify({
@@ -1543,46 +1557,7 @@ class App extends React.Component {
       } 
   }
 
-  async requestFilters(project) {
-    if (this.state.projectMode === "footpath") {
-      return;
-    } else {
-      await fetch('https://' + this.state.host + '/faultclass', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.state.login,
-          project: project
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-          let e = document.createEvent("MouseEvent");
-          await this.logout(e);
-        } else {
-          this.setState({faultData: body});
-          this.setState({filterData: body});       
-          let classes = body.map(value => value.code)
-          let fault2d = body.map(value => value.data.map(fault => fault.fault));
-          let faults = [].concat(...fault2d)
-          //this.setState({classStore: classes});
-          this.setState({classActive: classes});
-          this.setState({faultActive: faults})
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }) 
-     
-    } 
-}
+  
 
   async addNewUser(client, password) {
     if (this.state.login !== "Login") {

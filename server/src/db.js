@@ -89,7 +89,7 @@ module.exports = {
     },
     projects : (user) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline FROM projects WHERE client = $1::text AND active = true';
+            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ramm, rmclass FROM projects WHERE client = $1::text AND active = true';
             connection.query(sql, [user], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -117,7 +117,7 @@ module.exports = {
 
     settings : (project) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT priority, reverse, hasvideo, isarchive, centreline, ramm FROM projects WHERE code = $1::text';
+            let sql = 'SELECT priority, reverse, hasvideo, isarchive, centreline, ramm, rmclass FROM projects WHERE code = $1::text';
             connection.query(sql, [project], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
