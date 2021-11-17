@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Alert}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -146,7 +146,6 @@ class App extends React.Component {
     }, () => {
       if (this.state.login === "Login") {
         this.callBackendAPI()
-        .catch(err => alert(err));
       }
       this.customNav.current.setTitle(user);
       this.customNav.current.setOnClick(this.getLoginModal(user));   
@@ -523,16 +522,20 @@ class App extends React.Component {
   }
 
   callBackendAPI = async () => {
-    const response = await fetch("https://" + this.state.host + '/api'); 
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(body);   
-      throw Error(body.message) 
-    } else {
-        this.buildProjects(body.projects);  
-      }
-    return body; 
-  };
+    try {
+      const response = await fetch("https://" + this.state.host + '/api'); 
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(body);   
+        throw Error(body.message) 
+      } else {
+          this.buildProjects(body.projects);  
+        }
+      return body;
+    } catch(error) {
+      alert(error);   
+    } 
+  }
 
   /**
    * Gets the development or production host 
@@ -1004,7 +1007,8 @@ class App extends React.Component {
 
   async logout(e) {
     e.preventDefault();
-    const response = await fetch("https://" + this.state.host + '/logout', {
+    try {
+      const response = await fetch("https://" + this.state.host + '/logout', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1021,12 +1025,18 @@ class App extends React.Component {
       alert(response.status + " " + response.statusText);  
       throw Error(body.message);    
     } 
-    this.reset();  
+     
+    } catch (error) {
+      alert("server offline " + error);  
+    } finally {
+      this.reset();
+    } 
   }
 
   async login(e) {  
     e.preventDefault();
-    const response = await fetch('https://' + this.state.host + '/login', {
+    try {
+      const response = await fetch('https://' + this.state.host + '/login', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1037,27 +1047,31 @@ class App extends React.Component {
         user: this.userInput.value,
         key: this.passwordInput.value
       })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
-    }  
-    if (body.result) {
-      window.sessionStorage.setItem('token', body.token);
-      window.sessionStorage.setItem('user', body.user);
-      this.setState({login: body.user});
-      this.setState({token: body.token}); 
-      this.buildProjects(body.projects);   
-      this.customNav.current.setTitle(body.user);
-      this.customNav.current.setOnClick((e) => this.logout(e));
-      this.setState({showLogin: false});
-      this.setState({message: ""});
-      if(this.state.login === 'admin') {
-        this.setState({admin: true});
+      });
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(response.status + " " + response.statusText);  
+        throw Error(body.message);   
+      }  
+      if (body.result) {
+        window.sessionStorage.setItem('token', body.token);
+        window.sessionStorage.setItem('user', body.user);
+        this.setState({login: body.user});
+        this.setState({token: body.token}); 
+        this.buildProjects(body.projects);   
+        this.customNav.current.setTitle(body.user);
+        this.customNav.current.setOnClick((e) => this.logout(e));
+        this.setState({showLogin: false});
+        this.setState({message: ""});
+        if(this.state.login === 'admin') {
+          this.setState({admin: true});
+        }
+      } else {
+        this.setState({message: "Username or password is incorrect!"});
       }
-    } else {
-      this.setState({message: "Username or password is incorrect!"});
+    } catch (error) {
+      alert(error)
+      this.setState({showLogin: false});
     }      
   }
   
