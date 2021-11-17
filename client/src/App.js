@@ -1443,7 +1443,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeProject, false);
+              this.filterLayer(project, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1773,7 +1773,7 @@ class App extends React.Component {
 
   updateFaultFilter = (query, filter) => {
     this.setState({classActive: query, faultActive: filter}, () => {
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     });
   }
 
@@ -1843,7 +1843,7 @@ class App extends React.Component {
    */
   updatePriority = (query) => {
     this.setState({filterPriorities: query}, () => {
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     });
     
   }
