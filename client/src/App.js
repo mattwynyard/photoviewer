@@ -11,7 +11,6 @@ import GLEngine from './GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
-import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
@@ -70,7 +69,6 @@ class App extends React.Component {
       priorityMode: "Priority", //whether we use priority or grade
       reverse: false,
       priorities: [], 
-      //ages: [],
       filterDropdowns: [],
       filterPriorities: [],
       filterRMClass: [],
@@ -105,22 +103,18 @@ class App extends React.Component {
       popover: false,
       photourl: null,
       amazon: null,
-      password: null,
       projects: null, //all foootpath and road projects for the user
       faultData: [], //store for fault data
       filterData: [],
       faultFilter: [], //active fault classes
       classActive: [], //active fault classes
-      //classStore: [], //active fault classes
       faultActive: [],
       faultStore: [],
-
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
       bucket: null,
       message: "",
-      // coordinates: null, //coordinates of clicked marker
       glPoints: null,
       glLines: null,
       selectedIndex: null,
@@ -133,15 +127,9 @@ class App extends React.Component {
       search: null,
       district: null,
       spinner: false,
-      isArchive: false, //true when doing full photo search
-      isVideo: false, //true when doing full photo search
-      hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      erp: true,
-      notificationKey: null,
-      ramm: false,
-     
+      notificationKey: null,    
     };   
   }
 
@@ -175,21 +163,22 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
+
     if(this.state.objGLData.length !== 0) {
       this.filterLayer(this.state.activeLayer, true);
     }      
   }
 
-  componentDidUpdate() {  
-    if (this.state.erp)
-    this.roadLinesRef.current.setProject(
-      {
-        layer: this.state.activeLayer,
-        host: this.state.host,
-        login: this.state.login,
-        token: this.state.token,
-      });
-      
+  componentDidUpdate() { 
+    // if (this.state.activeLayer) {
+    //   if (this.state.activeLayer.centreline) //bad needs changing
+    //   this.roadLinesRef.current.setProject(
+    //   {
+    //     project: this.state.activeLayer.code,
+    //     host: this.state.host,
+    //     login: this.state.login,
+    //     token: this.state.token,
+    //   });
       //window.sessionStorage.setItem('state', JSON.stringify(this.state));
   }
 
@@ -1121,7 +1110,6 @@ class App extends React.Component {
       filterRMClass: dropdownBody.rmclass,
       classActive: classes,
       faultActive: faults,
-      amazon: project.amazon,
       activeLayer: project,
       activeLayers: layers,
       district: district,
@@ -1134,8 +1122,9 @@ class App extends React.Component {
     }), async function() { 
 
       this.filterLayer(this.state.activeLayer, true); //fetch layer
-      if (this.state.erp) {
-        this.roadLinesRef.current.loadCentrelines(projectCode); 
+      if (this.state.activeLayer.centreline) {
+        let login = {token: this.state.token, user: this.state.login}
+        this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
       }
     });
   }

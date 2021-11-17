@@ -403,9 +403,8 @@ app.post('/centrelines', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
+    
     let result = await db.roadLines(req.body.project);
-    //let result = await db.rating(req.body.project);
-    //console.log(result)
     if (result.rowCount != 0) {
       res.send({success: true, data: result.rows});
     } else {
@@ -836,7 +835,6 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    console.log(req.body)
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
