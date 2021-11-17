@@ -836,6 +836,7 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
+    console.log(req.body)
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;

@@ -176,7 +176,7 @@ class App extends React.Component {
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
     if(this.state.objGLData.length !== 0) {
-      this.filterLayer(this.state.activeProject, true);
+      this.filterLayer(this.state.activeLayer, true);
     }      
   }
 
@@ -1133,7 +1133,7 @@ class App extends React.Component {
       amazon: project.amazon
     }), async function() { 
 
-      this.filterLayer(project, true); //fetch layer
+      this.filterLayer(this.state.activeLayer, true); //fetch layer
       if (this.state.erp) {
         this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
@@ -1443,7 +1443,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(project, false);
+              this.filterLayer(this.state.activeLayer, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1824,7 +1824,7 @@ class App extends React.Component {
     e.preventDefault();
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     } else {
       e.target.innerHTML = "Apply Filter";  
       this.resetDropdowns();
@@ -1832,7 +1832,7 @@ class App extends React.Component {
       this.setState({
         filter: filter
       }, () => {
-        this.filterLayer(this.state.activeProject, false);
+        this.filterLayer(this.state.activeLayer, false);
       });  
     }
   }
@@ -1853,7 +1853,7 @@ class App extends React.Component {
    */
   updateRMClass = (query) => {
     this.setState({filterRMClass: query}, () => {
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     });
     
   }
