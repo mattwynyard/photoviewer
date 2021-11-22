@@ -3,34 +3,47 @@ import {React} from 'react';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function(props) {
-    //console.log(props)
-
-    const onFaultChange = () => {
-        //console.log("change")/
+  console.log(props.filter)
+  const isChecked = (code) => {
+    if (props.filter.includes(code)) {
+      return true;
+    } else {
+        return false
     }
+  }
 
-    const isFaultChecked = (value) => {      
-        if (props.items.includes(value)) {
-            return true;
-        } else {
-            return false
-        }
+  const onClick = (e, code) => {
+    let filter = [...props.filter]
+    let index = filter.indexOf(e.target.id)
+    if (index >= 0) {
+      filter.splice(index, 1)
+      props.update(code, filter)
+
+    } else {
+      filter.push(e.target.id)
+      filter.sort();
+      props.update(code, filter)
     }
+    
+  }
 
+  const onChange = () => {
+
+  }
 
     return (
         <Dropdown.Menu className="custommenu">
-        {props.data.map((input, index) =>
+        {props.data.map((value, index) =>
           <div key={`${index}`}>
             <input
               key={`${index}`} 
-              id={input.fault} 
+              id={value} 
               type="checkbox" 
-              //checked={isFaultChecked(input.fault)} 
-              //onClick={(e) => onFaultClick(input.fault)}
-              onChange={onFaultChange}
+              checked={isChecked(value)} 
+              onClick={(e) => onClick(e, props.code)}
+              onChange={onChange}
               >
-            </input>{" " + input.fault}<br></br>
+            </input>{" " + value}<br></br>
           </div> 
           )}
         <Dropdown.Divider />

@@ -51,8 +51,11 @@ class App extends React.Component {
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
+    this.filterRef = React.createRef();
     this.glpoints = null;
     this.vidPolyline = null;
+
+    
     
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
@@ -64,7 +67,6 @@ class App extends React.Component {
       rulerOrigin: null,
       rulerPolyline: null,
       rulerDistance: 0,
-      filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
       reverse: false,
@@ -104,12 +106,8 @@ class App extends React.Component {
       photourl: null,
       amazon: null,
       projects: null, //all foootpath and road projects for the user
-      faultData: [], //store for fault data
-      filterData: [],
-      faultFilter: [], //active fault classes
-      classActive: [], //active fault classes
-      faultActive: [],
-      faultStore: [],
+      filters: [],
+      filterStore: [],
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
@@ -166,19 +164,6 @@ class App extends React.Component {
     if(this.state.objGLData.length !== 0) {
       this.filterLayer(this.state.activeLayer, true);
     }      
-  }
-
-  componentDidUpdate() { 
-    // if (this.state.activeLayer) {
-    //   if (this.state.activeLayer.centreline) //bad needs changing
-    //   this.roadLinesRef.current.setProject(
-    //   {
-    //     project: this.state.activeLayer.code,
-    //     host: this.state.host,
-    //     login: this.state.login,
-    //     token: this.state.token,
-    //   });
-      //window.sessionStorage.setItem('state', JSON.stringify(this.state));
   }
 
   componentWillUnmount() {
@@ -1096,41 +1081,40 @@ class App extends React.Component {
       if (!project) return;
     } else {
       project = this.findProject(this.state.projects.footpath, projectCode);  
-      let filters = ["Asset", "Fault", "Type", "Cause"] 
+       
     } 
     let inspectionsBody = await this.requestInspections(projectCode, mode)
     let inspections = this.buildInspections(inspectionsBody)
     let district = await this.requestDistrict(projectCode); 
-    let filters = await this.requestFilters(projectCode);
-    let classes = filters.map(value => value.code)
-    let fault2d = filters.map(value => value.data.map(fault => fault.fault));
-    let faults = [].concat(...fault2d)
-    this.antdrawer.current.setVideo(this.state.hasVideo);
-    
+    let data = await this.requestFilterData(project);
+    let storeData = await this.requestFilterData(project);
+    let filters = this.buildFilter(data);
+    let store = this.buildFilter(storeData);
+    let classes = filters.map(value => value.code);
+
     let layers = this.state.activeLayers;
     layers.push(project);
 
-    let dropdownBody = await this.requestLayerDropdowns(projectCode);
-    let priorities = this.buildPriority(dropdownBody.priority, project.priority, project.ramm); 
-    if (dropdownBody.rmclass) {
-      this.setState({rmclass: dropdownBody.rmclass});
-      this.setState({filterRMClass: dropdownBody.rmclass})  
+    let layerBody = await this.requestLayerDropdowns(project);
+    let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
+    if (layerBody.rmclass) {
+      this.setState({rmclass: layerBody.rmclass});
+      this.setState({filterRMClass: layerBody.rmclass})  
     } 
-            
+    this.antdrawer.current.setVideo(this.state.hasVideo);      
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
-      rmclass: dropdownBody.rmclass,
-      filterRMClass: dropdownBody.rmclass,
-      classActive: classes,
-      faultActive: faults,
+      rmclass: layerBody.rmclass,
+      filterRMClass: layerBody.rmclass,
+      filterStore: store,
+      filters: filters,
       activeLayer: project,
       activeLayers: layers,
       district: district,
       inspections: inspections,
       activeProject: projectCode,
-      faultData: filters,
-      filterData: filters,
+      projectMode: mode,
       bucket: this.buildBucket(projectCode),
       amazon: project.amazon
     }), async function() { 
@@ -1141,6 +1125,17 @@ class App extends React.Component {
         this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
       }
     });
+  }
+
+  buildFilter(filters) {
+    if (!filters) return {};
+    
+    filters.forEach(filter => {
+      let data = filter.data.map(element => Object.values(element)[0]);
+      data.sort()
+      filter.data = data;
+    });
+     return filters;
   }
 
   findProject(projects, code) {
@@ -1185,7 +1180,8 @@ class App extends React.Component {
   }
 
   async requestInspections(project, mode) {
-      if (mode === "footpath") return;
+    if (mode == 'footpath') return [];
+    try {
       const response = await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
       headers: {
@@ -1197,7 +1193,7 @@ class App extends React.Component {
         user: this.state.login,
         project: project,
       })
-    });
+      });
       if(response.ok) {
         const body = await response.json();
         if (body.error != null) {
@@ -1211,6 +1207,9 @@ class App extends React.Component {
         console.log(response);
 
       }
+    } catch (error) {
+      alert(error)
+    }
   }
 
   /**
@@ -1218,10 +1217,10 @@ class App extends React.Component {
    * @param {*} ages JSON object inspection array
    */
    buildInspections(values) {
-    let inspections = [];
-    if (values[0].inspection === null) {
-      this.setState({inspections: []});
+    if (values.length === 0) {
+      return [];
     } else {
+      let inspections = [];
       for (let i = 0; i < values.length; i++) {
         let inspection = values[i].inspection; 
         if (inspection !== null) {
@@ -1260,11 +1259,9 @@ class App extends React.Component {
     }
   }
 
-  async requestFilters(project) {
-    if (this.state.projectMode === "footpath") {
-      return;
-    } else {
-      let response = await fetch('https://' + this.state.host + '/faultclass', {
+  async requestFilterData(project) {
+    try {
+      let response = await fetch('https://' + this.state.host + '/filterData', {
         method: 'POST',
         headers: {
           "authorization": this.state.token,
@@ -1288,7 +1285,9 @@ class App extends React.Component {
           return body;
         }     
       } 
-    } 
+    } catch (error) {
+      alert(error)
+    }
 }
 
   async requestLayerDropdowns(project) {
@@ -1385,6 +1384,9 @@ class App extends React.Component {
       filterDropdowns: [],
       filterPriorities: [],
       filterRMClass: [],
+      projectMode: null,
+      filterStore: [],
+      filter: [],
       rmclass: [],
       faultData: [],
       amazon: null,
@@ -1400,11 +1402,16 @@ class App extends React.Component {
   }
 
   getBody(project) {
+    let filter = []
+    this.state.filters.forEach(arr => {
+      let data = arr.data
+      filter = filter.concat(data);
+    })
     if (project.surface === "road") {
       return JSON.stringify({
         user: this.state.login,
         project: project.code,
-        filter: this.state.faultActive,
+        filter: filter,
         priority: this.state.filterPriorities,
         archive: project.isarchive,
         surface: project.surface,
@@ -1414,9 +1421,11 @@ class App extends React.Component {
     } else {
         return JSON.stringify({
           user: this.state.login,
-          project: project,
+          project: project.code,
           filter: this.state.filter,
-          priority: this.state.filterPriorities})
+          surface: project.surface,
+          priority: this.state.filterPriorities
+        })
       }
          
   }
@@ -1466,30 +1475,29 @@ class App extends React.Component {
   async filterLayer(project, zoom) {
     this.setState({spinner: true});
       let body = this.getBody(project);
-      if (typeof body !== 'undefined') {
-        await fetch('https://' + this.state.host + '/layer', {
-          method: 'POST',
-          headers: {
-            "authorization": this.state.token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: body
-          }).then(async (response) => {
-            if(!response.ok) {
-              throw new Error(response.status);
-            } else {
-              const body = await response.json();
-              if (body.error != null) {
-                alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-                let e = document.createEvent("MouseEvent");
-                await this.logout(e);
-              } else {
-                await this.addGLGeometry(body.points, body.lines, body.type, zoom);
-              }     
-            }
-          })   
-        }         
+      if (!body) return;
+      await fetch('https://' + this.state.host + '/layer', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      },
+      body: body
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            await this.addGLGeometry(body.points, body.lines, body.type, zoom);
+          }     
+        }
+      });                
   }
 
   async loadCentreline(e) {
@@ -1774,10 +1782,9 @@ class App extends React.Component {
     }
   }
 
-  updateFaultFilter = (query, filter) => {
-    this.setState({classActive: query, faultActive: filter}, () => {
-      this.filterLayer(this.state.activeLayer, false);
-    });
+  updateFilter = (filter) => {
+    this.setState({filters: filter});
+      //this.filterLayer(this.state.activeLayer, false);
   }
 
   clickLogin(e) {
@@ -2133,12 +2140,10 @@ class App extends React.Component {
                 <p>Filters</p>
               </div>
                 <Filter
-                  values={this.state.faultData}
-                  classes={this.state.classActive}
+                  filter={this.state.filters}
+                  store={this.state.filterStore}
                   mode={this.state.projectMode}
-                  faults={this.state.faultActive}
-                  update={this.updateFaultFilter}
-                  //filter={}
+                  update={this.updateFilter}
                 />
               <FilterButton
                 className="apply-btn" 

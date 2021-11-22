@@ -1,121 +1,92 @@
-import {React} from 'react';
+import {React, useEffect, useState} from 'react';
 import FilterMenu from './FilterMenu';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function Filter(props) {
-    //console.log(props)
 
-    const isClassChecked = (value) => {
-        if (props.classes.includes(value)) {
-            return true;
-        } else {
-            return false
-        }
+  const isClassChecked = (code) => {
+    if (props.filter.map(value => value.code).includes(code)) {
+      return true;
+    } else {
+        return false
     }
+  }
 
-    const isFaultChecked = (value) => {      
-        if (props.faults.includes(value)) {
-            return true;
-        } else {
-            return false
-        }
+  const findObject = (code) => {
+    let filter = [...props.filter]
+    const element = filter.find(element => element.code === code)
+    if (element) {
+      return [...element.data];
+    } else {
+      return [];
     }
+  }
+
+  const updateFilter = (code, newFilter) => {
+    let filter = [...props.filter]
+    const element = filter.find(element => element.code === code);
+    if (element) {
+      element.data = newFilter;
+      props.update(filter)
+    }
+    
+  }
+  
+  const onClassClick = (code) => {      
+    if (props.filter.map(value => value.code).includes(code)) {
+      let temp = [...props.filter]
+      let arr = temp.filter(value => value.code !== code)
+      props.update(arr)
+    } else {
+      let arr = [...props.store].filter(value => value.code === code)
+      let temp = [...props.filter]
+      temp.push(arr[0])
+      props.update(temp)
+    }
+  }
 
     const onChange = () => {
-        //console.log("change")
+        console.log("change")
     }
 
     const onFaultChange = () => {
         //console.log("change")
     }
 
-    const onFaultClick = (value) => {
-        let filter = [...props.faults]
-        if (filter.includes(value)) {
-            const index = filter.indexOf(value);
-            filter.splice(index, 1);
-        } else {
-            filter.push(value);
-        }
-        props.update(props.classes, filter)    
-    }
-
-    const onClassClick = (value) => {
-        let faults = value.data.map(data => data.fault)
-        let filter = [...props.faults]
-        let query = [...props.classes]
-        if (query.length === 1) {
-            if (query.includes(value.code)) {
-                return;
-            } else {          
-                query.push(value.code)
-                faults.forEach(fault => filter.push(fault))
-            }
-        } else {
-            if (query.includes(value.code)) {
-                const index = query.indexOf(value.code);
-                query.splice(index, 1);
-                faults.forEach((fault) => {
-                    const index = filter.indexOf(fault);
-                    filter.splice(index, 1)
-                })
-            } else {
-                query.push(value.code);
-                faults.forEach(fault => filter.push(fault))
-            }
-        }
-        console.log(filter.length)
-        props.update(query, filter)      
-    }
     if (props.mode === "road") {
         return(
-            <div className="filter-group">
-                {props.values.map((value) =>
-                <Dropdown 
-                className="dropdown"
+          <div className="filter-group">
+            {props.store.map((value) =>
+            <Dropdown 
+              className="dropdown"
+              key={value.code} 
+              drop={'right'}  
+            >                
+            <Dropdown.Toggle variant="light" size="sm">
+              <input
                 key={value.code} 
-                drop={'right'}  
-                >                
-                <Dropdown.Toggle variant="light" size="sm">
-                  <input
-                    key={value.code} 
-                    id={value.description} 
-                    type="checkbox" 
-                    checked={isClassChecked(value.code)} 
-                    onChange={onChange}
-                    onClick={() => onClassClick(value)}
-                    >
-                  </input>
-                  {value.description}         
-                </Dropdown.Toggle>
-                <FilterMenu
-                  code={value.code}
-                  description={value.description}
-                  data={value.data}
-                  items={value.data.map(item => item.fault)}
-
-                />
-                {/* <Dropdown.Menu className="custommenu">
-                  {value.data.map((input, index) =>
-                    <div key={`${index}`}>
-                      <input
-                        key={`${index}`} 
-                        id={input.fault} 
-                        type="checkbox" 
-                        checked={isFaultChecked(input.fault)} 
-                        onClick={(e) => onFaultClick(input.fault)}
-                        onChange={onFaultChange}
-                        >
-                      </input>{" " + input.fault}<br></br>
-                    </div> 
-                    )}
-                  <Dropdown.Divider />
-                </Dropdown.Menu> */}
-              </Dropdown> 
-                )}
-            </div>
+                id={value.description} 
+                type="checkbox" 
+                checked={isClassChecked(value.code)} 
+                onChange={onChange}
+                onClick={() => onClassClick(value.code)}
+                >
+              </input>
+              {value.description}         
+            </Dropdown.Toggle>
+            <FilterMenu
+              code={value.code}
+              description={value.description}
+              id={value.description} 
+              data={value.data}
+              filter={findObject(value.code)}
+              update={updateFilter}
+            />
+          </Dropdown> 
+            )}
+        </div>
         );
-    } else {
+    } else if (props.mode === "footpath") {
         return (
             <div className="filter-group">
             {props.values.map((value) =>
@@ -156,6 +127,8 @@ export default function Filter(props) {
             )}
         </div>
         )
+    } else {
+      return null;
     }
     
 }

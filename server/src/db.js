@@ -149,6 +149,20 @@ module.exports = {
         });
     },
 
+    grade: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT grade FROM footpaths WHERE project = '" + project + "' GROUP BY grade ORDER BY grade";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let grade = resolve(result);
+                return grade;
+            });
+        });
+    },
+
     updateStatus: (project, values) => {
         //let table = user === 'asu' ? 'asufaults' : 'roadfaults'
         let sql = "UPDATE roadfaults as t SET status = c.status from (values " + values + ") as c(id, status) where t.project = '" + project + "' and c.id = t.id";
@@ -327,20 +341,6 @@ module.exports = {
         });
     },
 
-    filters: (project, parameter) => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let type = resolve(result);
-                return type;
-            });
-        });
-    },
-
     // classes: ()=> {
     //     return new Promise((resolve, reject) => {
     //         let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
@@ -406,6 +406,7 @@ module.exports = {
     },
 
     faults: (user, project, code, archive) => {
+        
         return new Promise((resolve, reject) => {
             let sql = null;
             let table = user === 'asu' ? 'asufaults' : 'roadfaults'
@@ -421,6 +422,20 @@ module.exports = {
                 }
                 let faults = resolve(result);
                 return faults;
+            });
+        });
+    },
+
+    footpathFaults: (project, parameter) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let type = resolve(result);
+                return type;
             });
         });
     },
