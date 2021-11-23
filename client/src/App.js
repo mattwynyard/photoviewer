@@ -1,7 +1,6 @@
 import React from 'react';
-
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -11,7 +10,6 @@ import GLEngine from './GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
-import DynamicDropdown from './DynamicDropdown.js';
 import CustomModal from './CustomModal.js';
 import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
@@ -20,10 +18,11 @@ import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
-import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
+import Filter from './components/Filter.js';
+import {CustomSpinner, CustomLink, CustomPopup, LayerNav} from './components/Components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
-import {Fetcher, PostFetch} from './components/Fetcher';
+import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -37,23 +36,6 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.customNav = React.createRef();
-    this.menu = React.createRef();
-    this.customModal = React.createRef();
-    this.search = React.createRef();
-    this.photoModal = React.createRef();
-    this.archivePhotoModal = React.createRef();
-    this.videoModal = React.createRef();
-    this.videoCard = React.createRef();
-    this.toolsRef = React.createRef();
-    this.antdrawer = React.createRef();
-    this.searchRef = React.createRef();
-    this.applyRef = React.createRef();
-    this.roadLinesRef = React.createRef();
-    this.notificationRef = React.createRef();
-    this.glpoints = null;
-    this.vidPolyline = null;
-    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
         lat: -41.2728,
@@ -64,13 +46,10 @@ class App extends React.Component {
       rulerOrigin: null,
       rulerPolyline: null,
       rulerDistance: 0,
-      filter: [], //filter for db request
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
       reverse: false,
       priorities: [], 
-      ages: [],
-      filterDropdowns: [],
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
@@ -79,14 +58,13 @@ class App extends React.Component {
       token: null, //security token
       login: null, //username
       zIndex: 900,
-      key: process.env.REACT_APP_MAPBOX,
+      mapBoxKey: null,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       mode: "map",
       zoom: 8,
       centreData: [],
-      fault: [],
       priority: [],
       photos: [],
       archiveMarker: [],
@@ -103,18 +81,14 @@ class App extends React.Component {
       modalPhoto: null,
       popover: false,
       photourl: null,
-      amazon: null,
-      password: null,
       projects: null, //all foootpath and road projects for the user
-      faultClass: [],
+      filters: [],
+      filterStore: [],
       activeProject: null,
       activeLayers: [], //layers displayed on the
       activeLayer: null, //the layer in focus
       bucket: null,
       message: "",
-      // coordinates: null, //coordinates of clicked marker
-      glPoints: null,
-      glLines: null,
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
@@ -125,16 +99,26 @@ class App extends React.Component {
       search: null,
       district: null,
       spinner: false,
-      isArchive: false, //true when doing full photo search
-      isVideo: false, //true when doing full photo search
-      hasVideo: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      erp: true,
-      notificationKey: null,
-      ramm: false,
-     
-    };   
+      notificationKey: null,    
+    }; 
+    this.customNav = React.createRef();
+    this.menu = React.createRef();
+    this.customModal = React.createRef();
+    this.search = React.createRef();
+    this.photoModal = React.createRef();
+    this.archivePhotoModal = React.createRef();
+    this.videoModal = React.createRef();
+    this.videoCard = React.createRef();
+    this.toolsRef = React.createRef();
+    this.antdrawer = React.createRef();
+    this.searchRef = React.createRef();
+    this.applyRef = React.createRef();
+    this.roadLinesRef = React.createRef();
+    this.notificationRef = React.createRef();
+    this.filterRef = React.createRef();
+    this.vidPolyline = null;  
   }
 
   componentDidMount() {
@@ -150,7 +134,6 @@ class App extends React.Component {
     }, () => {
       if (this.state.login === "Login") {
         this.callBackendAPI()
-        .catch(err => alert(err));
       }
       this.customNav.current.setTitle(user);
       this.customNav.current.setOnClick(this.getLoginModal(user));   
@@ -167,22 +150,10 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-    if(this.state.objGLData.length !== 0) {
-      this.filterLayer(this.state.activeProject, true);
-    }      
-  }
 
-  componentDidUpdate() {  
-    if (this.state.erp)
-    this.roadLinesRef.current.setProject(
-      {
-        layer: this.state.activeLayer,
-        host: this.state.host,
-        login: this.state.login,
-        token: this.state.token,
-      });
-      
-      //window.sessionStorage.setItem('state', JSON.stringify(this.state));
+    if(this.state.objGLData.length !== 0) {
+      this.filterLayer(this.state.activeLayer, true);
+    }      
   }
 
   componentWillUnmount() {
@@ -276,7 +247,6 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
 
@@ -415,10 +385,10 @@ class App extends React.Component {
               message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
               description: 
                 <div><b>Road ID: {response.data.roadid}<br></br></b>
-                  <b>Carriage ID: {response.data.carriageid + '\n'}<br></br></b>
-                  <b>Start: {response.data.starterp + ' m' + '\t'}</b>
-                  <b>End: {response.data.enderp + ' m'}<br></br></b>
-                  <b>Width: {response.data.width + ' m'}<br></br></b>
+                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+                  <b>Start: {`${response.data.starterp} m\t`}</b>
+                  <b>End: {`${response.data.enderp}`}<br></br></b>
+                  <b>Width: {`${response.data.width}`}<br></br></b>
                   <b><br></br></b>
                 </div>,
               placement: 'bottomRight',
@@ -521,21 +491,25 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  getDistance() {
-    return this.distance
-  }
+  // getDistance() {
+  //   return this.distance
+  // }
 
   callBackendAPI = async () => {
-    const response = await fetch("https://" + this.state.host + '/api'); 
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(body);   
-      throw Error(body.message) 
-    } else {
-        this.buildProjects(body.projects);  
-      }
-    return body; 
-  };
+    try {
+      const response = await fetch("https://" + this.state.host + '/api'); 
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(body);   
+        throw Error(body.message) 
+      } else {
+          this.buildProjects(body.projects);  
+        }
+      return body;
+    } catch(error) {
+      alert(error);   
+    } 
+  }
 
   /**
    * Gets the development or production host 
@@ -611,8 +585,8 @@ class App extends React.Component {
       this.setState({zIndex: 1000});
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
-      //this.setState({url: "https://api.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=" + this.state.key});
-      this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
+      this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
+      + this.state.mapBoxKey});
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
@@ -636,7 +610,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.amazon);
+    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
   getPhoto(direction) {
@@ -671,21 +645,25 @@ class App extends React.Component {
       activeProject: null,
       projects: [],
       login: "Login",
-      priorites: [],
+      priorities: [],
       objGLData: [],
-      glpoints: [],
       activeLayers: [],
       activeLayer: null,
-      filterDropdowns: [],
-      ages: [],
+      filterStore: [],
       rulerPoints: [],
-      filter: [], //filter for db request
+      filters: [], 
       priorityDropdown: null, 
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
-      faultClass: [],
+      faultData: [],
       inspections: [],
+      bucket: null,
+      district: null,
+      priorityMode: null,
+      projectMode: null,
+      token: null,
+      mapBoxKey: null
     }, () => {
       let glData = null
       this.GLEngine.redraw(glData, false);
@@ -798,7 +776,8 @@ class App extends React.Component {
                   for (let i = 0; i < data.data.length; i++) {
                     if(initialPhoto.data.photo === data.data[i].photo) {
                       parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.state.projectMode, initialPhoto.data.side, direction, parent.state.amazon, parent.state.photoArray, i);
+                      parent.videoCard.current.initialise(true, parent.state.projectMode, 
+                        initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
                       found = true;
                       break;
                     }   
@@ -951,7 +930,8 @@ class App extends React.Component {
         assetID = body.data.carriageway;
       }
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
+        let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
+          amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
         let arr = this.state.archiveMarker;
@@ -991,11 +971,10 @@ class App extends React.Component {
       } else {
         assetID = body.data.carriageway;
       }
-    let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
+    let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
+      amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
-
-    //this.reverseLookup(body.data); 
     let arr = this.state.archiveMarker;
     let point = L.latLng(body.data.latitude, body.data.longitude);
     arr.push(point);
@@ -1007,7 +986,8 @@ class App extends React.Component {
 
   async logout(e) {
     e.preventDefault();
-    const response = await fetch("https://" + this.state.host + '/logout', {
+    try {
+      const response = await fetch("https://" + this.state.host + '/logout', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1018,18 +998,23 @@ class App extends React.Component {
       body: JSON.stringify({
         user: this.state.login,
       })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
+      });
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(response.status + " " + response.statusText);  
+        throw Error(body.message);    
+      }    
+    } catch (error) {
+      alert("server offline " + error);  
+    } finally {
+      this.reset();
     } 
-    this.reset();  
   }
 
   async login(e) {  
     e.preventDefault();
-    const response = await fetch('https://' + this.state.host + '/login', {
+    try {
+      const response = await fetch('https://' + this.state.host + '/login', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1040,32 +1025,170 @@ class App extends React.Component {
         user: this.userInput.value,
         key: this.passwordInput.value
       })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
-    }  
-    if (body.result) {
-      window.sessionStorage.setItem('token', body.token);
-      window.sessionStorage.setItem('user', body.user);
-      this.setState({login: body.user});
-      this.setState({token: body.token}); 
-      this.buildProjects(body.projects);   
-      this.customNav.current.setTitle(body.user);
-      this.customNav.current.setOnClick((e) => this.logout(e));
-      this.setState({showLogin: false});
-      this.setState({message: ""});
-      if(this.state.login === 'admin') {
-        this.setState({admin: true});
+      });
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(response.status + " " + response.statusText);  
+        throw Error(body.message);   
+      }  
+      if (body.result) {
+        window.sessionStorage.setItem('token', body.token);
+        window.sessionStorage.setItem('user', body.user);
+        this.setState({login: body.user, token: body.token, showLogin: false, 
+          message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
+        this.buildProjects(body.projects);   
+        this.customNav.current.setTitle(body.user);
+        this.customNav.current.setOnClick((e) => this.logout(e));   
+        if(this.state.login === 'admin') {
+          this.setState({admin: true});
+        }
+      } else {
+        this.setState({message: "Username or password is incorrect!"});
       }
-    } else {
-      this.setState({message: "Username or password is incorrect!"});
+    } catch (error) {
+      alert(error)
+      this.setState({showLogin: false});
     }      
   }
   
-  async getDistrict(project) {  
-    await fetch('https://' + this.state.host + '/district', {
+  
+  /**
+   * checks if layer loaded if not adds layer to active layers
+   * calls fetch layer
+   * @param {event} e 
+   * @param {string} type - the type of layer to load i.e. road or footpath
+   */
+  async loadLayer(e, mode) { 
+    e.persist();
+    let projectCode = e.target.attributes.code.value;
+    let project = null;
+    for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
+      if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
+        return;
+      }
+    }   
+    if (mode === "road") {
+      project = this.findProject(this.state.projects.road, projectCode);  
+      if (!project) return;
+    } else {
+      project = this.findProject(this.state.projects.footpath, projectCode);  
+      if (!project) return;
+    } 
+    let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
+    let inspections = this.buildInspections(inspectionsBody)
+    let district = await this.requestDistrict(projectCode); 
+    let data = await this.requestFilterData(project);
+    let storeData = await this.requestFilterData(project);
+    let filters = this.buildFilter(data);
+    let store = this.buildFilter(storeData);
+    let layers = this.state.activeLayers;
+    layers.push(project);
+    let layerBody = await this.requestLayerDropdowns(project);
+    let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
+    if (layerBody.rmclass) {
+      this.setState({rmclass: layerBody.rmclass});
+      this.setState({filterRMClass: layerBody.rmclass})  
+    } 
+    this.antdrawer.current.setVideo(this.state.hasVideo);      
+    this.setState(() => ({
+      filterPriorities: priorities.filter, 
+      priorities: priorities.priorities,
+      rmclass: layerBody.rmclass,
+      filterRMClass: layerBody.rmclass,
+      filterStore: store,
+      filters: filters,
+      activeLayer: project,
+      activeLayers: layers,
+      district: district,
+      reverse: project.reverse,
+      inspections: inspections,
+      activeProject: projectCode,
+      projectMode: mode,
+      priorityMode: mode === "road" ? "Priority": "Grade",
+      bucket: this.buildBucket(projectCode),
+    }), async function() { 
+      this.filterLayer(this.state.activeLayer, true); //fetch layer
+      if (this.state.activeLayer.centreline) {
+        let login = {token: this.state.token, user: this.state.login}
+        this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
+      }
+    });
+  }
+
+  buildFilter(filters) {
+    if (!filters) return {};
+    filters.forEach(filter => {
+      let data = filter.data.map(element => Object.values(element)[0]);
+      data.sort()
+      filter.data = data;
+    });
+     return filters;
+  }
+
+  findProject(projects, code) {
+    for (let i = 0; i < projects.length; i++) { //find project
+      if (projects[i].code === code) {  //if found
+        return projects[i]
+        }
+    }
+    return null;
+  }
+
+  async requestInspections(project, mode) {
+    if (mode === 'footpath') return [];
+    try {
+      const response = await fetch('https://' + this.state.host + '/age', {
+      method: 'POST',
+      headers: {
+        "authorization": this.state.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: this.state.login,
+        project: project,
+      })
+      });
+      if(response.ok) {
+        const body = await response.json();
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else {
+          return body.result;            
+        }     
+      } else {
+        console.log(response);
+
+      }
+    } catch (error) {
+      alert(error)
+    }
+  }
+
+  /**
+   * Sets inspections array for use in filter
+   * @param {*} ages JSON object inspection array
+   */
+   buildInspections(values) {
+     if (!values) return;
+    if (values.length === 0) {
+      return [];
+    } else {
+      let inspections = [];
+      for (let i = 0; i < values.length; i++) {
+        let inspection = values[i].inspection; 
+        if (inspection !== null) {
+          inspections.push(inspection);       
+        }          
+      }
+      return inspections;
+    }   
+  }
+
+  async requestDistrict(project) {  
+    let response = await fetch('https://' + this.state.host + '/district', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1077,263 +1200,54 @@ class App extends React.Component {
         user: this.state.login,
         project: project
       })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json(); 
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else { 
-            this.setState({district: body.district})
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
-  }
-  /**
-   * checks if layer loaded if not adds layer to active layers
-   * calls fetch layer
-   * @param {event} e 
-   * @param {string} type - the type of layer to load i.e. road or footpath
-   */
-  async loadLayer(e, type) { 
-    e.persist();
-    this.setState({projectMode: type});
-    for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
-      if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
-        return;
-      }
-    }
-    let projects = null;
-    let project = e.target.attributes.code.value;   
-    let dynamicDropdowns = [];
-    await this.getSettings(project);
-    this.antdrawer.current.setVideo(this.state.hasVideo);
-    if (type === "road") {
-      projects = this.state.projects.road;
-      await this.loadFilters(project);    
-      for (let i = 0; i < this.state.faultClass.length; i++) {
-        let dropdown = new DynamicDropdown(this.state.faultClass[i].description);
-        dropdown.setCode(this.state.faultClass[i].code);
-        let result = await this.requestFaults(project, this.state.faultClass[i].code);
-        dropdown.setData(result);
-        dropdown.initialiseFilter();     
-        dynamicDropdowns.push(dropdown);
-      }
-      this.setState({filter: this.rebuildFilter()})
-      await this.getDistrict(project);
-    } else {
-      projects = this.state.projects.footpath;
-      this.setState({priorityMode: "Grade"});
-      let filters = ["Asset", "Fault", "Type", "Cause"];
-      for (let i = 0; i < filters.length; i++) {
-        let dropdown = new DynamicDropdown(filters[i]);
-        let result = await this.requestDropdown(project, filters[i]);
-        //console.log(result);
-        if (result != null) {
-          dropdown.setData(result);
-        }
-        dropdown.initialiseFilter();    
-        dynamicDropdowns.push(dropdown);
-      }
-      await this.getDistrict(project);
-    }
-    let layers = this.state.activeLayers;
-    for (let i = 0; i < projects.length; i++) { //find project
-      if (projects[i].code === e.target.attributes.code.value) {  //if found
-        let project = {code: projects[i].code, description: projects[i].description, amazon: projects[i].amazon, 
-          date: projects[i].date, surface: projects[i].surface, visible: true} //build project object
-        this.setState({amazon: projects[i].amazon});
-        layers.push(project);
-        this.setState({activeLayer: project});
-        break;
-        }
-    }
-    this.setState(() => ({
-      filterDropdowns: dynamicDropdowns,
-      activeLayers: layers,
-      activeProject: e.target.attributes.code.value,
-      bucket: this.buildBucket(project)
-    }), async function() { 
-      await this.requestLayerDropdowns(project);
-      if (type === "road") {
-        await this.requestAge(project); 
-      }
-      this.filterLayer(project, true); //fetch layer
-      if (this.state.erp) {
-        this.roadLinesRef.current.loadCentrelines(project); 
-      }
     });
-  }
-
-  async getSettings(project) {
-    let address = this.state.host + '/settings';
-    let body = await PostFetch(address, this.state.token, {user: this.state.login, project: project}).catch(error => {
-      console.log(error)
-      return;
-    });
-    if (!body) return;
-    if (body.priority) {
-      this.setState({priorityMode: "Priority"});
+    if(!response.ok) {
+      throw new Error(response.status);
     } else {
-      this.setState({priorityMode: "Grade"});
-    }
-    if (body.reverse) {
-      this.setState({reverse: true});
-    } else {
-      this.setState({reverse: false});
-    }
-    if (body.video) {
-      this.setState({hasVideo: true});
-    } else {
-      this.setState({hasVideo: false});
-    }
-    if(body.centreline) {
-      this.setState({erp: true});
-    } else {
-      this.setState({erp: false});
-    }
-    if(body.ramm) {
-      this.setState({ramm: true});
-    } else {
-      this.setState({ramm: false});
+      const body = await response.json(); 
+      if (body.error != null) {
+        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+        let e = document.createEvent("MouseEvent");
+        await this.logout(e);
+      } else { 
+        return body.district
+      }     
     }
   }
 
-  async buildView(project) {
-    const response = await fetch("https://" + this.state.host + '/view', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-      
-      })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
-  }
-
-  async requestDropdown(project, code) {
-    let result = null
-    if (this.state.login !== "Login") {
-      await fetch('https://' + this.state.host + '/dropdown', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-        code: code
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            result = body;   
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
+  async requestFilterData(project) {
+    try {
+      let response = await fetch('https://' + this.state.host + '/filterData', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: this.state.login,
+          project: project
+        })
       });
+      if(!response.ok) {
+        throw new Error(response.status);
+      } else {
+        const body = await response.json(); 
+        if (body.error != null) {
+          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+          let e = document.createEvent("MouseEvent");
+          await this.logout(e);
+        } else { 
+          return body;
+        }     
+      } 
+    } catch (error) {
+      alert(error)
     }
-    return result;
-  }
-
-  async requestFaults(project, code) {
-    let result = null
-      await fetch('https://' + this.state.host + '/faults', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-        code: code
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            result = body;     
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    return result;
-  }
-
-  async requestAge(project) {
-      await fetch('https://' + this.state.host + '/age', {
-      method: 'POST',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-      })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            this.buildAge(body.result);              
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
-  }
+}
 
   async requestLayerDropdowns(project) {
-      await fetch('https://' + this.state.host + '/layerdropdowns', {
+    let response = await fetch('https://' + this.state.host + '/layerdropdowns', {
       method: 'POST',
       headers: {
         "authorization": this.state.token,
@@ -1344,48 +1258,19 @@ class App extends React.Component {
         user: this.state.login,
         project: project,
       })
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            this.buildPriority(body.priority); 
-            if (body.rmclass) {
-              this.setState({rmclass: body.rmclass});
-              this.setState({filterRMClass: body.rmclass})  
-            }  
-          }     
-        }
-      }).catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      }); 
-  }
-
-
-  /**
-   * Sets inspections array for use in filter
-   * @param {*} ages JSON object inspection array
-   */
-  buildAge(ages) {
-    let inspections = [];
-    if (ages[0].inspection === null) {
-      this.setState({inspections: []});
+    });
+    if(!response.ok) {
+      throw new Error(response.status);
     } else {
-      for (let i = 0; i < ages.length; i++) {
-        let inspection = ages[i].inspection; 
-        if (inspection !== null) {
-          inspections.push(inspection);       
-        }          
-      }
-      this.setState({inspections: inspections})
-    }   
+      const body = await response.json(); 
+      if (body.error != null) {
+        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+        let e = document.createEvent("MouseEvent");
+        await this.logout(e);
+      } else { 
+        return body;
+      }     
+    } 
   }
 
   /**
@@ -1404,27 +1289,28 @@ class App extends React.Component {
     return year + "_" + month;
   }
 
-  buildPriority(priority) {
-    let arr = [];
-    let arrb = [];
+  buildPriority(priority, isPriority, ramm) {
+    let priorities = [];
+    let filter = [];
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 99) {
-        arr.push("Signage");
-        arrb.push(99);
+        priorities.push("Signage");
+        filter.push(99);
       } else {
-        arr.push(this.state.priorityMode + " " + priority[i])
-        arrb.push(priority[i]);
+        let mode = isPriority ? "Priority": "Grade";
+        let number = priority[i]
+        priorities.push(`${mode} ${number}`)
+        filter.push(number);
       }
     }
-    arr.sort();
-    if(this.state.ramm) {
-      arr.push("Programmed");
-      arrb.push(97);
+    priorities.sort();
+    if(ramm) {
+      priorities.push("Programmed");
+      filter.push(97);
     }
-    arr.push("Completed");
-    arrb.push(98);
-    this.setState({filterPriorities: arrb});
-    this.setState({priorities: arr});
+    priorities.push("Completed");
+    filter.push(98);
+    return ({filter: filter, priorities: priorities})
   }
 
   /**
@@ -1435,10 +1321,6 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.roadLinesRef.current.reset();
-    this.setState({objGLData: []});
-    this.setState({glpoints: []});
-    let glData = null;
-      this.GLEngine.redraw(glData, false); 
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1446,58 +1328,61 @@ class App extends React.Component {
         break;
       }
     }
-
-    //TODO clear the filter
     this.setState(
-      {priorities: [],
-      filter: [],
-      filterDropdowns: [],
-      filterPriorities: [],
-      filterRMClass: [],
-      rmclass: [],
-      faultClass: [],
-      amazon: null,
-      activeLayers: layers,
-      inspections: [],
-      bucket: null,
-      activeProject: null,
-      activeLayer: null,
-      ages: layers,
-      district: null}, () => {
-      }
-      );  
+      {
+        objGLData: [],
+        priorities: [],
+        //filterDropdowns: [],
+        filterPriorities: [],
+        filterRMClass: [],
+        projectMode: null,
+        filterStore: [],
+        filter: [],
+        rmclass: [],
+        faultData: [],
+        activeLayers: layers,
+        inspections: [],
+        bucket: null,
+        activeProject: null,
+        activeLayer: null,
+        ages: layers,
+        district: null}, () => {
+          let glData = null;
+          this.GLEngine.redraw(glData, false); 
+        }
+    );  
   }
 
   getBody(project) {
-    if (this.state.projectMode === "road") {
+    let filter = []
+    if (project.surface === "road") {
+      this.state.filters.forEach(arr => {
+        let data = arr.data
+        filter = filter.concat(data);
+      })
       return JSON.stringify({
         user: this.state.login,
-        project: project,
-        filter: this.state.filter,
+        project: project.code,
+        filter: filter,
         priority: this.state.filterPriorities,
+        archive: project.isarchive,
+        surface: project.surface,
         rmclass: this.state.filterRMClass,
-        inspection: this.state.inspections
+        inspection: this.state.inspections,
       })   
     } else {
-      let filterObj = [];
-
-      for (let i = 0; i <  this.state.filterDropdowns.length; i++) {
-        let obj = {name: this.state.filterDropdowns[i].name, filter: this.state.filterDropdowns[i].filter}
-        filterObj.push(obj)
-      }
-      if (filterObj.length !==0) {
         return JSON.stringify({
           user: this.state.login,
-          project: project,
-          filter: this.state.filter,
-          //TODO temp hack should be dymnic array to hold footpath filters
+          project: project.code,
+          filter: this.state.filters,
+          surface: project.surface,
+          archive: project.isarchive,
           priority: this.state.filterPriorities,
-          assets: this.state.filterDropdowns[0].filter,
-          faults: this.state.filterDropdowns[1].filter,
-          types: this.state.filterDropdowns[2].filter,
-          causes: this.state.filterDropdowns[3].filter})
+          rmclass: this.state.filterRMClass,
+          inspection: this.state.inspections,
+        })
       }
-    }     
+         
   }
 
   async sendData(project, data, endpoint) {
@@ -1525,7 +1410,7 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeProject, false);
+              this.filterLayer(this.state.activeLayer, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1545,30 +1430,29 @@ class App extends React.Component {
   async filterLayer(project, zoom) {
     this.setState({spinner: true});
       let body = this.getBody(project);
-      if (typeof body !== 'undefined') {
-        await fetch('https://' + this.state.host + '/layer', {
-          method: 'POST',
-          headers: {
-            "authorization": this.state.token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: body
-          }).then(async (response) => {
-            if(!response.ok) {
-              throw new Error(response.status);
-            } else {
-              const body = await response.json();
-              if (body.error != null) {
-                alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-                let e = document.createEvent("MouseEvent");
-                await this.logout(e);
-              } else {
-                await this.addGLGeometry(body.points, body.lines, body.type, zoom);
-              }     
-            }
-          })   
-        }         
+      if (!body) return;
+      await fetch('https://' + this.state.host + '/layer', {
+        method: 'POST',
+        headers: {
+          "authorization": this.state.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      },
+      body: body
+      }).then(async (response) => {
+        if(!response.ok) {
+          throw new Error(response.status);
+        } else {
+          const body = await response.json();
+          if (body.error != null) {
+            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+            let e = document.createEvent("MouseEvent");
+            await this.logout(e);
+          } else {
+            await this.addGLGeometry(body.points, body.lines, body.type, zoom);
+          }     
+        }
+      });                
   }
 
   async loadCentreline(e) {
@@ -1621,12 +1505,13 @@ class App extends React.Component {
           })
         }).then(async (response) => {
           const body = await response.json();
+          console.log(body)
           if (body.error != null) {
             alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
             let e = document.createEvent("MouseEvent");
             await this.logout(e);
           } else {
-            this.setState({faultClass: body});
+            this.setState({faultData: body});
           }   
         })
         .catch((error) => {
@@ -1850,6 +1735,10 @@ class App extends React.Component {
     }
   }
 
+  updateFilter = (filter) => {
+    this.setState({filters: filter})
+  }
+
   clickLogin(e) {
     e.preventDefault();
     this.setState({showLogin: true});   
@@ -1873,64 +1762,6 @@ class App extends React.Component {
     this.setState({showTerms: false});    
   }
 
-  clickPage(index) {
-    this.setState({pageActive: index});
-    this.getFaultTypes(this.state.faultClass[index].code);
-  }
-
-  /**
-   * adds or removes fault to array  which keeps track of which faults are checked in the filter modal
-   * @param {event} e 
-   */
-  clickCheck(e, value, input) {
-    this.applyRef.current.innerHTML = "Apply Filter";
-    if (value.active) { //dropdown active
-      let index = this.searchArray(value.filter, input)
-      if (index !== - 1)  {
-        value.filter.splice(index, 1);
-        value.active = false;
-      } else {
-        value.filter.push(input);
-      }
-    } else {
-      let index = this.searchArray(value.filter, input) 
-      if (index !== - 1)  {
-        value.filter.splice(index, 1);
-      } else {
-        value.filter.push(input);
-        if (value.data.result.length === value.filter.length) value.active = true;
-      }  
-    }
-    this.setState({filter: this.rebuildFilter()})
-  }
-
-  /**
-   * 
-   * @param {array to search} arr 
-   * @param {value to search for} value 
-   * @returns {-1 if not found else index of input
-   */
-  searchArray(arr, value) {
-    let found = -1;
-    for (let i = 0; i < arr.length; i += 1) {
-      if (value === arr[i]) {
-        found = i;
-      }    
-    }
-    return found;
-  }
-
-  clickActive(e, index) {
-    e.target.checked ? this.state.filterDropdowns[index].setActive(false) : this.state.filterDropdowns[index].setActive(true);
-  }
-
-  isActive(value, index) {
-    return this.state.filterDropdowns[index].isActive();
-  }
-
-  changeActive(e) {
-  }
-
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1946,31 +1777,6 @@ class App extends React.Component {
     console.log(this.state.activeLayers[index]);
     this.setState({activeLayer: this.state.activeLayers[index]});
   }
-/**
- * Clears all the checkboxes and filter for that dropdown
- * @param {event} e 
- * @param {DynmaicDropdown} value 
- */
-  onClear(e, value) {
-    value.clearFilter();
-  }
-
-  /**
-   * Checks is dropdown box is checked or unchecked
-   * @param {DynmaicDropdown} value 
-   */
-  isInputActive(value) {
-    return value.active
-  }
-
-  /**
- * Selects all the checkboxes and filter for that dropdown
- * @param {event} e 
- * @param {DynmaicDropdown} value 
- */
-  onSelect(e, value) {
-    value.initialiseFilter();
-  }
 
   /**
    * Fires when user clicks apply button. 
@@ -1980,72 +1786,21 @@ class App extends React.Component {
     e.preventDefault();
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     } else {
-      e.target.innerHTML = "Apply Filter";  
-      this.resetDropdowns();
-      let filter = this.rebuildFilter();
+      e.target.innerHTML = "Apply Filter";
+      let newFilter = [];
+      this.state.filterStore.forEach((element) => {
+        let object = {...element}
+        object.data = [...element.data];
+        newFilter.push(object);
+      })
       this.setState({
-        filter: filter
+        filters: newFilter
       }, () => {
-        this.filterLayer(this.state.activeProject, false);
+        this.filterLayer(this.state.activeLayer, false);
       });  
     }
-  }
-
-  /**
-   * 
-   * @param {event} e 
-   * @param {tick box clicked} value 
-   */
-  clickSelect(e, value) {
-    this.applyRef.current.innerHTML = "Apply Filter";
-    if (value.active) {
-      value.filter = [];
-      value.active = false
-    } else {
-      value.filter = [...value.data.result]
-      value.active = true;
-    }
-    let filter = this.rebuildFilter()
-    this.setState({filter: filter});
-  }
-
-  resetDropdowns() {
-    let filter = [];
-    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      this.state.filterDropdowns[i].active = true;
-      this.state.filterDropdowns[i].filter = [...this.state.filterDropdowns[i].data.result];
-      filter.push(this.state.filterDropdowns[i].filter);
-    }
-  }
-
-  rebuildFilter() {
-    let filter = [];
-    for (let i = 0; i < this.state.filterDropdowns.length; i++) {
-      for (let j = 0; j < this.state.filterDropdowns[i].filter.length; j++) {
-        filter.push(this.state.filterDropdowns[i].filter[j]);
-      }
-    }
-    return filter   
-  }
-
-  /**
- * checks if each fault is checked by searching checkedFault array
- * @param {the dropdown} value 
- * * @param {the index of the fault within the dropdown} index 
- * @return {}
- */
-   isChecked(input, filter) {
-    if (filter.includes(input)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  changeCheck(e) {
-
   }
 
     /**
@@ -2054,7 +1809,7 @@ class App extends React.Component {
    */
   updatePriority = (query) => {
     this.setState({filterPriorities: query}, () => {
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     });
     
   }
@@ -2064,7 +1819,7 @@ class App extends React.Component {
    */
   updateRMClass = (query) => {
     this.setState({filterRMClass: query}, () => {
-      this.filterLayer(this.state.activeProject, false);
+      this.filterLayer(this.state.activeLayer, false);
     });
     
   }
@@ -2151,114 +1906,6 @@ class App extends React.Component {
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
 
-    // const CustomLink = (props) => {
-    //   if (props.endpoint === "/data") {
-    //     return (null);
-    //   }
-    //   if (this.state.activeLayer === null) {
-    //     return(null);
-    //   } else {
-    //     return (
-    //       <Link 
-    //         className="dropdownlink" 
-    //         to={{
-    //           pathname: props.endpoint,
-    //           login: this.customNav.current,
-    //           user: this.state.login,
-    //           data: this.state.objGLData,
-    //           project: this.state.activeLayer
-    //         }}
-    //         style={{ textDecoration: 'none' }}
-    //         >{props.label}
-    //       </Link>
-    //     );
-    //   }      
-    // }
-
-    const LayerNav = (props) => { 
-      if (props.user === 'admin') {
-        return (
-          <Nav>       
-          <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
-            <NavDropdown.Item  
-              className="adminitem" 
-              title="Add New User" 
-              onClick={props.addUser}>
-              Manage User     
-            </NavDropdown.Item>
-            <NavDropdown.Divider />
-            <NavDropdown.Item
-              title="Add New Project" 
-              className="adminitem" 
-              onClick={props.addProject}>
-              Manage Projects 
-              </NavDropdown.Item>
-              <NavDropdown.Divider /> 
-            <NavDropdown.Item  
-              title="Import" 
-              className="adminitem" 
-              projects={props.layers} 
-              admin={props.admin}
-              onClick={props.importData}>
-              Import Data    
-            </NavDropdown.Item>
-            <NavDropdown.Divider />
-          </NavDropdown>
-        </Nav>
-        );
-      } else {
-        if (props.layers.length > 0) {
-            return (
-              <Nav>          
-              <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
-                <CustomMenu 
-                  title="Add Roading Layer" 
-                  className="navdropdownitem" 
-                  type={'road'} 
-                  projects={props.projects.road} 
-                  onClick={props.loadLayer}/>
-                  <NavDropdown.Divider />
-                <CustomMenu 
-                  title="Add Footpath Layer" 
-                  className="navdropdownitem" 
-                  type={'footpath'} 
-                  projects={props.projects.footpath} 
-                  onClick={props.loadFootpathLayer}/>
-                  <NavDropdown.Divider />
-                <CustomMenu 
-                  title="Remove Layer" 
-                  className="navdropdownitem" 
-                  projects={props.layers} 
-                  onClick={props.removeLayer}/>
-              </NavDropdown>
-            </Nav>
-            );     
-        } else {
-          return (
-            <Nav>          
-            <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
-              <CustomMenu 
-                title="Add Roading Layer" 
-                className="navdropdownitem" 
-                type={'road'} 
-                projects={props.projects.road} 
-                layers={props.layers} 
-                onClick={props.loadRoadLayer}/>
-              <CustomMenu 
-                title="Add Footpath Layer" 
-                className="navdropdownitem" 
-                type={'footpath'}
-                projects={props.projects.footpath} 
-                layers={props.layers} 
-                onClick={props.loadFootpathLayer}/>
-            </NavDropdown>        
-          </Nav>
-          );
-        }
-      }
-      
-    }
-
     return ( 
       <> 
         <div>        
@@ -2302,19 +1949,18 @@ class App extends React.Component {
             </Nav>
             <Nav>
               <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">         
-                  <CustomLink 
-                    className="dropdownlink" 
-                    endpoint="/statistics"
-                    label="Create Report"
-                    data={this.state.objGLData}
-                    login={this.customNav.current}
-                    user={this.state.login}
-                    data={this.state.objGLData}
-                    activeLayer={this.state.activeLayer}
-                    style={{ textDecoration: 'none' }}
-                    >
-                  </CustomLink>       
-                </NavDropdown>   
+                <CustomLink 
+                  className="dropdownlink" 
+                  endpoint="/statistics"
+                  label="Create Report"
+                  data={this.state.objGLData}
+                  login={this.customNav.current}
+                  user={this.state.login}
+                  activeLayer={this.state.activeLayer}
+                  style={{ textDecoration: 'none' }}
+                  >
+                </CustomLink>       
+              </NavDropdown>   
             </Nav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
@@ -2346,16 +1992,17 @@ class App extends React.Component {
                 priorityfilter={this.state.filterPriorities} 
                 priorityonClick={this.updatePriority}
                 classtitle={'RM Class'}
-                classitems={this.state.rmclass}
+                classitems={this.state.rmclass ? this.state.rmclass: []}
                 classlogin={this.state.login}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
-              >
+              >               
               </LayerCard>
               <Roadlines
-                    className={"rating"}
-                    ref={this.roadLinesRef} >
-                  </Roadlines> 
+                className={"rating"}
+                ref={this.roadLinesRef} 
+                >
+              </Roadlines> 
             </div>
             <hr className='sidebar-line'>
             </hr>
@@ -2363,50 +2010,18 @@ class App extends React.Component {
               <div className="filterstitle">
                 <p>Filters</p>
               </div>
-              <div className="filter-group">
-                {this.state.filterDropdowns.map((value, indexNo) =>
-                  <Dropdown 
-                    className="dropdown"
-                    key={`${indexNo}`} 
-                    drop={'right'}  
-                    >                
-                    <Dropdown.Toggle variant="light" size="sm">
-                      <input
-                        key={`${indexNo}`} 
-                        id={value} 
-                        type="checkbox" 
-                        checked={value.active} 
-                        onChange={(e) => this.changeActive(e)}
-                        onClick={(e) => this.clickSelect(e, value)}
-                        >
-                      </input>
-                      {value.name}         
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu className="custommenu">
-                      {value.data.result.map((input, index) =>
-                        <div key={`${index}`}>
-                          <input
-                            key={`${index}`} 
-                            id={input} 
-                            type="checkbox" 
-                            checked={this.isChecked(input, value.filter)} 
-                            onClick={(e) => this.clickCheck(e, value, input)}
-                            onChange={(e) => this.changeCheck(e)}
-                            >
-                          </input>{" " + input}<br></br>
-                        </div> 
-                        )}
-                      <Dropdown.Divider />
-                    </Dropdown.Menu>
-                  </Dropdown>
-                )}
-              </div>
-              <FilterButton
-                className="apply-btn" 
-                ref={this.applyRef} 
-                layer={this.state.activeLayer} 
-                onClick={(e) => this.clickApply(e)}>  
-              </FilterButton>
+                <Filter
+                  filter={this.state.filters}
+                  store={this.state.filterStore}
+                  mode={this.state.projectMode}
+                  update={this.updateFilter}
+                />
+                <FilterButton
+                  className="apply-btn" 
+                  ref={this.applyRef} 
+                  layer={this.state.activeLayer} 
+                  onClick={(e) => this.clickApply(e)}>  
+                </FilterButton>
             </div>
           </div>   
    
@@ -2462,8 +2077,8 @@ class App extends React.Component {
               data={obj}
               login={this.state.login}
               position={obj.latlng}
-              src={this.state.amazon + obj.photo + ".jpg"} 
-              amazon={this.state.amazon}
+              src={this.state.activeLayer.amazon + obj.photo + ".jpg"} 
+              amazon={this.state.activeLayer.amazon}
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}
@@ -2543,7 +2158,7 @@ class App extends React.Component {
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 
-        amazon={this.state.amazon}
+        amazon={!this.state.activeLayer ? null: this.state.activeLayer}
         currentPhoto={this.state.currentPhoto}
         project={this.state.activeLayer}
       >

@@ -12,7 +12,7 @@ let findUserToken = (token, name) => {
         //console.log("found token");
         return true;
     } else {
-       // console.log("user not found");
+       //console.log("user not found");
         return false;
     }
 };

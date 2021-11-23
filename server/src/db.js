@@ -89,7 +89,7 @@ module.exports = {
     },
     projects : (user) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline FROM projects WHERE client = $1::text AND active = true';
+            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ramm, rmclass FROM projects WHERE client = $1::text AND active = true';
             connection.query(sql, [user], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -117,7 +117,7 @@ module.exports = {
 
     settings : (project) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT priority, reverse, hasvideo, isarchive, centreline, ramm FROM projects WHERE code = $1::text';
+            let sql = 'SELECT priority, reverse, hasvideo, isarchive, centreline, ramm, rmclass FROM projects WHERE code = $1::text';
             connection.query(sql, [project], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -145,6 +145,20 @@ module.exports = {
                 }
                 let priority = resolve(result);
                 return priority;
+            });
+        });
+    },
+
+    grade: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT grade FROM footpaths WHERE project = '" + project + "' GROUP BY grade ORDER BY grade";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let grade = resolve(result);
+                return grade;
             });
         });
     },
@@ -327,20 +341,6 @@ module.exports = {
         });
     },
 
-    filters: (project, parameter) => {
-        return new Promise((resolve, reject) => {
-            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error executing query', err.stack)
-                    return reject(err);
-                }
-                let type = resolve(result);
-                return type;
-            });
-        });
-    },
-
     // classes: ()=> {
     //     return new Promise((resolve, reject) => {
     //         let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
@@ -406,6 +406,7 @@ module.exports = {
     },
 
     faults: (user, project, code, archive) => {
+        
         return new Promise((resolve, reject) => {
             let sql = null;
             let table = user === 'asu' ? 'asufaults' : 'roadfaults'
@@ -421,6 +422,20 @@ module.exports = {
                 }
                 let faults = resolve(result);
                 return faults;
+            });
+        });
+    },
+
+    footpathFaults: (project, parameter) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let type = resolve(result);
+                return type;
             });
         });
     },
@@ -747,12 +762,16 @@ module.exports = {
 
     },
 
-    footpath: (project, options, assets, faults, types, causes) => {
+    footpath: (project, options, filter) => {
+        let assets = filter.find(object => object.code === "Asset");
+        let faults = filter.find(object => object.code === "Fault")
+        let types = filter.find(object => object.code === "Type")
+        let causes = filter.find(object => object.code === "Cause")
         let _priority = buildQuery(options.priority);
-        let _assets = buildQuery(assets);
-        let _faults = buildQuery(faults);
-        let _types = buildQuery(types);
-        let _causes = buildQuery(causes);
+        let _assets = buildQuery(assets.data);
+        let _faults = buildQuery(faults.data);
+        let _types = buildQuery(types.data);
+        let _causes = buildQuery(causes.data);
         let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
@@ -769,11 +788,15 @@ module.exports = {
         });
     },
 
-    footpathCompleted: (project, assets, faults, types, causes) => {
-        let _assets = buildQuery(assets);
-        let _faults = buildQuery(faults);
-        let _types = buildQuery(types);
-        let _causes = buildQuery(causes);
+    footpathCompleted: (project, filter) => {
+        let assets = filter.find(object => object.code === "Asset");
+        let faults = filter.find(object => object.code === "Fault")
+        let types = filter.find(object => object.code === "Type")
+        let causes = filter.find(object => object.code === "Cause")
+        let _assets = buildQuery(assets.data);
+        let _faults = buildQuery(faults.data);
+        let _types = buildQuery(types.data);
+        let _causes = buildQuery(causes.data);
         let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'completed'";

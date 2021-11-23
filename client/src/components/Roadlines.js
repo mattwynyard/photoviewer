@@ -10,7 +10,6 @@ export default class Roadlines extends Component {
         this.state = {
             project: null,
             login: null,
-            token: null,
             host: null,
             menu: ["Structural Rating", "Surface Rating", "Drainage Rating"],
             filter: [],
@@ -27,14 +26,6 @@ export default class Roadlines extends Component {
       window.sessionStorage.setItem('centrelines', JSON.stringify(this.state.data));
     }
 
-    setProject(project) {
-      this.setState({project: project.layer});
-      this.setState({login: project.login});
-      this.setState({host: project.host});
-      this.setState({token: project.token});
-
-    }
-
     setDelegate(delegate) {
       this.delegate = delegate;
     }
@@ -49,6 +40,7 @@ export default class Roadlines extends Component {
           data: null,
           filter: [],
           active: false,
+          project: null
         }
         );
     }
@@ -61,17 +53,17 @@ export default class Roadlines extends Component {
         this.delegate.redraw(glData, false);   
     }
 
-    async loadCentrelines(project) {
-      //if (this.state.login !== "Login") {
-        await fetch('https://' + this.state.host + '/centrelines', {
+    async loadCentrelines(project, host, login) {
+      this.setState({login: login, project: project} )
+        await fetch('https://' + host + '/centrelines', {
           method: 'POST',
           headers: {
-            "authorization": this.state.token,
+            "authorization": login.token,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user: this.state.login,
+            user: login.user,
             project: project
           })
         }).then(async (response) => {

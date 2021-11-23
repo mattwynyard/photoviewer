@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const morgan = require('morgan');
+//const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
@@ -19,7 +19,6 @@ const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 const schedule = require('node-schedule');
-
 
 // comment out create server code below when deploying to server
 // server created in index.js
@@ -139,8 +138,7 @@ app.post('/login', async (request, response) => {
         response.json({ result: true, user: user, token: token, projects: arr});
         users.addUser({
           name: user,
-          token: token,
-         
+          token: token,         
           }
         );
       } else {      
@@ -219,7 +217,6 @@ app.post('/user', async (req, res, next) => {
 });
 
 app.post('/usernames', async (req, res) => {
- 
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if(result) {
     let result = await db.usernames(req.body.client);
@@ -228,7 +225,6 @@ app.post('/usernames', async (req, res) => {
       if(result.rows[i].username !== "admin") {
         arr.push(result.rows[i].username);
       }
-
     }
     res.send({success: true, usernames: arr})
   } else {
@@ -293,29 +289,6 @@ app.post('/project', async (req, res) => {
     res.send({error: "Invalid token"});
   }
     
-});
-
-app.post('/view', async(req, res) => {
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project.code);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    res.set('Content-Type', 'application/json');
-    try {
-      let result = await db.buildView(req.body.project.code);
-      res.send({success: true});
-    } catch (err) {
-      console.log(err);
-      res.send({error: err});
-    }
-    
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
 });
 
 app.post('/carriageway', async(req, res) => {
@@ -403,32 +376,8 @@ app.post('/centrelines', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
+    
     let result = await db.roadLines(req.body.project);
-    //let result = await db.rating(req.body.project);
-    //console.log(result)
-    if (result.rowCount != 0) {
-      res.send({success: true, data: result.rows});
-    } else {
-      res.send({success: false, data: []});
-    }
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
-/**
- * endpoint for returning carriage rating data
- */
-app.post('/rating', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    let result = await db.rating(req.body.project);
     if (result.rowCount != 0) {
       res.send({success: true, data: result.rows});
     } else {
@@ -615,7 +564,6 @@ app.post('/district', async (req, res) => {
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
-
   if (result) {
     try {
       let result = await db.district(req.body.project);
@@ -654,29 +602,45 @@ app.post('/class', async (req, res) => {
     res.send({error: "Invalid token"});
   } 
 });
-  
+
 /**
- * gets faults for specific class
- * 
+ * Gets fault classes from db
+ * i.e. user clicked filter from menu
+ * const FOOTPATH_FILTERS = ["Asset", "Fault", "Type", "Cause"];
  */
-app.post('/faults', async (req, res) => {
+ app.post('/filterData', async (req, res) => {
   let result = false;
-  let project = req.body.project;
-  if (req.body.user === 'Login') {
+  let project = req.body.project.code;
+  let user = req.body.user;
+  let token = req.headers.authorization;
+  if (user === 'Login') {
     result = await db.isPublic(project);
   } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
+    result = users.findUserToken(token, user);
   }
   if (result) {
-    let isarchive = await db.isArchive(project); 
-    let archive = isarchive.rows[0].isarchive
-    let faults = await db.faults(req.body.user, project, req.body.code, archive);
-    let result = [];
-    for (let i = 0; i < faults.rows.length; i++) {
-      result.push(faults.rows[i].fault)
+    let archive = req.body.project.isarchive;
+    let faultData = null;
+    let surface = req.body.project.surface;
+    if (surface === "footpath") {
+      faultData = [{code: "Asset", description: "Asset"}, {code:  "Fault", description: "Fault"} , 
+      {code:  "Type", description: "Type"} , {code: "Cause", description: "Cause"}];
+    } else {
+      let fclass = await db.class(user, project, archive);
+      faultData = fclass.rows;
+    }
+    for (let i = 0; i < faultData.length; i++) {
+      if (surface === "road") {
+        let faults = await db.faults(user, project, faultData[i].code, archive);
+        faultData[i].data = faults.rows;
+      } else {
+        let faults = await db.footpathFaults(project, faultData[i].description);
+
+        faultData[i].data = faults.rows;
+      }    
     }
     res.set('Content-Type', 'application/json')
-    res.send({result: result});
+    res.send(faultData);
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -702,39 +666,21 @@ app.post('/age', async (req, res) => {
 } 
 });
 
-app.post('/settings', async (req, res) => { 
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let result = await db.settings(project);
-    res.set('Content-Type', 'application/json'); 
-    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, 
-      centreline: result.rows[0].centreline, ramm: result.rows[0].ramm});  
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
-});
-
 app.post('/layerdropdowns', async (req, res) => { 
   let result = false;
   if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
+    result = await db.isPublic(req.body.project.code);
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let project = req.body.project;
-    let surface = await db.projecttype(project);
-    let archive = await db.isArchive(project);
-    let hasClass = await db.hasClass(project);
+    let project = req.body.project.code;
+    let surface = req.body.project.surface;
+    let archive = req.body.project.isarchive;
+    let hasClass = req.body.project.rmclass;
     let rmclass = [];
-    if (hasClass.rows[0].rmclass) {
+    let priority = [];
+    if (hasClass) {
       let result = await db.rmclass(project, req.body.user);
       let values = [];
       for (let i = 0; i < result.rows.length; i++) {
@@ -743,53 +689,25 @@ app.post('/layerdropdowns', async (req, res) => {
       }
       rmclass = values;
     }
-    if (surface.rows[0].surface === "footpath") {
-      let result = await db.filters(project, "grade", archive.rows[0].isarchive);
-      let grade = []
+    if (surface === "footpath") {
+      let result = await db.grade(project);
       for (let i = 0; i < result.rows.length; i++) {
         let value = Object.values(result.rows[i]);
         if (value[0] === '1' || value[0] === '2') {
           continue;
         } else {
-          grade.push(value[0]);
+          priority.push(value[0]);
         }
-      }
-      res.set('Content-Type', 'application/json'); 
-      res.send({priority: grade});        
+      }      
     } else {
-      let result = await db.priority(req.body.user, project, archive.rows[0].isarchive);
-      let priority = [];
+      let result = await db.priority(req.body.user, project, archive); 
       for (let i = 0; i < result.rows.length; i++) {
         let value = Object.values(result.rows[i]);
         priority.push(value[0]);
-      }
-      res.set('Content-Type', 'application/json'); 
-      res.send({priority: priority, rmclass: rmclass});        
-    }    
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
-});
-
-app.post('/dropdown', async (req, res) => { 
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let code = req.body.code;
-    let data = await db.filters(project, code);
-    let result = [];
-    for (let i = 0; i < data.rows.length; i++) {
-      let value = Object.values(data.rows[i]);
-      result.push(value[0]);
-    }
-    res.set('Content-Type', 'application/json');
-    res.send({result: result});   
+      }       
+    } 
+    res.set('Content-Type', 'application/json'); 
+    res.send({priority: priority, rmclass: rmclass});    
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -807,23 +725,17 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    console.log(req.body)
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
     let rclass = req.body.rmclass;
     let inspection = req.body.inspection;
-    let faults = req.body.faults;
-    let assets = req.body.assets;;
-    let types = req.body.types;
-    let causes = req.body.causes;
     let isCompleted = false;
     let finalPoints = null;
     let finalLines = null;
     let options = {priority: [], status: []};
-    let surface = await db.projecttype(project);
-    let isarchive = await db.isArchive(project); 
-    let archive = isarchive.rows[0].isarchive;
+    let surface = req.body.surface;
+    let archive = req.body.archive;
     for (let i = 0; i < priority.length; i++) {
       if (priority[i] === 98) {
         options.status.push("completed");
@@ -839,19 +751,19 @@ app.post('/layer', async (req, res) => {
     let activeLines = [];
     let completedPoints = [];
     let completedLines = [];
-    if (surface.rows[0].surface === "footpath") { ///**** FIX FOOTPATH QUERY */
+    if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (options.priority.length !== 0) {
-        let geometry = await db.footpath(project, options, assets, faults, types, causes);
+        let geometry = await db.footpath(project, options, filter);
         activePoints = geometry.rows;
         activeLines = [];
       } 
       if (isCompleted) {
-        let points = await db.footpathCompleted(project, assets, faults, types, causes);
+        let points = await db.footpathCompleted(project, filter);
         completedPoints = points.rows;
         completedLines = [];
       }
       finalPoints = activePoints.concat(completedPoints);
-    } else if (surface.rows[0].surface === "road") {
+    } else if (surface === "road") {
         if (archive) {
           let points = await db.layer(project, filter, options, inspection);
           activePoints = points.rows;
@@ -878,7 +790,7 @@ app.post('/layer', async (req, res) => {
     finalLines = activeLines.concat(completedLines);
     
     res.set('Content-Type', 'application/json');
-    res.send({type: surface.rows[0].surface, points: finalPoints, lines: finalLines});
+    res.send({type: surface, points: finalPoints, lines: finalLines});
   } else {
     res.send({error: "Invalid token"});
   } 
@@ -937,34 +849,6 @@ app.post('/update', async (req, res) => {
 } 
 });
 
-app.post('/status', async (req, res) => {
-  const token = users.findUserToken(req.headers.authorization, req.body.user);
-  if (token) {
-    let id = req.body.marker[0].id;
-    let project = req.body.project;
-    let status = req.body.status;
-    let date = req.body.date;
-    let result = await db.projecttype(project);
-    let surface = result.rows[0].surface;
-    result = await db.updateStatus(project, surface, id, status, date);
-    if(result.rowCount === 1) {
-      res.set('Content-Type', 'application/json');
-      res.send({rows: "Updated 1 row"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      res.send({error: "failed to update"});
-    }
-  }else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  } 
-});
-
-app.post('/gps', (req, res) => {
-  res.set('Content-Type', 'application/json');
-  res.send({ express: 'Server online' });
-});
-
 app.post('/import', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
   if(token) {
@@ -987,7 +871,6 @@ app.post('/import', async (req, res) => {
           }
         } catch(err) {
           errors++
-          //console.log(err);
         }
       } 
       res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
@@ -1005,7 +888,6 @@ app.post('/import', async (req, res) => {
         }
       } catch(err) {
         errors++
-        //console.log(err);
       }   
     }
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
