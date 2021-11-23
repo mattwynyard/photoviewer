@@ -10,7 +10,6 @@ export default function LayerCard(props) {
             <Card.Header className='layercard-title'>{props.layer !== null ? props.layer.description: ''}</Card.Header>
             <Card.Body className='layercard-body'>
                 <PriorityDropdown
-                // layer={props.prioritylayer}
                 title={props.prioritytitle}
                 items={props.priorityitems}
                 reverse={props.priorityreverse}
@@ -18,17 +17,12 @@ export default function LayerCard(props) {
                 onClick={props.priorityonClick}
                 />
                 <ClassDropdown
-                // layer={props.classlayer}
                 title={props.classtitle}
                 items={props.classitems}
                 login={props.classlogin}
                 filter={props.classfilter} 
                 onClick={props.classonClick}
                 />
-                {/* <Roadlines
-                className={"rating"}
-                ref={this.roadLinesRef} >
-                </Roadlines>  */}
             </Card.Body>
             </Card>
         );

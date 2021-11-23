@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const morgan = require('morgan');
+//const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
@@ -140,8 +140,7 @@ app.post('/login', async (request, response) => {
         response.json({ result: true, user: user, token: token, projects: arr});
         users.addUser({
           name: user,
-          token: token,
-         
+          token: token,         
           }
         );
       } else {      
@@ -220,7 +219,6 @@ app.post('/user', async (req, res, next) => {
 });
 
 app.post('/usernames', async (req, res) => {
- 
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if(result) {
     let result = await db.usernames(req.body.client);
@@ -229,7 +227,6 @@ app.post('/usernames', async (req, res) => {
       if(result.rows[i].username !== "admin") {
         arr.push(result.rows[i].username);
       }
-
     }
     res.send({success: true, usernames: arr})
   } else {
@@ -294,29 +291,6 @@ app.post('/project', async (req, res) => {
     res.send({error: "Invalid token"});
   }
     
-});
-
-app.post('/view', async(req, res) => {
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project.code);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    res.set('Content-Type', 'application/json');
-    try {
-      let result = await db.buildView(req.body.project.code);
-      res.send({success: true});
-    } catch (err) {
-      console.log(err);
-      res.send({error: err});
-    }
-    
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
 });
 
 app.post('/carriageway', async(req, res) => {
@@ -615,7 +589,6 @@ app.post('/district', async (req, res) => {
   } else {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
-
   if (result) {
     try {
       let result = await db.district(req.body.project);
@@ -672,7 +645,6 @@ app.post('/class', async (req, res) => {
   }
   if (result) {
     let archive = req.body.project.isarchive;
-    let fclass = null;
     let faultData = null;
     let surface = req.body.project.surface;
     if (surface === "footpath") {
@@ -681,7 +653,6 @@ app.post('/class', async (req, res) => {
     } else {
       let fclass = await db.class(user, project, archive);
       faultData = fclass.rows;
-     
     }
     for (let i = 0; i < faultData.length; i++) {
       if (surface === "road") {
@@ -701,36 +672,6 @@ app.post('/class', async (req, res) => {
   } 
 });
 
-
-  
-/**
- * gets faults for specific class
- * 
- */
-app.post('/faults', async (req, res) => {
-  let result = false;
-  let project = req.body.project;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let isarchive = await db.isArchive(project); 
-    let archive = isarchive.rows[0].isarchive
-    let faults = await db.faults(req.body.user, project, req.body.code, archive);
-    let result = [];
-    for (let i = 0; i < faults.rows.length; i++) {
-      result.push(faults.rows[i].fault)
-    }
-    res.set('Content-Type', 'application/json')
-    res.send({result: result});
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  } 
-});
-
 app.post('/age', async (req, res) => { 
   let result = false;
   if (req.body.user === 'Login') {
@@ -744,25 +685,6 @@ app.post('/age', async (req, res) => {
     let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
     res.set('Content-Type', 'application/json'); 
     res.send({result: result.rows});  
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
-});
-
-app.post('/settings', async (req, res) => { 
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let result = await db.settings(project);
-    res.set('Content-Type', 'application/json'); 
-    res.send({priority: result.rows[0].priority, reverse: result.rows[0].reverse, video: result.rows[0].hasvideo, 
-      centreline: result.rows[0].centreline, ramm: result.rows[0].ramm, rmclass: result.rows[0].rmclass});  
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -811,30 +733,6 @@ app.post('/layerdropdowns', async (req, res) => {
     } 
     res.set('Content-Type', 'application/json'); 
     res.send({priority: priority, rmclass: rmclass});    
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
-});
-
-app.post('/dropdown', async (req, res) => { 
-  let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let code = req.body.code;
-    let data = await db.filters(project, code);
-    let result = [];
-    for (let i = 0; i < data.rows.length; i++) {
-      let value = Object.values(data.rows[i]);
-      result.push(value[0]);
-    }
-    res.set('Content-Type', 'application/json');
-    res.send({result: result});   
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -976,34 +874,6 @@ app.post('/update', async (req, res) => {
 } 
 });
 
-app.post('/status', async (req, res) => {
-  const token = users.findUserToken(req.headers.authorization, req.body.user);
-  if (token) {
-    let id = req.body.marker[0].id;
-    let project = req.body.project;
-    let status = req.body.status;
-    let date = req.body.date;
-    let result = await db.projecttype(project);
-    let surface = result.rows[0].surface;
-    result = await db.updateStatus(project, surface, id, status, date);
-    if(result.rowCount === 1) {
-      res.set('Content-Type', 'application/json');
-      res.send({rows: "Updated 1 row"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      res.send({error: "failed to update"});
-    }
-  }else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  } 
-});
-
-app.post('/gps', (req, res) => {
-  res.set('Content-Type', 'application/json');
-  res.send({ express: 'Server online' });
-});
-
 app.post('/import', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
   if(token) {
@@ -1026,7 +896,6 @@ app.post('/import', async (req, res) => {
           }
         } catch(err) {
           errors++
-          //console.log(err);
         }
       } 
       res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
@@ -1044,7 +913,6 @@ app.post('/import', async (req, res) => {
         }
       } catch(err) {
         errors++
-        //console.log(err);
       }   
     }
     res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})

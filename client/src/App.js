@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
@@ -20,10 +19,10 @@ import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
-import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/Components.js'
+import {CustomSpinner, CustomLink, CustomPopup, LayerNav} from './components/Components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
-import {Fetcher, PostFetch} from './components/Fetcher';
+import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -77,7 +76,7 @@ class App extends React.Component {
       token: null, //security token
       login: null, //username
       zIndex: 900,
-      key: process.env.REACT_APP_MAPBOX,
+      mapBoxKey: null,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
@@ -494,9 +493,9 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  getDistance() {
-    return this.distance
-  }
+  // getDistance() {
+  //   return this.distance
+  // }
 
   callBackendAPI = async () => {
     try {
@@ -588,8 +587,8 @@ class App extends React.Component {
       this.setState({zIndex: 1000});
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
-      //this.setState({url: "https://api.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=" + this.state.key});
-      this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" + this.state.key});
+      this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
+      + this.state.mapBoxKey});
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
@@ -648,21 +647,26 @@ class App extends React.Component {
       activeProject: null,
       projects: [],
       login: "Login",
-      priorites: [],
+      priorities: [],
       objGLData: [],
       glpoints: [],
       activeLayers: [],
       activeLayer: null,
-      filterDropdowns: [],
-      //ages: [],
+      filterStore: [],
       rulerPoints: [],
-      filter: [], //filter for db request
+      filters: [], 
       priorityDropdown: null, 
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
       faultData: [],
       inspections: [],
+      bucket: null,
+      district: null,
+      priorityMode: null,
+      projectMode: null,
+      token: null,
+      mapBoxKey: null
     }, () => {
       let glData = null
       this.GLEngine.redraw(glData, false);
@@ -974,8 +978,6 @@ class App extends React.Component {
       amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
-
-    //this.reverseLookup(body.data); 
     let arr = this.state.archiveMarker;
     let point = L.latLng(body.data.latitude, body.data.longitude);
     arr.push(point);
@@ -999,13 +1001,12 @@ class App extends React.Component {
       body: JSON.stringify({
         user: this.state.login,
       })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
-     
+      });
+      const body = await response.json();
+      if (response.status !== 200) {
+        alert(response.status + " " + response.statusText);  
+        throw Error(body.message);    
+      }    
     } catch (error) {
       alert("server offline " + error);  
     } finally {
@@ -1036,13 +1037,11 @@ class App extends React.Component {
       if (body.result) {
         window.sessionStorage.setItem('token', body.token);
         window.sessionStorage.setItem('user', body.user);
-        this.setState({login: body.user});
-        this.setState({token: body.token}); 
+        this.setState({login: body.user, token: body.token, showLogin: false, 
+          message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
         this.buildProjects(body.projects);   
         this.customNav.current.setTitle(body.user);
-        this.customNav.current.setOnClick((e) => this.logout(e));
-        this.setState({showLogin: false});
-        this.setState({message: ""});
+        this.customNav.current.setOnClick((e) => this.logout(e));   
         if(this.state.login === 'admin') {
           this.setState({admin: true});
         }
@@ -1111,7 +1110,6 @@ class App extends React.Component {
       priorityMode: mode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
-
       this.filterLayer(this.state.activeLayer, true); //fetch layer
       if (this.state.activeLayer.centreline) {
         let login = {token: this.state.token, user: this.state.login}
@@ -1122,7 +1120,6 @@ class App extends React.Component {
 
   buildFilter(filters) {
     if (!filters) return {};
-    
     filters.forEach(filter => {
       let data = filter.data.map(element => Object.values(element)[0]);
       data.sort()
@@ -1138,38 +1135,6 @@ class App extends React.Component {
         }
     }
     return null;
-  }
-
-  async getSettings(project) {
-    let address = this.state.host + '/settings';
-    let body = await PostFetch(address, this.state.token, {user: this.state.login, project: project}).catch(error => {
-      console.log(error)
-      return;
-    });
-    if (!body) return;
-    return body;
-  }
-
-  async buildView(project) {
-    const response = await fetch("https://" + this.state.host + '/view', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-        project: project,
-      
-      })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);    
-    } 
   }
 
   async requestInspections(project, mode) {
@@ -1359,10 +1324,6 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.roadLinesRef.current.reset();
-    this.setState({objGLData: []});
-    this.setState({glpoints: []});
-    let glData = null;
-      this.GLEngine.redraw(glData, false); 
     let layers = this.state.activeLayers;
     for(var i = 0; i < layers.length; i += 1) {     
       if (e.target.attributes.code.value === layers[i].code) {
@@ -1370,12 +1331,11 @@ class App extends React.Component {
         break;
       }
     }
-
-    //TODO clear the filter
     this.setState(
       {
+        objGLData: [],
         priorities: [],
-        filterDropdowns: [],
+        //filterDropdowns: [],
         filterPriorities: [],
         filterRMClass: [],
         projectMode: null,
@@ -1390,13 +1350,14 @@ class App extends React.Component {
         activeLayer: null,
         ages: layers,
         district: null}, () => {
+          let glData = null;
+          this.GLEngine.redraw(glData, false); 
         }
     );  
   }
 
   getBody(project) {
     let filter = []
-    
     if (project.surface === "road") {
       this.state.filters.forEach(arr => {
         let data = arr.data
@@ -1564,8 +1525,6 @@ class App extends React.Component {
        
       } 
   }
-
-  
 
   async addNewUser(client, password) {
     if (this.state.login !== "Login") {
@@ -1950,90 +1909,6 @@ class App extends React.Component {
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
 
-    const LayerNav = (props) => { 
-      if (props.user === 'admin') {
-        return (
-          <Nav>       
-          <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
-            <NavDropdown.Item  
-              className="adminitem" 
-              title="Add New User" 
-              onClick={props.addUser}>
-              Manage User     
-            </NavDropdown.Item>
-            <NavDropdown.Divider />
-            <NavDropdown.Item
-              title="Add New Project" 
-              className="adminitem" 
-              onClick={props.addProject}>
-              Manage Projects 
-              </NavDropdown.Item>
-              <NavDropdown.Divider /> 
-            <NavDropdown.Item  
-              title="Import" 
-              className="adminitem" 
-              projects={props.layers} 
-              admin={props.admin}
-              onClick={props.importData}>
-              Import Data    
-            </NavDropdown.Item>
-            <NavDropdown.Divider />
-          </NavDropdown>
-        </Nav>
-        );
-      } else {
-        if (props.layers.length > 0) {
-            return (
-              <Nav>          
-              <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
-                <CustomMenu 
-                  title="Add Roading Layer" 
-                  className="navdropdownitem" 
-                  type={'road'} 
-                  projects={props.projects.road} 
-                  onClick={props.loadLayer}/>
-                  <NavDropdown.Divider />
-                <CustomMenu 
-                  title="Add Footpath Layer" 
-                  className="navdropdownitem" 
-                  type={'footpath'} 
-                  projects={props.projects.footpath} 
-                  onClick={props.loadFootpathLayer}/>
-                  <NavDropdown.Divider />
-                <CustomMenu 
-                  title="Remove Layer" 
-                  className="navdropdownitem" 
-                  projects={props.layers} 
-                  onClick={props.removeLayer}/>
-              </NavDropdown>
-            </Nav>
-            );     
-        } else {
-          return (
-            <Nav>          
-            <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
-              <CustomMenu 
-                title="Add Roading Layer" 
-                className="navdropdownitem" 
-                type={'road'} 
-                projects={props.projects.road} 
-                layers={props.layers} 
-                onClick={props.loadRoadLayer}/>
-              <CustomMenu 
-                title="Add Footpath Layer" 
-                className="navdropdownitem" 
-                type={'footpath'}
-                projects={props.projects.footpath} 
-                layers={props.layers} 
-                onClick={props.loadFootpathLayer}/>
-            </NavDropdown>        
-          </Nav>
-          );
-        }
-      }
-      
-    }
-
     return ( 
       <> 
         <div>        
@@ -2077,18 +1952,18 @@ class App extends React.Component {
             </Nav>
             <Nav>
               <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">         
-                  <CustomLink 
-                    className="dropdownlink" 
-                    endpoint="/statistics"
-                    label="Create Report"
-                    data={this.state.objGLData}
-                    login={this.customNav.current}
-                    user={this.state.login}
-                    activeLayer={this.state.activeLayer}
-                    style={{ textDecoration: 'none' }}
-                    >
-                  </CustomLink>       
-                </NavDropdown>   
+                <CustomLink 
+                  className="dropdownlink" 
+                  endpoint="/statistics"
+                  label="Create Report"
+                  data={this.state.objGLData}
+                  login={this.customNav.current}
+                  user={this.state.login}
+                  activeLayer={this.state.activeLayer}
+                  style={{ textDecoration: 'none' }}
+                  >
+                </CustomLink>       
+              </NavDropdown>   
             </Nav>
             <Nav>
               <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
@@ -2124,12 +1999,12 @@ class App extends React.Component {
                 classlogin={this.state.login}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
-              >
+              >               
               </LayerCard>
               <Roadlines
                 className={"rating"}
                 ref={this.roadLinesRef} 
-              >
+                >
               </Roadlines> 
             </div>
             <hr className='sidebar-line'>

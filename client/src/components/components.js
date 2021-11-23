@@ -1,7 +1,90 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import {Spinner, Image, NavDropdown}  from 'react-bootstrap';
+import {Spinner, Image, NavDropdown, Nav}  from 'react-bootstrap';
 import {Popup}  from 'react-leaflet';
+
+const LayerNav = (props) => { 
+  if (props.user === 'admin') {
+    return (
+      <Nav>       
+      <NavDropdown className="navdropdown" title="Tools" id="basic-nav-dropdown">
+        <NavDropdown.Item  
+          className="adminitem" 
+          title="Add New User" 
+          onClick={props.addUser}>
+          Manage User     
+        </NavDropdown.Item>
+        <NavDropdown.Divider />
+        <NavDropdown.Item
+          title="Add New Project" 
+          className="adminitem" 
+          onClick={props.addProject}>
+          Manage Projects 
+          </NavDropdown.Item>
+          <NavDropdown.Divider /> 
+        <NavDropdown.Item  
+          title="Import" 
+          className="adminitem" 
+          projects={props.layers} 
+          admin={props.admin}
+          onClick={props.importData}>
+          Import Data    
+        </NavDropdown.Item>
+        <NavDropdown.Divider />
+      </NavDropdown>
+    </Nav>
+    );
+  } else {
+    if (props.layers.length > 0) {
+        return (
+          <Nav>          
+          <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
+            <CustomMenu 
+              title="Add Roading Layer" 
+              className="navdropdownitem" 
+              type={'road'} 
+              projects={props.projects.road} 
+              onClick={props.loadLayer}/>
+              <NavDropdown.Divider />
+            <CustomMenu 
+              title="Add Footpath Layer" 
+              className="navdropdownitem" 
+              type={'footpath'} 
+              projects={props.projects.footpath} 
+              onClick={props.loadFootpathLayer}/>
+              <NavDropdown.Divider />
+            <CustomMenu 
+              title="Remove Layer" 
+              className="navdropdownitem" 
+              projects={props.layers} 
+              onClick={props.removeLayer}/>
+          </NavDropdown>
+        </Nav>
+        );     
+    } else {
+      return (
+        <Nav>          
+        <NavDropdown className="navdropdown" title="Projects" id="basic-nav-dropdown">
+          <CustomMenu 
+            title="Add Roading Layer" 
+            className="navdropdownitem" 
+            type={'road'} 
+            projects={props.projects.road} 
+            layers={props.layers} 
+            onClick={props.loadRoadLayer}/>
+          <CustomMenu 
+            title="Add Footpath Layer" 
+            className="navdropdownitem" 
+            type={'footpath'}
+            projects={props.projects.footpath} 
+            layers={props.layers} 
+            onClick={props.loadFootpathLayer}/>
+        </NavDropdown>        
+      </Nav>
+      );
+    }
+  }      
+}
 
 const CustomMenu = (props) => {
     if (typeof props.projects === 'undefined' || props.projects.length === 0) {
@@ -104,4 +187,4 @@ const CustomSpinner = (props) => {
     }      
   }
 
-  export {CustomSpinner, CustomLink, CustomPopup, CustomMenu}
+  export {CustomSpinner, CustomLink, CustomPopup, CustomMenu, LayerNav}

@@ -26,14 +26,6 @@ export default class Roadlines extends Component {
       window.sessionStorage.setItem('centrelines', JSON.stringify(this.state.data));
     }
 
-    // setProject(project) {
-    //   this.setState({project: project.project});
-    //   this.setState({user: project.login});
-    //   this.setState({host: project.host});
-    //   this.setState({token: project.token});
-
-    // }
-
     setDelegate(delegate) {
       this.delegate = delegate;
     }
@@ -48,6 +40,7 @@ export default class Roadlines extends Component {
           data: null,
           filter: [],
           active: false,
+          project: null
         }
         );
     }
