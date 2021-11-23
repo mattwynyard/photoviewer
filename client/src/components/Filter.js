@@ -53,7 +53,7 @@ export default function Filter(props) {
         //console.log("change")
     }
 
-    if (props.mode === "road") {
+    if (props.mode === "road" || props.mode === "footpath") {
         return(
           <div className="filter-group">
             {props.store.map((value) =>
@@ -86,47 +86,6 @@ export default function Filter(props) {
             )}
         </div>
         );
-    } else if (props.mode === "footpath") {
-        return (
-            <div className="filter-group">
-            {props.values.map((value) =>
-            <Dropdown 
-            className="dropdown"
-            key={value.code} 
-            drop={'right'}  
-            >                
-            <Dropdown.Toggle variant="light" size="sm">
-              <input
-                key={value.code} 
-                id={value.description} 
-                type="checkbox" 
-                //checked={isClassChecked(value.code)} 
-                //onChange={onChange}
-                //onClick={() => onClassClick(value)}
-                >
-              </input>
-              {value.description}         
-            </Dropdown.Toggle>
-            {/* <Dropdown.Menu className="custommenu">
-              {value.data.map((input, index) =>
-                <div key={`${index}`}>
-                  <input
-                    key={`${index}`} 
-                    id={input.fault} 
-                    type="checkbox" 
-                    //checked={isFaultChecked(input.fault)} 
-                    //onClick={(e) => onFaultClick(input.fault)}
-                    //onChange={onFaultChange}
-                    >
-                  </input>{" " + input.fault}<br></br>
-                </div> 
-                )}
-              <Dropdown.Divider />
-            </Dropdown.Menu> */}
-          </Dropdown> 
-            )}
-        </div>
-        )
     } else {
       return null;
     }

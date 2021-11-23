@@ -1081,9 +1081,9 @@ class App extends React.Component {
       if (!project) return;
     } else {
       project = this.findProject(this.state.projects.footpath, projectCode);  
-       
+      if (!project) return;
     } 
-    let inspectionsBody = await this.requestInspections(projectCode, mode)
+    let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
     let inspections = this.buildInspections(inspectionsBody)
     let district = await this.requestDistrict(projectCode); 
     let data = await this.requestFilterData(project);
@@ -1112,9 +1112,11 @@ class App extends React.Component {
       activeLayer: project,
       activeLayers: layers,
       district: district,
+      reverse: project.reverse,
       inspections: inspections,
       activeProject: projectCode,
       projectMode: mode,
+      priorityMode: mode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
       amazon: project.amazon
     }), async function() { 
@@ -1403,11 +1405,12 @@ class App extends React.Component {
 
   getBody(project) {
     let filter = []
-    this.state.filters.forEach(arr => {
-      let data = arr.data
-      filter = filter.concat(data);
-    })
+    
     if (project.surface === "road") {
+      this.state.filters.forEach(arr => {
+        let data = arr.data
+        filter = filter.concat(data);
+      })
       return JSON.stringify({
         user: this.state.login,
         project: project.code,
@@ -1422,9 +1425,12 @@ class App extends React.Component {
         return JSON.stringify({
           user: this.state.login,
           project: project.code,
-          filter: this.state.filter,
+          filter: this.state.filters,
           surface: project.surface,
-          priority: this.state.filterPriorities
+          archive: project.isarchive,
+          priority: this.state.filterPriorities,
+          rmclass: this.state.filterRMClass,
+          inspection: this.state.inspections,
         })
       }
          

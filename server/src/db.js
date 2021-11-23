@@ -762,12 +762,16 @@ module.exports = {
 
     },
 
-    footpath: (project, options, assets, faults, types, causes) => {
+    footpath: (project, options, filter) => {
+        let assets = filter.find(object => object.code === "Asset");
+        let faults = filter.find(object => object.code === "Fault")
+        let types = filter.find(object => object.code === "Type")
+        let causes = filter.find(object => object.code === "Cause")
         let _priority = buildQuery(options.priority);
-        let _assets = buildQuery(assets);
-        let _faults = buildQuery(faults);
-        let _types = buildQuery(types);
-        let _causes = buildQuery(causes);
+        let _assets = buildQuery(assets.data);
+        let _faults = buildQuery(faults.data);
+        let _types = buildQuery(types.data);
+        let _causes = buildQuery(causes.data);
         let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
@@ -784,11 +788,15 @@ module.exports = {
         });
     },
 
-    footpathCompleted: (project, assets, faults, types, causes) => {
-        let _assets = buildQuery(assets);
-        let _faults = buildQuery(faults);
-        let _types = buildQuery(types);
-        let _causes = buildQuery(causes);
+    footpathCompleted: (project, filter) => {
+        let assets = filter.find(object => object.code === "Asset");
+        let faults = filter.find(object => object.code === "Fault")
+        let types = filter.find(object => object.code === "Type")
+        let causes = filter.find(object => object.code === "Cause")
+        let _assets = buildQuery(assets.data);
+        let _faults = buildQuery(faults.data);
+        let _types = buildQuery(types.data);
+        let _causes = buildQuery(causes.data);
         let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'completed'";

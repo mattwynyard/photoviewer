@@ -3,7 +3,6 @@ import {React} from 'react';
 import {Dropdown}  from 'react-bootstrap';
 
 export default function(props) {
-  console.log(props.filter)
   const isChecked = (code) => {
     if (props.filter.includes(code)) {
       return true;

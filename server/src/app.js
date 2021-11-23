@@ -689,7 +689,7 @@ app.post('/class', async (req, res) => {
         faultData[i].data = faults.rows;
       } else {
         let faults = await db.footpathFaults(project, faultData[i].description);
-        console.log(faults.rows)
+
         faultData[i].data = faults.rows;
       }    
     }
@@ -852,16 +852,11 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    console.log(req.body)
     let project = req.body.project;
     let filter = req.body.filter;
     let priority = req.body.priority;
     let rclass = req.body.rmclass;
     let inspection = req.body.inspection;
-    let faults = req.body.faults;
-    let assets = req.body.assets;;
-    let types = req.body.types;
-    let causes = req.body.causes;
     let isCompleted = false;
     let finalPoints = null;
     let finalLines = null;
@@ -885,12 +880,12 @@ app.post('/layer', async (req, res) => {
     let completedLines = [];
     if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (options.priority.length !== 0) {
-        let geometry = await db.footpath(project, options, assets, faults, types, causes);
+        let geometry = await db.footpath(project, options, filter);
         activePoints = geometry.rows;
         activeLines = [];
       } 
       if (isCompleted) {
-        let points = await db.footpathCompleted(project, assets, faults, types, causes);
+        let points = await db.footpathCompleted(project, filter);
         completedPoints = points.rows;
         completedLines = [];
       }
