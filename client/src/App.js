@@ -1789,8 +1789,7 @@ class App extends React.Component {
   }
 
   updateFilter = (filter) => {
-    this.setState({filters: filter});
-      //this.filterLayer(this.state.activeLayer, false);
+    this.setState({filters: filter})
   }
 
   clickLogin(e) {
@@ -1842,11 +1841,15 @@ class App extends React.Component {
       e.target.innerHTML = "Clear Filter";
       this.filterLayer(this.state.activeLayer, false);
     } else {
-      e.target.innerHTML = "Apply Filter";  
-      this.resetDropdowns();
-      let filter = this.rebuildFilter();
+      e.target.innerHTML = "Apply Filter";
+      let newFilter = [];
+      this.state.filterStore.forEach((element) => {
+        let object = {...element}
+        object.data = [...element.data];
+        newFilter.push(object);
+      })
       this.setState({
-        filter: filter
+        filters: newFilter
       }, () => {
         this.filterLayer(this.state.activeLayer, false);
       });  
@@ -2151,12 +2154,12 @@ class App extends React.Component {
                   mode={this.state.projectMode}
                   update={this.updateFilter}
                 />
-              <FilterButton
-                className="apply-btn" 
-                ref={this.applyRef} 
-                layer={this.state.activeLayer} 
-                onClick={(e) => this.clickApply(e)}>  
-              </FilterButton>
+                <FilterButton
+                  className="apply-btn" 
+                  ref={this.applyRef} 
+                  layer={this.state.activeLayer} 
+                  onClick={(e) => this.clickApply(e)}>  
+                </FilterButton>
             </div>
           </div>   
    
