@@ -19,8 +19,6 @@ const port = process.env.PROXY_PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 const schedule = require('node-schedule');
-const { projects } = require('./db.js');
-
 
 // comment out create server code below when deploying to server
 // server created in index.js
@@ -380,29 +378,6 @@ app.post('/centrelines', async(req, res) => {
   if (security) {
     
     let result = await db.roadLines(req.body.project);
-    if (result.rowCount != 0) {
-      res.send({success: true, data: result.rows});
-    } else {
-      res.send({success: false, data: []});
-    }
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
-/**
- * endpoint for returning carriage rating data
- */
-app.post('/rating', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    let result = await db.rating(req.body.project);
     if (result.rowCount != 0) {
       res.send({success: true, data: result.rows});
     } else {

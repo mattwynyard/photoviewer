@@ -36,24 +36,6 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.customNav = React.createRef();
-    this.menu = React.createRef();
-    this.customModal = React.createRef();
-    this.search = React.createRef();
-    this.photoModal = React.createRef();
-    this.archivePhotoModal = React.createRef();
-    this.videoModal = React.createRef();
-    this.videoCard = React.createRef();
-    this.toolsRef = React.createRef();
-    this.antdrawer = React.createRef();
-    this.searchRef = React.createRef();
-    this.applyRef = React.createRef();
-    this.roadLinesRef = React.createRef();
-    this.notificationRef = React.createRef();
-    this.filterRef = React.createRef();
-    this.glpoints = null;
-    this.vidPolyline = null;
-
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
         lat: -41.2728,
@@ -120,7 +102,23 @@ class App extends React.Component {
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null,    
-    };   
+    }; 
+    this.customNav = React.createRef();
+    this.menu = React.createRef();
+    this.customModal = React.createRef();
+    this.search = React.createRef();
+    this.photoModal = React.createRef();
+    this.archivePhotoModal = React.createRef();
+    this.videoModal = React.createRef();
+    this.videoCard = React.createRef();
+    this.toolsRef = React.createRef();
+    this.antdrawer = React.createRef();
+    this.searchRef = React.createRef();
+    this.applyRef = React.createRef();
+    this.roadLinesRef = React.createRef();
+    this.notificationRef = React.createRef();
+    this.filterRef = React.createRef();
+    this.vidPolyline = null;  
   }
 
   componentDidMount() {
@@ -649,7 +647,6 @@ class App extends React.Component {
       login: "Login",
       priorities: [],
       objGLData: [],
-      glpoints: [],
       activeLayers: [],
       activeLayer: null,
       filterStore: [],
