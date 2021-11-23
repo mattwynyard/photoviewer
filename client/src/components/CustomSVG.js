@@ -1,5 +1,3 @@
-import React from 'react';
-
 const CustomSVG = (props) => {
     if (!props.reverse) {
       if (props.value === "Grade 1" || props.value === "Priority 1") {

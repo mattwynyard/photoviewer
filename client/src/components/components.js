@@ -93,8 +93,6 @@ const CustomSpinner = (props) => {
           to={{
             pathname: props.endpoint,
             login: props.login,
-            user: props.login,
-            data: props.objGLData,
             user: props.user,
             data: props.data,
             project: props.activeLayer

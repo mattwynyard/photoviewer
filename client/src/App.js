@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Dropdown, Modal, Button, Image, Form, Alert}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
@@ -20,7 +20,7 @@ import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
-import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/components.js'
+import {CustomSpinner, CustomLink, CustomPopup, CustomMenu} from './components/Components.js'
 import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher, PostFetch} from './components/Fetcher';
@@ -55,8 +55,6 @@ class App extends React.Component {
     this.glpoints = null;
     this.vidPolyline = null;
 
-    
-    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
         lat: -41.2728,
@@ -71,7 +69,6 @@ class App extends React.Component {
       priorityMode: "Priority", //whether we use priority or grade
       reverse: false,
       priorities: [], 
-      filterDropdowns: [],
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
@@ -87,7 +84,6 @@ class App extends React.Component {
       mode: "map",
       zoom: 8,
       centreData: [],
-      fault: [],
       priority: [],
       photos: [],
       archiveMarker: [],
@@ -104,7 +100,6 @@ class App extends React.Component {
       modalPhoto: null,
       popover: false,
       photourl: null,
-      amazon: null,
       projects: null, //all foootpath and road projects for the user
       filters: [],
       filterStore: [],
@@ -113,8 +108,6 @@ class App extends React.Component {
       activeLayer: null, //the layer in focus
       bucket: null,
       message: "",
-      glPoints: null,
-      glLines: null,
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
@@ -257,7 +250,6 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    this.setState({amazon: this.state.activeLayer.amazon});
     this.setState({spinner: false});
   }
 
@@ -396,10 +388,10 @@ class App extends React.Component {
               message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
               description: 
                 <div><b>Road ID: {response.data.roadid}<br></br></b>
-                  <b>Carriage ID: {response.data.carriageid + '\n'}<br></br></b>
-                  <b>Start: {response.data.starterp + ' m' + '\t'}</b>
-                  <b>End: {response.data.enderp + ' m'}<br></br></b>
-                  <b>Width: {response.data.width + ' m'}<br></br></b>
+                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+                  <b>Start: {`${response.data.starterp} m\t`}</b>
+                  <b>End: {`${response.data.enderp}`}<br></br></b>
+                  <b>Width: {`${response.data.width}`}<br></br></b>
                   <b><br></br></b>
                 </div>,
               placement: 'bottomRight',
@@ -621,7 +613,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.amazon);
+    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
   getPhoto(direction) {
@@ -783,7 +775,8 @@ class App extends React.Component {
                   for (let i = 0; i < data.data.length; i++) {
                     if(initialPhoto.data.photo === data.data[i].photo) {
                       parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.state.projectMode, initialPhoto.data.side, direction, parent.state.amazon, parent.state.photoArray, i);
+                      parent.videoCard.current.initialise(true, parent.state.projectMode, 
+                        initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
                       found = true;
                       break;
                     }   
@@ -936,7 +929,8 @@ class App extends React.Component {
         assetID = body.data.carriageway;
       }
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
+        let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
+          amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
         let arr = this.state.archiveMarker;
@@ -976,7 +970,8 @@ class App extends React.Component {
       } else {
         assetID = body.data.carriageway;
       }
-    let obj = {type: this.state.activeLayer.surface, address: body.data.address, amazon: this.state.amazon, carriage: assetID, photo: body.data.photo, 
+    let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
+      amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
 
@@ -1090,11 +1085,8 @@ class App extends React.Component {
     let storeData = await this.requestFilterData(project);
     let filters = this.buildFilter(data);
     let store = this.buildFilter(storeData);
-    let classes = filters.map(value => value.code);
-
     let layers = this.state.activeLayers;
     layers.push(project);
-
     let layerBody = await this.requestLayerDropdowns(project);
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -1118,7 +1110,6 @@ class App extends React.Component {
       projectMode: mode,
       priorityMode: mode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
-      amazon: project.amazon
     }), async function() { 
 
       this.filterLayer(this.state.activeLayer, true); //fetch layer
@@ -1182,7 +1173,7 @@ class App extends React.Component {
   }
 
   async requestInspections(project, mode) {
-    if (mode == 'footpath') return [];
+    if (mode === 'footpath') return [];
     try {
       const response = await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
@@ -1219,6 +1210,7 @@ class App extends React.Component {
    * @param {*} ages JSON object inspection array
    */
    buildInspections(values) {
+     if (!values) return;
     if (values.length === 0) {
       return [];
     } else {
@@ -1381,26 +1373,25 @@ class App extends React.Component {
 
     //TODO clear the filter
     this.setState(
-      {priorities: [],
-      filter: [],
-      filterDropdowns: [],
-      filterPriorities: [],
-      filterRMClass: [],
-      projectMode: null,
-      filterStore: [],
-      filter: [],
-      rmclass: [],
-      faultData: [],
-      amazon: null,
-      activeLayers: layers,
-      inspections: [],
-      bucket: null,
-      activeProject: null,
-      activeLayer: null,
-      ages: layers,
-      district: null}, () => {
-      }
-      );  
+      {
+        priorities: [],
+        filterDropdowns: [],
+        filterPriorities: [],
+        filterRMClass: [],
+        projectMode: null,
+        filterStore: [],
+        filter: [],
+        rmclass: [],
+        faultData: [],
+        activeLayers: layers,
+        inspections: [],
+        bucket: null,
+        activeProject: null,
+        activeLayer: null,
+        ages: layers,
+        district: null}, () => {
+        }
+    );  
   }
 
   getBody(project) {
@@ -2093,7 +2084,6 @@ class App extends React.Component {
                     data={this.state.objGLData}
                     login={this.customNav.current}
                     user={this.state.login}
-                    data={this.state.objGLData}
                     activeLayer={this.state.activeLayer}
                     style={{ textDecoration: 'none' }}
                     >
@@ -2215,8 +2205,8 @@ class App extends React.Component {
               data={obj}
               login={this.state.login}
               position={obj.latlng}
-              src={this.state.amazon + obj.photo + ".jpg"} 
-              amazon={this.state.amazon}
+              src={this.state.activeLayer.amazon + obj.photo + ".jpg"} 
+              amazon={this.state.activeLayer.amazon}
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}
@@ -2296,7 +2286,7 @@ class App extends React.Component {
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 
-        amazon={this.state.amazon}
+        amazon={!this.state.activeLayer ? null: this.state.activeLayer}
         currentPhoto={this.state.currentPhoto}
         project={this.state.activeLayer}
       >
