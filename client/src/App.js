@@ -24,6 +24,7 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
+import { loginContext} from './loginContext';
 //import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -34,7 +35,8 @@ const DefaultIcon = L.icon({
 }); 
 
 class App extends React.Component {
-
+  static contextType = loginContext;
+  
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
