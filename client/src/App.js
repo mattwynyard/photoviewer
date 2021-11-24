@@ -24,6 +24,7 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
+import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({

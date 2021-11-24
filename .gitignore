@@ -15,6 +15,7 @@
 .shx
 .pdf
 .docx
+.bat
 ./server/*.env
 server/log.txt
 server/server.key

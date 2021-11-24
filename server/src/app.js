@@ -1,6 +1,5 @@
 'use strict';
 const express = require('express');
-//const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
@@ -29,7 +28,7 @@ const options = {
 console.log("mode: " + environment);
 if(environment === 'production') {
   let hostname = "localhost";
- http.createServer(function(req, res) {
+ http.createServer(function() {
   }).listen(port, hostname, () => {
       console.log(`Listening: http://${hostname}:${port}`);
    });
@@ -68,9 +67,7 @@ const updateStatus = async () => {
           values += "(" + id + ", 'completed'), ";
         } else if (status.toLowerCase() === "no action required") {
           values += "(" + id + ", 'no action required'), ";
-        } else {
-
-        }
+        } 
         if (i === data.length - 1) {
           values = values.substring(0, values.length - 2)
         }
@@ -233,7 +230,7 @@ app.post('/usernames', async (req, res) => {
   }
 });
 
-app.post('/selectprojects', async (req, res, next) => {
+app.post('/selectprojects', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     let result = await db.selectprojects(req.body.client);
@@ -807,7 +804,6 @@ app.post('/roads', async (req, res) => {
   }
   let code = req.body.code;
   if (result) {
-    let layer = req.body.menu;
     let geometry = await db.road(code);
     res.set('Content-Type', 'application/json');
     res.send(geometry.rows);
@@ -929,7 +925,7 @@ function formatDate(date) {
 
 function genSalt() {
   return new Promise(async (resolve, reject) => {
-    await bcrypt.genSalt(10, function(err, salt) {
+    await bcrypt.genSalt(10, (err, salt) => {
       if (err) {
         reject(err);
       } else {
@@ -943,7 +939,7 @@ function genSalt() {
 
 async function genHash(password, salt) {
     return new Promise(async (resolve, reject) => {
-    await bcrypt.hash(password, salt, async function(err, hash) {
+    await bcrypt.hash(password, salt, (err, hash) => {
         if (err) {
           reject(err);
         } else {
