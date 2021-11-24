@@ -1,4 +1,4 @@
-import {LatLongToPixelXY, scaleMatrix} from  './util.js';
+import {LatLongToPixelXY, scaleMatrix} from  '../util.js';
 import L from 'leaflet';
 import Gradient from "javascript-color-gradient";
 import './L.CanvasOverlay';

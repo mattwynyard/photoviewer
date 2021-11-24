@@ -5,9 +5,9 @@ import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
-import Navigation from './components/Navigation.js'
-import './L.CanvasOverlay';
-import GLEngine from './GLEngine.js';
+//import Navigation from './components/Navigation.js'
+import './gl/L.CanvasOverlay';
+import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
@@ -25,7 +25,7 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
-import { loginContext} from './loginContext';
+import { loginContext} from './login/loginContext';
 //import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -123,6 +123,7 @@ class App extends React.Component {
     this.notificationRef = React.createRef();
     this.filterRef = React.createRef();
     this.vidPolyline = null;  
+    //let login = this.context.login;
   }
 
   componentDidMount() {

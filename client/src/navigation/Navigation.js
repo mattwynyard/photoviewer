@@ -7,44 +7,6 @@ import LoginModal from './LoginModal'
 import PostFetch from './PostFetch';
 import ProjectNav from './ProjectNav';
 
-// const CustomLink = (props) => {
-//   if (props.endpoint === "/data") { //turn off data
-//     return (null);
-//   }
-//   if (this.state.activeLayer === null) { //no gl data
-//     return(null);
-//   } else {
-//     return (
-//       <Link 
-//         className="dropdownlink" 
-//         to={{
-//           pathname: props.endpoint,
-//           login: this.customNav.current,
-//           user: this.state.login,
-//           data: this.state.objGLData,
-//           project: this.state.activeLayer
-//         }}
-//         style={{ textDecoration: 'none' }}
-//         >{props.label}
-//       </Link>
-//     );
-//   }      
-// }
-
-{/* <Nav>
-              <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickContact(e)} >Contact</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
-              </NavDropdown>         
-            </Nav>
-            <CustomNav ref={this.customNav} className="navdropdown"/>
-            <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar> */}
-
 export default function Navigation(props) {
   const [show, setShow] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -120,12 +82,6 @@ export default function Navigation(props) {
     }
   }, []); 
 
-  
-
-  // useEffect(() => {
-  //   console.log(layers)
-  // }, [layers]); 
-
   const buildProjects = (projects) => {    
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
@@ -148,27 +104,6 @@ export default function Navigation(props) {
       props.setLayers("add", project)
     } 
   }
-
-  // const removeLayer = (project) => {
-  //   if (props.layers.length <= 0) return;
-  //   for(let i = 0; i < props.layers.length; i++) {
-  //     if (props.layers[i].code === project.code) {
-  //       let _layers = [...props.layers]
-  //       _layers.splice(i, 1)
-        
-  //     }
-  //   }
-  // }
-
-  // const addLayer = (project) => {
-  //   for(let i = 0; i < props.layers.length; i++) {
-  //     if (props.layers[i].code === project.code) return;
-  //   }
-  //   let _layers = [...props.layers]
-  //   _layers.push(project);
-  //   console.log(_layers)
-  //   props.setLayers(_layers, "add", project)
-  // }
 
   return (
     <Fragment>
@@ -198,13 +133,6 @@ export default function Navigation(props) {
             id="basic-nav-dropdown"
             disabled = {props.data === null ? true: false}
             >
-            {/* <CustomLink 
-              className="dropdownlink" 
-              endpoint="/data"
-              label="Table View"
-              style={{ textDecoration: 'none' }}
-              >
-              </CustomLink>       */}
           </NavDropdown>         
           </Nav>
           <Nav>
@@ -213,15 +141,8 @@ export default function Navigation(props) {
             title="Report" 
             id="basic-nav-dropdown"
             disabled = {props.data === null ? true: false}
-            >         
-                {/* <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/statistics"
-                  label="Create Report"
-                  style={{ textDecoration: 'none' }}
-                  >
-                </CustomLink>      */}
-              </NavDropdown>   
+            >              
+            </NavDropdown>   
           </Nav>
         <LoginNav user={login.user} onClick={isLoggedIn ? clickLogout: showModal}></LoginNav>
       </Navbar>

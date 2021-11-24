@@ -3,7 +3,7 @@ import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
 import Data from './Data.js';
-import { loginContext} from './loginContext';
+import { loginContext } from './login/loginContext';
 
 const Main = () => {
   let host = null 
