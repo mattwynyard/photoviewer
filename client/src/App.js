@@ -24,7 +24,7 @@ import {FilterButton} from './components/FilterButton';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
-import _ from 'lodash';
+//import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
 const DefaultIcon = L.icon({
@@ -1137,6 +1137,8 @@ class App extends React.Component {
 
   async requestInspections(project, mode) {
     if (mode === 'footpath') return [];
+    //let request = {user: this.state.user, token: this.state.token}
+    //let body = apiRequest
     try {
       const response = await fetch('https://' + this.state.host + '/age', {
       method: 'POST',
@@ -1161,7 +1163,6 @@ class App extends React.Component {
         }     
       } else {
         console.log(response);
-
       }
     } catch (error) {
       alert(error)
