@@ -5,6 +5,7 @@ import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
+import Navigation from './components/Navigation.js'
 import './L.CanvasOverlay';
 import GLEngine from './GLEngine.js';
 import './PositionControl';
