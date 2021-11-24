@@ -4,7 +4,7 @@ import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-boots
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
-import CustomNav from './CustomNav.js';
+//import CustomNav from './CustomNav.js';
 import Navigation from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
@@ -40,6 +40,7 @@ class App extends React.Component {
   
   constructor(props) {
     super(props);
+    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
         lat: -41.2728,
@@ -127,27 +128,28 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    let host = this.getHost();
-    let user = this.getUser();
-    let projects = this.getProjects();
-    let token = window.sessionStorage.getItem('token');
-    this.setState({
-      host: host,
-      token: token,
-      login: user,
-      projects: projects
-    }, () => {
-      if (this.state.login === "Login") {
-        this.callBackendAPI()
-      }
-      this.customNav.current.setTitle(user);
-      this.customNav.current.setOnClick(this.getLoginModal(user));   
-    });
+    //this.login = this.context.login;
+    //let host = this.getHost();
+    //let user = this.getUser();
+    //let projects = this.getProjects();
+    //let token = window.sessionStorage.getItem('token');
+    // this.setState({
+    //   host: host,
+    //   token: token,
+    //   login: user,
+    //   projects: projects
+    // }, () => {
+    //   if (this.state.login === "Login") {
+    //     this.callBackendAPI()
+    //   }
+    //   //this.customNav.current.setTitle(user);
+    //   //this.customNav.current.setOnClick(this.getLoginModal(user));   
+    // });
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    this.searchRef.current.setDelegate(this);
+    //this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
@@ -516,48 +518,48 @@ class App extends React.Component {
     } 
   }
 
-  /**
-   * Gets the development or production host 
-   * @return {string} the host name
-   */
-  getHost() {
-    if (process.env.NODE_ENV === "development") {
-      return "localhost:8443";
-    } else if (process.env.NODE_ENV === "production") {
-      return "osmium.nz";
-    } else {
-      return "localhost:8443";
-    }
-   }
+  // /**
+  //  * Gets the development or production host 
+  //  * @return {string} the host name
+  //  */
+  // getHost() {
+  //   if (process.env.NODE_ENV === "development") {
+  //     return "localhost:8443";
+  //   } else if (process.env.NODE_ENV === "production") {
+  //     return "osmium.nz";
+  //   } else {
+  //     return "localhost:8443";
+  //   }
+  //  }
 
-  getProjects() {
-    let project = window.sessionStorage.getItem('projects');
-    if (!project) {
-      return [];
-    } else {
-      return JSON.parse(project);
-    }    
-  }
-  /**
-   * Checks if user has cookie. If not not logged in.
-   * Returns username in cookie if found else 'Login'
-   */
-  getUser() {
-    let user = window.sessionStorage.getItem('user');
-    if (!user) {
-      return "Login";
-    } else {
-      return user;
-    }    
-  }
+  // getProjects() {
+  //   let project = window.sessionStorage.getItem('projects');
+  //   if (!project) {
+  //     return [];
+  //   } else {
+  //     return JSON.parse(project);
+  //   }    
+  // }
+  // /**
+  //  * Checks if user has cookie. If not not logged in.
+  //  * Returns username in cookie if found else 'Login'
+  //  */
+  // getUser() {
+  //   let user = window.sessionStorage.getItem('user');
+  //   if (!user) {
+  //     return "Login";
+  //   } else {
+  //     return user;
+  //   }    
+  // }
 
-  getLoginModal(user) {
-    if (user === "Login") {
-      return (e) => this.clickLogin(e);
-    } else {
-      return (e) => this.logout(e);
-    }
-  }
+  // getLoginModal(user) {
+  //   if (user === "Login") {
+  //     return (e) => this.clickLogin(e);
+  //   } else {
+  //     return (e) => this.logout(e);
+  //   }
+  // }
   /**
    * Called when data layer is loaded
    * @param {array of late lngs} latlngs 
@@ -644,8 +646,8 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    this.customNav.current.setOnClick((e) => this.clickLogin(e));
-    this.customNav.current.setTitle("Login");
+    //this.customNav.current.setOnClick((e) => this.clickLogin(e));
+    //this.customNav.current.setTitle("Login");
     this.setState({
       activeProject: null,
       projects: [],
@@ -989,72 +991,76 @@ class App extends React.Component {
   }
 }
 
-  async logout(e) {
-    e.preventDefault();
-    try {
-      const response = await fetch("https://" + this.state.host + '/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-      })
-      });
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(response.status + " " + response.statusText);  
-        throw Error(body.message);    
-      }    
-    } catch (error) {
-      alert("server offline " + error);  
-    } finally {
-      this.reset();
-    } 
+  logout = () => {
+    this.reset();
+    //this.setState({activeLayers: []})
   }
+  // async logout(e) {
+  //   e.preventDefault();
+  //   try {
+  //     const response = await fetch("https://" + this.state.host + '/logout', {
+  //     method: 'POST',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       "authorization": this.state.token,
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //     body: JSON.stringify({
+  //       user: this.state.login,
+  //     })
+  //     });
+  //     const body = await response.json();
+  //     if (response.status !== 200) {
+  //       alert(response.status + " " + response.statusText);  
+  //       throw Error(body.message);    
+  //     }    
+  //   } catch (error) {
+  //     alert("server offline " + error);  
+  //   } finally {
+  //     this.reset();
+  //   } 
+  // }
 
-  async login(e) {  
-    e.preventDefault();
-    try {
-      const response = await fetch('https://' + this.state.host + '/login', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.userInput.value,
-        key: this.passwordInput.value
-      })
-      });
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(response.status + " " + response.statusText);  
-        throw Error(body.message);   
-      }  
-      if (body.result) {
-        window.sessionStorage.setItem('token', body.token);
-        window.sessionStorage.setItem('user', body.user);
-        this.setState({login: body.user, token: body.token, showLogin: false, 
-          message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
-        this.buildProjects(body.projects);   
-        this.customNav.current.setTitle(body.user);
-        this.customNav.current.setOnClick((e) => this.logout(e));   
-        if(this.state.login === 'admin') {
-          this.setState({admin: true});
-        }
-      } else {
-        this.setState({message: "Username or password is incorrect!"});
-      }
-    } catch (error) {
-      alert(error)
-      this.setState({showLogin: false});
-    }      
-  }
+  // async login(e) {  
+  //   e.preventDefault();
+  //   try {
+  //     const response = await fetch('https://' + this.state.host + '/login', {
+  //     method: 'POST',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //     body: JSON.stringify({
+  //       user: this.userInput.value,
+  //       key: this.passwordInput.value
+  //     })
+  //     });
+  //     const body = await response.json();
+  //     if (response.status !== 200) {
+  //       alert(response.status + " " + response.statusText);  
+  //       throw Error(body.message);   
+  //     }  
+  //     if (body.result) {
+  //       window.sessionStorage.setItem('token', body.token);
+  //       window.sessionStorage.setItem('user', body.user);
+  //       this.setState({login: body.user, token: body.token, showLogin: false, 
+  //         message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
+  //       this.buildProjects(body.projects);   
+  //       this.customNav.current.setTitle(body.user);
+  //       this.customNav.current.setOnClick((e) => this.logout(e));   
+  //       if(this.state.login === 'admin') {
+  //         this.setState({admin: true});
+  //       }
+  //     } else {
+  //       this.setState({message: "Username or password is incorrect!"});
+  //     }
+  //   } catch (error) {
+  //     alert(error)
+  //     this.setState({showLogin: false});
+  //   }      
+  // }
   
   
   /**
@@ -1063,38 +1069,62 @@ class App extends React.Component {
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  async loadLayer(e, mode) { 
-    e.persist();
-    let projectCode = e.target.attributes.code.value;
-    let project = null;
-    for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
-      if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
-        return;
-      }
-    }   
-    if (mode === "road") {
-      project = this.findProject(this.state.projects.road, projectCode);  
-      if (!project) return;
-    } else {
-      project = this.findProject(this.state.projects.footpath, projectCode);  
-      if (!project) return;
-    } 
+  loadLayer = async (mode, project) => { 
+    //e.persist();
+    let projectCode = project.code;
+    //let projectCode = e.target.attributes.code.value;
+    //let project = null;
+    // for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
+    //   if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
+    //     return;
+    //   }
+    // }   
+    // if (mode === "road") {
+    //   project = this.findProject(this.state.projects.road, projectCode);  
+    //   if (!project) return;
+    // } else {
+    //   project = this.findProject(this.state.projects.footpath, projectCode);  
+    //   if (!project) return;
+    // } 
     let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
     let inspections = this.buildInspections(inspectionsBody)
     let district = await this.requestDistrict(projectCode); 
     let data = await this.requestFilterData(project);
     let storeData = await this.requestFilterData(project);
-    let filters = this.buildFilter(data);
-    let store = this.buildFilter(storeData);
+    let filters = await this.buildFilter(data);
+    let store = await this.buildFilter(storeData);
     let layers = this.state.activeLayers;
     layers.push(project);
     let layerBody = await this.requestLayerDropdowns(project);
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
+    //let body = await this.filterLayer(project); //fetch layer
+    //await this.addGLGeometry(body.points, body.lines, body.type, true);
+    // if (this.state.activeLayer.centreline) {
+    //   let login = {token: this.state.token, user: this.state.login}
+    //   this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
+    // }
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
       this.setState({filterRMClass: layerBody.rmclass})  
     } 
-    this.antdrawer.current.setVideo(this.state.hasVideo);      
+      // this.setState({
+      //   filterPriorities: priorities.filter, 
+      //   priorities: priorities.priorities,
+      //   rmclass: layerBody.rmclass,
+      //   filterRMClass: layerBody.rmclass,
+      //   filterStore: store,
+      //   filters: filters,
+      //   activeLayer: project,
+      //   activeLayers: layers,
+      //   district: district,
+      //   reverse: project.reverse,
+      //   inspections: inspections,
+      //   activeProject: projectCode,
+      //   projectMode: mode,
+      //   priorityMode: mode === "road" ? "Priority": "Grade",
+      //   bucket: this.buildBucket(projectCode)
+      // });
+    //this.antdrawer.current.setVideo(this.state.hasVideo);      
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
@@ -1112,15 +1142,16 @@ class App extends React.Component {
       priorityMode: mode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
-      this.filterLayer(this.state.activeLayer, true); //fetch layer
-      if (this.state.activeLayer.centreline) {
-        let login = {token: this.state.token, user: this.state.login}
-        this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
-      }
+      let body = await this.filterLayer(project); //fetch layer
+      await this.addGLGeometry(body.points, body.lines, body.type, true);
+      // if (this.state.activeLayer.centreline) {
+      //   let login = {token: this.state.token, user: this.state.login}
+      //   this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
+      // }
     });
   }
 
-  buildFilter(filters) {
+  buildFilter = async (filters) => {
     if (!filters) return {};
     filters.forEach(filter => {
       let data = filter.data.map(element => Object.values(element)[0]);
@@ -1139,20 +1170,18 @@ class App extends React.Component {
     return null;
   }
 
-  async requestInspections(project, mode) {
+  requestInspections = async (project, mode) => {
     if (mode === 'footpath') return [];
-    //let request = {user: this.state.user, token: this.state.token}
-    //let body = apiRequest
     try {
-      const response = await fetch('https://' + this.state.host + '/age', {
+      const response = await fetch('https://' + this.context.login.host + '/age', {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project,
       })
       });
@@ -1177,7 +1206,7 @@ class App extends React.Component {
    * Sets inspections array for use in filter
    * @param {*} ages JSON object inspection array
    */
-   buildInspections(values) {
+   buildInspections = (values) => {
      if (!values) return;
     if (values.length === 0) {
       return [];
@@ -1193,17 +1222,17 @@ class App extends React.Component {
     }   
   }
 
-  async requestDistrict(project) {  
-    let response = await fetch('https://' + this.state.host + '/district', {
+  requestDistrict = async (project) => {  
+    let response = await fetch('https://' + this.context.login.host + '/district', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project
       })
     });
@@ -1221,17 +1250,17 @@ class App extends React.Component {
     }
   }
 
-  async requestFilterData(project) {
+  requestFilterData = async (project) => {
     try {
-      let response = await fetch('https://' + this.state.host + '/filterData', {
+      let response = await fetch('https://' + this.context.login.host + '/filterData', {
         method: 'POST',
         headers: {
-          "authorization": this.state.token,
+          "authorization": this.context.login.token,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           project: project
         })
       });
@@ -1252,16 +1281,16 @@ class App extends React.Component {
     }
 }
 
-  async requestLayerDropdowns(project) {
-    let response = await fetch('https://' + this.state.host + '/layerdropdowns', {
+  requestLayerDropdowns = async (project) => {
+    let response = await fetch('https://' + this.context.login.host + '/layerdropdowns', {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project,
       })
     });
@@ -1283,7 +1312,7 @@ class App extends React.Component {
    * Sets default bucket suffix for the project
    * @param {the current project} project 
    */
-  buildBucket(project) {
+  buildBucket = (project) => {
     let bucket = project.split("_")[2];
     let month = bucket.substring(0, 2);
     let year = null;
@@ -1295,7 +1324,7 @@ class App extends React.Component {
     return year + "_" + month;
   }
 
-  buildPriority(priority, isPriority, ramm) {
+  buildPriority = (priority, isPriority, ramm) => {
     let priorities = [];
     let filter = [];
     for (let i = 0; i < priority.length; i++) {
@@ -1323,7 +1352,7 @@ class App extends React.Component {
    * 
    * @param {event} e  - the menu clicked
    */
-  removeLayer(e) {
+  removeLayer(e, project) {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.roadLinesRef.current.reset();
@@ -1338,7 +1367,6 @@ class App extends React.Component {
       {
         objGLData: [],
         priorities: [],
-        //filterDropdowns: [],
         filterPriorities: [],
         filterRMClass: [],
         projectMode: null,
@@ -1359,7 +1387,7 @@ class App extends React.Component {
     );  
   }
 
-  getBody(project) {
+  getBody = (project) => {
     let filter = []
     if (project.surface === "road") {
       this.state.filters.forEach(arr => {
@@ -1367,7 +1395,7 @@ class App extends React.Component {
         filter = filter.concat(data);
       })
       return JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project.code,
         filter: filter,
         priority: this.state.filterPriorities,
@@ -1433,32 +1461,30 @@ class App extends React.Component {
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project, zoom) {
+  filterLayer = async (project) => {
     this.setState({spinner: true});
-      let body = this.getBody(project);
-      if (!body) return;
-      await fetch('https://' + this.state.host + '/layer', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-      },
-      body: body
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            await this.addGLGeometry(body.points, body.lines, body.type, zoom);
-          }     
-        }
-      });                
+    let body = this.getBody(project);
+    if (!body) return;
+    const response = await fetch('https://' + this.context.login.host + '/layer', {
+      method: 'POST',
+      headers: {
+        "authorization": this.context.login.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    },
+    body: body
+    });
+    if(!response.ok) {
+      throw new Error(response.status);
+    } else {
+      const body = await response.json();
+      if (body.error != null) {
+        alert(body.error)
+        return body;
+      } else {
+        return body;
+      }     
+    }                
   }
 
   async loadCentreline(e) {
@@ -1985,7 +2011,8 @@ class App extends React.Component {
         </div>    */}
         <Navigation 
           layers={this.state.activeLayers} 
-          setLayers={this.setLayers}
+          remove={this.removeLayer}
+          add={this.loadLayer}
           logout={this.logout}
           />  
         <div className="appcontainer">    

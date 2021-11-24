@@ -1,11 +1,11 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown}  from 'react-bootstrap';
 import './Navigation.css';
-import { loginContext} from '../login/loginContext';
+import { loginContext} from '../login/loginContext.js';
 import LoginNav from '../login/LoginNav.js';
-import LoginModal from '../login/LoginModal'
-import PostFetch from './PostFetch';
-import ProjectNav from './ProjectNav';
+import LoginModal from '../login/LoginModal.js'
+import PostFetch from '../api/PostFetch.js';
+import ProjectNav from './ProjectNav.js';
 
 export default function Navigation(props) {
   const [show, setShow] = useState(false);
@@ -39,25 +39,18 @@ export default function Navigation(props) {
     let body = await PostFetch(login.host + '/logout', login.token, {user: login.user});
     setIsLoggedIn(false)
     updateLogin("Login", null)
-    setProjects(null)  
-    props.logout()
-    window.sessionStorage.removeItem("token");
-    window.sessionStorage.removeItem("user");
-    window.sessionStorage.removeItem("projects");
+    setProjects(null);  ;
+    props.logout();
   }
 
-  
-  
   /**
    * Gets the development or production host 
    * @return {string} the host name
    */
   useEffect(() => {
-    console.log("render")
     /**
      * calls to server to get public projects onload
      */
-
      const callBackendAPI = async () => {
       const response = await fetch("https://" + login.host + '/api'); 
       const body = await response.json();
@@ -99,9 +92,12 @@ export default function Navigation(props) {
     let type = e.target.type;
     let project = JSON.parse(e.target.title);
     if (type === 'remove') {
-      props.setLayers("remove", project)
+      props.remove(project)
+      //props.setLayers("remove", project)
+      
     } else {
-      props.setLayers("add", project)
+      props.add(type, project)
+      //props.setLayers("add", project)
     } 
   }
 

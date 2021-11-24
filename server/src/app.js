@@ -716,6 +716,7 @@ app.post('/layerdropdowns', async (req, res) => {
  */
 app.post('/layer', async (req, res) => {
   let result = false;
+  console.log(req.body)
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project);
   } else {
