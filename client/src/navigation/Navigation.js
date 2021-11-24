@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown}  from 'react-bootstrap';
 import './Navigation.css';
-import { loginContext} from '../loginContext';
-import LoginNav from './LoginNav.js';
-import LoginModal from './LoginModal'
+import { loginContext} from '../login/loginContext';
+import LoginNav from '../login/LoginNav.js';
+import LoginModal from '../login/LoginModal'
 import PostFetch from './PostFetch';
 import ProjectNav from './ProjectNav';
 

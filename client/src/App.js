@@ -5,7 +5,7 @@ import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
 import CustomNav from './CustomNav.js';
-//import Navigation from './components/Navigation.js'
+import Navigation from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
@@ -1914,7 +1914,7 @@ class App extends React.Component {
 
     return ( 
       <> 
-        <div>        
+        {/* <div>        
           <Navbar bg="light" expand="lg">      
             <Navbar.Brand href="#home">
             <img
@@ -1982,7 +1982,12 @@ class App extends React.Component {
             <CustomNav ref={this.customNav} className="navdropdown"/>
             <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
           </Navbar>         
-        </div>   
+        </div>    */}
+        <Navigation 
+          layers={this.state.activeLayers} 
+          setLayers={this.setLayers}
+          logout={this.logout}
+          />  
         <div className="appcontainer">    
           <div className="panel">
             <div className="layers">
