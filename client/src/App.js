@@ -1025,6 +1025,7 @@ class App extends React.Component {
       let data = filter.data.map(element => Object.values(element)[0]);
       data.sort()
       filter.data = data;
+      filter.active = true;
     });
      return filters;
   }
