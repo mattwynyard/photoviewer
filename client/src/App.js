@@ -24,7 +24,6 @@ import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
 import { loginContext} from './login/loginContext';
-//import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -36,10 +35,8 @@ const DefaultIcon = L.icon({
 
 class App extends React.Component {
   static contextType = loginContext;
-  
   constructor(props) {
     super(props);
-    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       location: {
         lat: -41.2728,
@@ -108,8 +105,6 @@ class App extends React.Component {
       notificationKey: null, 
       filtered: false  
     }; 
-    //this.customNav = React.createRef();
-    //this.menu = React.createRef();
     this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -122,7 +117,6 @@ class App extends React.Component {
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
-    //this.filterRef = React.createRef();
     this.vidPolyline = null;  
   }
 
@@ -490,7 +484,6 @@ class App extends React.Component {
       }
   }
 
-  
   /**
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
@@ -587,24 +580,6 @@ class App extends React.Component {
   }
 
   /**
-   * loops through project array received from db and sets
-   * project array in the state. Sets project cookie
-   * @param {Array} projects 
-   */
-  // buildProjects(projects) {    
-  //   let obj = {road : [], footpath: []}
-  //   for(var i = 0; i < projects.length; i += 1) {
-  //     if (projects[i].surface === "road") {
-  //       obj.road.push(projects[i]);
-  //     } else {
-  //       obj.footpath.push(projects[i]);
-  //     }
-  //   }
-  //   window.sessionStorage.setItem('projects', JSON.stringify(obj));
-  //   this.setState({projects: obj});
-  // }
-
-  /**
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
    * @param {event} e 
@@ -629,7 +604,6 @@ class App extends React.Component {
     });
     let vidPolyline = null;
     const body = await response.json();
-    //console.log(body);
     if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
       let dist = distFunc(body.data.dist);
@@ -698,8 +672,7 @@ class App extends React.Component {
                       break;
                     }   
                   }
-                }
-                
+                }         
                 if (!found) {
                   alert("error loading video - Not found")
                 }
@@ -762,7 +735,6 @@ class App extends React.Component {
       return body;
     }   
   }
-
 
   async getPhotos(carriageid, side, host, login) {
     const response = await fetch('https://' + host + '/photos', {
@@ -1002,15 +974,6 @@ class App extends React.Component {
      return filters;
   }
 
-  // findProject(projects, code) {
-  //   for (let i = 0; i < projects.length; i++) { //find project
-  //     if (projects[i].code === code) {  //if found
-  //       return projects[i]
-  //       }
-  //   }
-  //   return null;
-  // }
-
   requestInspections = async (project, mode) => {
     if (mode === 'footpath') return [];
     try {
@@ -1246,8 +1209,7 @@ class App extends React.Component {
           } else {    
             if (endpoint === '/update') {
               let body = await this.filterLayer(project); //fetch layer
-              await this.addGLGeometry(body.points, body.lines, body.type, false);
-              //this.filterLayer(this.state.activeLayer, false);
+              this.addGLGeometry(body.points, body.lines, body.type, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1667,20 +1629,6 @@ class App extends React.Component {
     console.log(this.state.isVideo);
   }
 
-
-  // async reverseLookup(data) {
-  //   console.log(data);
-  //   const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
-  //    + data.longitude + "&addressdetails=1", {
-  //     method: 'GET',
-  //     credentials: 'same-origin',
-  //     headers: {
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',        
-  //     },
-  //   });  
-  // }
-
 // Admin
   addUser(e) {
     this.customModal.current.setShow(true);
@@ -1887,3 +1835,17 @@ class App extends React.Component {
   
 }
 export default App;
+
+
+  // async reverseLookup(data) {
+  //   console.log(data);
+  //   const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
+  //    + data.longitude + "&addressdetails=1", {
+  //     method: 'GET',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //   });  
+  // }

@@ -15,12 +15,12 @@
 .shx
 .pdf
 .docx
-.bat
 ./server/*.env
 server/log.txt
 server/server.key
 server/server.cert
 client/.eslintcache
+client/uploadBuild.bat
 
 # dependencies
 client/node_modules
@@ -28,8 +28,6 @@ client/archive
 server/node_modules
 /.pnp
 .pnp.js
-
-
 
 # testing
 /coverage
