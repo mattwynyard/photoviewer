@@ -21,7 +21,7 @@ import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
 import {CustomSpinner, CustomLink, CustomPopup, LayerNav} from './components/Components.js'
-import {FilterButton} from './components/FilterButton';
+import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
@@ -107,7 +107,8 @@ class App extends React.Component {
       spinner: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      notificationKey: null,    
+      notificationKey: null, 
+      filtered: false  
     }; 
     this.customNav = React.createRef();
     this.menu = React.createRef();
@@ -129,23 +130,6 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    //this.login = this.context.login;
-    //let host = this.getHost();
-    //let user = this.getUser();
-    //let projects = this.getProjects();
-    //let token = window.sessionStorage.getItem('token');
-    // this.setState({
-    //   host: host,
-    //   token: token,
-    //   login: user,
-    //   projects: projects
-    // }, () => {
-    //   if (this.state.login === "Login") {
-    //     this.callBackendAPI()
-    //   }
-    //   //this.customNav.current.setTitle(user);
-    //   //this.customNav.current.setOnClick(this.getLoginModal(user));   
-    // });
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
@@ -160,7 +144,9 @@ class App extends React.Component {
     L.Marker.prototype.options.icon = DefaultIcon;
 
     if(this.state.objGLData.length !== 0) {
-      this.filterLayer(this.state.activeLayer, true);
+      let body = this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, true);
+      //this.filterLayer(this.state.activeLayer, true);
     }      
   }
 
@@ -987,7 +973,7 @@ class App extends React.Component {
       bucket: this.buildBucket(projectCode),
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
-      await this.addGLGeometry(body.points, body.lines, body.type, true);
+      this.addGLGeometry(body.points, body.lines, body.type, true);
       if (project.centreline) {
         this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
@@ -1286,7 +1272,9 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeLayer, false);
+              let body = await this.filterLayer(project); //fetch layer
+              await this.addGLGeometry(body.points, body.lines, body.type, false);
+              //this.filterLayer(this.state.activeLayer, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1609,9 +1597,7 @@ class App extends React.Component {
     }
   }
 
-  updateFilter = (filter) => {
-    this.setState({filters: filter})
-  }
+
 
   clickLogin(e) {
     e.preventDefault();
@@ -1652,15 +1638,25 @@ class App extends React.Component {
     this.setState({activeLayer: this.state.activeLayers[index]});
   }
 
+  updateFilter = (filter) => {
+    let html = this.applyRef.current.innerHTML
+    if (this.state.filtered && html === "Clear Filter") {
+      this.applyRef.current.innerHTML = "Apply Filter"
+    }
+    this.setState({filters: filter})
+  }
+
   /**
    * Fires when user clicks apply button. 
    * @param {event} e 
    */
-  clickApply(e) {
+  clickApply = async (e) => {
     e.preventDefault();
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
-      this.filterLayer(this.state.activeLayer, false);
+      this.setState({filtered: true})
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
     } else {
       e.target.innerHTML = "Apply Filter";
       let newFilter = [];
@@ -1670,9 +1666,11 @@ class App extends React.Component {
         newFilter.push(object);
       })
       this.setState({
+        filtered: false,
         filters: newFilter
-      }, () => {
-        this.filterLayer(this.state.activeLayer, false);
+      }, async () => {
+        let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+        this.addGLGeometry(body.points, body.lines, body.type, false);
       });  
     }
   }
@@ -1682,8 +1680,10 @@ class App extends React.Component {
    * @param {array} query 
    */
   updatePriority = (query) => {
-    this.setState({filterPriorities: query}, () => {
-      this.filterLayer(this.state.activeLayer, false);
+    this.setState({filterPriorities: query}, async () => {
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
+      //this.filterLayer(this.state.activeLayer, false);
     });
     
   }
@@ -1691,9 +1691,11 @@ class App extends React.Component {
    * callback for classdropdown to update class filter
    * @param {array} query 
    */
-  updateRMClass = (query) => {
-    this.setState({filterRMClass: query}, () => {
-      this.filterLayer(this.state.activeLayer, false);
+  updateRMClass = async (query) => {
+    this.setState({filterRMClass: query}, async () => {
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
+      //this.filterLayer(this.state.activeLayer, false);
     });
     
   }
