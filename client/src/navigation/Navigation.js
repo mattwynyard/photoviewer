@@ -92,12 +92,9 @@ export default function Navigation(props) {
     let type = e.target.type;
     let project = JSON.parse(e.target.title);
     if (type === 'remove') {
-      props.remove(project)
-      //props.setLayers("remove", project)
-      
+      props.remove(project)     
     } else {
       props.add(type, project)
-      //props.setLayers("add", project)
     } 
   }
 

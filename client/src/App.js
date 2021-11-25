@@ -29,6 +29,7 @@ import { loginContext} from './login/loginContext';
 //import _ from 'lodash';
 
 const DIST_TOLERANCE = 20; //metres 
+const ERP_DIST_TOLERANCE = 0.00004;
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -372,7 +373,7 @@ class App extends React.Component {
             start: response.data.starterp,
             end: response.data.enderp
           }
-          if (response.data.dist < 0.00004) { //distance tolerance
+          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
             let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
             if (this.state.notificationKey) {
               if (response.data.carriageid !== this.state.notificationKey.carriage) 
@@ -993,6 +994,45 @@ class App extends React.Component {
     });
   }
 
+    /**
+   * 
+   * @param {event} e  - the menu clicked
+   */
+     removeLayer = (project) => {
+      window.sessionStorage.removeItem("state");
+      window.sessionStorage.removeItem("centrelines");
+      this.roadLinesRef.current.reset();
+      let layers = this.state.activeLayers;
+      for(var i = 0; i < layers.length; i += 1) {     
+        if (project.code === layers[i].code) {
+          layers.splice(i, 1);
+          break;
+        }
+      }
+      this.setState(
+        {
+          objGLData: [],
+          priorities: [],
+          filterPriorities: [],
+          filterRMClass: [],
+          projectMode: null,
+          filterStore: [],
+          filter: [],
+          rmclass: [],
+          faultData: [],
+          activeLayers: layers,
+          inspections: [],
+          bucket: null,
+          activeProject: null,
+          activeLayer: null,
+          ages: layers,
+          district: null}, () => {
+            let glData = null;
+            this.GLEngine.redraw(glData, false); 
+          }
+      );  
+    }
+
   buildFilter = async (filters) => {
     if (!filters) return {};
     filters.forEach(filter => {
@@ -1190,45 +1230,6 @@ class App extends React.Component {
     return ({filter: filter, priorities: priorities})
   }
 
-  /**
-   * 
-   * @param {event} e  - the menu clicked
-   */
-  removeLayer(e, project) {
-    window.sessionStorage.removeItem("state");
-    window.sessionStorage.removeItem("centrelines");
-    this.roadLinesRef.current.reset();
-    let layers = this.state.activeLayers;
-    for(var i = 0; i < layers.length; i += 1) {     
-      if (e.target.attributes.code.value === layers[i].code) {
-        layers.splice(i, 1);
-        break;
-      }
-    }
-    this.setState(
-      {
-        objGLData: [],
-        priorities: [],
-        filterPriorities: [],
-        filterRMClass: [],
-        projectMode: null,
-        filterStore: [],
-        filter: [],
-        rmclass: [],
-        faultData: [],
-        activeLayers: layers,
-        inspections: [],
-        bucket: null,
-        activeProject: null,
-        activeLayer: null,
-        ages: layers,
-        district: null}, () => {
-          let glData = null;
-          this.GLEngine.redraw(glData, false); 
-        }
-    );  
-  }
-
   getBody = (project) => {
     let filter = []
     if (project.surface === "road") {
@@ -1248,7 +1249,7 @@ class App extends React.Component {
       })   
     } else {
         return JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           project: project.code,
           filter: this.state.filters,
           surface: project.surface,
