@@ -16,7 +16,6 @@ import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 import SearchBar from './components/SearchBar.jsx'
-import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
 import {CustomSpinner, CustomPopup} from './components/Components.js'
@@ -1571,15 +1570,6 @@ class App extends React.Component {
     }
   }
 
-
-
-  // clickLogin(e) {
-  //   e.preventDefault();
-  //   this.setState({showLogin: true});   
-  // }
-
-  
-
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1878,16 +1868,6 @@ class App extends React.Component {
         callbackGetProjects={this.selectProjects}
         >
        </CustomModal>
-       {/* <Modals
-        type='terms'
-        show={this.state.showTerms}
-        onClick={(e)=> this.clickClose(e)} 
-      />
-      <Modals
-        type='about'
-        show={this.state.showAbout}
-        onClick={(e)=> this.clickClose(e)} 
-      /> */}
       <PhotoModal
         ref={this.photoModal}
       >
