@@ -2,15 +2,14 @@ import React, { Component } from 'react';
 import {Dropdown}  from 'react-bootstrap';
 import {haversineDistance} from  '../util.js';
 import './Roadlines.css';
+import { loginContext} from '../login/loginContext';
 
 export default class Roadlines extends Component {
-
+  static contextType = loginContext;
     constructor(props) {
         super(props);
         this.state = {
             project: null,
-            login: null,
-            host: null,
             menu: ["Structural Rating", "Surface Rating", "Drainage Rating"],
             filter: [],
             active: false,
@@ -53,17 +52,16 @@ export default class Roadlines extends Component {
         this.delegate.redraw(glData, false);   
     }
 
-    async loadCentrelines(project, host, login) {
-      this.setState({login: login, project: project} )
-        await fetch('https://' + host + '/centrelines', {
+    async loadCentrelines(project) {
+        await fetch('https://' + this.context.login.host + '/centrelines', {
           method: 'POST',
           headers: {
-            "authorization": login.token,
+            "authorization": this.context.login.token,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user: login.user,
+            user: this.context.login.user,
             project: project
           })
         }).then(async (response) => {
@@ -73,6 +71,7 @@ export default class Roadlines extends Component {
           } else {
             if (body.data) {
               this.setState({data: body.data});
+              this.setState({project: project});
             }
           }   
         })

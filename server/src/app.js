@@ -716,7 +716,6 @@ app.post('/layerdropdowns', async (req, res) => {
  */
 app.post('/layer', async (req, res) => {
   let result = false;
-  console.log(req.body)
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project);
   } else {
@@ -724,7 +723,7 @@ app.post('/layer', async (req, res) => {
   }
   if (result) {
     let project = req.body.project;
-    let filter = req.body.filter;
+    let filter = req.body.filter; //fix for zero length filter
     let priority = req.body.priority;
     let rclass = req.body.rmclass;
     let inspection = req.body.inspection;

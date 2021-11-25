@@ -362,18 +362,11 @@ class App extends React.Component {
       case 'Map':
         if (!this.state.activeLayer) return;
         if (this.roadLinesRef.current.isActive()) {
-          const login = {
-            user: this.state.login, 
-            project: this.state.activeLayer.code,
-            token: this.state.token,
-
-          }
-          let address = this.state.host + "/carriageway";
           let query = {
             lat: e.latlng.lat,
             lng: e.latlng.lng
           }
-          let response = await Fetcher(address, login, query);
+          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
           let geometry = JSON.parse(response.data.geojson);
           let erp = {
             start: response.data.starterp,
@@ -517,49 +510,6 @@ class App extends React.Component {
       alert(error);   
     } 
   }
-
-  // /**
-  //  * Gets the development or production host 
-  //  * @return {string} the host name
-  //  */
-  // getHost() {
-  //   if (process.env.NODE_ENV === "development") {
-  //     return "localhost:8443";
-  //   } else if (process.env.NODE_ENV === "production") {
-  //     return "osmium.nz";
-  //   } else {
-  //     return "localhost:8443";
-  //   }
-  //  }
-
-  // getProjects() {
-  //   let project = window.sessionStorage.getItem('projects');
-  //   if (!project) {
-  //     return [];
-  //   } else {
-  //     return JSON.parse(project);
-  //   }    
-  // }
-  // /**
-  //  * Checks if user has cookie. If not not logged in.
-  //  * Returns username in cookie if found else 'Login'
-  //  */
-  // getUser() {
-  //   let user = window.sessionStorage.getItem('user');
-  //   if (!user) {
-  //     return "Login";
-  //   } else {
-  //     return user;
-  //   }    
-  // }
-
-  // getLoginModal(user) {
-  //   if (user === "Login") {
-  //     return (e) => this.clickLogin(e);
-  //   } else {
-  //     return (e) => this.logout(e);
-  //   }
-  // }
   /**
    * Called when data layer is loaded
    * @param {array of late lngs} latlngs 
@@ -993,76 +943,8 @@ class App extends React.Component {
 
   logout = () => {
     this.reset();
-    //this.setState({activeLayers: []})
   }
-  // async logout(e) {
-  //   e.preventDefault();
-  //   try {
-  //     const response = await fetch("https://" + this.state.host + '/logout', {
-  //     method: 'POST',
-  //     credentials: 'same-origin',
-  //     headers: {
-  //       "authorization": this.state.token,
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',        
-  //     },
-  //     body: JSON.stringify({
-  //       user: this.state.login,
-  //     })
-  //     });
-  //     const body = await response.json();
-  //     if (response.status !== 200) {
-  //       alert(response.status + " " + response.statusText);  
-  //       throw Error(body.message);    
-  //     }    
-  //   } catch (error) {
-  //     alert("server offline " + error);  
-  //   } finally {
-  //     this.reset();
-  //   } 
-  // }
 
-  // async login(e) {  
-  //   e.preventDefault();
-  //   try {
-  //     const response = await fetch('https://' + this.state.host + '/login', {
-  //     method: 'POST',
-  //     credentials: 'same-origin',
-  //     headers: {
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',        
-  //     },
-  //     body: JSON.stringify({
-  //       user: this.userInput.value,
-  //       key: this.passwordInput.value
-  //     })
-  //     });
-  //     const body = await response.json();
-  //     if (response.status !== 200) {
-  //       alert(response.status + " " + response.statusText);  
-  //       throw Error(body.message);   
-  //     }  
-  //     if (body.result) {
-  //       window.sessionStorage.setItem('token', body.token);
-  //       window.sessionStorage.setItem('user', body.user);
-  //       this.setState({login: body.user, token: body.token, showLogin: false, 
-  //         message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
-  //       this.buildProjects(body.projects);   
-  //       this.customNav.current.setTitle(body.user);
-  //       this.customNav.current.setOnClick((e) => this.logout(e));   
-  //       if(this.state.login === 'admin') {
-  //         this.setState({admin: true});
-  //       }
-  //     } else {
-  //       this.setState({message: "Username or password is incorrect!"});
-  //     }
-  //   } catch (error) {
-  //     alert(error)
-  //     this.setState({showLogin: false});
-  //   }      
-  // }
-  
-  
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
@@ -1070,22 +952,7 @@ class App extends React.Component {
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
   loadLayer = async (mode, project) => { 
-    //e.persist();
     let projectCode = project.code;
-    //let projectCode = e.target.attributes.code.value;
-    //let project = null;
-    // for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
-    //   if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
-    //     return;
-    //   }
-    // }   
-    // if (mode === "road") {
-    //   project = this.findProject(this.state.projects.road, projectCode);  
-    //   if (!project) return;
-    // } else {
-    //   project = this.findProject(this.state.projects.footpath, projectCode);  
-    //   if (!project) return;
-    // } 
     let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
     let inspections = this.buildInspections(inspectionsBody)
     let district = await this.requestDistrict(projectCode); 
@@ -1097,34 +964,10 @@ class App extends React.Component {
     layers.push(project);
     let layerBody = await this.requestLayerDropdowns(project);
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
-    //let body = await this.filterLayer(project); //fetch layer
-    //await this.addGLGeometry(body.points, body.lines, body.type, true);
-    // if (this.state.activeLayer.centreline) {
-    //   let login = {token: this.state.token, user: this.state.login}
-    //   this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
-    // }
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
       this.setState({filterRMClass: layerBody.rmclass})  
-    } 
-      // this.setState({
-      //   filterPriorities: priorities.filter, 
-      //   priorities: priorities.priorities,
-      //   rmclass: layerBody.rmclass,
-      //   filterRMClass: layerBody.rmclass,
-      //   filterStore: store,
-      //   filters: filters,
-      //   activeLayer: project,
-      //   activeLayers: layers,
-      //   district: district,
-      //   reverse: project.reverse,
-      //   inspections: inspections,
-      //   activeProject: projectCode,
-      //   projectMode: mode,
-      //   priorityMode: mode === "road" ? "Priority": "Grade",
-      //   bucket: this.buildBucket(projectCode)
-      // });
-    //this.antdrawer.current.setVideo(this.state.hasVideo);      
+    }     
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
@@ -1144,10 +987,9 @@ class App extends React.Component {
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
       await this.addGLGeometry(body.points, body.lines, body.type, true);
-      // if (this.state.activeLayer.centreline) {
-      //   let login = {token: this.state.token, user: this.state.login}
-      //   this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
-      // }
+      if (project.centreline) {
+        this.roadLinesRef.current.loadCentrelines(projectCode); 
+      }
     });
   }
 
@@ -1415,8 +1257,7 @@ class App extends React.Component {
           rmclass: this.state.filterRMClass,
           inspection: this.state.inspections,
         })
-      }
-         
+      }       
   }
 
   async sendData(project, data, endpoint) {
@@ -1940,75 +1781,6 @@ class App extends React.Component {
 
     return ( 
       <> 
-        {/* <div>        
-          <Navbar bg="light" expand="lg">      
-            <Navbar.Brand href="#home">
-            <img
-                src="logo.png"
-                width="122"
-                height="58"
-                className="d-inline-block align-top"
-                alt="logo"
-              />
-            </Navbar.Brand>
-            <LayerNav 
-              project={this.state.activeProject} 
-              projects={this.getProjects()} 
-              layers={this.state.activeLayers}
-              user={this.state.login}
-              removeLayer={(e) => this.removeLayer(e)} 
-              loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
-              loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
-              addUser={(e) => this.addUser(e)} 
-              addProject={(e) => this.addProject(e)} 
-              importData={(e) => this.importData(e)} 
-              >
-            </LayerNav>
-            <Nav>              
-              <NavDropdown 
-                className="navdropdown" 
-                title="Data" 
-                id="basic-nav-dropdown"
-                >
-                <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/data"
-                  label="Table View"
-                  style={{ textDecoration: 'none' }}
-                  >
-                 </CustomLink>      
-              </NavDropdown>         
-            </Nav>
-            <Nav>
-              <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">         
-                <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/statistics"
-                  label="Create Report"
-                  data={this.state.objGLData}
-                  login={this.customNav.current}
-                  user={this.state.login}
-                  activeLayer={this.state.activeLayer}
-                  style={{ textDecoration: 'none' }}
-                  >
-                </CustomLink>       
-              </NavDropdown>   
-            </Nav>
-            <Nav>
-              <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickContact(e)} >Contact</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
-              </NavDropdown>         
-            </Nav>
-            <CustomNav ref={this.customNav} className="navdropdown"/>
-            <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
-          </Navbar>         
-        </div>    */}
         <Navigation 
           layers={this.state.activeLayers} 
           remove={this.removeLayer}
@@ -2107,7 +1879,6 @@ class App extends React.Component {
             parent={this}
           >
           </VideoCard>
-          
           <LayerGroup >
             {this.state.selectedGeometry.map((obj, index) =>  
             <CustomPopup 
@@ -2127,7 +1898,6 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
       </LMap >    
