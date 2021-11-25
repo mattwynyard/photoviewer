@@ -1,10 +1,9 @@
 import React from 'react';
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Image}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
-//import CustomNav from './CustomNav.js';
 import Navigation from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
@@ -20,7 +19,7 @@ import SearchBar from './components/SearchBar.jsx'
 import Modals from './Modals.js';
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
-import {CustomSpinner, CustomLink, CustomPopup, LayerNav} from './components/Components.js'
+import {CustomSpinner, CustomPopup} from './components/Components.js'
 import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
@@ -110,8 +109,8 @@ class App extends React.Component {
       notificationKey: null, 
       filtered: false  
     }; 
-    this.customNav = React.createRef();
-    this.menu = React.createRef();
+    //this.customNav = React.createRef();
+    //this.menu = React.createRef();
     this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -124,9 +123,8 @@ class App extends React.Component {
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
-    this.filterRef = React.createRef();
+    //this.filterRef = React.createRef();
     this.vidPolyline = null;  
-    //let login = this.context.login;
   }
 
   componentDidMount() {
@@ -142,11 +140,9 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-
     if(this.state.objGLData.length !== 0) {
       let body = this.filterLayer(this.state.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
-      //this.filterLayer(this.state.activeLayer, true);
     }      
   }
 
@@ -430,9 +426,7 @@ class App extends React.Component {
       let polyline = this.state.rulerPolyline;
       if (polyline !== null) {
         let points = polyline.getLatLngs();
-        //console.log(points);
         points.pop();
-        //console.log(points);
         polyline.setLatLngs(points);
         this.calculateDistance(points);
       }
@@ -453,7 +447,7 @@ class App extends React.Component {
         this.setState({rulerDistance: 0});
       }   
     } else {
-      //console.log(e.key);
+      return;
     }
   }
 
@@ -478,25 +472,6 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  // getDistance() {
-  //   return this.distance
-  // }
-
-  callBackendAPI = async () => {
-    try {
-      const response = await fetch("https://" + this.state.host + '/api'); 
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(body);   
-        throw Error(body.message) 
-      } else {
-          this.buildProjects(body.projects);  
-        }
-      return body;
-    } catch(error) {
-      alert(error);   
-    } 
-  }
   /**
    * Called when data layer is loaded
    * @param {array of late lngs} latlngs 
@@ -583,8 +558,6 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    //this.customNav.current.setOnClick((e) => this.clickLogin(e));
-    //this.customNav.current.setTitle("Login");
     this.setState({
       activeProject: null,
       projects: [],
@@ -619,18 +592,18 @@ class App extends React.Component {
    * project array in the state. Sets project cookie
    * @param {Array} projects 
    */
-  buildProjects(projects) {    
-    let obj = {road : [], footpath: []}
-    for(var i = 0; i < projects.length; i += 1) {
-      if (projects[i].surface === "road") {
-        obj.road.push(projects[i]);
-      } else {
-        obj.footpath.push(projects[i]);
-      }
-    }
-    window.sessionStorage.setItem('projects', JSON.stringify(obj));
-    this.setState({projects: obj});
-  }
+  // buildProjects(projects) {    
+  //   let obj = {road : [], footpath: []}
+  //   for(var i = 0; i < projects.length; i += 1) {
+  //     if (projects[i].surface === "road") {
+  //       obj.road.push(projects[i]);
+  //     } else {
+  //       obj.footpath.push(projects[i]);
+  //     }
+  //   }
+  //   window.sessionStorage.setItem('projects', JSON.stringify(obj));
+  //   this.setState({projects: obj});
+  // }
 
   /**
    * Get closest polyline to click and plots on map 
@@ -981,8 +954,8 @@ class App extends React.Component {
   }
 
     /**
-   * 
-   * @param {event} e  - the menu clicked
+   * Removes current active layer and restores to null state
+   * @param {event} project  - the active project
    */
      removeLayer = (project) => {
       window.sessionStorage.removeItem("state");
@@ -1030,14 +1003,14 @@ class App extends React.Component {
      return filters;
   }
 
-  findProject(projects, code) {
-    for (let i = 0; i < projects.length; i++) { //find project
-      if (projects[i].code === code) {  //if found
-        return projects[i]
-        }
-    }
-    return null;
-  }
+  // findProject(projects, code) {
+  //   for (let i = 0; i < projects.length; i++) { //find project
+  //     if (projects[i].code === code) {  //if found
+  //       return projects[i]
+  //       }
+  //   }
+  //   return null;
+  // }
 
   requestInspections = async (project, mode) => {
     if (mode === 'footpath') return [];
@@ -1600,28 +1573,12 @@ class App extends React.Component {
 
 
 
-  clickLogin(e) {
-    e.preventDefault();
-    this.setState({showLogin: true});   
-  }
+  // clickLogin(e) {
+  //   e.preventDefault();
+  //   this.setState({showLogin: true});   
+  // }
 
-  clickAbout(e) {
-    this.setState({showAbout: true});  
-  }
-
-  clickTerms(e) {
-    this.setState({showTerms: true});  
-  }
-
-  clickContact(e) {
-    this.setState({showContact: true});  
-  }
-
-  clickClose(e) {
-    this.setState({showContact: false});
-    this.setState({showAbout: false});    
-    this.setState({showTerms: false});    
-  }
+  
 
   /**
    * Copies the lat lng from photo modal to users clipboard
@@ -1921,7 +1878,7 @@ class App extends React.Component {
         callbackGetProjects={this.selectProjects}
         >
        </CustomModal>
-       <Modals
+       {/* <Modals
         type='terms'
         show={this.state.showTerms}
         onClick={(e)=> this.clickClose(e)} 
@@ -1930,39 +1887,7 @@ class App extends React.Component {
         type='about'
         show={this.state.showAbout}
         onClick={(e)=> this.clickClose(e)} 
-      />
-      <Modal show={this.state.showLogin} size={'sm'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><img src="padlock.png" alt="padlock" width="42" height="42"/> Login </Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-        <Form>
-          <Form.Group controlId="userName">
-            <Form.Label>Username</Form.Label>
-            <Form.Control 
-              type="text" 
-              placeholder="Enter username" 
-              ref={user => this.userInput = user} />
-          </Form.Group>
-          <Form.Text className= "message">{this.state.message}</Form.Text>
-          <Form.Group controlId="formBasicPassword">
-            <Form.Label>Password</Form.Label>           
-            <Form.Control 
-              type="password" 
-              placeholder="Password" 
-              ref={(key=> this.passwordInput = key)}/>
-          </Form.Group>
-          <Button 
-            variant="primary" 
-            type="submit" 
-            onClick={(e) => this.login(e)}>
-            Submit
-          </Button>
-        </Form>
-		    </Modal.Body>
-        <Modal.Footer>
-        </Modal.Footer>
-      </Modal>
+      /> */}
       <PhotoModal
         ref={this.photoModal}
       >

@@ -1,14 +1,17 @@
 import { React} from 'react';
 import {Modal, Button}  from 'react-bootstrap';
 
+
 export default function Modals(props) {
-  if (props.type === 'terms') {
+  if (props.id === 'terms') {
     return (
       <Modal 
         className="termsModal" 
         show={props.show} 
         size={'md'} 
-        centered={true}>
+        centered={true}
+       
+        >
         <Modal.Header>
           <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
         </Modal.Header>
@@ -21,6 +24,7 @@ export default function Modals(props) {
           <Button 
             variant="primary" 
             type="submit" 
+            id={props.id}
             onClick={(e) => props.onClick(e)}>
               Close
           </Button>
@@ -32,7 +36,9 @@ export default function Modals(props) {
       <Modal 
           className="aboutModal" 
           show={props.show} 
-          size={'md'} centered={true}
+          size={'md'} 
+          centered={true}
+          
       >
       <Modal.Header>
         <Modal.Title><h2>About</h2> </Modal.Title>
@@ -50,7 +56,12 @@ export default function Modals(props) {
         React-leaflet<br></br>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="primary" size='sm' type="submit" onClick={(e) => props.onClick(e)}>
+        <Button 
+          variant="primary" 
+          size='sm' 
+          type="submit" 
+          id={props.id}
+          onClick={(e) => props.onClick(e)}>
           Close
         </Button>
       </Modal.Footer>

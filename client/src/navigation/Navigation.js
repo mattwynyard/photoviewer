@@ -6,13 +6,15 @@ import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
 import PostFetch from '../api/PostFetch.js';
 import ProjectNav from './ProjectNav.js';
+import Modals from '../Modals.js';
 
 export default function Navigation(props) {
   const [show, setShow] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [projects, setProjects] = useState(null);
-  //const [layers] = useState(props.layers);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showTerms, setShowTerms] = useState(false)
   const {login, updateLogin} = useContext(loginContext);
  
 
@@ -52,7 +54,8 @@ export default function Navigation(props) {
      * calls to server to get public projects onload
      */
      const callBackendAPI = async () => {
-      const response = await fetch("https://" + login.host + '/api'); 
+      try {
+        const response = await fetch("https://" + login.host + '/api'); 
       const body = await response.json();
       if (response.status !== 200) {
         alert(body);   
@@ -60,7 +63,11 @@ export default function Navigation(props) {
       } else {
         buildProjects(body.projects);  
         }
-    };
+    } catch(error) {
+      alert(error)
+    }
+  }
+  
     
     let token = window.sessionStorage.getItem("token");
     let user =  window.sessionStorage.getItem("user");
@@ -75,6 +82,29 @@ export default function Navigation(props) {
     }
   }, []); 
 
+  const clickClose = (e) => {
+    e.preventDefault();
+    if (e.target.id === 'about') {
+      setShowAbout(false)   
+    } else if(e.target.id === 'terms') {
+      setShowTerms(false)
+    }    
+  }
+
+  const clickAbout = (e) => {
+    e.preventDefault();
+    setShowAbout(true)
+  }
+
+  const clickTerms = (e) => {
+    e.preventDefault();
+    setShowTerms(true)
+  }
+
+  // const clickContact = (e) => {
+  //   e.preventDefault();
+  //   setShowContact(true)
+  // }
   const buildProjects = (projects) => {    
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
@@ -137,9 +167,30 @@ export default function Navigation(props) {
             >              
             </NavDropdown>   
           </Nav>
+          <Nav>
+              <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
+                <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickTerms(e)} >Terms of Use</NavDropdown.Item>
+                <NavDropdown.Divider />
+                {/* <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickContact(e)} >Contact</NavDropdown.Item>
+                <NavDropdown.Divider /> */}
+                {/* <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
+                <NavDropdown.Divider /> */}
+                <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickAbout(e)} >About</NavDropdown.Item>             
+              </NavDropdown>         
+            </Nav>
         <LoginNav user={login.user} onClick={isLoggedIn ? clickLogout: showModal}></LoginNav>
       </Navbar>
       <LoginModal show={show} error={loginError} onClick={clickLogin}></LoginModal>
+      <Modals
+        id='about'
+        show={showAbout}
+        onClick={(e) => clickClose(e)} 
+      />
+      <Modals
+        id='terms'
+        show={showTerms}
+        onClick={(e)=> clickClose(e)} 
+      />
     </Fragment>      
   );
 }
