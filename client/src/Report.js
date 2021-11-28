@@ -5,17 +5,17 @@ import { Link } from "react-router-dom";
 import {Navbar, Nav}  from 'react-bootstrap';
 import CustomNav from './CustomNav.js';
 import Chart from 'chart.js';
+import { loginContext } from './login/loginContext';
 
 const NO_COLORS = 9;
 
 class Report extends React.Component {
-
+    static contextType = loginContext;
     constructor(props) {
         super(props);
         this.state = {
             mode: props.location.project.surface,
-        }
-        
+        }     
     }
 
     addMap(map, data) {
@@ -44,7 +44,6 @@ class Report extends React.Component {
     }
 
     componentDidMount() {
-
         this.colorMap = [
             "#FFC857", "#058ED9", "#BDD9BF", "#E8F086", "#6FDE6E", "#FF4242", "#A691AE", "#235FA4", "#0A284B", "#848FA2"
         ];
@@ -450,10 +449,16 @@ class Report extends React.Component {
                     />
                 </Navbar.Brand>
                 <Nav> 
-                    <Link className="dropdownlink" to={'/'} style={{ textDecoration: 'none' }}>Home</Link>
+                    <Link 
+                        className="dropdownlink" 
+                        to={'/'} 
+                        style={{ textDecoration: 'none' }}
+                        >
+                        Home
+                    </Link>
                 </Nav>
                 <CustomNav 
-                    title={this.user}>
+                    title={this.context.login.user}>
                 </CustomNav>
             </Navbar>
             <div className="chartParent">

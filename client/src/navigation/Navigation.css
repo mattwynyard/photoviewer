@@ -17,4 +17,28 @@
     background-color: transparent;
     color: #fff;
   }
+
+  .search {
+    position: absolute;
+    font-family: "Century Gothic", sans-serif;
+    letter-spacing: 1px;
+    font-size: 12px !important;
+    color: gray;
+    width: 20vw;
+    height: 50%;
+    right: 10%;
+   
+  }
+
+  .search-btn{
+    background-color: white;
+    padding: 1px 6px 1px 6px;
+  }
+
+  .search-img {
+    height: 22px;
+    vertical-align: middle;
+  }
+
+  
   

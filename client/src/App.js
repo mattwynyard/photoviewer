@@ -15,7 +15,7 @@ import PhotoModal from './PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
-import SearchBar from './components/SearchBar.jsx'
+
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
 import {CustomSpinner, CustomPopup} from './components/Components.js'
@@ -93,6 +93,7 @@ class App extends React.Component {
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
+      glData: null,
       selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
@@ -120,12 +121,11 @@ class App extends React.Component {
     this.vidPolyline = null;  
   }
 
-  componentDidMount() {
+  componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    //this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
@@ -133,10 +133,9 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-    if(this.state.objGLData.length !== 0) {
-      let body = this.filterLayer(this.state.activeLayer); //fetch layer
-      this.addGLGeometry(body.points, body.lines, body.type, true);
-    }      
+    // if(this.state.objGLData.length !== 0) { 
+    //   this.GLEngine.redraw(this.state.glData, true);
+    //   }     
   }
 
   componentWillUnmount() {
@@ -230,6 +229,7 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
+    //this.setState({glData: faults});
     this.setState({spinner: false});
   }
 
@@ -539,8 +539,6 @@ class App extends React.Component {
     this.setState({currentPhoto: newPhoto});
     return newPhoto;
   }
-
-  
   /**
    * resets to null state when user logouts
    */
@@ -1593,7 +1591,6 @@ class App extends React.Component {
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.state.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
-      //this.filterLayer(this.state.activeLayer, false);
     });
     
   }
@@ -1605,7 +1602,6 @@ class App extends React.Component {
     this.setState({filterRMClass: query}, async () => {
       let body = await this.filterLayer(this.state.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
-      //this.filterLayer(this.state.activeLayer, false);
     });
     
   }
@@ -1677,15 +1673,20 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-
     return ( 
       <> 
         <Navigation 
-          layers={this.state.activeLayers} 
+          layers={this.state.activeLayers}
           remove={this.removeLayer}
           add={this.loadLayer}
           logout={this.logout}
-          />  
+          data={this.state.objGLData}
+          centre={this.centreMap}
+          district={this.state.district}
+          >
+          
+        </Navigation>
+           
         <div className="appcontainer">    
           <div className="panel">
             <div className="layers">

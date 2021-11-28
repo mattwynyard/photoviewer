@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {InputGroup, FormControl, Button}  from 'react-bootstrap';
+import './Navigation.css'
 import L from 'leaflet';
 
 export default class SearchBar extends Component {
@@ -9,10 +10,6 @@ export default class SearchBar extends Component {
         this.state = {
             serach: null,
         }
-    }
-
-    setDelegate(delegate) {
-        this.delegate = delegate;
     }
       
     clickSearch = async(e) => {
@@ -50,34 +47,38 @@ export default class SearchBar extends Component {
             if (body[0] !== "undefined" || body[0] !== "") {
                 let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
                 let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
-                this.delegate.centreMap([latlng1, latlng2])
+                this.props.centre.centreMap([latlng1, latlng2])
             }
         }
     }
 
     render() {
         return (
-            <InputGroup
-        className="search">
-        <FormControl 
-            className="search"
-            id="search"
-            placeholder="Search"
-            onChange={(e) => this.setState({search: e.target.value})}
-        />
-        <InputGroup.Append>
-            <Button className="searchButton" variant="light">
-                <img 
-                    className="searchIcon" 
-                    src="search.png" 
-                    alt="magnifying glass" 
-                    // width="24" 
-                    // height="24"
-                    onClick={this.clickSearch}>
-                </img>
-            </Button>
-        </InputGroup.Append>
-        </InputGroup>
+            <div className="search">
+                <InputGroup
+                
+                >
+                <FormControl 
+                    id="search-form"
+                    placeholder="Search"
+                    onChange={(e) => this.setState({search: e.target.value})}
+                />
+                <InputGroup.Append>
+                    <Button 
+                        className="search-btn" 
+                        variant="light"
+                        >
+                        <img 
+                            className="search-img" 
+                            src="search.png" 
+                            alt="search" 
+                            onClick={this.clickSearch}>
+                        </img>
+                    </Button>
+                </InputGroup.Append>
+            </InputGroup>
+            </div>
+            
         );
     }
 }

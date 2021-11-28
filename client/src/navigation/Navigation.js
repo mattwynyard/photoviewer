@@ -7,6 +7,8 @@ import LoginModal from '../login/LoginModal.js'
 import PostFetch from '../api/PostFetch.js';
 import ProjectNav from './ProjectNav.js';
 import Modals from '../Modals.js';
+import {CustomLink} from "../components/Components.js";
+import SearchBar from './SearchBar.js'
 
 export default function Navigation(props) {
   const [show, setShow] = useState(false);
@@ -14,9 +16,10 @@ export default function Navigation(props) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
-  const [showTerms, setShowTerms] = useState(false)
+  const [showTerms, setShowTerms] = useState(false);
+  const [project, setProject] = useState(null);
   const {login, updateLogin} = useContext(loginContext);
- 
+
 
   const showModal = () => {
     setShow(true)
@@ -53,6 +56,8 @@ export default function Navigation(props) {
     /**
      * calls to server to get public projects onload
      */
+     let token = window.sessionStorage.getItem("token");
+     let user =  window.sessionStorage.getItem("user");
      const callBackendAPI = async () => {
       try {
         const response = await fetch("https://" + login.host + '/api'); 
@@ -63,14 +68,10 @@ export default function Navigation(props) {
       } else {
         buildProjects(body.projects);  
         }
-    } catch(error) {
-      alert(error)
+      } catch(error) {
+        alert(error)
+      }
     }
-  }
-  
-    
-    let token = window.sessionStorage.getItem("token");
-    let user =  window.sessionStorage.getItem("user");
     if (user) {
         let item = window.sessionStorage.getItem("projects");
         let _projects = JSON.parse(item);
@@ -122,8 +123,11 @@ export default function Navigation(props) {
     let type = e.target.type;
     let project = JSON.parse(e.target.title);
     if (type === 'remove') {
-      props.remove(project)     
+      setProject(null)    
+      props.remove(project);
+       
     } else {
+      setProject(project)
       props.add(type, project)
     } 
   }
@@ -164,20 +168,32 @@ export default function Navigation(props) {
             title="Report" 
             id="basic-nav-dropdown"
             disabled = {props.data === null ? true: false}
-            >              
+            >
+              <CustomLink 
+                  className="dropdownlink" 
+                  endpoint="/statistics"
+                  label="Create Report"
+                  data={props.data}
+                  project={project}
+                  style={{ textDecoration: 'none' }}
+                  >
+                </CustomLink>               
             </NavDropdown>   
           </Nav>
           <Nav>
-              <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickTerms(e)} >Terms of Use</NavDropdown.Item>
-                <NavDropdown.Divider />
-                {/* <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickContact(e)} >Contact</NavDropdown.Item>
-                <NavDropdown.Divider /> */}
-                {/* <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
-                <NavDropdown.Divider /> */}
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickAbout(e)} >About</NavDropdown.Item>             
-              </NavDropdown>         
-            </Nav>
+            <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
+              <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickTerms(e)} >Terms of Use</NavDropdown.Item>
+              <NavDropdown.Divider />
+              {/* <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickContact(e)} >Contact</NavDropdown.Item>
+              <NavDropdown.Divider /> */}
+              {/* <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
+              <NavDropdown.Divider /> */}
+              <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickAbout(e)} >About</NavDropdown.Item>             
+            </NavDropdown>         
+          </Nav>
+            <SearchBar centre={props.centre.centreMap} district={props.district}></SearchBar>
+
+          
         <LoginNav user={login.user} onClick={isLoggedIn ? clickLogout: showModal}></LoginNav>
       </Navbar>
       <LoginModal show={show} error={loginError} onClick={clickLogin}></LoginModal>

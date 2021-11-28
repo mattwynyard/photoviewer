@@ -165,35 +165,9 @@ body {
   white-space: nowrap;
 }
 
-.searchButton {
-  position: absolute;
-  top: 50px;
-  right: 10%;
-  height: 2vw;
-  width: 2vw;
-  background-color: white;
-}
 
-.searchIcon {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  height: 100%;
-  width: 100%;
-}
 
-.search {
-  position: absolute;
-  font-family: "Century Gothic", sans-serif;
-  letter-spacing: 1px;
-  font-size: 14px !important;
-  width: 15vw;
-  height: 2vw;
-  top: 50px;
-  right: 1%;
-  z-index: 999;
-  color: gray;
-}
+
 
 .priority { 
   position: relative;
