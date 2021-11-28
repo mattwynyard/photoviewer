@@ -191,7 +191,7 @@ export default function Navigation(props) {
               <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickAbout(e)} >About</NavDropdown.Item>             
             </NavDropdown>         
           </Nav>
-            <SearchBar centre={props.centre.centreMap} district={props.district}></SearchBar>
+            <SearchBar centre={props.centre} district={props.district}></SearchBar>
 
           
         <LoginNav user={login.user} onClick={isLoggedIn ? clickLogout: showModal}></LoginNav>

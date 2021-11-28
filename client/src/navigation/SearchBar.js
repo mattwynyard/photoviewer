@@ -26,8 +26,8 @@ export default class SearchBar extends Component {
             searchString += tokens[i];
         }
         }
-        if (this.delegate.state.district !== null) {
-            searchString += "," + this.delegate.state.district
+        if (this.props.district !== null) {
+            searchString += "," + this.props.district
         }
         console.log(searchString)
         const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
@@ -47,7 +47,7 @@ export default class SearchBar extends Component {
             if (body[0] !== "undefined" || body[0] !== "") {
                 let latlng1 = L.latLng(parseFloat(body[0].boundingbox[0]), parseFloat(body[0].boundingbox[2]));
                 let latlng2 = L.latLng(parseFloat(body[0].boundingbox[1]), parseFloat(body[0].boundingbox[3]));
-                this.props.centre.centreMap([latlng1, latlng2])
+                this.props.centre([latlng1, latlng2])
             }
         }
     }
