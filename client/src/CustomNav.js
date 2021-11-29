@@ -1,7 +1,6 @@
 import React from 'react';
 import {Nav, NavDropdown}  from 'react-bootstrap';
 
-
 export default class CustomNav extends React.Component {
     constructor(props) {
         super(props);

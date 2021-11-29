@@ -1,7 +1,7 @@
 import React from 'react';
 import {Modal}  from 'react-bootstrap';
 import { Button} from 'antd';
-import {pad} from  './util.js';
+import {pad} from  '../util.js';
 import './PhotoModal.css';
 
 export default class PhotoModal extends React.Component {

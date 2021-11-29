@@ -10,10 +10,10 @@ import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
-import CustomModal from './CustomModal.js';
-import PhotoModal from './PhotoModal.js';
+import CustomModal from './modals/CustomModal.js';
+import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './VideoCard.js';
-import ArchivePhotoModal from './ArchivePhotoModal.js';
+import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 
 import LayerCard from './components/LayerCard.js';
@@ -55,11 +55,7 @@ class App extends React.Component {
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
       inspections: [],
-      host: null, //domain
-      token: null, //security token
-      login: null, //username
       zIndex: 900,
-      mapBoxKey: null,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
@@ -74,15 +70,10 @@ class App extends React.Component {
       show: false,
       showVideo: false,
       showRuler: false,
-      showLogin: false,
-      showContact: false,
-      showTerms: false,
-      showAbout: false,
       showAdmin: false,
       modalPhoto: null,
       popover: false,
       photourl: null,
-      projects: null, //all foootpath and road projects for the user
       filters: [],
       filterStore: [],
       activeProject: null,
@@ -133,9 +124,12 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-    // if(this.state.objGLData.length !== 0) { 
-    //   this.GLEngine.redraw(this.state.glData, true);
-    //   }     
+    if(this.state.objGLData.length !== 0) {
+      let body = this.filterLayer(this.state.activeLayer, true);
+      body.then((body) => {
+        this.addGLGeometry(body.points, body.lines, body.type, true);
+      })
+    }      
   }
 
   componentWillUnmount() {
@@ -229,7 +223,6 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    //this.setState({glData: faults});
     this.setState({spinner: false});
   }
 
@@ -881,6 +874,7 @@ class App extends React.Component {
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
   loadLayer = async (mode, project) => { 
+    
     let projectCode = project.code;
     let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
     let inspections = this.buildInspections(inspectionsBody)
@@ -919,6 +913,7 @@ class App extends React.Component {
       if (project.centreline) {
         this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
+      
     });
   }
 
@@ -1238,13 +1233,17 @@ class App extends React.Component {
     body: body
     });
     if(!response.ok) {
+      this.setState({spinner: false});
       throw new Error(response.status);
     } else {
       const body = await response.json();
+      this.setState({spinner: false});
       if (body.error != null) {
-        alert(body.error)
+        this.setState({spinner: false});
+        alert(body.error);
         return body;
       } else {
+        this.setState({spinner: false});
         return body;
       }     
     }                
@@ -1683,8 +1682,7 @@ class App extends React.Component {
           data={this.state.objGLData}
           centre={this.centreMap}
           district={this.state.district}
-          >
-          
+          >  
         </Navigation>
            
         <div className="appcontainer">    

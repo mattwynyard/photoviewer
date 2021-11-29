@@ -1,6 +1,5 @@
 import React from 'react';
 import './Report.css';
-import './CustomNav.js';
 import { Link } from "react-router-dom";
 import {Navbar, Nav}  from 'react-bootstrap';
 import CustomNav from './CustomNav.js';

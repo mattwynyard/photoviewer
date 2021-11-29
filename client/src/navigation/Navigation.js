@@ -6,7 +6,7 @@ import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
 import PostFetch from '../api/PostFetch.js';
 import ProjectNav from './ProjectNav.js';
-import Modals from '../Modals.js';
+import Modals from '../modals/Modals.js';
 import {CustomLink} from "../components/Components.js";
 import SearchBar from './SearchBar.js'
 
