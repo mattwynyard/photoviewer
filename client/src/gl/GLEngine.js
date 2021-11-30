@@ -1,4 +1,4 @@
-import {LatLongToPixelXY, scaleMatrix} from  './util.js';
+import {LatLongToPixelXY, scaleMatrix} from  '../util.js';
 import L from 'leaflet';
 import Gradient from "javascript-color-gradient";
 import './L.CanvasOverlay';
@@ -298,12 +298,11 @@ export default class GLEngine {
   }
 
   loadLines(buffer, data, options) {
-    
+    if (!data) return;
     let faults = [];
     let centre = [];
     let lengths = [];
     let count = options.count;
-   
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
       if (data[i].id) {

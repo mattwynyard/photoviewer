@@ -1,32 +1,32 @@
 import React from 'react';
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Navbar, Nav, NavDropdown, Modal, Button, Image, Form}  from 'react-bootstrap';
+import {Image}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './ToolsMenu.css';
-import CustomNav from './CustomNav.js';
-import './L.CanvasOverlay';
-import GLEngine from './GLEngine.js';
+import Navigation from './navigation/Navigation.js'
+import './gl/L.CanvasOverlay';
+import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import AntDrawer from './Drawer.js';
-import CustomModal from './CustomModal.js';
-import PhotoModal from './PhotoModal.js';
+import CustomModal from './modals/CustomModal.js';
+import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './VideoCard.js';
-import ArchivePhotoModal from './ArchivePhotoModal.js';
+import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
-import SearchBar from './components/SearchBar.jsx'
-import Modals from './Modals.js';
+
 import LayerCard from './components/LayerCard.js';
 import Filter from './components/Filter.js';
-import {CustomSpinner, CustomLink, CustomPopup, LayerNav} from './components/Components.js'
-import {FilterButton} from './components/FilterButton';
+import {CustomSpinner, CustomPopup} from './components/Components.js'
+import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
-import _ from 'lodash';
+import { loginContext} from './login/loginContext';
 
 const DIST_TOLERANCE = 20; //metres 
+const ERP_DIST_TOLERANCE = 0.00004;
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -34,7 +34,7 @@ const DefaultIcon = L.icon({
 }); 
 
 class App extends React.Component {
-
+  static contextType = loginContext;
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
@@ -55,11 +55,7 @@ class App extends React.Component {
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
       inspections: [],
-      host: null, //domain
-      token: null, //security token
-      login: null, //username
       zIndex: 900,
-      mapBoxKey: null,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
@@ -74,15 +70,10 @@ class App extends React.Component {
       show: false,
       showVideo: false,
       showRuler: false,
-      showLogin: false,
-      showContact: false,
-      showTerms: false,
-      showAbout: false,
       showAdmin: false,
       modalPhoto: null,
       popover: false,
       photourl: null,
-      projects: null, //all foootpath and road projects for the user
       filters: [],
       filterStore: [],
       activeProject: null,
@@ -93,6 +84,7 @@ class App extends React.Component {
       selectedIndex: null,
       mouseclick: null,
       objGLData: [],
+      glData: null,
       selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
@@ -102,10 +94,9 @@ class App extends React.Component {
       spinner: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
-      notificationKey: null,    
+      notificationKey: null, 
+      filtered: false  
     }; 
-    this.customNav = React.createRef();
-    this.menu = React.createRef();
     this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -118,32 +109,14 @@ class App extends React.Component {
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
-    this.filterRef = React.createRef();
     this.vidPolyline = null;  
   }
 
-  componentDidMount() {
-    let host = this.getHost();
-    let user = this.getUser();
-    let projects = this.getProjects();
-    let token = window.sessionStorage.getItem('token');
-    this.setState({
-      host: host,
-      token: token,
-      login: user,
-      projects: projects
-    }, () => {
-      if (this.state.login === "Login") {
-        this.callBackendAPI()
-      }
-      this.customNav.current.setTitle(user);
-      this.customNav.current.setOnClick(this.getLoginModal(user));   
-    });
+  componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
     this.customModal.current.delegate(this);
-    this.searchRef.current.setDelegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
@@ -151,9 +124,17 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-
     if(this.state.objGLData.length !== 0) {
-      this.filterLayer(this.state.activeLayer, true);
+      if (this.state.activeLayer.centreline) {
+        this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+      }
+      let body = this.filterLayer(this.state.activeLayer, true);
+      body.then((body) => {
+        this.addGLGeometry(body.points, body.lines, body.type, true);
+      })
+    }
+    if (this.state.filtered) {
+      this.applyRef.current.innerHTML = "Clear Filter"
     }      
   }
 
@@ -356,24 +337,17 @@ class App extends React.Component {
       case 'Map':
         if (!this.state.activeLayer) return;
         if (this.roadLinesRef.current.isActive()) {
-          const login = {
-            user: this.state.login, 
-            project: this.state.activeLayer.code,
-            token: this.state.token,
-
-          }
-          let address = this.state.host + "/carriageway";
           let query = {
             lat: e.latlng.lat,
             lng: e.latlng.lng
           }
-          let response = await Fetcher(address, login, query);
+          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
           let geometry = JSON.parse(response.data.geojson);
           let erp = {
             start: response.data.starterp,
             end: response.data.enderp
           }
-          if (response.data.dist < 0.00004) { //distance tolerance
+          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
             let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
             if (this.state.notificationKey) {
               if (response.data.carriageid !== this.state.notificationKey.carriage) 
@@ -400,7 +374,7 @@ class App extends React.Component {
             this.setState({notificationKey: key});
           }     
         }
-        if (this.state.glData !== null) {
+        if (this.state.objGLData.length !== 0) {
           this.setState({selectedIndex: null});
           this.setState({selectedGeometry: []});
           if (this.roadLinesRef.current.isActive()) {
@@ -444,9 +418,7 @@ class App extends React.Component {
       let polyline = this.state.rulerPolyline;
       if (polyline !== null) {
         let points = polyline.getLatLngs();
-        //console.log(points);
         points.pop();
-        //console.log(points);
         polyline.setLatLngs(points);
         this.calculateDistance(points);
       }
@@ -467,7 +439,7 @@ class App extends React.Component {
         this.setState({rulerDistance: 0});
       }   
     } else {
-      //console.log(e.key);
+      return;
     }
   }
 
@@ -492,68 +464,6 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  // getDistance() {
-  //   return this.distance
-  // }
-
-  callBackendAPI = async () => {
-    try {
-      const response = await fetch("https://" + this.state.host + '/api'); 
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(body);   
-        throw Error(body.message) 
-      } else {
-          this.buildProjects(body.projects);  
-        }
-      return body;
-    } catch(error) {
-      alert(error);   
-    } 
-  }
-
-  /**
-   * Gets the development or production host 
-   * @return {string} the host name
-   */
-  getHost() {
-    if (process.env.NODE_ENV === "development") {
-      return "localhost:8443";
-    } else if (process.env.NODE_ENV === "production") {
-      return "osmium.nz";
-    } else {
-      return "localhost:8443";
-    }
-   }
-
-  getProjects() {
-    let project = window.sessionStorage.getItem('projects');
-    if (!project) {
-      return [];
-    } else {
-      return JSON.parse(project);
-    }    
-  }
-  /**
-   * Checks if user has cookie. If not not logged in.
-   * Returns username in cookie if found else 'Login'
-   */
-  getUser() {
-    let user = window.sessionStorage.getItem('user');
-    if (!user) {
-      return "Login";
-    } else {
-      return user;
-    }    
-  }
-
-  getLoginModal(user) {
-    if (user === "Login") {
-      return (e) => this.clickLogin(e);
-    } else {
-      return (e) => this.logout(e);
-    }
-  }
   /**
    * Called when data layer is loaded
    * @param {array of late lngs} latlngs 
@@ -573,13 +483,12 @@ class App extends React.Component {
       }
   }
 
-  
   /**
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
    */
   toogleMap(e) {
-    if (this.state.login === "Login") {
+    if (this.context.login.user === "Login") {
       return;
     }
     if (this.state.mode === "map") {
@@ -611,7 +520,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.activeLayer.amazon);
+    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
   getPhoto(direction) {
@@ -629,8 +538,6 @@ class App extends React.Component {
     this.setState({currentPhoto: newPhoto});
     return newPhoto;
   }
-
-  
   /**
    * resets to null state when user logouts
    */
@@ -640,8 +547,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    this.customNav.current.setOnClick((e) => this.clickLogin(e));
-    this.customNav.current.setTitle("Login");
+    this.roadLinesRef.current.reset();
     this.setState({
       activeProject: null,
       projects: [],
@@ -672,24 +578,6 @@ class App extends React.Component {
   }
 
   /**
-   * loops through project array received from db and sets
-   * project array in the state. Sets project cookie
-   * @param {Array} projects 
-   */
-  buildProjects(projects) {    
-    let obj = {road : [], footpath: []}
-    for(var i = 0; i < projects.length; i += 1) {
-      if (projects[i].surface === "road") {
-        obj.road.push(projects[i]);
-      } else {
-        obj.footpath.push(projects[i]);
-      }
-    }
-    window.sessionStorage.setItem('projects', JSON.stringify(obj));
-    this.setState({projects: obj});
-  }
-
-  /**
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
    * @param {event} e 
@@ -706,7 +594,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
@@ -714,7 +602,6 @@ class App extends React.Component {
     });
     let vidPolyline = null;
     const body = await response.json();
-    //console.log(body);
     if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
       let dist = distFunc(body.data.dist);
@@ -735,7 +622,7 @@ class App extends React.Component {
           weight: 4,
           opacity: 0.5,
           host: this.state.host,
-          login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
+          login: {login: this.context.login.user, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
         let parent = this;
         vidPolyline.on('click', function (e) {
@@ -783,8 +670,7 @@ class App extends React.Component {
                       break;
                     }   
                   }
-                }
-                
+                }         
                 if (!found) {
                   alert("error loading video - Not found")
                 }
@@ -847,7 +733,6 @@ class App extends React.Component {
       return body;
     }   
   }
-
 
   async getPhotos(carriageid, side, host, login) {
     const response = await fetch('https://' + host + '/photos', {
@@ -915,7 +800,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
@@ -959,7 +844,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         photo: photo
       })
@@ -985,103 +870,26 @@ class App extends React.Component {
   }
 }
 
-  async logout(e) {
-    e.preventDefault();
-    try {
-      const response = await fetch("https://" + this.state.host + '/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.state.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.state.login,
-      })
-      });
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(response.status + " " + response.statusText);  
-        throw Error(body.message);    
-      }    
-    } catch (error) {
-      alert("server offline " + error);  
-    } finally {
-      this.reset();
-    } 
+  logout = () => {
+    this.reset();
   }
 
-  async login(e) {  
-    e.preventDefault();
-    try {
-      const response = await fetch('https://' + this.state.host + '/login', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.userInput.value,
-        key: this.passwordInput.value
-      })
-      });
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(response.status + " " + response.statusText);  
-        throw Error(body.message);   
-      }  
-      if (body.result) {
-        window.sessionStorage.setItem('token', body.token);
-        window.sessionStorage.setItem('user', body.user);
-        this.setState({login: body.user, token: body.token, showLogin: false, 
-          message: "", mapBoxKey: process.env.REACT_APP_MAPBOX});   
-        this.buildProjects(body.projects);   
-        this.customNav.current.setTitle(body.user);
-        this.customNav.current.setOnClick((e) => this.logout(e));   
-        if(this.state.login === 'admin') {
-          this.setState({admin: true});
-        }
-      } else {
-        this.setState({message: "Username or password is incorrect!"});
-      }
-    } catch (error) {
-      alert(error)
-      this.setState({showLogin: false});
-    }      
-  }
-  
-  
   /**
    * checks if layer loaded if not adds layer to active layers
    * calls fetch layer
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  async loadLayer(e, mode) { 
-    e.persist();
-    let projectCode = e.target.attributes.code.value;
-    let project = null;
-    for(let i = 0; i < this.state.activeLayers.length; i ++) { //check if loaded
-      if (this.state.activeLayers[i].code === e.target.attributes.code.value) {  //if found
-        return;
-      }
-    }   
-    if (mode === "road") {
-      project = this.findProject(this.state.projects.road, projectCode);  
-      if (!project) return;
-    } else {
-      project = this.findProject(this.state.projects.footpath, projectCode);  
-      if (!project) return;
-    } 
+  loadLayer = async (mode, project) => { 
+    
+    let projectCode = project.code;
     let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
     let inspections = this.buildInspections(inspectionsBody)
     let district = await this.requestDistrict(projectCode); 
     let data = await this.requestFilterData(project);
     let storeData = await this.requestFilterData(project);
-    let filters = this.buildFilter(data);
-    let store = this.buildFilter(storeData);
+    let filters = await this.buildFilter(data);
+    let store = await this.buildFilter(storeData);
     let layers = this.state.activeLayers;
     layers.push(project);
     let layerBody = await this.requestLayerDropdowns(project);
@@ -1089,8 +897,7 @@ class App extends React.Component {
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
       this.setState({filterRMClass: layerBody.rmclass})  
-    } 
-    this.antdrawer.current.setVideo(this.state.hasVideo);      
+    }     
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
@@ -1108,45 +915,77 @@ class App extends React.Component {
       priorityMode: mode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
-      this.filterLayer(this.state.activeLayer, true); //fetch layer
-      if (this.state.activeLayer.centreline) {
-        let login = {token: this.state.token, user: this.state.login}
-        this.roadLinesRef.current.loadCentrelines(projectCode, this.state.host, login); 
+      let body = await this.filterLayer(project); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, true);
+      if (project.centreline) {
+        this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
+      
     });
   }
 
-  buildFilter(filters) {
+    /**
+   * Removes current active layer and restores to null state
+   * @param {event} project  - the active project
+   */
+     removeLayer = (project) => {
+      window.sessionStorage.removeItem("state");
+      window.sessionStorage.removeItem("centrelines");
+      this.roadLinesRef.current.reset();
+      let layers = this.state.activeLayers;
+      for(var i = 0; i < layers.length; i += 1) {     
+        if (project.code === layers[i].code) {
+          layers.splice(i, 1);
+          break;
+        }
+      }
+      this.setState(
+        {
+          objGLData: [],
+          priorities: [],
+          filterPriorities: [],
+          filterRMClass: [],
+          projectMode: null,
+          filterStore: [],
+          filter: [],
+          rmclass: [],
+          faultData: [],
+          activeLayers: layers,
+          inspections: [],
+          bucket: null,
+          activeProject: null,
+          activeLayer: null,
+          ages: layers,
+          district: null}, () => {
+            let glData = null;
+            this.GLEngine.redraw(glData, false); 
+          }
+      );  
+    }
+
+  buildFilter = async (filters) => {
     if (!filters) return {};
     filters.forEach(filter => {
       let data = filter.data.map(element => Object.values(element)[0]);
       data.sort()
       filter.data = data;
+      filter.active = true;
     });
      return filters;
   }
 
-  findProject(projects, code) {
-    for (let i = 0; i < projects.length; i++) { //find project
-      if (projects[i].code === code) {  //if found
-        return projects[i]
-        }
-    }
-    return null;
-  }
-
-  async requestInspections(project, mode) {
+  requestInspections = async (project, mode) => {
     if (mode === 'footpath') return [];
     try {
-      const response = await fetch('https://' + this.state.host + '/age', {
+      const response = await fetch('https://' + this.context.login.host + '/age', {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project,
       })
       });
@@ -1161,7 +1000,6 @@ class App extends React.Component {
         }     
       } else {
         console.log(response);
-
       }
     } catch (error) {
       alert(error)
@@ -1172,7 +1010,7 @@ class App extends React.Component {
    * Sets inspections array for use in filter
    * @param {*} ages JSON object inspection array
    */
-   buildInspections(values) {
+   buildInspections = (values) => {
      if (!values) return;
     if (values.length === 0) {
       return [];
@@ -1188,17 +1026,17 @@ class App extends React.Component {
     }   
   }
 
-  async requestDistrict(project) {  
-    let response = await fetch('https://' + this.state.host + '/district', {
+  requestDistrict = async (project) => {  
+    let response = await fetch('https://' + this.context.login.host + '/district', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project
       })
     });
@@ -1216,17 +1054,17 @@ class App extends React.Component {
     }
   }
 
-  async requestFilterData(project) {
+  requestFilterData = async (project) => {
     try {
-      let response = await fetch('https://' + this.state.host + '/filterData', {
+      let response = await fetch('https://' + this.context.login.host + '/filterData', {
         method: 'POST',
         headers: {
-          "authorization": this.state.token,
+          "authorization": this.context.login.token,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           project: project
         })
       });
@@ -1247,16 +1085,16 @@ class App extends React.Component {
     }
 }
 
-  async requestLayerDropdowns(project) {
-    let response = await fetch('https://' + this.state.host + '/layerdropdowns', {
+  requestLayerDropdowns = async (project) => {
+    let response = await fetch('https://' + this.context.login.host + '/layerdropdowns', {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project,
       })
     });
@@ -1278,7 +1116,7 @@ class App extends React.Component {
    * Sets default bucket suffix for the project
    * @param {the current project} project 
    */
-  buildBucket(project) {
+  buildBucket = (project) => {
     let bucket = project.split("_")[2];
     let month = bucket.substring(0, 2);
     let year = null;
@@ -1290,7 +1128,7 @@ class App extends React.Component {
     return year + "_" + month;
   }
 
-  buildPriority(priority, isPriority, ramm) {
+  buildPriority = (priority, isPriority, ramm) => {
     let priorities = [];
     let filter = [];
     for (let i = 0; i < priority.length; i++) {
@@ -1314,47 +1152,7 @@ class App extends React.Component {
     return ({filter: filter, priorities: priorities})
   }
 
-  /**
-   * 
-   * @param {event} e  - the menu clicked
-   */
-  removeLayer(e) {
-    window.sessionStorage.removeItem("state");
-    window.sessionStorage.removeItem("centrelines");
-    this.roadLinesRef.current.reset();
-    let layers = this.state.activeLayers;
-    for(var i = 0; i < layers.length; i += 1) {     
-      if (e.target.attributes.code.value === layers[i].code) {
-        layers.splice(i, 1);
-        break;
-      }
-    }
-    this.setState(
-      {
-        objGLData: [],
-        priorities: [],
-        //filterDropdowns: [],
-        filterPriorities: [],
-        filterRMClass: [],
-        projectMode: null,
-        filterStore: [],
-        filter: [],
-        rmclass: [],
-        faultData: [],
-        activeLayers: layers,
-        inspections: [],
-        bucket: null,
-        activeProject: null,
-        activeLayer: null,
-        ages: layers,
-        district: null}, () => {
-          let glData = null;
-          this.GLEngine.redraw(glData, false); 
-        }
-    );  
-  }
-
-  getBody(project) {
+  getBody = (project) => {
     let filter = []
     if (project.surface === "road") {
       this.state.filters.forEach(arr => {
@@ -1362,7 +1160,7 @@ class App extends React.Component {
         filter = filter.concat(data);
       })
       return JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: project.code,
         filter: filter,
         priority: this.state.filterPriorities,
@@ -1373,7 +1171,7 @@ class App extends React.Component {
       })   
     } else {
         return JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           project: project.code,
           filter: this.state.filters,
           surface: project.surface,
@@ -1382,12 +1180,11 @@ class App extends React.Component {
           rmclass: this.state.filterRMClass,
           inspection: this.state.inspections,
         })
-      }
-         
+      }       
   }
 
   async sendData(project, data, endpoint) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + endpoint, {
       method: 'POST',
       headers: {
@@ -1396,7 +1193,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         data: data,
         project: project
       })
@@ -1411,7 +1208,8 @@ class App extends React.Component {
             await this.logout(e);
           } else {    
             if (endpoint === '/update') {
-              this.filterLayer(this.state.activeLayer, false);
+              let body = await this.filterLayer(project); //fetch layer
+              this.addGLGeometry(body.points, body.lines, body.type, false);
             }
             alert(result.rows + '\n' + result.errors);
           }     
@@ -1428,36 +1226,38 @@ class App extends React.Component {
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
-  async filterLayer(project, zoom) {
+  filterLayer = async (project) => {
     this.setState({spinner: true});
-      let body = this.getBody(project);
-      if (!body) return;
-      await fetch('https://' + this.state.host + '/layer', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-      },
-      body: body
-      }).then(async (response) => {
-        if(!response.ok) {
-          throw new Error(response.status);
-        } else {
-          const body = await response.json();
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            await this.addGLGeometry(body.points, body.lines, body.type, zoom);
-          }     
-        }
-      });                
+    let body = this.getBody(project);
+    if (!body) return;
+    const response = await fetch('https://' + this.context.login.host + '/layer', {
+      method: 'POST',
+      headers: {
+        "authorization": this.context.login.token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    },
+    body: body
+    });
+    if(!response.ok) {
+      this.setState({spinner: false});
+      throw new Error(response.status);
+    } else {
+      const body = await response.json();
+      this.setState({spinner: false});
+      if (body.error != null) {
+        this.setState({spinner: false});
+        alert(body.error);
+        return body;
+      } else {
+        this.setState({spinner: false});
+        return body;
+      }     
+    }                
   }
 
   async loadCentreline(e) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
         await fetch('https://' + this.state.host + '/roads', {
         method: 'POST',
         headers: {
@@ -1468,7 +1268,7 @@ class App extends React.Component {
         body: JSON.stringify({
           code: "900",
           menu: e.target.id,
-          user: this.state.login
+          user: this.context.login.user
         })
       })
       .then(async(response) => {
@@ -1501,7 +1301,7 @@ class App extends React.Component {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user: this.state.login,
+            user: this.context.login.user,
             project: project
           })
         }).then(async (response) => {
@@ -1525,7 +1325,7 @@ class App extends React.Component {
   }
 
   async addNewUser(client, password) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
         headers: {
@@ -1535,7 +1335,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "insert",
-          user: this.state.login,
+          user: this.context.login.user,
           client: client,
           password: password
         })
@@ -1560,7 +1360,7 @@ class App extends React.Component {
   }
 
   getClient = async () => {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/usernames', {
         method: 'POST',
         headers: {
@@ -1570,7 +1370,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "select",
-          user: this.state.login,
+          user: this.context.login.user,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1593,7 +1393,7 @@ class App extends React.Component {
 
   selectProjects = async (client) => {
     console.log("get projects")
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/selectprojects', {
         method: 'POST',
         headers: {
@@ -1604,7 +1404,7 @@ class App extends React.Component {
         body: JSON.stringify({
           type: "select",
           client: client,
-          user: this.state.login,
+          user: this.context.login.user,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1625,7 +1425,7 @@ class App extends React.Component {
   }
 
   async deleteCurrentUser(client) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
         headers: {
@@ -1635,7 +1435,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "delete",
-          user: this.state.login,
+          user: this.context.login.user,
           client: client,
         })
       }).then(async (response) => {
@@ -1660,7 +1460,7 @@ class App extends React.Component {
 
   async deleteCurrentProject(project, parent) {
     console.log(project);
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
         headers: {
@@ -1669,7 +1469,7 @@ class App extends React.Component {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           type: "delete",
           project: project,
           parent: parent
@@ -1694,7 +1494,7 @@ class App extends React.Component {
   }
 
   async addNewProject(project) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
         headers: {
@@ -1703,7 +1503,7 @@ class App extends React.Component {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           type: "insert",
           code: project.code,
           client: project.client,
@@ -1736,33 +1536,6 @@ class App extends React.Component {
     }
   }
 
-  updateFilter = (filter) => {
-    this.setState({filters: filter})
-  }
-
-  clickLogin(e) {
-    e.preventDefault();
-    this.setState({showLogin: true});   
-  }
-
-  clickAbout(e) {
-    this.setState({showAbout: true});  
-  }
-
-  clickTerms(e) {
-    this.setState({showTerms: true});  
-  }
-
-  clickContact(e) {
-    this.setState({showContact: true});  
-  }
-
-  clickClose(e) {
-    this.setState({showContact: false});
-    this.setState({showAbout: false});    
-    this.setState({showTerms: false});    
-  }
-
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1779,15 +1552,25 @@ class App extends React.Component {
     this.setState({activeLayer: this.state.activeLayers[index]});
   }
 
+  updateFilter = (filter) => {
+    let html = this.applyRef.current.innerHTML
+    if (this.state.filtered && html === "Clear Filter") {
+      this.applyRef.current.innerHTML = "Apply Filter"
+    }
+    this.setState({filters: filter})
+  }
+
   /**
    * Fires when user clicks apply button. 
    * @param {event} e 
    */
-  clickApply(e) {
+  clickApply = async (e) => {
     e.preventDefault();
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
-      this.filterLayer(this.state.activeLayer, false);
+      this.setState({filtered: true})
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
     } else {
       e.target.innerHTML = "Apply Filter";
       let newFilter = [];
@@ -1797,9 +1580,11 @@ class App extends React.Component {
         newFilter.push(object);
       })
       this.setState({
+        filtered: false,
         filters: newFilter
-      }, () => {
-        this.filterLayer(this.state.activeLayer, false);
+      }, async () => {
+        let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+        this.addGLGeometry(body.points, body.lines, body.type, false);
       });  
     }
   }
@@ -1809,8 +1594,9 @@ class App extends React.Component {
    * @param {array} query 
    */
   updatePriority = (query) => {
-    this.setState({filterPriorities: query}, () => {
-      this.filterLayer(this.state.activeLayer, false);
+    this.setState({filterPriorities: query}, async () => {
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
     });
     
   }
@@ -1818,9 +1604,10 @@ class App extends React.Component {
    * callback for classdropdown to update class filter
    * @param {array} query 
    */
-  updateRMClass = (query) => {
-    this.setState({filterRMClass: query}, () => {
-      this.filterLayer(this.state.activeLayer, false);
+  updateRMClass = async (query) => {
+    this.setState({filterRMClass: query}, async () => {
+      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
     });
     
   }
@@ -1843,20 +1630,6 @@ class App extends React.Component {
     }
     console.log(this.state.isVideo);
   }
-
-
-  // async reverseLookup(data) {
-  //   console.log(data);
-  //   const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
-  //    + data.longitude + "&addressdetails=1", {
-  //     method: 'GET',
-  //     credentials: 'same-origin',
-  //     headers: {
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',        
-  //     },
-  //   });  
-  // }
 
 // Admin
   addUser(e) {
@@ -1906,78 +1679,21 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-
     return ( 
       <> 
-        <div>        
-          <Navbar bg="light" expand="lg">      
-            <Navbar.Brand href="#home">
-            <img
-                src="logo.png"
-                width="122"
-                height="58"
-                className="d-inline-block align-top"
-                alt="logo"
-              />
-            </Navbar.Brand>
-            <LayerNav 
-              project={this.state.activeProject} 
-              projects={this.getProjects()} 
-              layers={this.state.activeLayers}
-              user={this.state.login}
-              removeLayer={(e) => this.removeLayer(e)} 
-              loadRoadLayer={(e) => this.loadLayer(e, 'road')} 
-              loadFootpathLayer={(e) => this.loadLayer(e, 'footpath')}
-              addUser={(e) => this.addUser(e)} 
-              addProject={(e) => this.addProject(e)} 
-              importData={(e) => this.importData(e)} 
-              >
-            </LayerNav>
-            <Nav>              
-              <NavDropdown 
-                className="navdropdown" 
-                title="Data" 
-                id="basic-nav-dropdown"
-                >
-                <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/data"
-                  label="Table View"
-                  style={{ textDecoration: 'none' }}
-                  >
-                 </CustomLink>      
-              </NavDropdown>         
-            </Nav>
-            <Nav>
-              <NavDropdown className="navdropdown" title="Report" id="basic-nav-dropdown">         
-                <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/statistics"
-                  label="Create Report"
-                  data={this.state.objGLData}
-                  login={this.customNav.current}
-                  user={this.state.login}
-                  activeLayer={this.state.activeLayer}
-                  style={{ textDecoration: 'none' }}
-                  >
-                </CustomLink>       
-              </NavDropdown>   
-            </Nav>
-            <Nav>
-              <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickTerms(e)} >Terms of Use</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickContact(e)} >Contact</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item className="navdropdownitem" onClick={(e) => this.clickAbout(e)} >About</NavDropdown.Item>             
-              </NavDropdown>         
-            </Nav>
-            <CustomNav ref={this.customNav} className="navdropdown"/>
-            <SearchBar ref={this.searchRef} district={this.state.district}></SearchBar>
-          </Navbar>         
-        </div>   
+        <Navigation 
+          layers={this.state.activeLayers}
+          remove={this.removeLayer}
+          add={this.loadLayer}
+          logout={this.logout}
+          updateLogin={this.context.updateLogin}
+          data={this.state.objGLData}
+          project={this.state.activeLayer ? this.state.activeLayer: null}
+          centre={this.centreMap}
+          district={this.state.district}
+          >  
+        </Navigation>
+           
         <div className="appcontainer">    
           <div className="panel">
             <div className="layers">
@@ -1988,13 +1704,13 @@ class App extends React.Component {
                 layer={this.state.activeLayer}
                 prioritytitle={this.state.priorityMode}
                 priorityitems={this.state.priorities}
-                prioritylogin={this.state.login}
+                prioritylogin={this.context.login.user}
                 priorityreverse={this.state.reverse}
                 priorityfilter={this.state.filterPriorities} 
                 priorityonClick={this.updatePriority}
                 classtitle={'RM Class'}
                 classitems={this.state.rmclass ? this.state.rmclass: []}
-                classlogin={this.state.login}
+                classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
               >               
@@ -2070,13 +1786,12 @@ class App extends React.Component {
             parent={this}
           >
           </VideoCard>
-          
           <LayerGroup >
             {this.state.selectedGeometry.map((obj, index) =>  
             <CustomPopup 
               key={`${index}`} 
               data={obj}
-              login={this.state.login}
+              login={this.context.login.user}
               position={obj.latlng}
               src={this.state.activeLayer.amazon + obj.photo + ".jpg"} 
               amazon={this.state.activeLayer.amazon}
@@ -2090,7 +1805,6 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
       </LMap >    
@@ -2110,48 +1824,6 @@ class App extends React.Component {
         callbackGetProjects={this.selectProjects}
         >
        </CustomModal>
-       <Modals
-        type='terms'
-        show={this.state.showTerms}
-        onClick={(e)=> this.clickClose(e)} 
-      />
-      <Modals
-        type='about'
-        show={this.state.showAbout}
-        onClick={(e)=> this.clickClose(e)} 
-      />
-      <Modal show={this.state.showLogin} size={'sm'} centered={true}>
-        <Modal.Header>
-          <Modal.Title><img src="padlock.png" alt="padlock" width="42" height="42"/> Login </Modal.Title>
-        </Modal.Header>
-        <Modal.Body >	
-        <Form>
-          <Form.Group controlId="userName">
-            <Form.Label>Username</Form.Label>
-            <Form.Control 
-              type="text" 
-              placeholder="Enter username" 
-              ref={user => this.userInput = user} />
-          </Form.Group>
-          <Form.Text className= "message">{this.state.message}</Form.Text>
-          <Form.Group controlId="formBasicPassword">
-            <Form.Label>Password</Form.Label>           
-            <Form.Control 
-              type="password" 
-              placeholder="Password" 
-              ref={(key=> this.passwordInput = key)}/>
-          </Form.Group>
-          <Button 
-            variant="primary" 
-            type="submit" 
-            onClick={(e) => this.login(e)}>
-            Submit
-          </Button>
-        </Form>
-		    </Modal.Body>
-        <Modal.Footer>
-        </Modal.Footer>
-      </Modal>
       <PhotoModal
         ref={this.photoModal}
       >
@@ -2171,3 +1843,17 @@ class App extends React.Component {
   
 }
 export default App;
+
+
+  // async reverseLookup(data) {
+  //   console.log(data);
+  //   const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + data.latitude + "&lon=" 
+  //    + data.longitude + "&addressdetails=1", {
+  //     method: 'GET',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //   });  
+  // }

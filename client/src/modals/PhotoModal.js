@@ -1,7 +1,7 @@
 import React from 'react';
 import {Modal}  from 'react-bootstrap';
 import { Button} from 'antd';
-import {pad} from  './util.js';
+import {pad} from  '../util.js';
 import './PhotoModal.css';
 
 export default class PhotoModal extends React.Component {
@@ -132,8 +132,8 @@ export default class PhotoModal extends React.Component {
           );
         } else if(props.obj.type === "footpath") {      
           return (
-            <div className="container">
-              <DataColumn className="col-md-8" data={[
+            <div className="col-md-8" >
+              <DataColumn data={[
                 {name: "Fault ID: ", data: props.obj.id},
                 {name: "Grade: ", data: props.obj.grade},
                 {name: "Road ID: ", data: props.obj.roadid},

@@ -167,7 +167,7 @@ const CustomSpinner = (props) => {
     if (props.endpoint === "/data") {
       return (null);
     }
-    if (props.activeLayer === null) {
+    if (!props.project) {
       return(null);
     } else {
       return (
@@ -175,10 +175,8 @@ const CustomSpinner = (props) => {
           className="dropdownlink" 
           to={{
             pathname: props.endpoint,
-            login: props.login,
-            user: props.user,
             data: props.data,
-            project: props.activeLayer
+            mode: props.project.surface,
           }}
           style={{ textDecoration: 'none' }}
           >{props.label}

@@ -31,7 +31,6 @@ export default function FilterMenu(props) {
   }
 
   const onChange = () => {
-
   }
 
   return (

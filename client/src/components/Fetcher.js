@@ -1,6 +1,9 @@
-const Fetcher = async (address, login, query) => {
+// import { loginContext} from '../login/loginContext.js';
+// import {useContext} from 'react';
 
-    const response = await fetch("https://" + address, {
+const Fetcher = async (login, project, query) => {
+
+    const response = await fetch("https://" + login.host + "/carriageway", {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
@@ -10,7 +13,7 @@ const Fetcher = async (address, login, query) => {
         },
         body: JSON.stringify({
             user: login.user,
-            project: login.project,
+            project: project,
             query: query
         })
     });

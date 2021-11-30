@@ -1,6 +1,6 @@
 import React from 'react';
 import {Modal}  from 'react-bootstrap';
-import {pad} from  './util.js'
+import {pad} from  '../util.js'
 
 export default class ArchivePhotoModal extends React.Component {
     constructor(props) {
