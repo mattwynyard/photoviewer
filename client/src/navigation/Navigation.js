@@ -41,7 +41,7 @@ export default function Navigation(props) {
 
   const clickLogout = async (e) => {
     e.preventDefault();
-    let body = await PostFetch(login.host + '/logout', login.token, {user: login.user});
+    //let body = await PostFetch(login.host + '/logout', login.token, {user: login.user});
     setIsLoggedIn(false)
     updateLogin("Login", null)
     setProjects(null);  ;
@@ -61,13 +61,13 @@ export default function Navigation(props) {
      const callBackendAPI = async () => {
       try {
         const response = await fetch("https://" + login.host + '/api'); 
-      const body = await response.json();
-      if (response.status !== 200) {
-        alert(body);   
-        throw Error(body.message) 
-      } else {
-        buildProjects(body.projects);  
-        }
+        const body = await response.json();
+        if (response.status !== 200) {
+          alert(body);   
+          throw Error(body.message) 
+        } else {
+          buildProjects(body.projects);  
+          }
       } catch(error) {
         alert(error)
       }
@@ -102,10 +102,6 @@ export default function Navigation(props) {
     setShowTerms(true)
   }
 
-  // const clickContact = (e) => {
-  //   e.preventDefault();
-  //   setShowContact(true)
-  // }
   const buildProjects = (projects) => {    
     let obj = {road : [], footpath: []}
     for(var i = 0; i < projects.length; i += 1) {
@@ -120,15 +116,15 @@ export default function Navigation(props) {
   }
 
   const handleClick = (e) => {
-    let type = e.target.type;
+    let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
-    if (type === 'remove') {
+    if (projectMode === 'remove') {
       setProject(null)    
       props.remove(project);
        
     } else {
       setProject(project)
-      props.add(type, project)
+      props.add(projectMode, project)
     } 
   }
 
@@ -158,7 +154,7 @@ export default function Navigation(props) {
             className="navdropdown" 
             title="Data" 
             id="basic-nav-dropdown"
-            disabled = {props.data === null ? true: false}
+            disabled = {props.data.length === 0 ? true: false}
             >
           </NavDropdown>         
           </Nav>
@@ -167,13 +163,14 @@ export default function Navigation(props) {
             className="navdropdown" 
             title="Report" 
             id="basic-nav-dropdown"
-            disabled = {props.data === null ? true: false}
+            disabled = {props.data.length === 0 ? true: false}
             >
               <CustomLink 
                   className="dropdownlink" 
                   endpoint="/statistics"
                   label="Create Report"
                   data={props.data}
+                  mode={props.mode}
                   project={project}
                   style={{ textDecoration: 'none' }}
                   >

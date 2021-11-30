@@ -175,10 +175,8 @@ const CustomSpinner = (props) => {
           className="dropdownlink" 
           to={{
             pathname: props.endpoint,
-            login: props.login,
-            user: props.user,
             data: props.data,
-            project: props.project
+            mode: props.mode,
           }}
           style={{ textDecoration: 'none' }}
           >{props.label}

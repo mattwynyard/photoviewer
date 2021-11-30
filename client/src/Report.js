@@ -11,10 +11,7 @@ const NO_COLORS = 9;
 class Report extends React.Component {
     static contextType = loginContext;
     constructor(props) {
-        super(props);
-        this.state = {
-            mode: props.location.project.surface,
-        }     
+        super(props);    
     }
 
     addMap(map, data) {
@@ -47,7 +44,7 @@ class Report extends React.Component {
             "#FFC857", "#058ED9", "#BDD9BF", "#E8F086", "#6FDE6E", "#FF4242", "#A691AE", "#235FA4", "#0A284B", "#848FA2"
         ];
         
-        if(this.state.mode === "footpath") {
+        if(this.mode === "footpath") {
             this.gradeMap = new Map();
             this.faultMap = new Map();
             this.causeMap = new Map();
@@ -60,12 +57,10 @@ class Report extends React.Component {
             });
 
             let gradeData = Array.from(this.gradeMap, ([name, value]) => ({ name, value }));
-            //let faultData = Array.from(this.faultMap, ([name, value]) => ({ name, value }));
             let faultData = Array.from(this.faultMap, ([name, value]) => ({ name, value }));
             let causeData = Array.from(this.causeMap, ([name, value]) => ({ name, value }));
             let surfaceData = Array.from(this.surfaceMap, ([name, value]) => ({ name, value }));
             gradeData.sort((a, b) => (a.value < b.value) ? 1 : -1);
-            //faultData.sort((a, b) => (a.value < b.value) ? 1 : -1);
             faultData.sort((a, b) => (a.value < b.value) ? 1 : -1);
             causeData.sort((a, b) => (a.value < b.value) ? 1 : -1);
             surfaceData.sort((a, b) => (a.value < b.value) ? 1 : -1);
@@ -428,12 +423,9 @@ class Report extends React.Component {
     
     }
     render() {
-        const { login } = this.props.location
-        const { user } = this.props.location
-        const { data } = this.props.location
-        this.user = user;
-        this.login = login;
+        const { data, mode } = this.props.location
         this.data = data;
+        this.mode = mode;
         
     return (
         <div> 

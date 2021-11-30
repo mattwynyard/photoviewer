@@ -125,10 +125,16 @@ class App extends React.Component {
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
     if(this.state.objGLData.length !== 0) {
+      if (this.state.activeLayer.centreline) {
+        this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+      }
       let body = this.filterLayer(this.state.activeLayer, true);
       body.then((body) => {
         this.addGLGeometry(body.points, body.lines, body.type, true);
       })
+    }
+    if (this.state.filtered) {
+      this.applyRef.current.innerHTML = "Clear Filter"
     }      
   }
 
@@ -368,7 +374,7 @@ class App extends React.Component {
             this.setState({notificationKey: key});
           }     
         }
-        if (this.state.glData !== null) {
+        if (this.state.objGLData.length !== 0) {
           this.setState({selectedIndex: null});
           this.setState({selectedGeometry: []});
           if (this.roadLinesRef.current.isActive()) {
@@ -482,7 +488,7 @@ class App extends React.Component {
    * @param {the control} e 
    */
   toogleMap(e) {
-    if (this.state.login === "Login") {
+    if (this.context.login.user === "Login") {
       return;
     }
     if (this.state.mode === "map") {
@@ -514,7 +520,7 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage(e) {   
-    this.photoModal.current.showModal(true, this.state.login, this.state.selectedGeometry, this.state.activeLayer.amazon);
+    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
   getPhoto(direction) {
@@ -587,7 +593,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
@@ -615,7 +621,7 @@ class App extends React.Component {
           weight: 4,
           opacity: 0.5,
           host: this.state.host,
-          login: {login: this.state.login, project: this.state.activeLayer, token: this.state.token}
+          login: {login: this.context.login.user, project: this.state.activeLayer, token: this.state.token}
         }).addTo(this.leafletMap);
         let parent = this;
         vidPolyline.on('click', function (e) {
@@ -793,7 +799,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
@@ -837,7 +843,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',        
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         project: this.state.activeLayer,
         photo: photo
       })
@@ -1177,7 +1183,7 @@ class App extends React.Component {
   }
 
   async sendData(project, data, endpoint) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + endpoint, {
       method: 'POST',
       headers: {
@@ -1186,7 +1192,7 @@ class App extends React.Component {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user: this.state.login,
+        user: this.context.login.user,
         data: data,
         project: project
       })
@@ -1250,7 +1256,7 @@ class App extends React.Component {
   }
 
   async loadCentreline(e) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
         await fetch('https://' + this.state.host + '/roads', {
         method: 'POST',
         headers: {
@@ -1261,7 +1267,7 @@ class App extends React.Component {
         body: JSON.stringify({
           code: "900",
           menu: e.target.id,
-          user: this.state.login
+          user: this.context.login.user
         })
       })
       .then(async(response) => {
@@ -1294,7 +1300,7 @@ class App extends React.Component {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user: this.state.login,
+            user: this.context.login.user,
             project: project
           })
         }).then(async (response) => {
@@ -1318,7 +1324,7 @@ class App extends React.Component {
   }
 
   async addNewUser(client, password) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
         headers: {
@@ -1328,7 +1334,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "insert",
-          user: this.state.login,
+          user: this.context.login.user,
           client: client,
           password: password
         })
@@ -1353,7 +1359,7 @@ class App extends React.Component {
   }
 
   getClient = async () => {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/usernames', {
         method: 'POST',
         headers: {
@@ -1363,7 +1369,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "select",
-          user: this.state.login,
+          user: this.context.login.user,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1386,7 +1392,7 @@ class App extends React.Component {
 
   selectProjects = async (client) => {
     console.log("get projects")
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/selectprojects', {
         method: 'POST',
         headers: {
@@ -1397,7 +1403,7 @@ class App extends React.Component {
         body: JSON.stringify({
           type: "select",
           client: client,
-          user: this.state.login,
+          user: this.context.login.user,
         })
       }).then(async (response) => {
         const body = await response.json();
@@ -1418,7 +1424,7 @@ class App extends React.Component {
   }
 
   async deleteCurrentUser(client) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/user', {
         method: 'POST',
         headers: {
@@ -1428,7 +1434,7 @@ class App extends React.Component {
         },
         body: JSON.stringify({
           type: "delete",
-          user: this.state.login,
+          user: this.context.login.user,
           client: client,
         })
       }).then(async (response) => {
@@ -1453,7 +1459,7 @@ class App extends React.Component {
 
   async deleteCurrentProject(project, parent) {
     console.log(project);
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
         headers: {
@@ -1462,7 +1468,7 @@ class App extends React.Component {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           type: "delete",
           project: project,
           parent: parent
@@ -1487,7 +1493,7 @@ class App extends React.Component {
   }
 
   async addNewProject(project) {
-    if (this.state.login !== "Login") {
+    if (this.context.login.user !== "Login") {
       await fetch('https://' + this.state.host + '/project', {
         method: 'POST',
         headers: {
@@ -1496,7 +1502,7 @@ class App extends React.Component {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: this.state.login,
+          user: this.context.login.user,
           type: "insert",
           code: project.code,
           client: project.client,
@@ -1680,6 +1686,7 @@ class App extends React.Component {
           add={this.loadLayer}
           logout={this.logout}
           data={this.state.objGLData}
+          mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
           centre={this.centreMap}
           district={this.state.district}
           >  
@@ -1695,13 +1702,13 @@ class App extends React.Component {
                 layer={this.state.activeLayer}
                 prioritytitle={this.state.priorityMode}
                 priorityitems={this.state.priorities}
-                prioritylogin={this.state.login}
+                prioritylogin={this.context.login.user}
                 priorityreverse={this.state.reverse}
                 priorityfilter={this.state.filterPriorities} 
                 priorityonClick={this.updatePriority}
                 classtitle={'RM Class'}
                 classitems={this.state.rmclass ? this.state.rmclass: []}
-                classlogin={this.state.login}
+                classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
               >               
@@ -1782,7 +1789,7 @@ class App extends React.Component {
             <CustomPopup 
               key={`${index}`} 
               data={obj}
-              login={this.state.login}
+              login={this.context.login.user}
               position={obj.latlng}
               src={this.state.activeLayer.amazon + obj.photo + ".jpg"} 
               amazon={this.state.activeLayer.amazon}
