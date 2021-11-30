@@ -14,12 +14,11 @@ export default function Navigation(props) {
   const [show, setShow] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [localLogin, setLocalLogin] = useState({user: "Login", token: null})
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [project, setProject] = useState(null);
   const {login, updateLogin} = useContext(loginContext);
-
 
   const showModal = () => {
     setShow(true)
@@ -31,6 +30,7 @@ export default function Navigation(props) {
       window.sessionStorage.setItem('token', body.token);
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);
+      setLocalLogin({user: body.user, token: body.token})
       buildProjects(body.projects)
       setIsLoggedIn(true)
       setShow(false); 
@@ -41,12 +41,16 @@ export default function Navigation(props) {
 
   const clickLogout = async (e) => {
     e.preventDefault();
-    //let body = await PostFetch(login.host + '/logout', login.token, {user: login.user});
     setIsLoggedIn(false)
-    updateLogin("Login", null)
+    //updateLogin("Login", null)
+    setLocalLogin({user: "Login", token: null})
     setProjects(null);  ;
     props.logout();
   }
+
+  useEffect(() => {
+    updateLogin(localLogin.user, localLogin.token);
+  }, [localLogin]);
 
   /**
    * Gets the development or production host 
@@ -56,11 +60,12 @@ export default function Navigation(props) {
     /**
      * calls to server to get public projects onload
      */
-     let token = window.sessionStorage.getItem("token");
+    
+     let host =  window.sessionStorage.getItem("osmiumhost");
      let user =  window.sessionStorage.getItem("user");
      const callBackendAPI = async () => {
       try {
-        const response = await fetch("https://" + login.host + '/api'); 
+        const response = await fetch("https://" + host + '/api'); 
         const body = await response.json();
         if (response.status !== 200) {
           alert(body);   
@@ -73,9 +78,10 @@ export default function Navigation(props) {
       }
     }
     if (user) {
+        let token = window.sessionStorage.getItem("token");
         let item = window.sessionStorage.getItem("projects");
         let _projects = JSON.parse(item);
-        updateLogin(user, token)
+        setLocalLogin({user: user, token: token})
         setIsLoggedIn(true)
         setProjects(_projects)  
     } else {
@@ -118,12 +124,10 @@ export default function Navigation(props) {
   const handleClick = (e) => {
     let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
-    if (projectMode === 'remove') {
-      setProject(null)    
+    if (projectMode === 'remove') { 
       props.remove(project);
        
     } else {
-      setProject(project)
       props.add(projectMode, project)
     } 
   }
@@ -170,8 +174,7 @@ export default function Navigation(props) {
                   endpoint="/statistics"
                   label="Create Report"
                   data={props.data}
-                  mode={props.mode}
-                  project={project}
+                  project={props.project}
                   style={{ textDecoration: 'none' }}
                   >
                 </CustomLink>               

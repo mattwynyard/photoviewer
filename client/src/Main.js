@@ -14,6 +14,7 @@ const Main = () => {
   } else {
     host = "localhost:8443";
   }
+  window.sessionStorage.setItem('osmiumhost', host);
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
   const updateLogin = (user, token) => {
     setLogin({user: user, token: token, host: host});

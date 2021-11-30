@@ -547,6 +547,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
+    this.roadLinesRef.current.reset();
     this.setState({
       activeProject: null,
       projects: [],
@@ -1685,8 +1686,9 @@ class App extends React.Component {
           remove={this.removeLayer}
           add={this.loadLayer}
           logout={this.logout}
+          updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
-          mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
+          project={this.state.activeLayer ? this.state.activeLayer: null}
           centre={this.centreMap}
           district={this.state.district}
           >  

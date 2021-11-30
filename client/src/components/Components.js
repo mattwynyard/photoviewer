@@ -167,7 +167,7 @@ const CustomSpinner = (props) => {
     if (props.endpoint === "/data") {
       return (null);
     }
-    if (props.layer === null) {
+    if (!props.project) {
       return(null);
     } else {
       return (
@@ -176,7 +176,7 @@ const CustomSpinner = (props) => {
           to={{
             pathname: props.endpoint,
             data: props.data,
-            mode: props.mode,
+            mode: props.project.surface,
           }}
           style={{ textDecoration: 'none' }}
           >{props.label}
