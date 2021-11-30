@@ -42,7 +42,6 @@ export default function Navigation(props) {
   const clickLogout = async (e) => {
     e.preventDefault();
     setIsLoggedIn(false)
-    //updateLogin("Login", null)
     setLocalLogin({user: "Login", token: null})
     setProjects(null);  ;
     props.logout();
