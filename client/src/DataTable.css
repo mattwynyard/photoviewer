@@ -1,0 +1,21 @@
+.data-active {
+    position: absolute;
+    height: 90%;
+    width: 50%;
+    left: 50%;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 10px !important;
+    overflow: scroll;
+  }
+  
+  .data-inactive {
+    width: 0%;
+  }
+
+  .row {
+
+  }
+
+  .row-selected {
+
+  }

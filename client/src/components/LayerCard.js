@@ -1,20 +1,34 @@
-import {React} from 'react';
+import {React, Fragment, useState, useEffect} from 'react';
 import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
-import "./LayerCard.css"
+import "./LayerCard.css";
+import {CustomSpinner} from '../components/Components.js'
 
 export default function LayerCard(props) {
+    
+    // const [loading, setLoading] = useState(false);
 
-    //const [dataChecked, setDataChecked] = useState(false);
+    // useEffect(() => {
+    //     console.log("loading" + loading)
+    //     if (loading) {
+
+    //         props.spin(true)
+
+    //         props.setData(true)
+    //     } else {
+    //         props.setData(false) 
+    //     }
+    // }, [loading])
 
     const onDataChange = (e) => {
-        props.setData(e.target.checked)
+        props.setData(e.target.checked)   
+        
     }
 
     if (props.layer) {
-        //console.log("state " + dataChecked)
         return (
+            <Fragment>
             <Card className='layercard' >
             <Card.Header className='layercard-title'>{props.layer !== null ? props.layer.description: ''}</Card.Header>
             <Card.Body className='layercard-body'>
@@ -38,13 +52,17 @@ export default function LayerCard(props) {
                     <input 
                         type="checkbox" 
                         checked={props.checked}
-                        //onClick={(e) => clickData(e)}
                         onChange={(e) => onDataChange(e)}
                     />
                 Data
                 </label>
             </Card.Body>
             </Card>
+             {/* <CustomSpinner 
+             show={loading}
+             >
+           </CustomSpinner>  */}
+           </Fragment>
         );
     } else {
         return null;

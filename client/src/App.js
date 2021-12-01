@@ -149,7 +149,7 @@ class App extends React.Component {
     this.GLEngine.setAppDelegate(this);
   }
 
-  centreMap = (latlngs) => {
+  fitBounds = (latlngs) => {
     if (latlngs.length !== 0) {
         let bounds = L.latLngBounds(latlngs);
         this.leafletMap.fitBounds(bounds);
@@ -162,6 +162,16 @@ class App extends React.Component {
         this.setState({search: null});
     }
   }
+
+    /**
+   * Called when data layer is loaded
+   * @param {array of late lngs} latlngs 
+   */
+     centreMap = (lat, lng, zoom) => {
+      if (!lat || !lng) return;
+      const latlng = new L.LatLng(lat, lng)
+      this.leafletMap.flyTo(latlng, zoom)
+    }
   
   /**
    * 
@@ -230,7 +240,7 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    this.setState({spinner: false});
+    this.setSpinner(false)
   }
 
   setPriorityObject() {
@@ -465,24 +475,7 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  /**
-   * Called when data layer is loaded
-   * @param {array of late lngs} latlngs 
-   */
-  centreMap(latlngs) {
-      if (latlngs.length !== 0) {
-        let bounds = L.latLngBounds(latlngs);
-        const map = this.leaflet;
-        map.fitBounds(bounds);
-      } else {
-        return;
-      }
-      let textbox = document.getElementById("search");
-      if (this.state.search !== null) {
-        textbox.value = "";
-        this.setState({search: null});
-      }
-  }
+
 
   /**
    * toogles between satellite and map view by swapping z-index
@@ -1223,12 +1216,16 @@ class App extends React.Component {
     }    
   }
 
+  setSpinner = (isActive) => {
+    this.setState({spinner: isActive});
+  }
+
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
   filterLayer = async (project) => {
-    this.setState({spinner: true});
+    this.setSpinner(true)
     let body = this.getBody(project);
     if (!body) return;
     const response = await fetch('https://' + this.context.login.host + '/layer', {
@@ -1241,17 +1238,17 @@ class App extends React.Component {
     body: body
     });
     if(!response.ok) {
-      this.setState({spinner: false});
+      this.setSpinner(false);
       throw new Error(response.status);
     } else {
       const body = await response.json();
-      this.setState({spinner: false});
+      this.setSpinner(false);
       if (body.error != null) {
-        this.setState({spinner: false});
+        this.setSpinner(false);
         alert(body.error);
         return body;
       } else {
-        this.setState({spinner: false});
+        this.setSpinner(false);
         return body;
       }     
     }                
@@ -1679,7 +1676,7 @@ class App extends React.Component {
   }
 
   setDataActive = (isActive) => {
-    this.setState({dataActive: isActive})
+    this.setState({dataActive: isActive}) 
   }
 
   render() {
@@ -1694,7 +1691,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           project={this.state.activeLayer ? this.state.activeLayer: null}
-          centre={this.centreMap}
+          centre={this.fitBounds}
           district={this.state.district}
           >  
         </Navigation>
@@ -1720,6 +1717,7 @@ class App extends React.Component {
                 classonClick={this.updateRMClass}
                 setData={this.setDataActive}
                 checked={this.state.dataActive}
+                spin={this.setSpinner}
               >               
               </LayerCard>
               <Roadlines
@@ -1812,12 +1810,16 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-          <CustomSpinner show={this.state.spinner}>
-      </CustomSpinner>
-      </LMap > 
+        <CustomSpinner 
+          show={this.state.spinner}
+          >
+        </CustomSpinner> 
+      </LMap >
+      
       <DataTable 
         className={this.state.dataActive ? "data-active": "data-inactive"}
         data={this.state.dataActive ? this.state.objGLData: []}
+        centre={this.centreMap}
       />  
        {/* admin modal     */}
        <CustomModal 

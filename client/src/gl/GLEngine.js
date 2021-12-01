@@ -212,7 +212,7 @@ export default class GLEngine {
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.enableVertexAttribArray(nextLocLow);  
     if (zoom) {
-      this.appDelegate.centreMap(this.latlngs);
+      this.appDelegate.fitBounds(this.latlngs);
     }
     this.glLayer.redraw();
 
@@ -379,19 +379,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
-        // let bucket = data[i].inspection;
-        // if (bucket != null) {
-        //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        //   if (bucket !== suffix) {
-        //     alpha = 0.5;
-        //   }
-        // }
-        // if (this.state.login === "chbdc") {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
-        // } else {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
-        // }  
+      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
       let fault = this.createFaultObject(points[i], options.type, latlng)
       faults.push(fault);         
     }
@@ -509,6 +497,7 @@ export default class GLEngine {
     if (type === "footpath") {   
       obj = {
         type: type,
+        seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
         footpathid: data.footpathid,
@@ -533,6 +522,7 @@ export default class GLEngine {
     } else {
       obj = {
         type: type,
+        seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
         carriage: data.carriage,
