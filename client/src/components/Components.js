@@ -96,12 +96,12 @@ const CustomMenu = (props) => {
         <NavDropdown title={props.title} className="navdropdownitem" drop="right">
           {props.projects.map((value, index) =>  
               <NavDropdown.Item className="navdropdownitem"
-              key={`${index}`}
-              index={index}
-              title={value.code}
-              code={value.code}
-              onClick={props.onClick}>
-              {value.description + " " + value.date}
+                key={`${index}`}
+                index={index}
+                title={value.code}
+                code={value.code}
+                onClick={props.onClick}>
+                {value.description + " " + value.date}
             </NavDropdown.Item>             
           )}
           <NavDropdown.Divider />

@@ -15,8 +15,8 @@ import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
-
 import LayerCard from './components/LayerCard.js';
+import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
 import {CustomSpinner, CustomPopup} from './components/Components.js'
 import {FilterButton} from './components/FilterButton.js';
@@ -95,7 +95,8 @@ class App extends React.Component {
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null, 
-      filtered: false  
+      filtered: false ,
+      dataActive: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -1677,6 +1678,10 @@ class App extends React.Component {
     this.customModal.current.setShow(false);
   }
 
+  setDataActive = (isActive) => {
+    this.setState({dataActive: isActive})
+  }
+
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
     return ( 
@@ -1713,6 +1718,8 @@ class App extends React.Component {
                 classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
+                setData={this.setDataActive}
+                checked={this.state.dataActive}
               >               
               </LayerCard>
               <Roadlines
@@ -1744,7 +1751,7 @@ class App extends React.Component {
    
         <LMap        
           ref={(ref) => {this.map = ref;}}
-          className="map"
+          className={this.state.dataActive ? "map-reduced": "map"}
           worldCopyJump={true}
           boxZoom={true}
           center={centre}
@@ -1807,7 +1814,11 @@ class App extends React.Component {
           />
           <CustomSpinner show={this.state.spinner}>
       </CustomSpinner>
-      </LMap >    
+      </LMap > 
+      <DataTable 
+        className={this.state.dataActive ? "data-active": "data-inactive"}
+        data={this.state.dataActive ? this.state.objGLData: []}
+      />  
        {/* admin modal     */}
        <CustomModal 
         name={'user'}
