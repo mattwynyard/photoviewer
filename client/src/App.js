@@ -111,6 +111,8 @@ class App extends React.Component {
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
     this.vidPolyline = null;  
+    this.selectedIndex = null;
+    //this.selectedGeometry = [];
   }
 
   componentDidMount () {
@@ -170,7 +172,7 @@ class App extends React.Component {
      centreMap = (lat, lng, zoom) => {
       if (!lat || !lng) return;
       const latlng = new L.LatLng(lat, lng)
-      this.leafletMap.flyTo(latlng, zoom)
+      this.leafletMap.setView(latlng, zoom)
     }
   
   /**
@@ -188,11 +190,15 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      this.setState({selectedIndex: index});
-      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});    
+      //this.setState({selectedIndex: index});
+      this.selectedIndex = index;
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
+      //this.selectedGeometry = [this.state.objGLData[index - 1]]  
     } else {//user selected screen only - no marker
-      this.setState({selectedIndex: null});
+      //this.setState({selectedIndex: null});
+      this.selectedIndex = null;
       this.setState({selectedGeometry: []});
+      //this.selectedGeometry = [];
       this.GLEngine.redraw(this.GLEngine.glData, false);
     }
     this.GLEngine.redraw(this.GLEngine.glData, false);
@@ -302,27 +308,57 @@ class App extends React.Component {
   clickLeafletMap = async (e) => {
     let mode = this.antdrawer.current.getMode();
     switch(mode) {
-      case 'Video':
-        if(this.vidPolyline === null) {  
-          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-          this.vidPolyline.then((line) => {
-            this.setState({activeCarriage: line})
-          });
-        } else {
-          this.vidPolyline.then((line) => {
-            if (line === null) {
-              this.vidPolyline = null;
-              this.setState({activeCarriage: null});
-            } else {
-              if(line.options.color === "blue") {
-                line.remove();
-                this.vidPolyline = null;
-                this.setState({activeCarriage: null})
-                this.setState({carMarker: []});
-              }
-            }           
-          });
-        }      
+      case 'Map':
+        if (!this.state.activeLayer) return;
+        // if (this.roadLinesRef.current.isActive()) {
+        //   let query = {
+        //     lat: e.latlng.lat,
+        //     lng: e.latlng.lng
+        //   }
+        //   let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
+        //   let geometry = JSON.parse(response.data.geojson);
+        //   let erp = {
+        //     start: response.data.starterp,
+        //     end: response.data.enderp
+        //   }
+        //   if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
+        //     let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+        //     if (this.state.notificationKey) {
+        //       if (response.data.carriageid !== this.state.notificationKey.carriage) 
+        //       notification.close(this.state.notificationKey.id);
+        //     }
+        //     let distance = dist.toFixed(); //string
+        //     notification.open({
+        //       className: "notification",
+        //       key: response.data.id,
+        //       message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+        //       description: 
+        //         <div><b>Road ID: {response.data.roadid}<br></br></b>
+        //           <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+        //           <b>Start: {`${response.data.starterp} m\t`}</b>
+        //           <b>End: {`${response.data.enderp}`}<br></br></b>
+        //           <b>Width: {`${response.data.width}`}<br></br></b>
+        //           <b><br></br></b>
+        //         </div>,
+        //       placement: 'bottomRight',
+        //       duration: 10,
+        //       onClose: () => {this.setState({notificationKey: null})},
+        //     });
+        //     let key = {id: response.data.id, carriage: response.data.carriageid}
+        //     this.setState({notificationKey: key});
+        //   }     
+        // }
+        if (this.state.objGLData.length !== 0) {
+          //this.setState({selectedIndex: null});
+          //this.setState({selectedGeometry: []});
+          if (this.roadLinesRef.current.isActive()) {
+            this.GLEngine.mouseClick = null;
+          } else {
+            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+            this.GLEngine.mouseClick = {...click};
+          }
+          this.GLEngine.redraw(this.GLEngine.glData, false);     
+        }
         break;
       case 'Street':
         this.getArhivePhoto(e);
@@ -345,57 +381,28 @@ class App extends React.Component {
         polyline.setLatLngs(points);
       }
         break;
-      case 'Map':
-        if (!this.state.activeLayer) return;
-        if (this.roadLinesRef.current.isActive()) {
-          let query = {
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          }
-          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
-          let geometry = JSON.parse(response.data.geojson);
-          let erp = {
-            start: response.data.starterp,
-            end: response.data.enderp
-          }
-          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
-            let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
-            if (this.state.notificationKey) {
-              if (response.data.carriageid !== this.state.notificationKey.carriage) 
-              notification.close(this.state.notificationKey.id);
-            }
-            let distance = dist.toFixed(); //string
-            notification.open({
-              className: "notification",
-              key: response.data.id,
-              message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
-              description: 
-                <div><b>Road ID: {response.data.roadid}<br></br></b>
-                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
-                  <b>Start: {`${response.data.starterp} m\t`}</b>
-                  <b>End: {`${response.data.enderp}`}<br></br></b>
-                  <b>Width: {`${response.data.width}`}<br></br></b>
-                  <b><br></br></b>
-                </div>,
-              placement: 'bottomRight',
-              duration: 10,
-              onClose: () => {this.setState({notificationKey: null})},
-            });
-            let key = {id: response.data.id, carriage: response.data.carriageid}
-            this.setState({notificationKey: key});
-          }     
-        }
-        if (this.state.objGLData.length !== 0) {
-          this.setState({selectedIndex: null});
-          this.setState({selectedGeometry: []});
-          if (this.roadLinesRef.current.isActive()) {
-            this.GLEngine.mouseClick = null;
+      case 'Video':
+      if(this.vidPolyline === null) {  
+        this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+        this.vidPolyline.then((line) => {
+          this.setState({activeCarriage: line})
+        });
+      } else {
+        this.vidPolyline.then((line) => {
+          if (line === null) {
+            this.vidPolyline = null;
+            this.setState({activeCarriage: null});
           } else {
-            this.GLEngine.mouseClick = e;
-          }
-          this.GLEngine.redraw(this.GLEngine.glData, false);     
-        }
-        break;
+            if(line.options.color === "blue") {
+              line.remove();
+              this.vidPolyline = null;
+              this.setState({activeCarriage: null})
+              this.setState({carMarker: []});
+            }
+          }           
+        });
+      }      
+      break;
       default:
         break;
     }
@@ -505,7 +512,8 @@ class App extends React.Component {
   closePopup(e) {
     if (!this.state.show) {
       this.setState({selectedGeometry: []});
-      this.setIndex(0); //simulate user click black screen
+      //this.setIndex(0); //simulate user click black screen
+      this.setIndex(0);
     } 
   }
 
@@ -1681,6 +1689,7 @@ class App extends React.Component {
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
+    const geometry = this.selectedGeometry;
     return ( 
       <> 
         <Navigation 

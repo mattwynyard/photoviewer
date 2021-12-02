@@ -17,7 +17,8 @@ export default class DataTable extends React.Component {
         "Length", "Width", "Count", "DateTime", "Photo"];       
     }
 
-    onClick = (value) => {
+    onClick = (e, value) => {
+      e.preventDefault();
       console.log(value)
       this.props.centre(value.latlng.lat, value.latlng.lng, 18)
     }
@@ -40,7 +41,7 @@ export default class DataTable extends React.Component {
               {this.props.data.map((value, index) => (
                 <tr
                   key={`index-${index}`}
-                  onClick={(e) => this.onClick(value)}
+                  onClick={(e) => this.onClick(e, value)}
                 >
                   <td key={`${value.id}-0`}>{value.seq}</td>
                   <td key={`${value.id}-1`}>{value.id}</td>

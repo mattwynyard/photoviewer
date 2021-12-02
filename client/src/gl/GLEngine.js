@@ -102,12 +102,16 @@ export default class GLEngine {
    * @returns vertices data as Float32 array
    */
   reColorFaults(verts) {
+    console.log(this.mouseClick)
+    console.log(this.appDelegate.selectedIndex)
     if (this.mouseClick === null) {
-      if (this.appDelegate.state.selectedIndex === null) {
+      //if (this.appDelegate.state.selectedIndex === null) {
+      if (this.appDelegate.selectedIndex === null) {
         return verts;
       } else {
         for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
-          if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.state.selectedIndex) {
+          //if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.state.selectedIndex) {
+          if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.selectedIndex) {
             verts[i + 5] = 1.0;
             verts[i + 6] = 0;
             verts[i + 7] = 0;
@@ -279,11 +283,10 @@ export default class GLEngine {
         } 
         
       }
-        
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
-        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-        this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+        this.delegate.gl.readPixels(this.delegate.mouseClick.x, 
+        this.delegate.canvas.height - this.delegate.mouseClick.y, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
         let index = null;
         if (pixel[3] === 255) {
           index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
