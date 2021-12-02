@@ -41,6 +41,7 @@ export default function LayerCard(props) {
                     />
                 Data
                 </label>
+                <label className={"warning"}>Experimental version <br></br> Data load slow at present</label>
             </Card.Body>
             </Card>
         );
