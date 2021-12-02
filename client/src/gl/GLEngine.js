@@ -62,7 +62,7 @@ export default class GLEngine {
       this.webgl = 0;
     } else {
       this.glLayer.delegate(this); 
-      this.addEventListeners();
+      //this.addEventListeners();
       if (this.webgl === 2) {
         let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
         let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
@@ -81,14 +81,15 @@ export default class GLEngine {
   /**
  * adds various event listeners to the canvas
  */
-  addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", () => {
-    console.log("CRASH--recovering GL")
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", () => {
-        this.intializeGL();
-    }, false);
-  }
+  // addEventListeners() {
+  //   this.canvas.addEventListener("webglcontextlost", () => {
+  //   console.log("CRASH--recovering GL");
+  //   this.canvas.removeEventListener("webglcontextlost");
+  //   }, false);
+  //   this.canvas.addEventListener("webglcontextrestored", () => {
+  //       this.intializeGL();
+  //   }, false);
+  // }
 
   setAppDelegate(delegate) {
       this.appDelegate = delegate;
@@ -102,15 +103,11 @@ export default class GLEngine {
    * @returns vertices data as Float32 array
    */
   reColorFaults(verts) {
-    console.log(this.mouseClick)
-    console.log(this.appDelegate.selectedIndex)
     if (this.mouseClick === null) {
-      //if (this.appDelegate.state.selectedIndex === null) {
       if (this.appDelegate.selectedIndex === null) {
         return verts;
       } else {
         for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
-          //if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.state.selectedIndex) {
           if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.selectedIndex) {
             verts[i + 5] = 1.0;
             verts[i + 6] = 0;

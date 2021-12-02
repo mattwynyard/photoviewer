@@ -151,6 +151,10 @@ class App extends React.Component {
     this.GLEngine.setAppDelegate(this);
   }
 
+      /**
+   * Called when data layer is loaded
+   * @param {array of late lngs} latlngs 
+   */
   fitBounds = (latlngs) => {
     if (latlngs.length !== 0) {
         let bounds = L.latLngBounds(latlngs);
@@ -165,14 +169,20 @@ class App extends React.Component {
     }
   }
 
-    /**
-   * Called when data layer is loaded
-   * @param {array of late lngs} latlngs 
-   */
+
      centreMap = (lat, lng, zoom) => {
       if (!lat || !lng) return;
       const latlng = new L.LatLng(lat, lng)
+      this.leafletMap.invalidateSize(true)
       this.leafletMap.setView(latlng, zoom)
+      console.log(this.leafletMap.getCenter())
+    }
+
+    setDataActive = (isActive) => {
+      this.setState({dataActive: isActive}, () => {
+        if (!isActive) this.leafletMap.invalidateSize(true)
+      });
+      
     }
   
   /**
@@ -193,15 +203,13 @@ class App extends React.Component {
       //this.setState({selectedIndex: index});
       this.selectedIndex = index;
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
-      //this.selectedGeometry = [this.state.objGLData[index - 1]]  
+      this.GLEngine.redraw(this.GLEngine.glData, false);
     } else {//user selected screen only - no marker
-      //this.setState({selectedIndex: null});
       this.selectedIndex = null;
       this.setState({selectedGeometry: []});
-      //this.selectedGeometry = [];
       this.GLEngine.redraw(this.GLEngine.glData, false);
     }
-    this.GLEngine.redraw(this.GLEngine.glData, false);
+    
   }
 
  /**
@@ -307,50 +315,49 @@ class App extends React.Component {
    */
   clickLeafletMap = async (e) => {
     let mode = this.antdrawer.current.getMode();
+    console.log(this.leafletMap.getPixelBounds())
     switch(mode) {
       case 'Map':
         if (!this.state.activeLayer) return;
-        // if (this.roadLinesRef.current.isActive()) {
-        //   let query = {
-        //     lat: e.latlng.lat,
-        //     lng: e.latlng.lng
-        //   }
-        //   let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
-        //   let geometry = JSON.parse(response.data.geojson);
-        //   let erp = {
-        //     start: response.data.starterp,
-        //     end: response.data.enderp
-        //   }
-        //   if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
-        //     let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
-        //     if (this.state.notificationKey) {
-        //       if (response.data.carriageid !== this.state.notificationKey.carriage) 
-        //       notification.close(this.state.notificationKey.id);
-        //     }
-        //     let distance = dist.toFixed(); //string
-        //     notification.open({
-        //       className: "notification",
-        //       key: response.data.id,
-        //       message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
-        //       description: 
-        //         <div><b>Road ID: {response.data.roadid}<br></br></b>
-        //           <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
-        //           <b>Start: {`${response.data.starterp} m\t`}</b>
-        //           <b>End: {`${response.data.enderp}`}<br></br></b>
-        //           <b>Width: {`${response.data.width}`}<br></br></b>
-        //           <b><br></br></b>
-        //         </div>,
-        //       placement: 'bottomRight',
-        //       duration: 10,
-        //       onClose: () => {this.setState({notificationKey: null})},
-        //     });
-        //     let key = {id: response.data.id, carriage: response.data.carriageid}
-        //     this.setState({notificationKey: key});
-        //   }     
-        // }
+        if (this.roadLinesRef.current.isActive()) {
+          let query = {
+            lat: e.latlng.lat,
+            lng: e.latlng.lng
+          }
+          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
+          let geometry = JSON.parse(response.data.geojson);
+          let erp = {
+            start: response.data.starterp,
+            end: response.data.enderp
+          }
+          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
+            let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+            if (this.state.notificationKey) {
+              if (response.data.carriageid !== this.state.notificationKey.carriage) 
+              notification.close(this.state.notificationKey.id);
+            }
+            let distance = dist.toFixed(); //string
+            notification.open({
+              className: "notification",
+              key: response.data.id,
+              message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+              description: 
+                <div><b>Road ID: {response.data.roadid}<br></br></b>
+                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+                  <b>Start: {`${response.data.starterp} m\t`}</b>
+                  <b>End: {`${response.data.enderp}`}<br></br></b>
+                  <b>Width: {`${response.data.width}`}<br></br></b>
+                  <b><br></br></b>
+                </div>,
+              placement: 'bottomRight',
+              duration: 10,
+              onClose: () => {this.setState({notificationKey: null})},
+            });
+            let key = {id: response.data.id, carriage: response.data.carriageid}
+            this.setState({notificationKey: key});
+          }     
+        }
         if (this.state.objGLData.length !== 0) {
-          //this.setState({selectedIndex: null});
-          //this.setState({selectedGeometry: []});
           if (this.roadLinesRef.current.isActive()) {
             this.GLEngine.mouseClick = null;
           } else {
@@ -509,11 +516,11 @@ class App extends React.Component {
     }
   }
 
-  closePopup(e) {
+  closePopup = () => {
     if (!this.state.show) {
-      this.setState({selectedGeometry: []});
-      //this.setIndex(0); //simulate user click black screen
-      this.setIndex(0);
+      this.setState({selectedGeometry: []}, () => {
+        this.setIndex(0);
+      });   
     } 
   }
 
@@ -1683,13 +1690,10 @@ class App extends React.Component {
     this.customModal.current.setShow(false);
   }
 
-  setDataActive = (isActive) => {
-    this.setState({dataActive: isActive}) 
-  }
+  
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
-    const geometry = this.selectedGeometry;
     return ( 
       <> 
         <Navigation 
@@ -1724,9 +1728,9 @@ class App extends React.Component {
                 classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
-                setData={this.setDataActive}
-                checked={this.state.dataActive}
-                spin={this.setSpinner}
+                setDataActive={this.setDataActive} //-> data table
+                checked={this.state.dataActive} //-> data table
+                //spin={this.setSpinner}
               >               
               </LayerCard>
               <Roadlines
@@ -1764,7 +1768,7 @@ class App extends React.Component {
           center={centre}
           zoom={this.state.zoom}
           doubleClickZoom={false}
-          onPopupClose={(e) => this.closePopup(e)}>
+          onPopupClose={this.closePopup}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}
             url={this.state.url}
@@ -1802,6 +1806,7 @@ class App extends React.Component {
           </VideoCard>
           <LayerGroup >
             {this.state.selectedGeometry.map((obj, index) =>  
+            
             <CustomPopup 
               key={`${index}`} 
               data={obj}
@@ -1828,6 +1833,7 @@ class App extends React.Component {
       <DataTable 
         className={this.state.dataActive ? "data-active": "data-inactive"}
         data={this.state.dataActive ? this.state.objGLData: []}
+        //data={this.state.objGLData}
         centre={this.centreMap}
       />  
        {/* admin modal     */}

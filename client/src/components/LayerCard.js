@@ -3,34 +3,19 @@ import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
 import "./LayerCard.css";
-import {CustomSpinner} from '../components/Components.js'
 
 export default function LayerCard(props) {
-    
-    // const [loading, setLoading] = useState(false);
-
-    // useEffect(() => {
-    //     console.log("loading" + loading)
-    //     if (loading) {
-
-    //         props.spin(true)
-
-    //         props.setData(true)
-    //     } else {
-    //         props.setData(false) 
-    //     }
-    // }, [loading])
 
     const onDataChange = (e) => {
-        props.setData(e.target.checked)   
-        
+        props.setDataActive(e.target.checked)       
     }
 
     if (props.layer) {
         return (
-            <Fragment>
             <Card className='layercard' >
-            <Card.Header className='layercard-title'>{props.layer !== null ? props.layer.description: ''}</Card.Header>
+            <Card.Header className='layercard-title'>
+                {props.layer !== null ? props.layer.description: ''}
+            </Card.Header>
             <Card.Body className='layercard-body'>
                 <PriorityDropdown
                 className="layercard-priorityDropdown"
@@ -58,11 +43,6 @@ export default function LayerCard(props) {
                 </label>
             </Card.Body>
             </Card>
-             {/* <CustomSpinner 
-             show={loading}
-             >
-           </CustomSpinner>  */}
-           </Fragment>
         );
     } else {
         return null;

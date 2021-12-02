@@ -9,17 +9,15 @@ export default class DataTable extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: props.data,
-            className: props.className,
             selectedIndex: -1
         }
         this.header = ["#", "Id", "Inspection", "Location", "RoadId", "CarriageId", "Start", "End", "Side", "Fault", "Repair", "Priority",
         "Length", "Width", "Count", "DateTime", "Photo"];       
     }
 
+
     onClick = (e, value) => {
-      e.preventDefault();
-      console.log(value)
+      //e.preventDefault();
       this.props.centre(value.latlng.lat, value.latlng.lng, 18)
     }
 
