@@ -173,9 +173,8 @@ class App extends React.Component {
      centreMap = (lat, lng, zoom) => {
       if (!lat || !lng) return;
       const latlng = new L.LatLng(lat, lng)
-      this.leafletMap.invalidateSize(true)
+      this.leafletMap.invalidateSize(true);
       this.leafletMap.setView(latlng, zoom)
-      console.log(this.leafletMap.getCenter())
     }
 
     setDataActive = (isActive) => {
@@ -965,6 +964,7 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
+          dataActive: false,
           district: null}, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
