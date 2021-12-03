@@ -43,7 +43,7 @@ export default function LayerCard(props) {
                 </label>
                 <label className={"warning"}>Experimental version: <br></br> 
                     Data load slow at present <br></br> 
-                    Please clear local storage in browser and refresh if application crashes.
+                    Please clear session storage in browser and refresh if application crashes.
                 </label>
             </Card.Body>
             </Card>

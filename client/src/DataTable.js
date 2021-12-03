@@ -28,16 +28,16 @@ export default class DataTable extends React.Component {
         return(
           <div className={this.props.className}>
             <Table responsive='sm' striped bordered hover size="sm">
-            <thead>
-            <tr>
-              {this.header.map((value, index) => (
-                <th key={index}>{value}</th>
-              ))}
-            </tr>
-            </thead>
-            <tbody>
+              <thead>
+                <tr>
+                  {this.header.map((value, index) => (
+                    <th key={index}>{value}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
               {this.props.data.map((value, index) => (
-                <tr
+                <tr 
                   key={`index-${index}`}
                   onClick={(e) => this.onClick(e, value)}
                 >
@@ -60,8 +60,8 @@ export default class DataTable extends React.Component {
                   <td key={`${value.id}-16`}>{value.photo}</td>
                 </tr>
               ))}
-            </tbody>
-          </Table>
+              </tbody>
+            </Table>
           </div>      
         );
       }

@@ -4,7 +4,7 @@
     width: 50%;
     left: 50%;
     font-family: "Century Gothic", sans-serif;
-    font-size: 10px !important;
+    font-size: 10px;
     overflow: scroll;
   }
   
@@ -12,10 +12,9 @@
     width: 0%;
   }
 
-  .row {
-
-  }
-
-  .row-selected {
-
+  .data-active  thead th {
+    position: sticky; 
+    top: 0;
+    background:#eee;
+    overflow: auto;
   }
