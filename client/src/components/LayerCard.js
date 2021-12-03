@@ -33,7 +33,7 @@ export default function LayerCard(props) {
                 filter={props.classfilter} 
                 onClick={props.classonClick}
                 />
-                <label>
+                <label className="layercard-data">
                     <input 
                         type="checkbox" 
                         checked={props.checked}
@@ -41,7 +41,10 @@ export default function LayerCard(props) {
                     />
                 Data
                 </label>
-                <label className={"warning"}>Experimental version <br></br> Data load slow at present</label>
+                <label className={"warning"}>Experimental version: <br></br> 
+                    Data load slow at present <br></br> 
+                    Please clear local storage in browser and refresh if application crashes.
+                </label>
             </Card.Body>
             </Card>
         );

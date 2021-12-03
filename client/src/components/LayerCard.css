@@ -1,7 +1,10 @@
 .warning {
   font-family: "Century Gothic", sans-serif;
     font-size: 12px !important;
+    grid-column: 2 / 2;
+    grid-row: 2;
 }
+
 
 .layercard-body {
     font-family: "Century Gothic", sans-serif;
@@ -13,7 +16,8 @@
     padding: 5px;   
   }
 
-  .layercard-body label input {
+  .layercard-data {
+    font-family: "Century Gothic", sans-serif;
     margin-right: 5px;
     font-size: 14px !important;
     white-space: nowrap; 
