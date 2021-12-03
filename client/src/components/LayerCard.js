@@ -41,7 +41,7 @@ export default function LayerCard(props) {
                     />
                 Data
                 </label>
-                <label className={"warning"}>Experimental version: <br></br> 
+                <label className={"warning"}><b>Experimental version:</b> <br></br> 
                     Data load slow at present <br></br> 
                     Please clear session storage in browser and refresh if application crashes.
                 </label>
