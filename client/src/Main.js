@@ -2,7 +2,6 @@ import {React, useState} from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
-import Data from './Data.js';
 import { loginContext } from './login/loginContext';
 
 const Main = () => {
@@ -25,7 +24,7 @@ const Main = () => {
           <loginContext.Provider value={{login, updateLogin}}>
             <Route exact path='/' component={App}></Route>
             <Route exact path='/statistics' component={Report}></Route>
-            <Route exact path='/data' component={Data}></Route>
+            {/* <Route exact path='/data' component={Data}></Route> */}
           </loginContext.Provider>
         </Switch>
     </Router>

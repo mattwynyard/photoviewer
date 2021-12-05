@@ -1,0 +1,20 @@
+.data-active {
+    position: absolute;
+    height: 90%;
+    width: 50%;
+    left: 50%;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 10px;
+    overflow: scroll;
+  }
+  
+  .data-inactive {
+    width: 0%;
+  }
+
+  .data-active  thead th {
+    position: sticky; 
+    top: 0;
+    background:#eee;
+    overflow: auto;
+  }

@@ -15,8 +15,8 @@ import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
-
 import LayerCard from './components/LayerCard.js';
+import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
 import {CustomSpinner, CustomPopup} from './components/Components.js'
 import {FilterButton} from './components/FilterButton.js';
@@ -95,7 +95,8 @@ class App extends React.Component {
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null, 
-      filtered: false  
+      filtered: false ,
+      dataActive: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -110,6 +111,8 @@ class App extends React.Component {
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
     this.vidPolyline = null;  
+    this.selectedIndex = null;
+    //this.selectedGeometry = [];
   }
 
   componentDidMount () {
@@ -148,7 +151,11 @@ class App extends React.Component {
     this.GLEngine.setAppDelegate(this);
   }
 
-  centreMap = (latlngs) => {
+      /**
+   * Called when data layer is loaded
+   * @param {array of late lngs} latlngs 
+   */
+  fitBounds = (latlngs) => {
     if (latlngs.length !== 0) {
         let bounds = L.latLngBounds(latlngs);
         this.leafletMap.fitBounds(bounds);
@@ -161,6 +168,21 @@ class App extends React.Component {
         this.setState({search: null});
     }
   }
+
+
+     centreMap = (lat, lng, zoom) => {
+      if (!lat || !lng) return;
+      const latlng = new L.LatLng(lat, lng)
+      this.leafletMap.invalidateSize(true);
+      this.leafletMap.setView(latlng, zoom)
+    }
+
+    setDataActive = (isActive) => {
+      this.setState({dataActive: isActive}, () => {
+        if (!isActive) this.leafletMap.invalidateSize(true)
+      });
+      
+    }
   
   /**
    * 
@@ -177,14 +199,16 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      this.setState({selectedIndex: index});
-      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});    
+      //this.setState({selectedIndex: index});
+      this.selectedIndex = index;
+      this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
+      this.GLEngine.redraw(this.GLEngine.glData, false);
     } else {//user selected screen only - no marker
-      this.setState({selectedIndex: null});
+      this.selectedIndex = null;
       this.setState({selectedGeometry: []});
       this.GLEngine.redraw(this.GLEngine.glData, false);
     }
-    this.GLEngine.redraw(this.GLEngine.glData, false);
+    
   }
 
  /**
@@ -199,11 +223,16 @@ class App extends React.Component {
     let options = {type: type, priorities: priorities, count: 0};
     let buffer = [];
     let glLines = this.GLEngine.loadLines(buffer, lines, options);
+    if (!glLines) return;
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    let centreData = this.roadLinesRef.current.state.data;
-    let value = this.roadLinesRef.current.state.filter[0]
+    let centreData = []
+    let value = null
+    if (this.roadLinesRef.current) {
+      centreData = this.roadLinesRef.current.state.data;
+      value = this.roadLinesRef.current.state.filter[0]
+    }
     let vertCentre = []
     if (value) {
       let options = {type: "centreline", value: value}
@@ -229,7 +258,7 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    this.setState({spinner: false});
+    this.setSpinner(false)
   }
 
   setPriorityObject() {
@@ -291,49 +320,6 @@ class App extends React.Component {
   clickLeafletMap = async (e) => {
     let mode = this.antdrawer.current.getMode();
     switch(mode) {
-      case 'Video':
-        if(this.vidPolyline === null) {  
-          this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-          this.vidPolyline.then((line) => {
-            this.setState({activeCarriage: line})
-          });
-        } else {
-          this.vidPolyline.then((line) => {
-            if (line === null) {
-              this.vidPolyline = null;
-              this.setState({activeCarriage: null});
-            } else {
-              if(line.options.color === "blue") {
-                line.remove();
-                this.vidPolyline = null;
-                this.setState({activeCarriage: null})
-                this.setState({carMarker: []});
-              }
-            }           
-          });
-        }      
-        break;
-      case 'Street':
-        this.getArhivePhoto(e);
-        break;
-      case 'Ruler':
-        let polyline = this.state.rulerPolyline;
-      if (polyline === null) {
-        let points = [];
-        points.push(e.latlng);
-        polyline = new L.polyline(points, {
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5 
-          });
-        polyline.addTo(this.leafletMap);
-        this.setState({rulerPolyline: polyline});
-      } else {
-        let points = polyline.getLatLngs();
-        points.push(e.latlng);
-        polyline.setLatLngs(points);
-      }
-        break;
       case 'Map':
         if (!this.state.activeLayer) return;
         if (this.roadLinesRef.current.isActive()) {
@@ -375,16 +361,58 @@ class App extends React.Component {
           }     
         }
         if (this.state.objGLData.length !== 0) {
-          this.setState({selectedIndex: null});
-          this.setState({selectedGeometry: []});
           if (this.roadLinesRef.current.isActive()) {
             this.GLEngine.mouseClick = null;
           } else {
-            this.GLEngine.mouseClick = e;
+            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+            this.GLEngine.mouseClick = {...click};
           }
           this.GLEngine.redraw(this.GLEngine.glData, false);     
         }
         break;
+      case 'Street':
+        this.getArhivePhoto(e);
+        break;
+      case 'Ruler':
+        let polyline = this.state.rulerPolyline;
+      if (polyline === null) {
+        let points = [];
+        points.push(e.latlng);
+        polyline = new L.polyline(points, {
+          color: 'blue',
+          weight: 4,
+          opacity: 0.5 
+          });
+        polyline.addTo(this.leafletMap);
+        this.setState({rulerPolyline: polyline});
+      } else {
+        let points = polyline.getLatLngs();
+        points.push(e.latlng);
+        polyline.setLatLngs(points);
+      }
+        break;
+      case 'Video':
+      if(this.vidPolyline === null) {  
+        this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
+        this.vidPolyline.then((line) => {
+          this.setState({activeCarriage: line})
+        });
+      } else {
+        this.vidPolyline.then((line) => {
+          if (line === null) {
+            this.vidPolyline = null;
+            this.setState({activeCarriage: null});
+          } else {
+            if(line.options.color === "blue") {
+              line.remove();
+              this.vidPolyline = null;
+              this.setState({activeCarriage: null})
+              this.setState({carMarker: []});
+            }
+          }           
+        });
+      }      
+      break;
       default:
         break;
     }
@@ -464,24 +492,7 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-  /**
-   * Called when data layer is loaded
-   * @param {array of late lngs} latlngs 
-   */
-  centreMap(latlngs) {
-      if (latlngs.length !== 0) {
-        let bounds = L.latLngBounds(latlngs);
-        const map = this.leaflet;
-        map.fitBounds(bounds);
-      } else {
-        return;
-      }
-      let textbox = document.getElementById("search");
-      if (this.state.search !== null) {
-        textbox.value = "";
-        this.setState({search: null});
-      }
-  }
+
 
   /**
    * toogles between satellite and map view by swapping z-index
@@ -508,10 +519,11 @@ class App extends React.Component {
     }
   }
 
-  closePopup(e) {
+  closePopup = () => {
     if (!this.state.show) {
-      this.setState({selectedGeometry: []});
-      this.setIndex(0); //simulate user click black screen
+      this.setState({selectedGeometry: []}, () => {
+        this.setIndex(0);
+      });   
     } 
   }
 
@@ -956,6 +968,7 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
+          dataActive: false,
           district: null}, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1222,12 +1235,16 @@ class App extends React.Component {
     }    
   }
 
+  setSpinner = (isActive) => {
+    this.setState({spinner: isActive});
+  }
+
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
   filterLayer = async (project) => {
-    this.setState({spinner: true});
+    this.setSpinner(true)
     let body = this.getBody(project);
     if (!body) return;
     const response = await fetch('https://' + this.context.login.host + '/layer', {
@@ -1240,17 +1257,17 @@ class App extends React.Component {
     body: body
     });
     if(!response.ok) {
-      this.setState({spinner: false});
+      this.setSpinner(false);
       throw new Error(response.status);
     } else {
       const body = await response.json();
-      this.setState({spinner: false});
+      this.setSpinner(false);
       if (body.error != null) {
-        this.setState({spinner: false});
+        this.setSpinner(false);
         alert(body.error);
         return body;
       } else {
-        this.setState({spinner: false});
+        this.setSpinner(false);
         return body;
       }     
     }                
@@ -1677,6 +1694,8 @@ class App extends React.Component {
     this.customModal.current.setShow(false);
   }
 
+  
+
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
     return ( 
@@ -1689,7 +1708,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           project={this.state.activeLayer ? this.state.activeLayer: null}
-          centre={this.centreMap}
+          centre={this.fitBounds}
           district={this.state.district}
           >  
         </Navigation>
@@ -1713,6 +1732,9 @@ class App extends React.Component {
                 classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
+                setDataActive={this.setDataActive} //-> data table
+                checked={this.state.dataActive} //-> data table
+                //spin={this.setSpinner}
               >               
               </LayerCard>
               <Roadlines
@@ -1744,13 +1766,13 @@ class App extends React.Component {
    
         <LMap        
           ref={(ref) => {this.map = ref;}}
-          className="map"
+          className={this.state.dataActive ? "map-reduced": "map"}
           worldCopyJump={true}
           boxZoom={true}
           center={centre}
           zoom={this.state.zoom}
           doubleClickZoom={false}
-          onPopupClose={(e) => this.closePopup(e)}>
+          onPopupClose={this.closePopup}>
           <TileLayer className="mapLayer"
             attribution={this.state.attribution}
             url={this.state.url}
@@ -1788,6 +1810,7 @@ class App extends React.Component {
           </VideoCard>
           <LayerGroup >
             {this.state.selectedGeometry.map((obj, index) =>  
+            
             <CustomPopup 
               key={`${index}`} 
               data={obj}
@@ -1805,9 +1828,18 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-          <CustomSpinner show={this.state.spinner}>
-      </CustomSpinner>
-      </LMap >    
+        <CustomSpinner 
+          show={this.state.spinner}
+          >
+        </CustomSpinner> 
+      </LMap >
+      
+      <DataTable 
+        className={this.state.dataActive ? "data-active": "data-inactive"}
+        data={this.state.dataActive ? this.state.objGLData: []}
+        //data={this.state.objGLData}
+        centre={this.centreMap}
+      />  
        {/* admin modal     */}
        <CustomModal 
         name={'user'}

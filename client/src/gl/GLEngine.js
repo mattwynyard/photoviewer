@@ -62,7 +62,7 @@ export default class GLEngine {
       this.webgl = 0;
     } else {
       this.glLayer.delegate(this); 
-      this.addEventListeners();
+      //this.addEventListeners();
       if (this.webgl === 2) {
         let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
         let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
@@ -81,14 +81,15 @@ export default class GLEngine {
   /**
  * adds various event listeners to the canvas
  */
-  addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", () => {
-    console.log("CRASH--recovering GL")
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", () => {
-        this.intializeGL();
-    }, false);
-  }
+  // addEventListeners() {
+  //   this.canvas.addEventListener("webglcontextlost", () => {
+  //   console.log("CRASH--recovering GL");
+  //   this.canvas.removeEventListener("webglcontextlost");
+  //   }, false);
+  //   this.canvas.addEventListener("webglcontextrestored", () => {
+  //       this.intializeGL();
+  //   }, false);
+  // }
 
   setAppDelegate(delegate) {
       this.appDelegate = delegate;
@@ -103,11 +104,11 @@ export default class GLEngine {
    */
   reColorFaults(verts) {
     if (this.mouseClick === null) {
-      if (this.appDelegate.state.selectedIndex === null) {
+      if (this.appDelegate.selectedIndex === null) {
         return verts;
       } else {
         for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
-          if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.state.selectedIndex) {
+          if (verts[i +  VERTEX_SIZE - 1] === this.appDelegate.selectedIndex) {
             verts[i + 5] = 1.0;
             verts[i + 6] = 0;
             verts[i + 7] = 0;
@@ -212,7 +213,7 @@ export default class GLEngine {
     this.gl.enableVertexAttribArray(nextLoc);
     this.gl.enableVertexAttribArray(nextLocLow);  
     if (zoom) {
-      this.appDelegate.centreMap(this.latlngs);
+      this.appDelegate.fitBounds(this.latlngs);
     }
     this.glLayer.redraw();
 
@@ -279,11 +280,10 @@ export default class GLEngine {
         } 
         
       }
-        
       if (this.delegate.mouseClick !== null) {      
         let pixel = new Uint8Array(4);
-        this.delegate.gl.readPixels(this.delegate.mouseClick.originalEvent.layerX, 
-        this.delegate.canvas.height - this.delegate.mouseClick.originalEvent.layerY, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
+        this.delegate.gl.readPixels(this.delegate.mouseClick.x, 
+        this.delegate.canvas.height - this.delegate.mouseClick.y, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
         let index = null;
         if (pixel[3] === 255) {
           index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
@@ -379,19 +379,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);
-        // let bucket = data[i].inspection;
-        // if (bucket != null) {
-        //   let suffix = this.state.amazon.substring(this.state.amazon.length - 8,  this.state.amazon.length - 1);
-        //   if (bucket !== suffix) {
-        //     alpha = 0.5;
-        //   }
-        // }
-        // if (this.state.login === "chbdc") {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 1, 1, 0, 1, ++count);
-        // } else {
-        //   points.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, 0, 0.8, 0, 1, ++count);
-        // }  
+      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
       let fault = this.createFaultObject(points[i], options.type, latlng)
       faults.push(fault);         
     }
@@ -509,6 +497,7 @@ export default class GLEngine {
     if (type === "footpath") {   
       obj = {
         type: type,
+        seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
         footpathid: data.footpathid,
@@ -533,6 +522,7 @@ export default class GLEngine {
     } else {
       obj = {
         type: type,
+        seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
         carriage: data.carriage,

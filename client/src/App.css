@@ -20,6 +20,14 @@ body {
   z-index: 1;
 }
 
+.map-reduced {
+  position: absolute;
+  height: 90%;
+  width: 35%;
+  left: 15%;
+  z-index: 1;
+}
+
 .panel {
   position: absolute;
   height: 90%;
@@ -53,15 +61,7 @@ body {
   padding: 1%;
 }
 
-.layercard-body {
-  padding: 3px;
-}
 
-.layercard-title {
-  font-family: "Century Gothic", sans-serif;
-  font-size: 16px !important;
-  padding: 1px;
-}
 
 .layerstitle {
   position: relative;

@@ -25,6 +25,7 @@ client/uploadBuild.bat
 # dependencies
 client/node_modules
 client/archive
+client/scripts
 server/node_modules
 /.pnp
 .pnp.js

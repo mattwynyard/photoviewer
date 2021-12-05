@@ -813,13 +813,13 @@ module.exports = {
         });
     },
 
-    layer: (layer, filter, options, inspection) => { 
+    roadArchive: (layer, filter, options, inspection) => { 
         let codes = buildQuery(options.priority);
         let qAge = buildQuery(inspection);
         return new Promise((resolve, reject) => {
             if (inspection.length === 0) {
-                connection.query("SELECT id, roadid, carriageway, location, position, class, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND  status = 'active'", (err, result) => {
+                connection.query("SELECT seq, id, roadid, carriageway, location, position, class, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND  status = 'active' ORDER BY seq ASC", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -828,8 +828,8 @@ module.exports = {
                 return geometry;
                 }); 
             }  else if (filter.length == 0) {
-                connection.query("SELECT id, roadid, carriageway, location, position, class, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ") AND  status = 'active'", (err, result) => {
+                connection.query("SELECT seq, id, roadid, carriageway, location, position, class, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND priority IN (" + codes + ") AND inspection IN (" + qAge + ") AND  status = 'active' ORDER BY seq ASC", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -881,27 +881,27 @@ module.exports = {
                 let sql = null;
                 if (rmclass) {
                     if (status === 'active') {
-                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
-                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status = 'active'`; 
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status = 'active' ORDER BY seq ASC`; 
                     } else {
-                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
-                        AND inspection IN (${qAge}) AND rclass IN (${rmclass})`;
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) ORDER BY seq ASC`;
                     }
                 } else {
                     if (status === 'active') {
-                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
-                        AND inspection IN (${qAge}) AND status = 'active'`; 
+                        AND inspection IN (${qAge}) AND status = 'active' ORDER BY seq ASC`; 
                     } else {
-                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
-                        AND inspection IN (${qAge})`;
+                        AND inspection IN (${qAge}) ORDER BY seq ASC`;
                     }
                 }
                 
@@ -918,23 +918,23 @@ module.exports = {
                 let condition = buildQuery(filter);
                 if (rmclass) {
                     if (status === 'active') {
-                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                        AND priority IN (${pCodes}) AND rclass IN (${rmclass}) AND inspection IN (${qAge}) AND status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
+                        AND priority IN (${pCodes}) AND rclass IN (${rmclass}) AND inspection IN (${qAge}) AND status = 'active' AND  ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     } else {
-                        sql = `SELECT id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
+                        AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status != 'active' AND ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     }
                 } else {
                     if (status === 'active') {
-                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                        AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}'`;
+                        AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     } else {
-                        sql = `SELECT id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
-                        AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}'`;
+                        AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     }
                 }
                 
@@ -950,13 +950,12 @@ module.exports = {
         });
     },
 
-    roadCompleted: (layer, filter, inspection) => { 
-        //let codes = buildQuery(priority);
+    roadArchiveCompleted: (layer, filter, inspection) => { 
         let qAge = buildQuery(inspection);
         return new Promise((resolve, reject) => {
             if (inspection.length === 0) {
-                connection.query("SELECT id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND  status = 'completed'", (err, result) => {
+                connection.query("SELECT seq, id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND  status = 'completed' ORDER BY seq ASC", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -965,8 +964,8 @@ module.exports = {
                 return geometry;
                 }); 
             }  else if (filter.length == 0) {
-                connection.query("SELECT id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND inspection IN (" + qAge + ") AND  status = 'completed'", (err, result) => {
+                connection.query("SELECT seq, id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND inspection IN (" + qAge + ") AND  status = 'completed' ORDER BY seq ASC", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
@@ -976,8 +975,8 @@ module.exports = {
                 }); 
             } else {
                 let condition = buildQuery(filter);
-                connection.query("SELECT id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
-                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND inspection IN (" + qAge + ") AND  status = 'completed'", (err, result) => {
+                connection.query("SELECT seq, id, roadid, carriageway, location, position, fault, repair, priority, comment, size, inspection, photoid, faulttime, status, datefixed, ST_AsGeoJSON(geom) " 
+                + "FROM carriageways WHERE project = '" + layer + "' AND fault IN (" + condition + ") AND inspection IN (" + qAge + ") AND  status = 'completed' ORDER BY seq ASC", (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);

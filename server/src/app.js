@@ -762,10 +762,10 @@ app.post('/layer', async (req, res) => {
       finalPoints = activePoints.concat(completedPoints);
     } else if (surface === "road") {
         if (archive) {
-          let points = await db.layer(project, filter, options, inspection);
+          let points = await db.roadArchive(project, filter, options, inspection);
           activePoints = points.rows;
           activeLines = [];
-          points = await db.roadCompleted(project, filter, inspection);
+          points = await db.roadArchiveCompleted(project, filter, inspection);
           completedPoints = points.rows;
           completedLines = [];
         } else {
