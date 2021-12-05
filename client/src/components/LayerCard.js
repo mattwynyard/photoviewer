@@ -1,4 +1,4 @@
-import {React, Fragment, useState, useEffect} from 'react';
+import {React} from 'react';
 import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
@@ -41,10 +41,10 @@ export default function LayerCard(props) {
                     />
                 Data
                 </label>
-                <label className={"warning"}><b>Experimental version:</b> <br></br> 
+                {/* <label className={"warning"}><b>Experimental version:</b> <br></br> 
                     Data load slow at present <br></br> 
                     Please clear session storage in browser and refresh if application crashes.
-                </label>
+                </label> */}
             </Card.Body>
             </Card>
         );

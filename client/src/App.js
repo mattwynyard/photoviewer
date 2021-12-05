@@ -223,11 +223,16 @@ class App extends React.Component {
     let options = {type: type, priorities: priorities, count: 0};
     let buffer = [];
     let glLines = this.GLEngine.loadLines(buffer, lines, options);
+    if (!glLines) return;
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    let centreData = this.roadLinesRef.current.state.data;
-    let value = this.roadLinesRef.current.state.filter[0]
+    let centreData = []
+    let value = null
+    if (this.roadLinesRef.current) {
+      centreData = this.roadLinesRef.current.state.data;
+      value = this.roadLinesRef.current.state.filter[0]
+    }
     let vertCentre = []
     if (value) {
       let options = {type: "centreline", value: value}
@@ -314,7 +319,6 @@ class App extends React.Component {
    */
   clickLeafletMap = async (e) => {
     let mode = this.antdrawer.current.getMode();
-    console.log(this.leafletMap.getPixelBounds())
     switch(mode) {
       case 'Map':
         if (!this.state.activeLayer) return;
