@@ -1,5 +1,4 @@
 import React from 'react';
-//import './App.css';
 import './DataTable.css';
 import { Table } from 'react-bootstrap';
 
@@ -15,10 +14,9 @@ export default class DataTable extends React.Component {
         "Length", "Width", "Count", "DateTime", "Photo"];       
     }
 
-
-    onClick = (e, value) => {
-      //e.preventDefault();
-      this.props.centre(value.latlng.lat, value.latlng.lng, 18)
+    onClick = (e, value, index) => {
+      this.props.centre(value.latlng.lat, value.latlng.lng, 17);
+      this.props.simulate(index + 1)
     }
 
     render() {
@@ -39,7 +37,7 @@ export default class DataTable extends React.Component {
               {this.props.data.map((value, index) => (
                 <tr 
                   key={`index-${index}`}
-                  onClick={(e) => this.onClick(e, value)}
+                  onClick={(e) => this.onClick(e, value, index)}
                 >
                   <td key={`${value.id}-0`}>{value.seq}</td>
                   <td key={`${value.id}-1`}>{value.id}</td>

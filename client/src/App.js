@@ -177,6 +177,10 @@ class App extends React.Component {
       this.leafletMap.setView(latlng, zoom)
     }
 
+    simulateClick = (index) => {
+      this.setIndex(index);
+    }
+
     setDataActive = (isActive) => {
       this.setState({dataActive: isActive}, () => {
         if (!isActive) this.leafletMap.invalidateSize(true)
@@ -199,7 +203,6 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      //this.setState({selectedIndex: index});
       this.selectedIndex = index;
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
       this.GLEngine.redraw(this.GLEngine.glData, false);
@@ -1837,7 +1840,7 @@ class App extends React.Component {
       <DataTable 
         className={this.state.dataActive ? "data-active": "data-inactive"}
         data={this.state.dataActive ? this.state.objGLData: []}
-        //data={this.state.objGLData}
+        simulate={this.simulateClick}
         centre={this.centreMap}
       />  
        {/* admin modal     */}

@@ -280,19 +280,19 @@ export default class GLEngine {
         } 
         
       }
-      if (this.delegate.mouseClick !== null) {      
+      if (this.delegate.mouseClick !== null) { 
+        let index = null;
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.x, 
         this.delegate.canvas.height - this.delegate.mouseClick.y, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = null;
         if (pixel[3] === 255) {
           index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
         } else {
           index = 0; //deals with edge cases from anti-aliasing 
-        }
+        } 
         this.delegate.mouseClick = null;
-        this.delegate.appDelegate.setIndex(index);   
-        this._redraw();      
+        this.delegate.appDelegate.setIndex(index);         
+        this._redraw();             
       }
     }   
   }
