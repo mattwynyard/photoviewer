@@ -1706,7 +1706,7 @@ class App extends React.Component {
           logout={this.logout}
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
-          project={this.state.activeLayer ? this.state.activeLayer: null}
+          //project={this.state.activeLayer ? this.state.activeLayer: null}
           centre={this.fitBounds}
           district={this.state.district}
           >  

@@ -1,8 +1,8 @@
-import {React, useEffect, useState} from 'react';
+import {React} from 'react';
 import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
-import {CustomSpinner} from './Components.js'
+//import {CustomSpinner} from './Components.js'
 import "./LayerCard.css";
 
 export default function LayerCard(props) {

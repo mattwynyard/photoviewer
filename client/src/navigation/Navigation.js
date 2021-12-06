@@ -16,6 +16,7 @@ export default function Navigation(props) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [localLogin, setLocalLogin] = useState({user: "Login", token: null})
   const [projects, setProjects] = useState(null);
+  const [project, setProject] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const {login, updateLogin} = useContext(loginContext);
@@ -124,9 +125,11 @@ export default function Navigation(props) {
     let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
     if (projectMode === 'remove') { 
+      //setProject(null)
       props.remove(project);
        
     } else {
+      //setProject(project)
       props.add(projectMode, project)
     } 
   }

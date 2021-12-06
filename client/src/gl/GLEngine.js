@@ -488,7 +488,7 @@ export default class GLEngine {
     if (data.erp) {
       starterp = data.erp;
       if (length) {
-        enderp = starterp + length;
+        enderp = starterp + parseInt(length);
       } 
     } else {
       starterp = data.starterp;
