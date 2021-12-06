@@ -15,7 +15,7 @@ const apiRequest = async (credentials, request, endpoint) => {
         });
         if(response.ok) {
           const body = await response.json();
-          if (body.error != null) {
+          if (!body.result) {
             alert(body.error)
             return body;
           } else {
@@ -30,6 +30,43 @@ const apiRequest = async (credentials, request, endpoint) => {
       }
     }
 
+    /**Generic async fetch
+ * 
+ * @param {string - host + endpoint} address 
+ * @param {string} token 
+ * @param {object} _body 
+ * @returns 
+ */
+
+ export default async function LoginFetch(address, token, _body) {
+
+  try {
+      const response = await fetch("https://" + address, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+          "authorization": token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',        
+      },
+      body: JSON.stringify(_body)
+    });
+    if(response.ok) {
+      const body = await response.json();
+      if (!body.result) {
+        return {error: "login error"};
+      } else {
+        return body;            
+      }     
+    } else {
+      handleError({response})
+      return {error: response};
+    }
+  } catch (error) {
+    handleError(error); 
+  }
+}
+
 const handleError = (error) => {
       if (error instanceof TypeError) {
         alert(`Error: ${error.message} \nThe server maybe offline`);
@@ -42,4 +79,4 @@ const handleError = (error) => {
       }
     }
 
-export { apiRequest }
+export { apiRequest, LoginFetch }
