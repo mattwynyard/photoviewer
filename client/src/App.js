@@ -112,7 +112,6 @@ class App extends React.Component {
     this.notificationRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
-    //this.selectedGeometry = [];
   }
 
   componentDidMount () {
@@ -169,20 +168,22 @@ class App extends React.Component {
     }
   }
 
+  centreMap = (lat, lng, zoom) => {
+    if (!lat || !lng) return;
+    const latlng = new L.LatLng(lat, lng)
+    this.leafletMap.invalidateSize(true);
+    this.leafletMap.setView(latlng, zoom); 
+  }
 
-     centreMap = (lat, lng, zoom) => {
-      if (!lat || !lng) return;
-      const latlng = new L.LatLng(lat, lng)
+  simulateClick = (index) => {
+    this.setIndex(index);
+  }
+
+  setDataActive = (isActive) => {
+    this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
-      this.leafletMap.setView(latlng, zoom)
-    }
-
-    setDataActive = (isActive) => {
-      this.setState({dataActive: isActive}, () => {
-        if (!isActive) this.leafletMap.invalidateSize(true)
-      });
-      
-    }
+    });
+  }
   
   /**
    * 
@@ -199,7 +200,6 @@ class App extends React.Component {
    */
   setIndex(index) {
     if (index !== 0) {
-      //this.setState({selectedIndex: index});
       this.selectedIndex = index;
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
       this.GLEngine.redraw(this.GLEngine.glData, false);
@@ -207,8 +207,7 @@ class App extends React.Component {
       this.selectedIndex = null;
       this.setState({selectedGeometry: []});
       this.GLEngine.redraw(this.GLEngine.glData, false);
-    }
-    
+    } 
   }
 
  /**
@@ -943,6 +942,7 @@ class App extends React.Component {
      removeLayer = (project) => {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
+      this.setDataActive(false)
       this.roadLinesRef.current.reset();
       let layers = this.state.activeLayers;
       for(var i = 0; i < layers.length; i += 1) {     
@@ -968,7 +968,6 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
-          dataActive: false,
           district: null}, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1306,40 +1305,40 @@ class App extends React.Component {
     }
   }
 
-  async loadFilters(project) {
-      if (this.state.projectMode === "footpath") {
-        return;
-      } else {
-        await fetch('https://' + this.state.host + '/class', {
-          method: 'POST',
-          headers: {
-            "authorization": this.state.token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user: this.context.login.user,
-            project: project
-          })
-        }).then(async (response) => {
-          const body = await response.json();
-          console.log(body)
-          if (body.error != null) {
-            alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-            let e = document.createEvent("MouseEvent");
-            await this.logout(e);
-          } else {
-            this.setState({faultData: body});
-          }   
-        })
-        .catch((error) => {
-          console.log("error: " + error);
-          alert(error);
-          return;
-        }) 
+  // async loadFilters(project) {
+  //     if (this.state.projectMode === "footpath") {
+  //       return;
+  //     } else {
+  //       await fetch('https://' + this.state.host + '/class', {
+  //         method: 'POST',
+  //         headers: {
+  //           "authorization": this.state.token,
+  //           'Accept': 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({
+  //           user: this.context.login.user,
+  //           project: project
+  //         })
+  //       }).then(async (response) => {
+  //         const body = await response.json();
+  //         console.log(body)
+  //         if (body.error != null) {
+  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
+  //           let e = document.createEvent("MouseEvent");
+  //           await this.logout(e);
+  //         } else {
+  //           this.setState({faultData: body});
+  //         }   
+  //       })
+  //       .catch((error) => {
+  //         console.log("error: " + error);
+  //         alert(error);
+  //         return;
+  //       }) 
        
-      } 
-  }
+  //     } 
+  // }
 
   async addNewUser(client, password) {
     if (this.context.login.user !== "Login") {
@@ -1713,7 +1712,11 @@ class App extends React.Component {
           >  
         </Navigation>
            
-        <div className="appcontainer">    
+        <div className="appcontainer"> 
+          <CustomSpinner 
+            show={this.state.spinner}
+            >
+          </CustomSpinner>    
           <div className="panel">
             <div className="layers">
               <div className="layerstitle">
@@ -1734,7 +1737,8 @@ class App extends React.Component {
                 classonClick={this.updateRMClass}
                 setDataActive={this.setDataActive} //-> data table
                 checked={this.state.dataActive} //-> data table
-                //spin={this.setSpinner}
+                spin={this.setSpinner}
+
               >               
               </LayerCard>
               <Roadlines
@@ -1752,7 +1756,7 @@ class App extends React.Component {
                 <Filter
                   filter={this.state.filters}
                   store={this.state.filterStore}
-                  mode={this.state.projectMode}
+                  mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
                   update={this.updateFilter}
                 />
                 <FilterButton
@@ -1828,17 +1832,15 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-        <CustomSpinner 
-          show={this.state.spinner}
-          >
-        </CustomSpinner> 
+
       </LMap >
       
       <DataTable 
         className={this.state.dataActive ? "data-active": "data-inactive"}
-        data={this.state.dataActive ? this.state.objGLData: []}
-        //data={this.state.objGLData}
+        data={this.state.objGLData}
+        simulate={this.simulateClick}
         centre={this.centreMap}
+        surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
       />  
        {/* admin modal     */}
        <CustomModal 

@@ -280,19 +280,19 @@ export default class GLEngine {
         } 
         
       }
-      if (this.delegate.mouseClick !== null) {      
+      if (this.delegate.mouseClick !== null) { 
+        let index = null;
         let pixel = new Uint8Array(4);
         this.delegate.gl.readPixels(this.delegate.mouseClick.x, 
         this.delegate.canvas.height - this.delegate.mouseClick.y, 1, 1, this.delegate.gl.RGBA, this.delegate.gl.UNSIGNED_BYTE, pixel);
-        let index = null;
         if (pixel[3] === 255) {
           index = pixel[0] + pixel[1] * 256 + pixel[2] * 256 * 256;
         } else {
           index = 0; //deals with edge cases from anti-aliasing 
-        }
+        } 
         this.delegate.mouseClick = null;
-        this.delegate.appDelegate.setIndex(index);   
-        this._redraw();      
+        this.delegate.appDelegate.setIndex(index);         
+        this._redraw();             
       }
     }   
   }
@@ -487,7 +487,9 @@ export default class GLEngine {
     }
     if (data.erp) {
       starterp = data.erp;
-      enderp = null;
+      if (length) {
+        enderp = starterp + length;
+      } 
     } else {
       starterp = data.starterp;
       enderp = data.enderp;
@@ -500,12 +502,12 @@ export default class GLEngine {
         seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
-        footpathid: data.footpathid,
-        roadname: data.roadname,  
-        location: data.location, 
+        footpathid: data.footpathid,  
+        location: data.roadname, 
         position: data.position,     
         starterp: starterp,
         enderp: enderp,
+        side: data.side,
         asset:  data.asset,
         fpsurface: data.type,
         fault: data.fault,
@@ -532,6 +534,7 @@ export default class GLEngine {
         class: data.class,
         starterp: starterp,
         enderp: enderp,
+        side: data.side,
         fault: data.fault,
         repair: data.repair,
         width: data.width,
