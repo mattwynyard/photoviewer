@@ -487,7 +487,9 @@ export default class GLEngine {
     }
     if (data.erp) {
       starterp = data.erp;
-      enderp = null;
+      if (length) {
+        enderp = starterp + length;
+      } 
     } else {
       starterp = data.starterp;
       enderp = data.enderp;
@@ -500,12 +502,12 @@ export default class GLEngine {
         seq: data.seq,
         id: id[id.length - 1],
         roadid: data.roadid,
-        footpathid: data.footpathid,
-        roadname: data.roadname,  
-        location: data.location, 
+        footpathid: data.footpathid,  
+        location: data.roadname, 
         position: data.position,     
         starterp: starterp,
         enderp: enderp,
+        side: data.side,
         asset:  data.asset,
         fpsurface: data.type,
         fault: data.fault,
@@ -532,6 +534,7 @@ export default class GLEngine {
         class: data.class,
         starterp: starterp,
         enderp: enderp,
+        side: data.side,
         fault: data.fault,
         repair: data.repair,
         width: data.width,

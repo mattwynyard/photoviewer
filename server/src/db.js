@@ -772,7 +772,7 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
+        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
             
@@ -797,7 +797,7 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, asset, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
+        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, side, asset, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'completed'";
             
@@ -881,24 +881,24 @@ module.exports = {
                 let sql = null;
                 if (rmclass) {
                     if (status === 'active') {
-                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
                         AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status = 'active' ORDER BY seq ASC`; 
                     } else {
-                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
                         AND inspection IN (${qAge}) AND rclass IN (${rmclass}) ORDER BY seq ASC`;
                     }
                 } else {
                     if (status === 'active') {
-                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND priority IN (${pCodes}) AND  ST_GeometryType(geom) = '${type}'
                         AND inspection IN (${qAge}) AND status = 'active' ORDER BY seq ASC`; 
                     } else {
-                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom)
                         FROM ${table} WHERE project = '${layer}' AND status IN (${qOptions}) AND ST_GeometryType(geom) = '${type}'
                         AND inspection IN (${qAge}) ORDER BY seq ASC`;
@@ -918,21 +918,21 @@ module.exports = {
                 let condition = buildQuery(filter);
                 if (rmclass) {
                     if (status === 'active') {
-                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid,
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
                         AND priority IN (${pCodes}) AND rclass IN (${rmclass}) AND inspection IN (${qAge}) AND status = 'active' AND  ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     } else {
-                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, rclass, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
                         AND inspection IN (${qAge}) AND rclass IN (${rmclass}) AND status != 'active' AND ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     }
                 } else {
                     if (status === 'active') {
-                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid,
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid,
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
                         AND priority IN (${pCodes}) AND inspection IN (${qAge}) AND  status = 'active' AND  ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     } else {
-                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, class, fault, repair, priority, length, width, count, inspection, photoid, 
+                        sql = `SELECT seq, id, roadid, carriage, location, position, starterp, enderp, side, class, fault, repair, priority, length, width, count, inspection, photoid, 
                         faulttime, status, ST_AsGeoJSON(geom) FROM ${table} WHERE project = '${layer}' AND fault IN (${condition})
                         AND inspection IN (${qAge}) AND status != 'active' AND ST_GeometryType(geom) = '${type}' ORDER BY seq ASC`;
                     }

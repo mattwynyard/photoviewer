@@ -148,10 +148,10 @@ const CustomSpinner = (props) => {
       return(
         <div className="spinner">
           <Spinner
-          animation="border"
-          variant="secondary"
-          size="lg"
-          role="status"
+            animation="border"
+            variant="secondary"
+            size="lg"
+            role="status"
           ></Spinner>
           <p>Loading...</p>
         </div>
