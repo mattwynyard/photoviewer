@@ -560,6 +560,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.roadLinesRef.current.reset();
+    
     this.setState({
       activeProject: null,
       projects: [],
@@ -582,8 +583,10 @@ class App extends React.Component {
       priorityMode: null,
       projectMode: null,
       token: null,
-      mapBoxKey: null
+      mapBoxKey: null,
+      dataActive: false
     }, () => {
+      this.leafletMap.invalidateSize(true);
       let glData = null
       this.GLEngine.redraw(glData, false);
     })
