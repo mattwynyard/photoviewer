@@ -25,6 +25,7 @@ export default function Navigation(props) {
   }
 
   const clickLogin = async (user, password) => {
+    setLoginError("")
     let body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
     if (body.result) {
       window.sessionStorage.setItem('token', body.token);
@@ -124,11 +125,9 @@ export default function Navigation(props) {
     let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
     if (projectMode === 'remove') { 
-      //setProject(null)
       props.remove(project);
        
     } else {
-      //setProject(project)
       props.add(projectMode, project)
     } 
   }

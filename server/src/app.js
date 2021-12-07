@@ -653,21 +653,28 @@ app.post('/class', async (req, res) => {
 
 app.post('/age', async (req, res) => { 
   let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let archive = await db.isArchive(project);
-    let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
-    res.set('Content-Type', 'application/json'); 
-    res.send({result: result.rows});  
-  } else {
+  try {
+    if (req.body.user === 'Login') {
+      result = await db.isPublic(req.body.project);
+    } else {
+      result = users.findUserToken(req.headers.authorization, req.body.user);
+    }
+  
+    if (result) {
+      let project = req.body.project;
+      let archive = await db.isArchive(project);
+      let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
+      res.set('Content-Type', 'application/json'); 
+      res.send({result: result.rows});  
+    } else {
+      res.set('Content-Type', 'application/json');
+      res.send({error: "Invalid token"});
+    } 
+  } catch (error) {
     res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
+    res.send({error: error});
+  }
+  
 });
 
 app.post('/layerdropdowns', async (req, res) => { 
