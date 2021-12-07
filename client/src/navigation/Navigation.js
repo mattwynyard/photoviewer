@@ -4,7 +4,7 @@ import './Navigation.css';
 import { loginContext} from '../login/loginContext.js';
 import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
-import PostFetch from '../api/PostFetch.js';
+import LoginFetch from '../api/Api.js';
 import ProjectNav from './ProjectNav.js';
 import Modals from '../modals/Modals.js';
 import {CustomLink} from "../components/Components.js";
@@ -16,7 +16,6 @@ export default function Navigation(props) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [localLogin, setLocalLogin] = useState({user: "Login", token: null})
   const [projects, setProjects] = useState(null);
-  const [project, setProject] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const {login, updateLogin} = useContext(loginContext);
@@ -26,7 +25,8 @@ export default function Navigation(props) {
   }
 
   const clickLogin = async (user, password) => {
-    let body = await PostFetch(login.host + '/login', "", {user: user, key: password});
+    setLoginError("")
+    let body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
     if (body.result) {
       window.sessionStorage.setItem('token', body.token);
       window.sessionStorage.setItem('user', body.user);
@@ -125,11 +125,9 @@ export default function Navigation(props) {
     let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
     if (projectMode === 'remove') { 
-      //setProject(null)
       props.remove(project);
        
     } else {
-      //setProject(project)
       props.add(projectMode, project)
     } 
   }

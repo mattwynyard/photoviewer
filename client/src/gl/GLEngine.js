@@ -62,7 +62,7 @@ export default class GLEngine {
       this.webgl = 0;
     } else {
       this.glLayer.delegate(this); 
-      //this.addEventListeners();
+      this.addEventListeners();
       if (this.webgl === 2) {
         let vertexShader = compileShader(this.gl, vshader300, this.gl.VERTEX_SHADER);
         let fragmentShader = compileShader(this.gl, fshader300, this.gl.FRAGMENT_SHADER);
@@ -81,15 +81,17 @@ export default class GLEngine {
   /**
  * adds various event listeners to the canvas
  */
-  // addEventListeners() {
-  //   this.canvas.addEventListener("webglcontextlost", () => {
-  //   console.log("CRASH--recovering GL");
-  //   this.canvas.removeEventListener("webglcontextlost");
-  //   }, false);
-  //   this.canvas.addEventListener("webglcontextrestored", () => {
-  //       this.intializeGL();
-  //   }, false);
-  // }
+  addEventListeners() {
+    this.canvas.addEventListener("webglcontextlost", () => {
+      alert("CRASH--recovering webGL");
+      this.canvas.removeEventListener("webglcontextlost");
+    }, false);
+    this.canvas.addEventListener("webglcontextrestored", () => {
+      alert("Recovered webGL");
+      this.canvas.removeEventListener("webglcontextlost");
+      this.intializeGL();
+    }, false);
+  }
 
   setAppDelegate(delegate) {
       this.appDelegate = delegate;

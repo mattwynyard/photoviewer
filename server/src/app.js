@@ -566,10 +566,10 @@ app.post('/district', async (req, res) => {
       let result = await db.district(req.body.project);
       let district = result.rows[0].description;
       res.set('Content-Type', 'application/json');
-      res.send({success: true, district: district});
+      res.send({result: district});
     } catch (err) {
       res.set('Content-Type', 'application/json');
-      res.send({success: false});
+      res.send({error: err});
     }
   } else {
     res.set('Content-Type', 'application/json');
@@ -616,28 +616,35 @@ app.post('/class', async (req, res) => {
     result = users.findUserToken(token, user);
   }
   if (result) {
-    let archive = req.body.project.isarchive;
-    let faultData = null;
-    let surface = req.body.project.surface;
-    if (surface === "footpath") {
-      faultData = [{code: "Asset", description: "Asset"}, {code:  "Fault", description: "Fault"} , 
-      {code:  "Type", description: "Type"} , {code: "Cause", description: "Cause"}];
-    } else {
-      let fclass = await db.class(user, project, archive);
-      faultData = fclass.rows;
-    }
-    for (let i = 0; i < faultData.length; i++) {
-      if (surface === "road") {
-        let faults = await db.faults(user, project, faultData[i].code, archive);
-        faultData[i].data = faults.rows;
+    try {
+      let archive = req.body.project.isarchive;
+      let faultData = null;
+      let surface = req.body.project.surface;
+   
+      if (surface === "footpath") {
+        faultData = [{code: "Asset", description: "Asset"}, {code:  "Fault", description: "Fault"} , 
+        {code:  "Type", description: "Type"} , {code: "Cause", description: "Cause"}];
       } else {
-        let faults = await db.footpathFaults(project, faultData[i].description);
-
-        faultData[i].data = faults.rows;
-      }    
+        let fclass = await db.class(user, project, archive);
+        faultData = fclass.rows;
+      }
+      for (let i = 0; i < faultData.length; i++) {
+        if (surface === "road") {
+          let faults = await db.faults(user, project, faultData[i].code, archive);
+          faultData[i].data = faults.rows;
+        } else {
+          let faults = await db.footpathFaults(project, faultData[i].description);
+  
+          faultData[i].data = faults.rows;
+        }    
+      }
+      res.set('Content-Type', 'application/json')
+      res.send({result: faultData});
+    } catch (error) {
+      res.set('Content-Type', 'application/json')
+      res.send({error: error});
     }
-    res.set('Content-Type', 'application/json')
-    res.send(faultData);
+    
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});
@@ -646,21 +653,28 @@ app.post('/class', async (req, res) => {
 
 app.post('/age', async (req, res) => { 
   let result = false;
-  if (req.body.user === 'Login') {
-    result = await db.isPublic(req.body.project);
-  } else {
-    result = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (result) {
-    let project = req.body.project;
-    let archive = await db.isArchive(project);
-    let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
-    res.set('Content-Type', 'application/json'); 
-    res.send({result: result.rows});  
-  } else {
+  try {
+    if (req.body.user === 'Login') {
+      result = await db.isPublic(req.body.project);
+    } else {
+      result = users.findUserToken(req.headers.authorization, req.body.user);
+    }
+  
+    if (result) {
+      let project = req.body.project;
+      let archive = await db.isArchive(project);
+      let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
+      res.set('Content-Type', 'application/json'); 
+      res.send({result: result.rows});  
+    } else {
+      res.set('Content-Type', 'application/json');
+      res.send({error: "Invalid token"});
+    } 
+  } catch (error) {
     res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-} 
+    res.send({error: error});
+  }
+  
 });
 
 app.post('/layerdropdowns', async (req, res) => { 
@@ -671,40 +685,46 @@ app.post('/layerdropdowns', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
-    let project = req.body.project.code;
-    let surface = req.body.project.surface;
-    let archive = req.body.project.isarchive;
-    let hasClass = req.body.project.rmclass;
-    let rmclass = [];
-    let priority = [];
-    if (hasClass) {
-      let result = await db.rmclass(project, req.body.user);
-      let values = [];
-      for (let i = 0; i < result.rows.length; i++) {
-        let value = Object.values(result.rows[i]);
-        values.push(value[0]);
-      }
-      rmclass = values;
-    }
-    if (surface === "footpath") {
-      let result = await db.grade(project);
-      for (let i = 0; i < result.rows.length; i++) {
-        let value = Object.values(result.rows[i]);
-        if (value[0] === '1' || value[0] === '2') {
-          continue;
-        } else {
-          priority.push(value[0]);
+    try {
+      let project = req.body.project.code;
+      let surface = req.body.project.surface;
+      let archive = req.body.project.isarchive;
+      let hasClass = req.body.project.rmclass;
+      let rmclass = [];
+      let priority = [];
+      if (hasClass) {
+        let result = await db.rmclass(project, req.body.user);
+        let values = [];
+        for (let i = 0; i < result.rows.length; i++) {
+          let value = Object.values(result.rows[i]);
+          values.push(value[0]);
         }
-      }      
-    } else {
-      let result = await db.priority(req.body.user, project, archive); 
-      for (let i = 0; i < result.rows.length; i++) {
-        let value = Object.values(result.rows[i]);
-        priority.push(value[0]);
-      }       
-    } 
-    res.set('Content-Type', 'application/json'); 
-    res.send({priority: priority, rmclass: rmclass});    
+        rmclass = values;
+      }
+      if (surface === "footpath") {
+        let result = await db.grade(project);
+        for (let i = 0; i < result.rows.length; i++) {
+          let value = Object.values(result.rows[i]);
+          if (value[0] === '1' || value[0] === '2') {
+            continue;
+          } else {
+            priority.push(value[0]);
+          }
+        }      
+      } else {
+        let result = await db.priority(req.body.user, project, archive); 
+        for (let i = 0; i < result.rows.length; i++) {
+          let value = Object.values(result.rows[i]);
+          priority.push(value[0]);
+        }       
+      } 
+      res.set('Content-Type', 'application/json'); 
+      res.send({result: {priority: priority, rmclass: rmclass}});
+    } catch (error) {
+      res.set('Content-Type', 'application/json'); 
+      res.send({error: error});
+    }
+        
   } else {
     res.set('Content-Type', 'application/json');
     res.send({error: "Invalid token"});

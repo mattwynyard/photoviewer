@@ -23,6 +23,7 @@ import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
+import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -801,7 +802,6 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArhivePhoto(e) {
-    //e.preventDefault();
     const response = await fetch("https://" + this.state.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
@@ -891,19 +891,32 @@ class App extends React.Component {
    * @param {event} e 
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
-  loadLayer = async (mode, project) => { 
-    
+  loadLayer = async (mode, project) => {  
     let projectCode = project.code;
-    let inspectionsBody = await this.requestInspections(projectCode, mode); //fix for footpaths
-    let inspections = this.buildInspections(inspectionsBody)
-    let district = await this.requestDistrict(projectCode); 
-    let data = await this.requestFilterData(project);
-    let storeData = await this.requestFilterData(project);
-    let filters = await this.buildFilter(data);
-    let store = await this.buildFilter(storeData);
+    let inspections = null;
+    let request = {project: project.code, query: null}
+    if (mode === "road") {
+      let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
+      if (!body.error) {
+        inspections = this.buildInspections(body)
+      } else {
+        return;
+      } 
+    } else {
+      inspections = [];
+    }
+    let district = await apiRequest(this.context.login, request, "/district");
+    if (district.error) return; 
+    request = {project: project, query: null}
+    let filter = await apiRequest(this.context.login, request, "/filterData");
+    if (filter.error) return; 
+    let storeFilter = await apiRequest(this.context.login, request, "/filterData");
+    if (storeFilter.error) return; 
+    let filters = await this.buildFilter(filter);
+    let store = await this.buildFilter(storeFilter);
     let layers = this.state.activeLayers;
     layers.push(project);
-    let layerBody = await this.requestLayerDropdowns(project);
+    let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
@@ -986,38 +999,6 @@ class App extends React.Component {
      return filters;
   }
 
-  requestInspections = async (project, mode) => {
-    if (mode === 'footpath') return [];
-    try {
-      const response = await fetch('https://' + this.context.login.host + '/age', {
-      method: 'POST',
-      headers: {
-        "authorization": this.context.login.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: project,
-      })
-      });
-      if(response.ok) {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-          let e = document.createEvent("MouseEvent");
-          await this.logout(e);
-        } else {
-          return body.result;            
-        }     
-      } else {
-        console.log(response);
-      }
-    } catch (error) {
-      alert(error)
-    }
-  }
-
   /**
    * Sets inspections array for use in filter
    * @param {*} ages JSON object inspection array
@@ -1036,92 +1017,6 @@ class App extends React.Component {
       }
       return inspections;
     }   
-  }
-
-  requestDistrict = async (project) => {  
-    let response = await fetch('https://' + this.context.login.host + '/district', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        "authorization": this.context.login.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: project
-      })
-    });
-    if(!response.ok) {
-      throw new Error(response.status);
-    } else {
-      const body = await response.json(); 
-      if (body.error != null) {
-        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-        let e = document.createEvent("MouseEvent");
-        await this.logout(e);
-      } else { 
-        return body.district
-      }     
-    }
-  }
-
-  requestFilterData = async (project) => {
-    try {
-      let response = await fetch('https://' + this.context.login.host + '/filterData', {
-        method: 'POST',
-        headers: {
-          "authorization": this.context.login.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.context.login.user,
-          project: project
-        })
-      });
-      if(!response.ok) {
-        throw new Error(response.status);
-      } else {
-        const body = await response.json(); 
-        if (body.error != null) {
-          alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-          let e = document.createEvent("MouseEvent");
-          await this.logout(e);
-        } else { 
-          return body;
-        }     
-      } 
-    } catch (error) {
-      alert(error)
-    }
-}
-
-  requestLayerDropdowns = async (project) => {
-    let response = await fetch('https://' + this.context.login.host + '/layerdropdowns', {
-      method: 'POST',
-      headers: {
-        "authorization": this.context.login.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: project,
-      })
-    });
-    if(!response.ok) {
-      throw new Error(response.status);
-    } else {
-      const body = await response.json(); 
-      if (body.error != null) {
-        alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-        let e = document.createEvent("MouseEvent");
-        await this.logout(e);
-      } else { 
-        return body;
-      }     
-    } 
   }
 
   /**
@@ -1304,41 +1199,6 @@ class App extends React.Component {
     });   
     }
   }
-
-  // async loadFilters(project) {
-  //     if (this.state.projectMode === "footpath") {
-  //       return;
-  //     } else {
-  //       await fetch('https://' + this.state.host + '/class', {
-  //         method: 'POST',
-  //         headers: {
-  //           "authorization": this.state.token,
-  //           'Accept': 'application/json',
-  //           'Content-Type': 'application/json',
-  //         },
-  //         body: JSON.stringify({
-  //           user: this.context.login.user,
-  //           project: project
-  //         })
-  //       }).then(async (response) => {
-  //         const body = await response.json();
-  //         console.log(body)
-  //         if (body.error != null) {
-  //           alert(`Error: ${body.error}\nSession has expired - user will have to login again`);
-  //           let e = document.createEvent("MouseEvent");
-  //           await this.logout(e);
-  //         } else {
-  //           this.setState({faultData: body});
-  //         }   
-  //       })
-  //       .catch((error) => {
-  //         console.log("error: " + error);
-  //         alert(error);
-  //         return;
-  //       }) 
-       
-  //     } 
-  // }
 
   async addNewUser(client, password) {
     if (this.context.login.user !== "Login") {
@@ -1706,7 +1566,6 @@ class App extends React.Component {
           logout={this.logout}
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
-          //project={this.state.activeLayer ? this.state.activeLayer: null}
           centre={this.fitBounds}
           district={this.state.district}
           >  
