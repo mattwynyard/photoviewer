@@ -1564,6 +1564,7 @@ class App extends React.Component {
           remove={this.removeLayer}
           add={this.loadLayer}
           logout={this.logout}
+          project={this.state.activeLayer}
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}

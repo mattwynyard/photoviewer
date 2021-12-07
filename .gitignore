@@ -27,6 +27,7 @@ client/node_modules
 client/archive
 client/scripts
 server/node_modules
+server/scripts
 /.pnp
 .pnp.js
 

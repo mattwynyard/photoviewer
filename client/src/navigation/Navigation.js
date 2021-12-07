@@ -170,14 +170,14 @@ export default function Navigation(props) {
             disabled = {props.data.length === 0 ? true: false}
             >
               <CustomLink 
-                  className="dropdownlink" 
-                  endpoint="/statistics"
-                  label="Create Report"
-                  data={props.data}
-                  project={props.project}
-                  style={{ textDecoration: 'none' }}
+                className="dropdownlink" 
+                endpoint="/statistics"
+                label="Create Report"
+                data={props.data}
+                project={props.project}
+                style={{ textDecoration: 'none' }}
                   >
-                </CustomLink>               
+              </CustomLink>               
             </NavDropdown>   
           </Nav>
           <Nav>
