@@ -1,5 +1,6 @@
-import React from 'react';
-import {Nav, NavDropdown}  from 'react-bootstrap';
+
+import React, {Fragment} from 'react';
+import {Nav, NavDropdown, Dropdown}  from 'react-bootstrap';
 import './Navigation.css';
 
 const CustomMenu = (props) => {
@@ -21,13 +22,16 @@ const CustomMenu = (props) => {
   }
 
   return (
-    <NavDropdown
+    <NavDropdown as={Dropdown}
+        className="menudropdown"
         title={props.title}
         disabled={props.disabled}
-        drop="start"
+        drop="down"
         >
-        {props.projects.map((value, index) =>  
-        <NavDropdown.Item 
+        {props.projects.map((value, index) => 
+        <Fragment>
+        <Dropdown.Item
+            className="menuitem"
             key={`${value.code}`}
             index={index}
             type={props.type}
@@ -36,7 +40,9 @@ const CustomMenu = (props) => {
             onClick={props.layers.code !== value.code ? props.onClick : null}
             >
             {value.description + " " + value.date}
-        </NavDropdown.Item>             
+        </Dropdown.Item>
+        < NavDropdown.Divider />
+        </Fragment>               
         )}
     </NavDropdown> 
   );     
@@ -46,24 +52,21 @@ export default function ProjectNav(props) {
   if (props.projects) {
     return (
       <Nav
-        fill={true} 
-        justify={true}
         >          
       <NavDropdown 
           title="Projects" 
           id="basic-nav-dropdown"
           disabled={props.disabled}
           >
-        
-        <CustomMenu
-          title="Add Roading Layer"  
-          type={'road'}
-          disabled ={props.projects.road.length === 0 ? true: false} 
-          projects={props.projects.road} 
-          layers={props.layers} 
-          onClick={props.onClick}
-          />
-          <NavDropdown.Divider /> 
+          <CustomMenu
+            title="Add Roading Layer"  
+            type={'road'}
+            disabled ={props.projects.road.length === 0 ? true: false} 
+            projects={props.projects.road} 
+            layers={props.layers} 
+            onClick={props.onClick}
+            />
+            < NavDropdown.Divider /> 
         <CustomMenu 
           title="Add Footpath Layer" 
           type={'footpath'} 

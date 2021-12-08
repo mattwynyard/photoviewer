@@ -8,8 +8,6 @@ export default function LoginNav(props) {
         return (
             <Nav 
                 className="ml-auto"
-                fill={true} 
-                justify={true}
             >
                 <Nav.Link  id="Login" onClick={props.onClick}>{props.user} </Nav.Link>
             </Nav>);

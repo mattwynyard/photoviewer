@@ -1,34 +1,31 @@
 import React from 'react';
-import {NavDropdown, Nav}  from 'react-bootstrap';
+import {NavDropdown, Nav, Dropdown}  from 'react-bootstrap';
 import './Navigation.css';
 
 export default function DataNav(props) {
 
     return (
         <Nav
-            fill={true} 
-            justify={true}
         > 
             <NavDropdown 
+                
                 title={props.title}
                 disabled={props.disabled}
                 >
-                <NavDropdown
-                    className='nav-item' 
+                <NavDropdown as={Dropdown}
+                    className="menudropdown"
                     title={"Export"} 
-                    drop={"end"} 
                 >
                     <NavDropdown.Item 
-                       className='nav-item' 
+                        className="menuitem"
 
                     >{"CSV"}
                     </NavDropdown.Item> 
                 </NavDropdown> 
                 <NavDropdown.Divider /> 
                 <NavDropdown
-                
-                    title={"Import"} 
-                    drop={"right"}  
+                    className="menuitem"
+                    title={"Import"}  
                 >
                 </NavDropdown>                  
             </NavDropdown> 

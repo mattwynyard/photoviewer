@@ -138,7 +138,7 @@ export default function Navigation(props) {
       <Navbar 
         className="navbar"
         bg="light" 
-        expand="md"> 
+        expand="sm"> 
         <Container fluid>
           <Navbar.Brand >
             <img
@@ -150,7 +150,7 @@ export default function Navigation(props) {
               />
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-          <Navbar.Collapse id="responsive-navbar-nav">
+          <Navbar.Collapse className={"navbar-collapse"} id="responsive-navbar-nav">
             <ProjectNav
               projects={projects} 
               layers={props.layers}
@@ -162,14 +162,15 @@ export default function Navigation(props) {
             title="Data" 
             id="basic-nav-dropdown"
             disabled={props.data.length === 0 ? true: false}
+
             >
           </DataNav>         
           
           <Nav>
             <NavDropdown 
-              title="Report" 
-              id="basic-nav-dropdown"
-              disabled = {props.data.length === 0 ? true: false}
+            title="Report" 
+            id="basic-nav-dropdown"
+            disabled = {props.data.length === 0 ? true: false}
             >
               <CustomLink 
                 className="dropdownlink" 

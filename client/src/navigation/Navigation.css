@@ -1,8 +1,17 @@
+
+
 @media screen and (min-width: 1101px) {
   .navbar {
   font-family: "Century Gothic", sans-serif;
   font-size: 22px !important;
   letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 15px !important;
+  }
+  
+  .menuitem {
+    font-size: 15px !important;
   }
 }
 
@@ -12,6 +21,13 @@
   font-size: 20px !important;
   letter-spacing: 2px;
   }
+  .menudropdown {
+    font-size: 14px !important;
+  }
+  
+  .menuitem {
+    font-size: 14px !important;
+  }
 }
 
 @media screen and (max-width: 1000px) {
@@ -19,6 +35,13 @@
   font-family: "Century Gothic", sans-serif;
   font-size: 19px !important;
   letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 13px !important;
+  }
+  
+  .menuitem {
+    font-size: 13px !important;
   }
 }
 
@@ -28,6 +51,13 @@
   font-size: 18px !important;
   letter-spacing: 2px;
   }
+  .menudropdown {
+    font-size: 12px !important;
+  }
+  
+  .menuitem {
+    font-size: 12px !important;
+  }
 }
 
 @media screen and (max-width: 800px) {
@@ -35,30 +65,46 @@
   font-family: "Century Gothic", sans-serif;
   font-size: 16px !important;
   letter-spacing: 1px;
-  z-index: 100;
+  }
+  .menudropdown {
+    font-size: 12px !important;
+  }
+  
+  .menuitem {
+    font-size: 12px !important;
   }
 }
 
 @media screen and (max-width: 700px) {
   .navbar {
-  font-family: "Century Gothic", sans-serif;
-  font-size: 15px !important;
-  letter-spacing: 1px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 15px !important;
+    letter-spacing: 1px;
   }
-}
+  .menudropdown {
+    font-size: 12px !important;
+  }
   
-.navbarbrand {
-  background-color: transparent;
-  color: #fff;
+  .menuitem {
+    font-size: 12px !important;
+  }
+
+  
+  .navbarbrand {
+    background-color: transparent;
+    color: #fff;
+  }
+
 }
+
 
 @media screen and (min-width: 1201px) {
   .search {
     position: absolute;
     right : 120px;
     display: flex;
-    padding: 2px;
   }
+
 }
 
 @media screen and (max-width: 1200px) {
@@ -66,7 +112,6 @@
     position: absolute;
     right : 10%;
     display: flex;
-    padding: 2px;
   }
 }
 
@@ -75,8 +120,8 @@
     position: absolute;
     right : 11%;
     display: flex;
-    padding: 2px;
   }
+
 }
 
 @media screen and (max-width: 1000px) {
@@ -84,7 +129,6 @@
     position: absolute;
     right : 11%;
     display: flex;
-    padding: 2px;
     width: 200px;
   }
 }
@@ -104,7 +148,6 @@
     position: absolute;
     right : 13%;
     display: flex;
-    padding: 2px;
     width: 120px;
   }
 }
