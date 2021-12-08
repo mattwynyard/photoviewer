@@ -41,7 +41,7 @@ export default function ClassDropdown(props) {
 
     if (props.items.length > 0) {
         return (
-            <Dropdown className="RMClass" drop='right'>
+            <Dropdown className="RMClass" drop='end'>
                 <Dropdown.Toggle variant="light" size="sm" >
                     {props.title}
                 </Dropdown.Toggle>

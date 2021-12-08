@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {InputGroup, FormControl, Button}  from 'react-bootstrap';
+import {Form, FormControl, Button}  from 'react-bootstrap';
 import './Navigation.css'
 import L from 'leaflet';
 
@@ -54,31 +54,25 @@ export default class SearchBar extends Component {
 
     render() {
         return (
-            <div className="search">
-                <InputGroup
-                
-                >
-                <FormControl 
-                    id="search-form"
-                    placeholder="Search"
-                    onChange={(e) => this.setState({search: e.target.value})}
-                />
-                <InputGroup.Append>
+            // <div className="search">
+                <Form className="search">
+                    <FormControl
+                        type="search" 
+                        id="search-form"
+                        placeholder="Search"
+                        onChange={(e) => this.setState({search: e.target.value})}
+                    />
                     <Button 
-                        className="search-btn" 
                         variant="light"
                         >
                         <img 
-                            className="search-img" 
                             src="search.png" 
                             alt="search" 
                             onClick={this.clickSearch}>
                         </img>
                     </Button>
-                </InputGroup.Append>
-            </InputGroup>
-            </div>
-            
+                </Form>
+            // </div>    
         );
     }
 }

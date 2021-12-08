@@ -77,7 +77,7 @@ export default function Filter(props) {
           <Dropdown 
             className="dropdown"
             key={value.code} 
-            drop={'right'}  
+            drop={'end'}  
           >                
           <Dropdown.Toggle variant="light" size="sm">
             <input

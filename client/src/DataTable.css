@@ -19,4 +19,8 @@
     overflow: auto;
   }
 
+  .data-active tbody tr:hover td {
+    background: #67C8FF;
+}
+
   

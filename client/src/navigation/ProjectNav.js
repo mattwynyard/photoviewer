@@ -1,5 +1,6 @@
 import React from 'react';
 import {Nav, NavDropdown}  from 'react-bootstrap';
+import './Navigation.css';
 
 const CustomMenu = (props) => {
 
@@ -19,15 +20,14 @@ const CustomMenu = (props) => {
     }
   }
 
-  return ( 
-    <NavDropdown 
+  return (
+    <NavDropdown
         title={props.title}
-        className="navdropdownitem"
         disabled={props.disabled}
-        drop="right">
+        drop="start"
+        >
         {props.projects.map((value, index) =>  
         <NavDropdown.Item 
-            className='nav-item'
             key={`${value.code}`}
             index={index}
             type={props.type}
@@ -45,16 +45,18 @@ const CustomMenu = (props) => {
 export default function ProjectNav(props) { 
   if (props.projects) {
     return (
-      <Nav>          
+      <Nav
+        fill={true} 
+        justify={true}
+        >          
       <NavDropdown 
-          className="navdropdown" 
           title="Projects" 
           id="basic-nav-dropdown"
           disabled={props.disabled}
           >
-        <CustomMenu 
-          title="Add Roading Layer" 
-          className="navdropdownitem" 
+        
+        <CustomMenu
+          title="Add Roading Layer"  
           type={'road'}
           disabled ={props.projects.road.length === 0 ? true: false} 
           projects={props.projects.road} 
@@ -64,7 +66,6 @@ export default function ProjectNav(props) {
           <NavDropdown.Divider /> 
         <CustomMenu 
           title="Add Footpath Layer" 
-          className="navdropdownitem" 
           type={'footpath'} 
           projects={props.projects.footpath}
           layers={props.layers} 
@@ -74,7 +75,6 @@ export default function ProjectNav(props) {
           <NavDropdown.Divider />
         <CustomMenu 
           title="Remove Layer" 
-          className="navdropdownitem"
           type={'remove'} 
           projects={props.layers}
           layers={{code: null}}
@@ -88,7 +88,6 @@ export default function ProjectNav(props) {
     return (
       <Nav>          
       <NavDropdown 
-        className="navdropdown" 
         title="Projects" 
         id="basic-nav-dropdown">
       </NavDropdown>        

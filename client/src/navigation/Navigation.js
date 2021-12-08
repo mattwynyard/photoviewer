@@ -1,11 +1,12 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
-import {Navbar, Nav, NavDropdown}  from 'react-bootstrap';
+import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { loginContext} from '../login/loginContext.js';
 import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
 import LoginFetch from '../api/Api.js';
 import ProjectNav from './ProjectNav.js';
+import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
 import {CustomLink} from "../components/Components.js";
 import SearchBar from './SearchBar.js'
@@ -135,39 +136,40 @@ export default function Navigation(props) {
   return (
     <Fragment>
       <Navbar 
+        className="navbar"
         bg="light" 
-        expand="sm" 
-        className='navbar'>      
-        <Navbar.Brand >
-          <img
-            src="logo.png"
-            width="122"
-            height="58"
-            className="d-inline-block align-top"
-            alt="logo"
+        expand="md"> 
+        <Container fluid>
+          <Navbar.Brand >
+            <img
+              src="logo.png"
+              width="122"
+              height="58"
+              className="d-inline-block align-top"
+              alt="logo"
+              />
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+          <Navbar.Collapse id="responsive-navbar-nav">
+            <ProjectNav
+              projects={projects} 
+              layers={props.layers}
+              onClick={handleClick}
+              disabled = {projects === null ? true: false}
             />
-        </Navbar.Brand>
-        <ProjectNav
-          projects={projects} 
-          layers={props.layers}
-          onClick={handleClick}
-          disabled = {projects === null ? true: false}
-        />
-        <Nav fill={true} justify={true}>              
-          <NavDropdown 
-            className="navdropdown" 
+                       
+          <DataNav 
             title="Data" 
             id="basic-nav-dropdown"
-            disabled = {props.data.length === 0 ? true: false}
+            disabled={props.data.length === 0 ? true: false}
             >
-          </NavDropdown>         
-          </Nav>
+          </DataNav>         
+          
           <Nav>
             <NavDropdown 
-            className="navdropdown" 
-            title="Report" 
-            id="basic-nav-dropdown"
-            disabled = {props.data.length === 0 ? true: false}
+              title="Report" 
+              id="basic-nav-dropdown"
+              disabled = {props.data.length === 0 ? true: false}
             >
               <CustomLink 
                 className="dropdownlink" 
@@ -180,23 +182,33 @@ export default function Navigation(props) {
               </CustomLink>               
             </NavDropdown>   
           </Nav>
+
           <Nav>
-            <NavDropdown className="navdropdown" title="Help" id="basic-nav-dropdown">
-              <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickTerms(e)} >Terms of Use</NavDropdown.Item>
+            <NavDropdown 
+              title="Help" 
+              id="basic-nav-dropdown">
+              <NavDropdown.Item 
+                onClick={(e) => clickTerms(e)} 
+                >Terms of Use
+              </NavDropdown.Item>
               <NavDropdown.Divider />
-              {/* <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickContact(e)} >Contact</NavDropdown.Item>
-              <NavDropdown.Divider /> */}
-              {/* <NavDropdown.Item className="navdropdownitem" id="Documentation" onClick={(e) => this.documentation(e)}>Documentation</NavDropdown.Item>
-              <NavDropdown.Divider /> */}
-              <NavDropdown.Item className="navdropdownitem" onClick={(e) => clickAbout(e)} >About</NavDropdown.Item>             
+              <NavDropdown.Item 
+
+                onClick={(e) => clickAbout(e)} 
+              >About</NavDropdown.Item>             
             </NavDropdown>         
           </Nav>
-            <SearchBar centre={props.centre} district={props.district}></SearchBar>
-
-          
-        <LoginNav user={login.user} onClick={isLoggedIn ? clickLogout: showModal}></LoginNav>
-      </Navbar>
-      <LoginModal show={show} error={loginError} onClick={clickLogin}></LoginModal>
+            <SearchBar centre={props.centre} district={props.district}></SearchBar> 
+          <LoginNav 
+            user={login.user} 
+            onClick={isLoggedIn ? clickLogout: showModal}
+            >
+          </LoginNav>
+        </Navbar.Collapse>
+        </Container>
+        <LoginModal show={show} error={loginError} onClick={clickLogin}></LoginModal>
+      </Navbar> 
+      
       <Modals
         id='about'
         show={showAbout}

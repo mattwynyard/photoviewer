@@ -138,7 +138,8 @@ class App extends React.Component {
     }
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
-    }      
+    }
+       
   }
 
   componentWillUnmount() {
