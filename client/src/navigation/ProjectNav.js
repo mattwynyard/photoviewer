@@ -29,19 +29,19 @@ const CustomMenu = (props) => {
         drop="down"
         >
         {props.projects.map((value, index) => 
-        <Fragment>
-        <Dropdown.Item
-            className="menuitem"
-            key={`${value.code}`}
-            index={index}
-            type={props.type}
-            disabled={isDisabled(props.type)}
-            title={JSON.stringify(value)}
-            onClick={props.layers.code !== value.code ? props.onClick : null}
-            >
-            {value.description + " " + value.date}
-        </Dropdown.Item>
-        < NavDropdown.Divider />
+        <Fragment key={`${value.code}`}>
+          <Dropdown.Item
+              className="menuitem"
+              key={`${value.code}`}
+              index={index}
+              type={props.type}
+              disabled={isDisabled(props.type)}
+              title={JSON.stringify(value)}
+              onClick={props.layers.code !== value.code ? props.onClick : null}
+              >
+              {value.description + " " + value.date}
+          </Dropdown.Item>
+          < NavDropdown.Divider />
         </Fragment>               
         )}
     </NavDropdown> 
@@ -53,12 +53,13 @@ export default function ProjectNav(props) {
     return (
       <Nav
         >          
-      <NavDropdown 
+        <NavDropdown 
           title="Projects" 
           id="basic-nav-dropdown"
           disabled={props.disabled}
           >
           <CustomMenu
+            key="1"
             title="Add Roading Layer"  
             type={'road'}
             disabled ={props.projects.road.length === 0 ? true: false} 
@@ -67,33 +68,35 @@ export default function ProjectNav(props) {
             onClick={props.onClick}
             />
             < NavDropdown.Divider /> 
-        <CustomMenu 
-          title="Add Footpath Layer" 
-          type={'footpath'} 
-          projects={props.projects.footpath}
-          layers={props.layers} 
-          disabled ={props.projects.footpath.length === 0 ? true: false} 
-          onClick={props.onClick}
-          />
+          <CustomMenu 
+            key="2"
+            title="Add Footpath Layer" 
+            type={'footpath'} 
+            projects={props.projects.footpath}
+            layers={props.layers} 
+            disabled ={props.projects.footpath.length === 0 ? true: false} 
+            onClick={props.onClick}
+            />
           <NavDropdown.Divider />
-        <CustomMenu 
-          title="Remove Layer" 
-          type={'remove'} 
-          projects={props.layers}
-          layers={{code: null}}
-          disabled ={props.layers.length === 0 ? true: false} 
-          onClick={props.onClick}
-          />
+          <CustomMenu
+            key="3" 
+            title="Remove Layer" 
+            type={'remove'} 
+            projects={props.layers}
+            layers={{code: null}}
+            disabled ={props.layers.length === 0 ? true: false} 
+            onClick={props.onClick}
+            />
         </NavDropdown>
       </Nav>
     );     
   } else {
     return (
       <Nav>          
-      <NavDropdown 
-        title="Projects" 
-        id="basic-nav-dropdown">
-      </NavDropdown>        
+        <NavDropdown 
+          title="Projects" 
+          id="basic-nav-dropdown">
+        </NavDropdown>        
     </Nav>
     );
   }

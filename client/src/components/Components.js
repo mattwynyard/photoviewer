@@ -172,7 +172,7 @@ const CustomSpinner = (props) => {
     } else {
       return (
         <Link 
-          className="dropdownlink" 
+        className="menudropdown" 
           to={{
             pathname: props.endpoint,
             data: props.data,

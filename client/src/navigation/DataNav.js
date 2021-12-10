@@ -1,34 +1,51 @@
-import React from 'react';
-import {NavDropdown, Nav, Dropdown}  from 'react-bootstrap';
+import React, { Fragment, useState } from 'react';
+import {NavDropdown, Nav}  from 'react-bootstrap';
+import Exportmodal from '../modals/ExportModal.js'
 import './Navigation.css';
 
 export default function DataNav(props) {
 
+    const [show, setshow] = useState(false)
+
+    const handleClick = () => {
+        setshow(true)
+    }
+
+    const download = (options) => {
+
+    }
+
+    const closeModal = (e) => {
+        console.log("close")
+        setshow(false)
+    }
+
     return (
+        <Fragment>
         <Nav
         > 
             <NavDropdown 
-                
                 title={props.title}
                 disabled={props.disabled}
                 >
-                <NavDropdown as={Dropdown}
+                <NavDropdown.Item
                     className="menudropdown"
-                    title={"Export"} 
-                >
-                    <NavDropdown.Item 
-                        className="menuitem"
-
-                    >{"CSV"}
-                    </NavDropdown.Item> 
-                </NavDropdown> 
+                    onClick={handleClick}
+                >{"Export"}
+                </NavDropdown.Item> 
                 <NavDropdown.Divider /> 
-                <NavDropdown
+                <NavDropdown.Item
                     className="menuitem"
-                    title={"Import"}  
-                >
-                </NavDropdown>                  
+                    disabled={true}
+                >{"Import"}
+                </NavDropdown.Item>                  
             </NavDropdown> 
         </Nav>
+        <Exportmodal
+            show={show}
+            download={download}
+            closeModal={closeModal}
+            />
+        </Fragment>
     );
 }

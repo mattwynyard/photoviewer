@@ -17,7 +17,8 @@ export default function LoginNav(props) {
                 <NavDropdown 
                     title={props.user} 
                     id="basic-nav-dropdown">
-                    <NavDropdown.Item 
+                    <NavDropdown.Item
+                        className="menudropdown"  
                         onClick={props.onClick}
                         >Logout
                     </NavDropdown.Item>

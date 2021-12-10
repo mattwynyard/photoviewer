@@ -188,13 +188,14 @@ export default function Navigation(props) {
             <NavDropdown 
               title="Help" 
               id="basic-nav-dropdown">
-              <NavDropdown.Item 
+              <NavDropdown.Item
+                className="menudropdown" 
                 onClick={(e) => clickTerms(e)} 
                 >Terms of Use
               </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item 
-
+                className="menudropdown" 
                 onClick={(e) => clickAbout(e)} 
               >About</NavDropdown.Item>             
             </NavDropdown>         
