@@ -18,7 +18,8 @@ export default function ExportModal(props) {
     }, []);
 
     const download = (e) => {
-        console.log(exportOptions)
+        e.preventDefault();
+        props.download(exportOptions)
     }
 
     const handleChange = (value) => {
@@ -36,7 +37,7 @@ export default function ExportModal(props) {
                     setExportOptions({file: exportOptions.file, delimeter: ',', geometry: exportOptions.geometry});
                     break;
                 case 'Tab':
-                    setExportOptions({file: exportOptions.file, delimeter: 'tab', geometry: exportOptions.geometry});
+                    setExportOptions({file: exportOptions.file, delimeter: '\t', geometry: exportOptions.geometry});
                     break
                 case 'Vertical Bar':
                     setExportOptions({file: exportOptions.file, delimeter: '|', geometry: exportOptions.geometry});
@@ -66,9 +67,7 @@ export default function ExportModal(props) {
         show={props.show} 
         size={'md'} 
         centered={true}
-        onHide={props.closeModal}
-        //backdrop="static"
-       
+        onHide={props.closeModal}   
         >
         <Modal.Header>
           <Modal.Title><h2>Export</h2></Modal.Title>
@@ -124,7 +123,7 @@ export default function ExportModal(props) {
 		</Modal.Body>
         <Modal.Footer>
           <Button 
-            variant="primary" 
+            variant="outline-dark" 
             type="button" 
             size='sm'
             id={props.id}

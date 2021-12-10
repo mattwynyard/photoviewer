@@ -1,5 +1,28 @@
-const EARTH_RADIUS = 6378137.0 //metres
-const TILE_SIZE = 256
+const EARTH_RADIUS = 6378137.0; //metres
+const TILE_SIZE = 256;
+
+// The download function takes a CSV string, the filename and mimeType as parameters
+// Scroll/look down at the bottom of this snippet to see how download is called
+const downloadCSV = (content, fileName, mimeType) => {
+  let a = document.createElement('a');
+  mimeType = mimeType || 'application/octet-stream';
+
+  if (navigator.msSaveBlob) { // IE10
+    navigator.msSaveBlob(new Blob([content], {
+      type: mimeType
+    }), fileName);
+  } else if (URL && 'download' in a) { //html5 A[download]
+    a.href = URL.createObjectURL(new Blob([content], {
+      type: mimeType
+    }));
+    a.setAttribute('download', fileName);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    a.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+  }
+}
 
 const RDP = (l, eps) => {
     const last = l.length - 1;
@@ -149,4 +172,5 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
+  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
+    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV}

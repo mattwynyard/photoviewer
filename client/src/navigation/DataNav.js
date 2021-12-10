@@ -2,6 +2,7 @@ import React, { Fragment, useState } from 'react';
 import {NavDropdown, Nav}  from 'react-bootstrap';
 import Exportmodal from '../modals/ExportModal.js'
 import './Navigation.css';
+import { downloadCSV } from '../util.js';
 
 export default function DataNav(props) {
 
@@ -12,7 +13,19 @@ export default function DataNav(props) {
     }
 
     const download = (options) => {
-
+        setshow(false);
+        console.log(options);
+        var data = [
+            ['name1', 'city1', 'some other info'],
+            ['name2', 'city2', 'more info']
+          ];
+          
+          let csvContent = '';
+          data.forEach(function(infoArray, index) {
+            let dataString = infoArray.join(options.delimeter);
+            csvContent += index < data.length ? dataString + '\n' : dataString;
+          });
+        downloadCSV(csvContent, 'dowload.csv', 'text/csv;encoding:utf-8');
     }
 
     const closeModal = (e) => {
