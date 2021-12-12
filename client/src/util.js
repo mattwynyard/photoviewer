@@ -39,7 +39,7 @@ const geojsonToWkt = (gjson) => {
   } else if (gjson.type.toUpperCase() === 'POINT') {
     wkt += '(' + gjson.coordinates[0] + ' ' + gjson.coordinates[1] + ')"';
   } else {
-    //handle error
+    return "";
   }
   return wkt;
 }

@@ -4,9 +4,9 @@ import "./ExportModal.css";
 
 export default function ExportModal(props) {
 
-    const types  = ["CSV (*.csv)", "geojson"];
+    const types  = ["CSV (*.csv)"];
     const delimeter = ["Comma", "Tab", "Vertical Bar"];
-    const geometry = ["None", "WKT"];
+    const geometry = ["WKT", "None"];
 
     const [exportOptions, setExportOptions] = useState({});
     const AddFile = types.map(AddFile => AddFile);
@@ -14,7 +14,7 @@ export default function ExportModal(props) {
     const AddGeometry = geometry.map(AddGeometry => AddGeometry);
 
     useEffect(() => {
-        setExportOptions({file: "csv", delimeter: ",", geometry: null})
+        setExportOptions({file: "csv", delimeter: ",", geometry: "WKT"})
     }, []);
 
     const download = (e) => {
@@ -26,12 +26,11 @@ export default function ExportModal(props) {
         if (value.file) {
             if (value.file === "CSV (*.csv)") {
                 setExportOptions({file: 'csv', delimeter: exportOptions.delimeter, geometry: exportOptions.geometry});
-                
-            } else if (value.file === "geojson") {
-                setExportOptions({file: 'geojson', delimeter: exportOptions.delimeter, geometry: exportOptions.geometry})
-            }
+            }   
+            // } else if (value.file === "geojson") {
+            //     setExportOptions({file: 'geojson', delimeter: exportOptions.delimeter, geometry: exportOptions.geometry})
+            // }
         } else if (value.delimeter) {
-            
             switch (value.delimeter) {
                 case 'Comma':
                     setExportOptions({file: exportOptions.file, delimeter: ',', geometry: exportOptions.geometry});

@@ -13,32 +13,43 @@ export default function DataNav(props) {
 
     const download = (options) => {
         setshow(false);
-        let exportData = [];
-        const header = Object.keys(props.data[0]);
-        const headerCopy = [...header]
+        const exportData = [];
+        const header = [...Object.keys(props.data[0])];
         const latlngIndex = Object.keys(props.data[0]).findIndex(element => element === 'latlng');
-        headerCopy.splice(latlngIndex, 1);
-        headerCopy.shift();
+        header.splice(latlngIndex, 1);
         const geometryIndex = Object.keys(props.data[0]).findIndex(element => element === 'geometry');
-        exportData.push([headerCopy]);
+        
+        if (!options.geometry) {
+            header.splice(geometryIndex - 1, 1);
+        }
+        const photoIndex = Object.keys(props.data[0]).findIndex(element => element === 'photo');  
+        header.shift();
+        exportData.push(header);
         props.data.forEach((row) => {
             let dataRow = Object.values(row);
             let geometry = dataRow[geometryIndex];
-            const wkt = geojsonToWkt(geometry);
+            let wkt = null;
             let data = [...dataRow];
-            data[geometryIndex] = wkt;
-            data.splice(latlngIndex, 1);
+            if (options.geometry) {
+                wkt = geojsonToWkt(geometry);
+                data[geometryIndex] = wkt;
+                data.splice(latlngIndex, 1);
+            } else {
+                data.splice(latlngIndex, 1);
+                data.splice(geometryIndex - 1, 1);
+            }
+            let photo = data[photoIndex];
+            data[photoIndex] = props.layers[0].amazon + photo + ".jpg"
             data.shift();
             exportData.push(data)
-        });
-        
-          
+        });  
           let csvContent = '';
           exportData.forEach((infoArray, index) => {
             let dataString = infoArray.join(options.delimeter);
             csvContent += index < exportData.length ? dataString + '\n' : dataString;
           });
-        downloadCSV(csvContent, 'dowload.csv', 'text/csv;encoding:utf-8');
+          const fileName = props.layers[0].description + "-" + props.layers[0].date;
+        downloadCSV(csvContent, fileName, 'text/csv;encoding:utf-8');
     }
 
     const closeModal = (e) => {

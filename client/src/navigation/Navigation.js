@@ -160,6 +160,7 @@ export default function Navigation(props) {
                        
           <DataNav 
             title="Data" 
+            layers={props.layers}
             id="basic-nav-dropdown"
             disabled={props.data.length === 0 ? true: false}
             data={props.data}
