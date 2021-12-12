@@ -75,7 +75,7 @@ export default function Navigation(props) {
           buildProjects(body.projects);  
           }
       } catch(error) {
-        alert(error)
+        alert(`Error: ${error.message} \nThe server maybe offline`);
       }
     }
     if (user) {
@@ -179,7 +179,7 @@ export default function Navigation(props) {
                 label="Create Report"
                 data={props.data}
                 project={props.project}
-                style={{ textDecoration: 'none' }}
+                //setDataActive={props.setDataActive}
                   >
               </CustomLink>               
             </NavDropdown>   

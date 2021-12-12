@@ -1,4 +1,4 @@
-import {React, useState} from 'react';
+import {React, useEffect, useState} from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
@@ -15,7 +15,6 @@ const Main = () => {
   }
   window.sessionStorage.setItem('osmiumhost', host);
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
-  const [data, setData] = useState({user: "Login", token: null, host: host});
   const updateLogin = (user, token) => {
     setLogin({user: user, token: token, host: host});
   }
