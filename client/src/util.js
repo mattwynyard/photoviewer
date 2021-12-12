@@ -24,6 +24,26 @@ const downloadCSV = (content, fileName, mimeType) => {
   }
 }
 
+const geojsonToWkt = (gjson) => {
+  let wkt = '"' + gjson.type.toUpperCase() + " ";
+  if (gjson.type.toUpperCase() === 'LINESTRING') {
+    gjson.coordinates.forEach((coordinate, index) => {
+      if (index === 0) {
+        wkt += '(' + coordinate[0] + ' ' + coordinate[1] + ',';
+      } else if (index === gjson.coordinates.length - 1) {
+        wkt += coordinate[0] + ' ' + coordinate[1] + ')"';
+      }  else {
+        wkt += coordinate[0] + ' ' + coordinate[1] + ',';
+      }   
+    });
+  } else if (gjson.type.toUpperCase() === 'POINT') {
+    wkt += '(' + gjson.coordinates[0] + ' ' + gjson.coordinates[1] + ')"';
+  } else {
+    //handle error
+  }
+  return wkt;
+}
+
 const RDP = (l, eps) => {
     const last = l.length - 1;
     const p1 = l[0];
@@ -173,4 +193,4 @@ const RDP = (l, eps) => {
   }
 
   export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
-    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV}
+    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt}

@@ -162,7 +162,7 @@ export default function Navigation(props) {
             title="Data" 
             id="basic-nav-dropdown"
             disabled={props.data.length === 0 ? true: false}
-
+            data={props.data}
             >
           </DataNav>         
           

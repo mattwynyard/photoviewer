@@ -15,6 +15,7 @@ const Main = () => {
   }
   window.sessionStorage.setItem('osmiumhost', host);
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
+  const [data, setData] = useState({user: "Login", token: null, host: host});
   const updateLogin = (user, token) => {
     setLogin({user: user, token: token, host: host});
   }
