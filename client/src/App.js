@@ -150,7 +150,8 @@ class App extends React.Component {
     } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
-    }       
+    } 
+    this.context.hideLoader();      
   }
 
   componentWillUnmount() {
@@ -1162,8 +1163,7 @@ class App extends React.Component {
  * @param {String} project data to fetch
  */
   filterLayer = async (project) => {
-    this.setSpinner(true)
-
+    this.context.showLoader();
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     const response = await fetch('https://' + this.context.login.host + '/layer', {
@@ -1177,18 +1177,17 @@ class App extends React.Component {
     });
    
     if(!response.ok) {
-      this.setSpinner(false);
+      this.context.hideLoader();
       throw new Error(response.status);
     } else {
       const body = await response.json();
-      console.log(body)
-      this.setSpinner(false);
+      this.context.hideLoader();
       if (body.error != null) {
-        this.setSpinner(false);
+        this.context.hideLoader();
         alert(body.error);
         return body;
       } else {
-        this.setSpinner(false);
+        this.context.hideLoader();
         return body;
       }     
     }                
