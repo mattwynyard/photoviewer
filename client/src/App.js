@@ -915,6 +915,7 @@ class App extends React.Component {
     let request = {project: project.code, query: null}
     if (mode === "road") {
       let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
+      if(!body) return;
       if (!body.error) {
         inspections = this.buildInspections(body)
       } else {
