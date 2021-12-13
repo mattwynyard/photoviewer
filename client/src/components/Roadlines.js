@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {Dropdown}  from 'react-bootstrap';
 import {haversineDistance} from  '../util.js';
-import './Roadlines.css';
 import { loginContext} from '../login/loginContext';
 
 export default class Roadlines extends Component {
@@ -174,7 +173,7 @@ export default class Roadlines extends Component {
     render() {
       if (this.state.project) {
         return (
-          <Dropdown className="centreline"  drop={'right'}>
+          <Dropdown className="centreline"  drop={'end'}>
           <Dropdown.Toggle variant="light" size="sm" >
               Rating
             </Dropdown.Toggle>

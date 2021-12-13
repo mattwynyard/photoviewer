@@ -1,5 +1,48 @@
-const EARTH_RADIUS = 6378137.0 //metres
-const TILE_SIZE = 256
+const EARTH_RADIUS = 6378137.0; //metres
+const TILE_SIZE = 256;
+
+// The download function takes a CSV string, the filename and mimeType as parameters
+// Scroll/look down at the bottom of this snippet to see how download is called
+const downloadCSV = (content, fileName, mimeType) => {
+  let a = document.createElement('a');
+  mimeType = mimeType || 'application/octet-stream';
+
+  if (navigator.msSaveBlob) { // IE10
+    navigator.msSaveBlob(new Blob([content], {
+      type: mimeType
+    }), fileName);
+  } else if (URL && 'download' in a) { //html5 A[download]
+    a.href = URL.createObjectURL(new Blob([content], {
+      type: mimeType
+    }));
+    a.setAttribute('download', fileName);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    a.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+  }
+}
+
+const geojsonToWkt = (gjson) => {
+  let wkt = '"' + gjson.type.toUpperCase() + " ";
+  if (gjson.type.toUpperCase() === 'LINESTRING') {
+    gjson.coordinates.forEach((coordinate, index) => {
+      if (index === 0) {
+        wkt += '(' + coordinate[0] + ' ' + coordinate[1] + ',';
+      } else if (index === gjson.coordinates.length - 1) {
+        wkt += coordinate[0] + ' ' + coordinate[1] + ')"';
+      }  else {
+        wkt += coordinate[0] + ' ' + coordinate[1] + ',';
+      }   
+    });
+  } else if (gjson.type.toUpperCase() === 'POINT') {
+    wkt += '(' + gjson.coordinates[0] + ' ' + gjson.coordinates[1] + ')"';
+  } else {
+    return "";
+  }
+  return wkt;
+}
 
 const RDP = (l, eps) => {
     const last = l.length - 1;
@@ -149,4 +192,5 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep}
+  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
+    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt}

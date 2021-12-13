@@ -68,7 +68,7 @@ export default function PriorityDropdown(props) {
     }
     
     return (
-        <Dropdown className="priority" drop='right'>
+        <Dropdown className="priority" drop='end'>
             <Dropdown.Toggle variant="light" size="sm" >
                 {props.title}
             </Dropdown.Toggle>

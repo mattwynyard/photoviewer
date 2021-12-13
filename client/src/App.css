@@ -122,12 +122,6 @@ body {
   white-space: nowrap;
   margin: 10px;
 }
-
-
-
-
-
-
 .apply-btn {
   position: relative;
 }
@@ -144,8 +138,7 @@ body {
   left: 50%;
   z-index: 1000;
 }
- 
- */
+
 .tools {
   position: absolute;
   font-family: "Century Gothic", sans-serif;
@@ -164,10 +157,6 @@ body {
   width: auto;
   white-space: nowrap;
 }
-
-
-
-
 
 .priority { 
   position: relative;

@@ -309,7 +309,7 @@ export default class GLEngine {
       const linestring = JSON.parse(data[i].st_asgeojson);
       if (data[i].id) {
         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-        this.latlngs.push(latlng);
+        //this.latlngs.push(latlng);
         if (linestring) {
           let colors = null;  
           let line = linestring.coordinates;
@@ -352,7 +352,7 @@ export default class GLEngine {
         if (options.type === "centreline") {
 
         } else {
-          let fault = this.createFaultObject(data[i], options.type, latlng)
+          let fault = this.createFaultObject(data[i], options.type, latlng, linestring)
           faults.push(fault); 
         }
         
@@ -382,7 +382,7 @@ export default class GLEngine {
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
       buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
-      let fault = this.createFaultObject(points[i], options.type, latlng)
+      let fault = this.createFaultObject(points[i], options.type, latlng, position)
       faults.push(fault);         
     }
     buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0); //push four null points to align point count to traingle draw arrays
@@ -423,7 +423,7 @@ export default class GLEngine {
             glPoints.push(pixelHigh.x, pixelHigh.y, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, pointCount); 
           }
         }
-        let fault = this.createFaultObject(data[i], type, latlng)
+        let fault = this.createFaultObject(data[i], type, latlng, linestring)
         faults.push(fault);
       }
       return {vertices: glPoints, lengths: lengths, faults: faults};
@@ -473,7 +473,7 @@ export default class GLEngine {
     }
   }
 
-  createFaultObject(data, type, latlng) {
+  createFaultObject(data, type, latlng, geometry) {
     let id = data.id.split('_');
     let width = null;
     let length = null;
@@ -521,6 +521,7 @@ export default class GLEngine {
         photo: data.photoid,
         datetime: data.faulttime,
         latlng: latlng,
+        geometry: geometry, 
         status: data.status,
       };
     } else {
@@ -546,6 +547,7 @@ export default class GLEngine {
         photo: data.photoid,
         datetime: data.faulttime,
         latlng: latlng,
+        geometry: geometry, 
         status: data.status,
       };
     }

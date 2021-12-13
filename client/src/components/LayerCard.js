@@ -2,7 +2,6 @@ import {React} from 'react';
 import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
-//import {CustomSpinner} from './Components.js'
 import "./LayerCard.css";
 
 export default function LayerCard(props) {
@@ -18,10 +17,6 @@ export default function LayerCard(props) {
     if (props.layer) {
         return (
             <Card className='layercard' >
-                {/* <CustomSpinner 
-                    show={spin}
-                >
-                </CustomSpinner>     */}
                 <Card.Header className='layercard-title'>
                     {props.layer !== null ? props.layer.description: ''}
                 </Card.Header>

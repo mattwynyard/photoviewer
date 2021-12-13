@@ -63,14 +63,15 @@ const apiRequest = async (credentials, request, endpoint) => {
       return {error: response};
     }
   } catch (error) {
-    handleError(error); 
+    const errorMessage = handleError(error);
+    return  {error: errorMessage}; 
   }
 }
 
 const handleError = (error) => {
       if (error instanceof TypeError) {
         alert(`Error: ${error.message} \nThe server maybe offline`);
-        return;
+        return error.message;
       }
       if (!error.ok) {
         alert(`Error: ${error.status} \n${error.statusText}`);

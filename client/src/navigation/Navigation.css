@@ -1,44 +1,174 @@
-.navbar {
-    font-size: 20px !important; 
+
+
+@media screen and (min-width: 1101px) {
+  .navbar {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 22px !important;
+  letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 15px !important;
   }
   
-  .navdropdown {
+  .menuitem {
+    font-size: 15px !important;
+  }
+}
+
+@media screen and (max-width: 1100px) {
+  .navbar {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 20px !important;
+  letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 14px !important;
+  }
+  
+  .menuitem {
+    font-size: 14px !important;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .navbar {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 19px !important;
+  letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 13px !important;
+  }
+  
+  .menuitem {
+    font-size: 13px !important;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .navbar {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 18px !important;
+  letter-spacing: 2px;
+  }
+  .menudropdown {
+    font-size: 12px !important;
+  }
+  
+  .menuitem {
+    font-size: 12px !important;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .navbar {
+  font-family: "Century Gothic", sans-serif;
+  font-size: 16px !important;
+  letter-spacing: 1px;
+  }
+  .menudropdown {
+    font-size: 12px !important;
+  }
+  
+  .menuitem {
+    font-size: 12px !important;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .navbar {
     font-family: "Century Gothic", sans-serif;
-    font-size: 20px !important;
-    white-space: nowrap;
-    padding: 1%;
+    font-size: 15px !important;
+    letter-spacing: 1px;
+  }
+  .menudropdown {
+    font-size: 12px !important;
   }
   
-  .navdropdownitem {
-    font-size: 16px !important;
+  .menuitem {
+    font-size: 12px !important;
   }
+
   
   .navbarbrand {
     background-color: transparent;
     color: #fff;
   }
 
+}
+
+
+@media screen and (min-width: 1201px) {
   .search {
     position: absolute;
-    font-family: "Century Gothic", sans-serif;
-    letter-spacing: 1px;
-    font-size: 5vw !important;
-    color: gray;
-    width: 15vw;
-    height: 50%;
-    right: 10%;
-   
+    right : 120px;
+    display: flex;
   }
 
-  .search-btn{
-    background-color: white;
-    padding: 1px 6px 1px 6px;
+}
+
+@media screen and (max-width: 1200px) {
+  .search {
+    position: absolute;
+    right : 10%;
+    display: flex;
+  }
+}
+
+@media screen and (max-width: 1100px) {
+  .search {
+    position: absolute;
+    right : 11%;
+    display: flex;
   }
 
-  .search-img {
+}
+
+@media screen and (max-width: 1000px) {
+  .search {
+    position: absolute;
+    right : 11%;
+    display: flex;
+    width: 200px;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .search {
+    position: absolute;
+    right : 13%;
+    display: flex;
+    padding: 2px;
+    width: 150px;
+  }
+}
+
+@media screen and (max-width: 750px) {
+  .search {
+    position: absolute;
+    right : 13%;
+    display: flex;
+    width: 120px;
+  }
+}
+
+.search Button {
+  background-color: white;
+  padding: 1px 6px 1px 6px;
+}
+
+@media screen and (min-width: 801px) {
+  .search Button img {
     height: 22px;
     vertical-align: middle;
   }
+}
 
+@media screen and (max-width: 799px) {
+  .search Button img {
+    height: 18px;
+    vertical-align: middle;
+  }
+}
   
   

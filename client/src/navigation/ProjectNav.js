@@ -1,5 +1,7 @@
-import React from 'react';
-import {Nav, NavDropdown}  from 'react-bootstrap';
+
+import React, {Fragment} from 'react';
+import {Nav, NavDropdown, Dropdown}  from 'react-bootstrap';
+import './Navigation.css';
 
 const CustomMenu = (props) => {
 
@@ -19,24 +21,28 @@ const CustomMenu = (props) => {
     }
   }
 
-  return ( 
-    <NavDropdown 
+  return (
+    <NavDropdown as={Dropdown}
+        className="menudropdown"
         title={props.title}
-        className="navdropdownitem"
         disabled={props.disabled}
-        drop="right">
-        {props.projects.map((value, index) =>  
-        <NavDropdown.Item 
-            className='nav-item'
-            key={`${value.code}`}
-            index={index}
-            type={props.type}
-            disabled={isDisabled(props.type)}
-            title={JSON.stringify(value)}
-            onClick={props.layers.code !== value.code ? props.onClick : null}
-            >
-            {value.description + " " + value.date}
-        </NavDropdown.Item>             
+        drop="down"
+        >
+        {props.projects.map((value, index) => 
+        <Fragment key={`${value.code}`}>
+          <Dropdown.Item
+              className="menuitem"
+              key={`${value.code}`}
+              index={index}
+              type={props.type}
+              disabled={isDisabled(props.type)}
+              title={JSON.stringify(value)}
+              onClick={props.layers.code !== value.code ? props.onClick : null}
+              >
+              {value.description + " " + value.date}
+          </Dropdown.Item>
+          < NavDropdown.Divider />
+        </Fragment>               
         )}
     </NavDropdown> 
   );     
@@ -45,53 +51,52 @@ const CustomMenu = (props) => {
 export default function ProjectNav(props) { 
   if (props.projects) {
     return (
-      <Nav>          
-      <NavDropdown 
-          className="navdropdown" 
+      <Nav
+        >          
+        <NavDropdown 
           title="Projects" 
           id="basic-nav-dropdown"
           disabled={props.disabled}
           >
-        <CustomMenu 
-          title="Add Roading Layer" 
-          className="navdropdownitem" 
-          type={'road'}
-          disabled ={props.projects.road.length === 0 ? true: false} 
-          projects={props.projects.road} 
-          layers={props.layers} 
-          onClick={props.onClick}
-          />
-          <NavDropdown.Divider /> 
-        <CustomMenu 
-          title="Add Footpath Layer" 
-          className="navdropdownitem" 
-          type={'footpath'} 
-          projects={props.projects.footpath}
-          layers={props.layers} 
-          disabled ={props.projects.footpath.length === 0 ? true: false} 
-          onClick={props.onClick}
-          />
+          <CustomMenu
+            key="1"
+            title="Add Roading Layer"  
+            type={'road'}
+            disabled ={props.projects.road.length === 0 ? true: false} 
+            projects={props.projects.road} 
+            layers={props.layers} 
+            onClick={props.onClick}
+            />
+            < NavDropdown.Divider /> 
+          <CustomMenu 
+            key="2"
+            title="Add Footpath Layer" 
+            type={'footpath'} 
+            projects={props.projects.footpath}
+            layers={props.layers} 
+            disabled ={props.projects.footpath.length === 0 ? true: false} 
+            onClick={props.onClick}
+            />
           <NavDropdown.Divider />
-        <CustomMenu 
-          title="Remove Layer" 
-          className="navdropdownitem"
-          type={'remove'} 
-          projects={props.layers}
-          layers={{code: null}}
-          disabled ={props.layers.length === 0 ? true: false} 
-          onClick={props.onClick}
-          />
+          <CustomMenu
+            key="3" 
+            title="Remove Layer" 
+            type={'remove'} 
+            projects={props.layers}
+            layers={{code: null}}
+            disabled ={props.layers.length === 0 ? true: false} 
+            onClick={props.onClick}
+            />
         </NavDropdown>
       </Nav>
     );     
   } else {
     return (
       <Nav>          
-      <NavDropdown 
-        className="navdropdown" 
-        title="Projects" 
-        id="basic-nav-dropdown">
-      </NavDropdown>        
+        <NavDropdown 
+          title="Projects" 
+          id="basic-nav-dropdown">
+        </NavDropdown>        
     </Nav>
     );
   }

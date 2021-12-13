@@ -119,6 +119,10 @@ class App extends React.Component {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners(); 
+    if (this.state.dataActive) {
+      this.setDataActive(false)
+    }
+    
     this.customModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
@@ -127,22 +131,33 @@ class App extends React.Component {
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     L.Marker.prototype.options.icon = DefaultIcon;
-    if(this.state.objGLData.length !== 0) {
-      if (this.state.activeLayer.centreline) {
-        this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+    let user = window.sessionStorage.getItem("user") 
+    if (user) {
+      if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
+        this.removeLayer(this.state.activeLayer)
+      } else {
+        if(this.state.objGLData.length !== 0) {
+          if (this.state.activeLayer.centreline) {
+            this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+          }
+          let body = this.filterLayer(this.state.activeLayer, true);
+          body.then((body) => {
+            this.addGLGeometry(body.points, body.lines, body.type, true);
+          })
+        }
       }
-      let body = this.filterLayer(this.state.activeLayer, true);
-      body.then((body) => {
-        this.addGLGeometry(body.points, body.lines, body.type, true);
-      })
-    }
+    } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
-    }      
+    }       
   }
 
   componentWillUnmount() {
-    window.sessionStorage.setItem('state', JSON.stringify(this.state));
+      try { 
+        window.sessionStorage.setItem('state', JSON.stringify(this.state));
+      } catch {
+  
+      } 
     this.removeEventListeners(); 
   }
 
@@ -900,6 +915,7 @@ class App extends React.Component {
     let request = {project: project.code, query: null}
     if (mode === "road") {
       let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
+      if(!body) return;
       if (!body.error) {
         inspections = this.buildInspections(body)
       } else {
@@ -1062,7 +1078,7 @@ class App extends React.Component {
     return ({filter: filter, priorities: priorities})
   }
 
-  getBody = (project) => {
+  getBody = (project, user) => {
     let filter = []
     if (project.surface === "road") {
       this.state.filters.forEach(arr => {
@@ -1070,7 +1086,7 @@ class App extends React.Component {
         filter = filter.concat(data);
       })
       return JSON.stringify({
-        user: this.context.login.user,
+        user: user,
         project: project.code,
         filter: filter,
         priority: this.state.filterPriorities,
@@ -1142,7 +1158,8 @@ class App extends React.Component {
  */
   filterLayer = async (project) => {
     this.setSpinner(true)
-    let body = this.getBody(project);
+
+    const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     const response = await fetch('https://' + this.context.login.host + '/layer', {
       method: 'POST',
@@ -1153,11 +1170,13 @@ class App extends React.Component {
     },
     body: body
     });
+   
     if(!response.ok) {
       this.setSpinner(false);
       throw new Error(response.status);
     } else {
       const body = await response.json();
+      console.log(body)
       this.setSpinner(false);
       if (body.error != null) {
         this.setSpinner(false);
@@ -1572,6 +1591,7 @@ class App extends React.Component {
           data={this.state.objGLData}
           centre={this.fitBounds}
           district={this.state.district}
+          setDataActive={this.setDataActive} //-> data table
           >  
         </Navigation>
            
