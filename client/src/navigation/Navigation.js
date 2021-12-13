@@ -4,7 +4,7 @@ import './Navigation.css';
 import { loginContext} from '../login/loginContext.js';
 import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
-import LoginFetch from '../api/Api.js';
+import {LoginFetch, apiRequest} from '../api/Api.js';
 import ProjectNav from './ProjectNav.js';
 import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
@@ -29,6 +29,8 @@ export default function Navigation(props) {
     setLoginError("")
     let body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
     if (body.result) {
+      let token = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
+      props.mapbox(token)
       window.sessionStorage.setItem('token', body.token);
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);

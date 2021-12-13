@@ -105,6 +105,21 @@ app.get('/api', async (req, res) => {
   res.send({ projects: result });
 });
 
+app.post('/mapbox', async (req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = false;
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+      res.send({ result: process.env.MAPBOX });
+  } else {
+    res.send({ result: "public" });
+  }
+  
+});
+
 app.post('/login', async (request, response) => {
   let password = request.body.key;
   let user = request.body.user;

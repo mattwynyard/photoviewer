@@ -97,7 +97,8 @@ class App extends React.Component {
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null, 
       filtered: false ,
-      dataActive: false
+      dataActive: false,
+      mapBoxKey: null
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -118,7 +119,7 @@ class App extends React.Component {
   componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
-    this.addEventListeners(); 
+    this.addEventListeners();
     if (this.state.dataActive) {
       this.setDataActive(false)
     }
@@ -159,6 +160,10 @@ class App extends React.Component {
   
       } 
     this.removeEventListeners(); 
+  }
+
+  setMapBox = (token) => {
+    this.setState({mapBoxKey: token})
   }
 
   initializeGL() {
@@ -1592,6 +1597,7 @@ class App extends React.Component {
           centre={this.fitBounds}
           district={this.state.district}
           setDataActive={this.setDataActive} //-> data table
+          mapbox={this.setMapBox}
           >  
         </Navigation>
            
