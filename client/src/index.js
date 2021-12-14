@@ -9,10 +9,17 @@ import './index.css';
 import * as serviceWorker from './serviceWorker';
 
 const loader = document.querySelector('.loader');
-
+const loading = document.querySelector('.loading');
 // if you want to show the loader when React loads data again
-const showLoader = () => loader.classList.remove('loader--hide');
-const hideLoader = () => loader.classList.add('loader--hide');
+const showLoader = () => {
+    loader.classList.remove('loader--hide');
+    loading.classList.remove('loading--hide');
+}
+
+const hideLoader = () => {
+    loader.classList.add('loader--hide');
+    loading.classList.add('loading--hide');
+}
 
 ReactDOM.render((
         <Main
