@@ -2,6 +2,7 @@ import {React} from 'react';
 import {Card}  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown.js';
 import PriorityDropdown from './PriorityDropdown.js';
+import ModeDropdown from './ModeDropdown.js';
 import "./LayerCard.css";
 
 export default function LayerCard(props) {
@@ -22,7 +23,6 @@ export default function LayerCard(props) {
             props.stopSpin();     
         } else {
             props.setDataActive(false);
-            //props.stopSpin();
         } 
         
          
@@ -44,23 +44,29 @@ export default function LayerCard(props) {
                     onClick={props.priorityonClick}
                     />
                     <ClassDropdown 
-                    className="layercard-priorityDropdown"
+                    className="layercard-classDropdown"
                     title={props.classtitle}
                     items={props.classitems}
                     login={props.classlogin}
                     filter={props.classfilter} 
                     onClick={props.classonClick}
                     />
-                    <div>
+                    <ModeDropdown 
+                        className="layercard-modeDropdown"
+                        mode={props.mapMode}
+                        setMode={props.setMapMode}
+                        disabled={props.layer.hasvideo}
+                    />
+                    <div >
                         <input 
                             className="layercard-input"
                             type="checkbox" 
-                            checked={props.checked}
+                            checked={props.dataChecked}
                             onChange={(e) => handleChange(e)}
                             onFocus={(e) => handleFocus(e)}
 
                         />
-                        <label className="layercard-data">
+                        <label className="layercard-label">
                             Data
                         </label>
                     </div>

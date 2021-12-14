@@ -1,0 +1,10 @@
+.modeDropdown div {
+    font-family: "Century Gothic", sans-serif;
+    font-size: 14px !important;
+    padding: 5px;
+}
+
+.modeDropdown label {
+    padding-left: 5px;
+}
+

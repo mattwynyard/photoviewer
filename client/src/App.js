@@ -9,7 +9,6 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
-import AntDrawer from './Drawer.js';
 import CustomModal from './modals/CustomModal.js';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './VideoCard.js';
@@ -60,7 +59,8 @@ class App extends React.Component {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-      mode: "map",
+      mode: "map", //for satellite thumbnail
+      mapMode: "map",
       zoom: 8,
       centreData: [],
       priority: [],
@@ -107,7 +107,6 @@ class App extends React.Component {
     this.videoModal = React.createRef();
     this.videoCard = React.createRef();
     this.toolsRef = React.createRef();
-    this.antdrawer = React.createRef();
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
@@ -165,6 +164,10 @@ class App extends React.Component {
 
   setMapBox = (token) => {
     this.setState({mapBoxKey: token})
+  }
+
+  setMapMode = (mode) => {
+    this.setState({mapMode: mode})
   }
 
   initializeGL() {
@@ -341,9 +344,8 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap = async (e) => {
-    let mode = this.antdrawer.current.getMode();
-    switch(mode) {
-      case 'Map':
+    switch(this.state.mapMode) {
+      case 'map':
         if (!this.state.activeLayer) return;
         if (this.roadLinesRef.current.isActive()) {
           let query = {
@@ -414,7 +416,7 @@ class App extends React.Component {
         polyline.setLatLngs(points);
       }
         break;
-      case 'Video':
+      case 'video':
       if(this.vidPolyline === null) {  
         this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
         this.vidPolyline.then((line) => {
@@ -1594,8 +1596,7 @@ class App extends React.Component {
           setDataActive={this.setDataActive} //-> data table
           mapbox={this.setMapBox}
           >  
-        </Navigation>
-           
+        </Navigation>   
         <div className="appcontainer">     
           <div className="panel">
             <div className="layers">
@@ -1616,9 +1617,12 @@ class App extends React.Component {
                 classfilter={this.state.filterRMClass} 
                 classonClick={this.updateRMClass}
                 setDataActive={this.setDataActive} //-> data table
-                checked={this.state.dataActive} //-> data table
+                setMapMode={this.setMapMode}
+                mapMode={this.state.mapMode}
+                dataChecked={this.state.dataActive} //-> data table
                 spin={this.context.showLoader}
                 stopSpin={this.context.hideLoader}
+                video={this.state.hasVideo}
 
               >               
               </LayerCard>
@@ -1665,10 +1669,7 @@ class App extends React.Component {
             maxNativeZoom={19}
             maxZoom={22}
           />
-          <AntDrawer ref={this.antdrawer} video={this.state.hasVideo}>
-          </AntDrawer>
           <ScaleControl className="scale"/>
-          
           {this.state.archiveMarker.map((position, idx) =>
             <Marker 
               key={`marker-${idx}`} 
@@ -1694,8 +1695,7 @@ class App extends React.Component {
           >
           </VideoCard>
           <LayerGroup >
-            {this.state.selectedGeometry.map((obj, index) =>  
-            
+            {this.state.selectedGeometry.map((obj, index) =>   
             <CustomPopup 
               key={`${index}`} 
               data={obj}
@@ -1713,9 +1713,7 @@ class App extends React.Component {
             onClick={(e) => this.toogleMap(e)} 
             thumbnail={true}
           />
-
       </LMap >
-      
       <DataTable 
         className={this.state.dataActive ? "data-active": "data-inactive"}
         data={this.state.objGLData}
