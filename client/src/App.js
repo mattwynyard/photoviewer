@@ -1701,8 +1701,8 @@ class App extends React.Component {
               data={obj}
               login={this.context.login.user}
               position={obj.latlng}
-              src={this.state.activeLayer.amazon + obj.photo + ".jpg"} 
-              amazon={this.state.activeLayer.amazon}
+              src={this.state.activeLayer ? this.state.activeLayer.amazon + obj.photo + ".jpg": null} 
+              amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
               onClick={(e) => this.clickImage(e)}>
             </CustomPopup>
             )}

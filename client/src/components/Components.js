@@ -111,6 +111,7 @@ const CustomMenu = (props) => {
   }
 
 const CustomPopup = (props) => {
+  if (props.src) {
     let src = null;
     if (props.login === "asu") {
       src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
@@ -141,26 +142,10 @@ const CustomPopup = (props) => {
         </div>
       </Popup>  
     );      
+  } else {
+    return null;
   }
-
-const CustomSpinner = (props) => {
-    if (props.show) {
-      return(
-        <div className="spinner">
-          <Spinner
-            animation="border"
-            variant="secondary"
-            size="lg"
-            role="status"
-          ></Spinner>
-          <p>Loading...</p>
-        </div>
-      );
-    } else {
-      return(
-        null
-      );    
-    }  
+    
   }
 
   const CustomLink = (props) => {
@@ -173,7 +158,6 @@ const CustomSpinner = (props) => {
       return (
         <Link 
           className="menudropdown"
-          //onClick={(e) => props.setDataActive(false)} 
           to={{
             pathname: props.endpoint,
             data: props.data,
@@ -186,4 +170,4 @@ const CustomSpinner = (props) => {
     }      
   }
 
-  export {CustomSpinner, CustomLink, CustomPopup, CustomMenu, LayerNav}
+  export {CustomLink, CustomPopup, CustomMenu, LayerNav}
