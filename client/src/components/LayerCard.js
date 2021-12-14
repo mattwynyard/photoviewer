@@ -6,12 +6,26 @@ import "./LayerCard.css";
 
 export default function LayerCard(props) {
 
+    const box = document.querySelector('.layercard-input');
+
+    const handleFocus = (e) => {
+        if (!e.target.checked) {
+            props.spin();
+           
+       }
+       box.blur();
+    }
+
     const handleChange = (e) => { 
         if (e.target.checked) {
-            props.setDataActive(true);    
+            props.setDataActive(true);
+            props.stopSpin();     
         } else {
             props.setDataActive(false);
-        }      
+            //props.stopSpin();
+        } 
+        
+         
     }
 
     if (props.layer) {
@@ -37,18 +51,19 @@ export default function LayerCard(props) {
                     filter={props.classfilter} 
                     onClick={props.classonClick}
                     />
-                    <label className="layercard-data">
+                    <div>
                         <input 
+                            className="layercard-input"
                             type="checkbox" 
                             checked={props.checked}
                             onChange={(e) => handleChange(e)}
+                            onFocus={(e) => handleFocus(e)}
+
                         />
-                    Data
-                    </label>
-                    {/* <label className={"warning"}><b>Experimental version:</b> <br></br> 
-                        Data load slow at present <br></br> 
-                        Please clear session storage in browser and refresh if application crashes.
-                    </label> */}
+                        <label className="layercard-data">
+                            Data
+                        </label>
+                    </div>
                 </Card.Body>
             </Card>
         );

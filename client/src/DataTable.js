@@ -1,4 +1,4 @@
-import React, {Fragment} from 'react';
+import React from 'react';
 import './DataTable.css';
 import { Table} from 'react-bootstrap';
 

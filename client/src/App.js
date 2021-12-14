@@ -18,7 +18,7 @@ import {pad, calcGCDistance} from  './util.js';
 import LayerCard from './components/LayerCard.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
-import {CustomSpinner, CustomPopup} from './components/Components.js'
+import {CustomPopup} from './components/Components.js'
 import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
@@ -150,7 +150,8 @@ class App extends React.Component {
     } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
-    }       
+    } 
+    this.context.hideLoader();      
   }
 
   componentWillUnmount() {
@@ -201,9 +202,11 @@ class App extends React.Component {
   }
 
   setDataActive = (isActive) => {
+   
     this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
     });
+    //this.context.hideLoader();
   }
   
   /**
@@ -278,7 +281,7 @@ class App extends React.Component {
     }
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
-    this.setSpinner(false)
+    this.context.hideLoader();
   }
 
   setPriorityObject() {
@@ -915,6 +918,7 @@ class App extends React.Component {
    * @param {string} type - the type of layer to load i.e. road or footpath
    */
   loadLayer = async (mode, project) => {  
+    this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
@@ -968,6 +972,7 @@ class App extends React.Component {
       if (project.centreline) {
         this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
+     
       
     });
   }
@@ -1153,17 +1158,12 @@ class App extends React.Component {
     }    
   }
 
-  setSpinner = (isActive) => {
-    this.setState({spinner: isActive});
-  }
-
 /**
  * Fetches marker data from server using priority and filter
  * @param {String} project data to fetch
  */
   filterLayer = async (project) => {
-    this.setSpinner(true)
-
+    this.context.showLoader();
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     const response = await fetch('https://' + this.context.login.host + '/layer', {
@@ -1177,18 +1177,13 @@ class App extends React.Component {
     });
    
     if(!response.ok) {
-      this.setSpinner(false);
       throw new Error(response.status);
     } else {
       const body = await response.json();
-      console.log(body)
-      this.setSpinner(false);
       if (body.error != null) {
-        this.setSpinner(false);
         alert(body.error);
         return body;
       } else {
-        this.setSpinner(false);
         return body;
       }     
     }                
@@ -1601,11 +1596,7 @@ class App extends React.Component {
           >  
         </Navigation>
            
-        <div className="appcontainer"> 
-          <CustomSpinner 
-            show={this.state.spinner}
-            >
-          </CustomSpinner>    
+        <div className="appcontainer">     
           <div className="panel">
             <div className="layers">
               <div className="layerstitle">
@@ -1626,7 +1617,8 @@ class App extends React.Component {
                 classonClick={this.updateRMClass}
                 setDataActive={this.setDataActive} //-> data table
                 checked={this.state.dataActive} //-> data table
-                spin={this.setSpinner}
+                spin={this.context.showLoader}
+                stopSpin={this.context.hideLoader}
 
               >               
               </LayerCard>
