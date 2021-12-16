@@ -78,20 +78,20 @@ export default class GLEngine {
     
   }
 
-  /**
+    /**
  * adds various event listeners to the canvas
  */
-  addEventListeners() {
-    this.canvas.addEventListener("webglcontextlost", () => {
+     addEventListeners() {
+      this.canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
       alert("CRASH--recovering webGL");
-      this.canvas.removeEventListener("webglcontextlost");
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", () => {
-      alert("Recovered webGL");
-      this.canvas.removeEventListener("webglcontextlost");
-      this.intializeGL();
-    }, false);
-  }
+      }, false);
+      this.canvas.addEventListener("webglcontextrestored", (event) => {
+        event.preventDefault();
+        this.intializeGL();
+      }, false);
+    }
+    
 
   setAppDelegate(delegate) {
       this.appDelegate = delegate;

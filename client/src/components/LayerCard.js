@@ -5,8 +5,7 @@ import PriorityDropdown from './PriorityDropdown.js';
 import "./LayerCard.css";
 
 export default function LayerCard(props) {
-
-    const box = document.querySelector('.layercard-input');
+    const box = document.querySelector('.layercard-datainput');
 
     const handleFocus = (e) => {
         if (!e.target.checked) {
@@ -16,16 +15,21 @@ export default function LayerCard(props) {
        box.blur();
     }
 
-    const handleChange = (e) => { 
+    const handleDataChange = (e) => { 
         if (e.target.checked) {
             props.setDataActive(true);
             props.stopSpin();     
         } else {
             props.setDataActive(false);
-            //props.stopSpin();
-        } 
-        
-         
+        }  
+    }
+
+    const handleVideoChange = (e) => {
+        if (e.target.checked) {
+            props.setMapMode("video");
+        } else {
+            props.setMapMode("map");
+        }
     }
 
     if (props.layer) {
@@ -44,24 +48,36 @@ export default function LayerCard(props) {
                     onClick={props.priorityonClick}
                     />
                     <ClassDropdown 
-                    className="layercard-priorityDropdown"
+                    className="layercard-classDropdown"
                     title={props.classtitle}
                     items={props.classitems}
                     login={props.classlogin}
                     filter={props.classfilter} 
                     onClick={props.classonClick}
                     />
-                    <div>
+                    <div >
                         <input 
-                            className="layercard-input"
+                            className="layercard-datainput"
                             type="checkbox" 
-                            checked={props.checked}
-                            onChange={(e) => handleChange(e)}
+                            checked={props.dataChecked}
+                            onChange={(e) => handleDataChange(e)}
                             onFocus={(e) => handleFocus(e)}
 
                         />
-                        <label className="layercard-data">
+                        <label className="layercard-label">
                             Data
+                        </label>
+                    </div>
+                    <div >
+                        <input 
+                            className="layercard-videoinput"
+                            type="checkbox" 
+                            checked={props.mapMode === "video"}
+                            onChange={(e) => handleVideoChange(e)}
+                            disabled={!props.layer.hasvideo}
+                        />
+                        <label className="layercard-label">
+                            Video Mode
                         </label>
                     </div>
                 </Card.Body>

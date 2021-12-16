@@ -45,7 +45,7 @@ export default function ClassDropdown(props) {
                 <Dropdown.Toggle variant="light" size="sm" >
                     {props.title}
                 </Dropdown.Toggle>
-                <Dropdown.Menu className="custommenu">
+                <Dropdown.Menu className="custommenu" style={{ margin: 0 }}>
                     {props.items.map((value, index) =>
                     <div 
                         key={`${index}`}
