@@ -1,6 +1,7 @@
 import React from 'react';
-import {Card, ProgressBar, Button, ButtonGroup, ToggleButton}  from 'react-bootstrap';
+import {Card, ProgressBar, Button, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
+import './VideoCard.css';
 
 export default class VideoCard extends React.Component {
     constructor(props) {
@@ -18,7 +19,7 @@ export default class VideoCard extends React.Component {
             side: null,
             disabled: false,
             play: false,
-            playicon: "play64blue.png",
+            playicon: "play_128.png",
             forwardicon: "seekForward64blue.png",
             interval: 500,
             mode: null
@@ -97,19 +98,19 @@ export default class VideoCard extends React.Component {
     }
 
     clickStop(e) {
-        e.preventDefault();
+        //e.preventDefault();
         this.setState({currentPhoto: this.state.photoArray[this.state.centeredcounter].photo});
     }
         
     clickPlay(e) {
-        e.preventDefault();
+        //e.preventDefault();
         if (this.state.play) {
             this.setState({play: false});
-            this.setState({playicon: "play64blue.png"});
+            this.setState({playicon: "play_128.png"});
             this.stopMovie();
         } else {
             this.setState({play: true}); 
-            this.setState({playicon: "pause64blue.png"});
+            this.setState({playicon: "pause_128.png"});
             this.interval = setInterval(() => {
                 this.update(this.state.counter);
                 this.setState({counter: this.state.counter + 1});           
@@ -153,7 +154,7 @@ export default class VideoCard extends React.Component {
         e.preventDefault();
         this.setState({show: false}); 
         clearInterval(this.interval); 
-        this.setState({playicon: "play64blue.png"}); 
+        this.setState({playicon: "play_128.png"}); 
         this.setState({counter: 0});
         this.setState({show: false}); 
         this.setState({photoArray: []}); 
@@ -184,19 +185,19 @@ export default class VideoCard extends React.Component {
 
         const IdText = function(props) {
             if (props.mode === "road") {
-                return (<span className='sidetext'>
-                <b>{"Road ID: "}</b> {props.roadid} <br></br>
-                  <b>{"Carriage ID: "} </b> {props.id}<br></br>
-                  <b>{"ERP: "}</b>{props.erp}<br></br>
-                  <b>{"Side:  "}</b>
-                  </span>);
+                return (<div className='sidetext'>
+                    <div>
+                    <b>{"Road ID: "}</b> {props.roadid} <br></br>
+                    <b>{"Carriage ID: "} </b> {props.id}<br></br>
+                    <b>{"ERP: "}</b>{props.erp}<br></br>
+                    </div>
+                  </div>);
             } else {
-                return (<span className='sidetext'>
+                return (<div className='sidetext'>
                 <b>{"Road ID: "}</b> {props.roadid} <br></br>
                   <b>{"Footpath ID: "} </b> {props.id}<br></br>
                   <b>{"ERP: "}</b>{props.erp}<br></br>
-                  <b>{"Side:  "}</b>
-                  </span>);
+                  </div>);
             }
         }
 
@@ -224,56 +225,56 @@ export default class VideoCard extends React.Component {
                     min={0} 
                     max={this.state.photoArray.length} 
                     now={this.state.counter} 
-                    /> 
-                    <div>
-                        <img 
-                            className="play" 
-                            src={this.state.playicon} 
-                            alt="play button"
-                            onClick={(e) => this.clickPlay(e)}
-                        />     
-                  </div>
-                  <div className="videoText">
-                      <div className="row">
-                          <div className="col-md-4">
-                              <IdText
-                                mode={this.state.mode}
-                                roadid={this.state.roadid}
-                                id={this.state.id}
-                                erp={this.state.erp}
-                              ></IdText>
-                                <ButtonGroup className="sidebuttons" toggle>
-                                {radios.map((radio, idx) => (
-                                <ToggleButton
-                                    key={idx}
-                                    type="radio"
-                                    variant="outline-light"
-                                    name="radio"
-                                    size="sm"
-                                    value={radio.value}
-                                    disabled={this.state.disabled}
-                                    checked={this.state.side === radio.value}
-                                    onChange={(e) => this.changeRadio(e.currentTarget.value)}
-                                >
-                                    {radio.name}
-                                </ToggleButton>
-                                ))}
-                            </ButtonGroup>  
-                          </div>
-                      </div>
-                  </div>	
-                  <Button 
-                    className="videoCloseButton"
-                    variant="light" 
-                    size="sm"
-                    onClick={(e) => this.clickClose(e)}>
-                    Close
-                </Button>  
-                  </Card.Body >
+                    />
+                    <div className="controls">
+                        <IdText
+                            className="controls-text"
+                            mode={this.state.mode}
+                            roadid={this.state.roadid}
+                            id={this.state.id}
+                            erp={this.state.erp}
+                        ></IdText>
+                        <div className="controls-play" >
+                            <div>
+                            <img   
+                                src={this.state.playicon} 
+                                alt="play button"
+                                onClick={(e) => this.clickPlay(e)}
+                            />  
+                            </div>   
+                        </div>
+                        <div className="controls-toggle">
+                            {radios.map((radio, idx) => (
+                            <ToggleButton
+                                key={idx}
+                                type="radio"
+                                variant="light"
+                                name="radio"
+                                size="sm"
+                                value={radio.value}
+                                disabled={this.state.disabled}
+                                checked={this.state.side === radio.value}
+                                onChange={(e) => this.changeRadio(e.currentTarget.value)}
+                            >
+                                {radio.name}
+                            </ToggleButton>
+                            ))}	
+                            </div>
+                        <Button 
+                            className="controls-close"
+                            variant="light" 
+                            size="sm"
+                            onClick={(e) => this.clickClose(e)}>
+                            Close
+                        </Button>
+                    </div>  
+                </Card.Body >
               </Card>
               );
         } else {
-            return (<div></div>)
+            return (
+                null
+            );          
         }
       
   }

@@ -11,7 +11,7 @@ import './PositionControl';
 import './MediaPlayerControl';
 import CustomModal from './modals/CustomModal.js';
 import PhotoModal from './modals/PhotoModal.js';
-import VideoCard from './VideoCard.js';
+import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {pad, calcGCDistance} from  './util.js';
 import LayerCard from './components/LayerCard.js';
