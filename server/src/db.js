@@ -462,7 +462,7 @@ module.exports = {
                 sql = "SELECT r.id, r.roadid, r.direction, r.label, ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, " 
             + "ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) AS dist FROM centrelinecw as r ORDER BY geom <-> "
             + "ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326) LIMIT 1";
-            } {
+            } else {
                 sql = "SELECT r.id, r.roadid, r.carriageid, r.starterp, r.enderp, r.roadname, r.pavement, r.owner, r.heirarchy, r.zone, r.width, "
                 + "ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, ST_SetSRID(ST_MakePoint(" + lng + "," + lat + "),4326)) "
                 + "AS dist FROM roadlines as r ORDER BY geom <-> "

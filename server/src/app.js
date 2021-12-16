@@ -348,7 +348,7 @@ app.post('/carriage', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-
+    console.log(req.body)
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
     } else {

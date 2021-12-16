@@ -420,7 +420,10 @@ class App extends React.Component {
       if(this.vidPolyline === null) {  
         this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
         this.vidPolyline.then((line) => {
-          this.setState({activeCarriage: line})
+          if (line) {
+            this.setState({activeCarriage: line})
+          }
+          
         });
       } else {
         this.vidPolyline.then((line) => {
@@ -585,7 +588,6 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     this.roadLinesRef.current.reset();
-    
     this.setState({
       activeProject: null,
       projects: [],
@@ -609,7 +611,8 @@ class App extends React.Component {
       projectMode: null,
       token: null,
       mapBoxKey: null,
-      dataActive: false
+      dataActive: false,
+      mapMode: "map"
     }, () => {
       this.leafletMap.invalidateSize(true);
       let glData = null
@@ -625,11 +628,11 @@ class App extends React.Component {
    * @param {callback (this.getphotos) to get closest polyline to click} photoFunc 
    */
   async getCarriage(e, distFunc, photoFunc) {
-    const response = await fetch("https://" + this.state.host + '/carriage', {
+    const response = await fetch("https://" + this.context.login.host + '/carriage', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -661,16 +664,16 @@ class App extends React.Component {
           color: 'blue',
           weight: 4,
           opacity: 0.5,
-          host: this.state.host,
-          login: {login: this.context.login.user, project: this.state.activeLayer, token: this.state.token}
+          project: this.state.activeLayer,
+          login: this.context.login
         }).addTo(this.leafletMap);
         let parent = this;
         vidPolyline.on('click', function (e) {
           if (parent.state.video) {
-            let host = vidPolyline.options.host;
             let login = vidPolyline.options.login;
+            let project = vidPolyline.options.project;
             let side = parent.videoCard.current.getSide();
-            let photo = parent.getVideoPhoto(e.latlng, host, login, side);
+            let photo = parent.getVideoPhoto(e.latlng, project, login, side);
             photo.then((data) => {
               parent.videoCard.current.search(data.data.photo);
             });
@@ -680,22 +683,22 @@ class App extends React.Component {
               weight: 4
             });
             let carriage = vidPolyline.options.carriageid;
-            let host = vidPolyline.options.host;
+            let project = vidPolyline.options.project;
             let login = vidPolyline.options.login;
             let direction = vidPolyline.options.direction;
             let body = null;
             if (direction === 'B') {
-              body = photoFunc(carriage, 'L', host, login);
+              body = photoFunc(carriage, 'L', project, login);
             } else {
-              body = photoFunc(carriage, null, host, login);
+              body = photoFunc(carriage, null, project, login);
             }
             parent.setState({video: true});
             body.then((data) => {
               let photo = null;
               if (data.side === null) {
-                photo = parent.getVideoPhoto(e.latlng, host, login, null);
+                photo = parent.getVideoPhoto(e.latlng, project, login, null);
               } else {
-                photo = parent.getVideoPhoto(e.latlng, host, login, 'L');
+                photo = parent.getVideoPhoto(e.latlng, project, login, 'L');
               }
                         
               photo.then((initialPhoto) => {
@@ -735,7 +738,7 @@ class App extends React.Component {
    * @param {left 'L' or right 'R' side of road} side 
    */
   async changeSide(carriageid, erp, side) {
-    let body = this.changeSides(carriageid, erp, side, this.state.host, this.state.activeCarriage.options.login);
+    let body = this.updatePhoto(carriageid, erp, side, this.state.activeLayer, this.state.activeCarriage.options.login);
     body.then((data) => {
       this.setState({photoArray: data.data});
       this.videoCard.current.refresh(data.data, data.newPhoto, side);
@@ -748,8 +751,8 @@ class App extends React.Component {
    * @param {server} host 
    * @param {user login} login 
    */
-  async getVideoPhoto(latlng, host, login, side) {
-    const response = await fetch('https://' + host + '/archive', {
+  async getVideoPhoto(latlng, project, login, side) {
+    const response = await fetch('https://' + login.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -758,8 +761,8 @@ class App extends React.Component {
         "authorization": login.token,       
       },
       body: JSON.stringify({
-        user: login.login,
-        project: login.project,
+        user: login.user,
+        project: project,
         lat: latlng.lat,
         lng: latlng.lng,
         side: side
@@ -774,8 +777,8 @@ class App extends React.Component {
     }   
   }
 
-  async getPhotos(carriageid, side, host, login) {
-    const response = await fetch('https://' + host + '/photos', {
+  async getPhotos(carriageid, side, project, login) {
+    const response = await fetch('https://' + login.host + '/photos', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -784,8 +787,8 @@ class App extends React.Component {
         "authorization": login.token,       
       },
       body: JSON.stringify({
-        user: login.login,
-        project: login.project,
+        user: login.user,
+        project: project,
         carriageid: carriageid,
         side: side
       })
@@ -799,8 +802,8 @@ class App extends React.Component {
     }   
   }
 
-  async changeSides(carriageid, erp, side, host, login) {
-    const response = await fetch('https://' + host + '/changeSide', {
+  async updatePhoto(carriageid, erp, side, project, login) {
+    const response = await fetch('https://' + login.host + '/changeSide', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -809,8 +812,8 @@ class App extends React.Component {
         "authorization": login.token,       
       },
       body: JSON.stringify({
-        user: login.login,
-        project: login.project,
+        user: login.user,
+        project: project,
         carriageid: carriageid,
         side: side,
         erp: erp
@@ -1012,7 +1015,8 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
-          district: null}, () => {
+          mapMode: "map",
+          district: null }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
           }
@@ -1622,8 +1626,6 @@ class App extends React.Component {
                 dataChecked={this.state.dataActive} //-> data table
                 spin={this.context.showLoader}
                 stopSpin={this.context.hideLoader}
-                video={this.state.hasVideo}
-
               >               
               </LayerCard>
               <Roadlines

@@ -38,7 +38,13 @@
     padding: 1px;
 }
 
-.layercard-modeDropdown {
+.layercard-datainput {
+  grid-column: 1 / 2;
+  grid-row: 2;
+  padding: 1px;
+}
+
+.layercard-videoinput {
   grid-column: 1 / 2;
   grid-row: 2;
   padding: 1px;

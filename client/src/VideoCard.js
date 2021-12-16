@@ -75,7 +75,6 @@ export default class VideoCard extends React.Component {
         this.setState({photoArray: photoArray});
         this.setState({erp: this.state.photoArray[index].erp});
         this.setState({roadid: this.state.photoArray[index].roadid});
-        //this.setState({carriageid: this.state.photoArray[index].carriageway});
         if (this.state.mode === 'road') {
             let id = this.state.photoArray[index].carriageway.split('_');
             this.setState({id: id[3]});
