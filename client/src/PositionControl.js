@@ -8,7 +8,7 @@ L.PositionControl = L.Control.extend({
       
     onAdd: function () {
         var latlng = L.DomUtil.create('span', 'mouseposition', L.DomUtil.get('map'));
-        latlng.innerHTML = "LatLng: "
+        //latlng.innerHTML = "LatLng: "
         this._container = latlng
         return latlng;
     },
