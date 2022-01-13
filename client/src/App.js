@@ -27,6 +27,10 @@ import { loginContext} from './login/loginContext';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
+const MAP_CENTRE = {
+  lat: -41.2728,
+  lng: 173.2995,
+}
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -38,10 +42,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
-      location: {
-        lat: -41.2728,
-        lng: 173.2995,
-      },
+      location: MAP_CENTRE,
       admin : false,
       ruler: false,
       rulerOrigin: null,
@@ -131,6 +132,7 @@ class App extends React.Component {
     this.distance = 0;
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
+    this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
     let user = window.sessionStorage.getItem("user") 
     if (user) {
