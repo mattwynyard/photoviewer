@@ -181,12 +181,10 @@ export default function Navigation(props) {
                 label="Create Report"
                 data={props.data}
                 project={props.project}
-                //setDataActive={props.setDataActive}
                   >
               </CustomLink>               
             </NavDropdown>   
           </Nav>
-
           <Nav>
             <NavDropdown 
               title="Help" 
@@ -203,7 +201,7 @@ export default function Navigation(props) {
               >About</NavDropdown.Item>             
             </NavDropdown>         
           </Nav>
-            <SearchBar centre={props.centre} district={props.district}></SearchBar> 
+          <SearchBar centre={props.centre} district={props.district}></SearchBar> 
           <LoginNav 
             user={login.user} 
             onClick={isLoggedIn ? clickLogout: showModal}

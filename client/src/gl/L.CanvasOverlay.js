@@ -33,7 +33,7 @@ L.CanvasOverlay = L.Layer.extend({
         return this;
     },
 
-    params:function(options){
+    params: function(options){
         L.setOptions(this, options);
         return this;
     },
@@ -124,7 +124,7 @@ L.CanvasOverlay = L.Layer.extend({
     _redraw: function () {
         var size     = this._map.getSize();
         var bounds   = this._map.getBounds();
-        var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
+        //var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
         var zoom = this._map.getZoom();
         if (this._userDrawFunc) {
             this._userDrawFunc(this,
@@ -132,7 +132,7 @@ L.CanvasOverlay = L.Layer.extend({
                                     canvas   :this._canvas,
                                     bounds   : bounds,
                                     size     : size,
-                                    zoomScale: zoomScale,
+                                    //zoomScale: zoomScale,
                                     zoom : zoom,
                                     options: this.options
                                });

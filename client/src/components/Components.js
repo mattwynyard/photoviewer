@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import {Spinner, Image, NavDropdown, Nav}  from 'react-bootstrap';
+import {Image, NavDropdown, Nav}  from 'react-bootstrap';
 import {Popup}  from 'react-leaflet';
 
 const LayerNav = (props) => { 
