@@ -42,15 +42,7 @@ L.CanvasOverlay = L.Layer.extend({
         return this._canvas;
     },
 
-    getIndex: function () {
-        return this._index;
-    },
-
-    setIndex: function (index) {
-        this._index = index;
-    },
-
-    redraw: function () {
+    render: function () {
         if (!this._frame) {
             this._frame = L.Util.requestAnimFrame(this._redraw, this);
         }
@@ -58,19 +50,20 @@ L.CanvasOverlay = L.Layer.extend({
     },
 
     gl: function(gl) {
-        this.gl = gl;
+        this._gl = gl;
     },
 
-    matrix: function(matrix) {
-        this.mapMatrix = matrix;
-    },
+    // matrix: function(matrix) {
+    //     this.mapMatrix = matrix;
+    // },
 
     delegate: function(delegate) {
         this.delegate = delegate;
+        this._gl = delegate.gl;
     },
 
     refresh: function(redraw) {
-        this.refresh = redraw// app.js redraw function
+        this.refresh = redraw
     },
 
     onAdd: function (map) {
@@ -115,6 +108,7 @@ L.CanvasOverlay = L.Layer.extend({
         this._canvas.width  = resizeEvent.newSize.x;
         this._canvas.height = resizeEvent.newSize.y;
     },
+
     _reset: function () {
         var topLeft = this._map.containerPointToLayerPoint([0, 0]);
         L.DomUtil.setPosition(this._canvas, topLeft);
@@ -122,18 +116,14 @@ L.CanvasOverlay = L.Layer.extend({
     },
 
     _redraw: function () {
-        var size     = this._map.getSize();
-        var bounds   = this._map.getBounds();
-        //var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
-        var zoom = this._map.getZoom();
         if (this._userDrawFunc) {
-            this._userDrawFunc(this,
+            this._userDrawFunc(
                                 {
-                                    canvas   :this._canvas,
-                                    bounds   : bounds,
-                                    size     : size,
-                                    //zoomScale: zoomScale,
-                                    zoom : zoom,
+                                    canvas   : this._canvas,
+                                    bounds   : this._map.getBounds(),
+                                    size     : this._map.getSize(),
+                                    zoom : this._map.getZoom(),
+                                    gl: this._gl,
                                     options: this.options
                                });
         }

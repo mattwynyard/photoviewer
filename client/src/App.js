@@ -117,7 +117,6 @@ class App extends React.Component {
   }
 
   componentDidMount () {
-    //let l = L.map('map')
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
     this.addEventListeners();
