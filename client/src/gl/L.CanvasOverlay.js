@@ -11,15 +11,15 @@
 */
 import L from 'leaflet'
 
-L.DomUtil.setTransform = L.DomUtil.setTransform || function(el, offset, scale) {
-    var pos = offset || new L.Point(0, 0);
+// L.DomUtil.setTransform = L.DomUtil.setTransform || function(el, offset, scale) {
+//     var pos = offset || new L.Point(0, 0);
   
-    el.style[L.DomUtil.TRANSFORM] =
-      (L.Browser.ie3d ?
-        'translate(' + pos.x + 'px,' + pos.y + 'px)' :
-        'translate3d(' + pos.x + 'px,' + pos.y + 'px,0)') +
-      (scale ? ' scale(' + scale + ')' : '');
-  };
+//     el.style[L.DomUtil.TRANSFORM] =
+//       (L.Browser.ie3d ?
+//         'translate(' + pos.x + 'px,' + pos.y + 'px)' :
+//         'translate3d(' + pos.x + 'px,' + pos.y + 'px,0)') +
+//       (scale ? ' scale(' + scale + ')' : '');
+//   };
 
 L.CanvasOverlay = L.Layer.extend({
 
@@ -53,10 +53,6 @@ L.CanvasOverlay = L.Layer.extend({
         this._gl = gl;
     },
 
-    // matrix: function(matrix) {
-    //     this.mapMatrix = matrix;
-    // },
-
     delegate: function(delegate) {
         this.delegate = delegate;
         this._gl = delegate.gl;
@@ -88,15 +84,12 @@ L.CanvasOverlay = L.Layer.extend({
 
     onRemove: function (map) {
         map.getPanes().overlayPane.removeChild(this._canvas);
- 
         map.off('moveend', this._reset, this);
         map.off('resize', this._resize, this);
-
         if (map.options.zoomAnimation) {
             map.off('zoomanim', this._animateZoom, this);
         }
         this._canvas = null;
-
     },
 
     addTo: function (map) {
@@ -119,10 +112,8 @@ L.CanvasOverlay = L.Layer.extend({
         if (this._userDrawFunc) {
             this._userDrawFunc(
                                 {
-                                    canvas   : this._canvas,
-                                    bounds   : this._map.getBounds(),
-                                    size     : this._map.getSize(),
-                                    zoom : this._map.getZoom(),
+                                    canvas: this._canvas,
+                                    map: this._map,
                                     gl: this._gl,
                                     options: this.options
                                });

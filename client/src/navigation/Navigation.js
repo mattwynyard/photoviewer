@@ -8,11 +8,15 @@ import {LoginFetch, apiRequest} from '../api/Api.js';
 import ProjectNav from './ProjectNav.js';
 import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
+import AdminModal from '../modals/AdminModal.js';
 import {CustomLink} from "../components/Components.js";
 import SearchBar from './SearchBar.js'
 
 export default function Navigation(props) {
   const [show, setShow] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminTable, setAdminTable] = useState('user');
+  const [adminMode, setAdminMode] = useState('Insert');
   const [loginError, setLoginError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [localLogin, setLocalLogin] = useState({user: "Login", token: null})
@@ -128,11 +132,25 @@ export default function Navigation(props) {
     let projectMode = e.target.type;
     let project = JSON.parse(e.target.title);
     if (projectMode === 'remove') { 
-      props.remove(project);
-       
+      props.remove(project);      
     } else {
       props.add(projectMode, project)
     } 
+  }
+
+  // Admin
+  const handleAdminClick = (e) => {
+    console.log(e.currentTarget.id)
+    setShowAdmin(true)
+    setAdminTable(e.currentTarget.id)
+  }
+
+  const hideAdmin = () => {
+    setShowAdmin(false)
+  }
+
+  const setMode = (mode) => {
+    setAdminMode(mode);
   }
 
   return (
@@ -154,9 +172,10 @@ export default function Navigation(props) {
           <Navbar.Toggle aria-controls="responsive-navbar-nav" />
           <Navbar.Collapse className={"navbar-collapse"} id="responsive-navbar-nav">
             <ProjectNav
+              login={login}
               projects={projects} 
               layers={props.layers}
-              onClick={handleClick}
+              onClick={login.user !== 'admin' ? handleClick : handleAdminClick}
               disabled = {projects === null ? true: false}
             />
                        
@@ -211,7 +230,15 @@ export default function Navigation(props) {
         </Container>
         <LoginModal show={show} error={loginError} onClick={clickLogin}></LoginModal>
       </Navbar> 
-      
+      <AdminModal
+        login={login}
+        show={showAdmin}
+        table={adminTable}
+        mode={adminMode}
+        setMode={setMode}
+        hide={hideAdmin}
+      >
+      </AdminModal>
       <Modals
         id='about'
         show={showAbout}

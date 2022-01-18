@@ -21,12 +21,10 @@ export default class GLEngine {
         this.colorGradient = new Gradient();
         this.zoom = false;
         this.intializeGL();
-        this.intializeColor();
+        this.blendColors("#fff5f0", "#b11117");
   }
 
-  intializeColor() {
-    const color1 = "#fff5f0";
-    const color2 = "#b11117";
+  blendColors(color1, color2) {
     this.colorGradient.setGradient(color1, color2);
     this.colorGradient.setMidpoint(50);  
   }
@@ -114,6 +112,7 @@ export default class GLEngine {
             verts[i + 8] = ALPHA;
           }
         }
+
       }   
     } else {
       for (let i = 0; i < verts.length; i += VERTEX_SIZE) {
@@ -130,7 +129,6 @@ export default class GLEngine {
     }
     return verts;
   } 
-  
   /**
    * 
    * @param {data object} data 
@@ -211,28 +209,28 @@ export default class GLEngine {
       this.appDelegate.fitBounds(this.latlngs);
     }
     this.glLayer.render();
-
+    //callback for canvas layer fired on map 'moveend'
     function render(params) {
       const gl = params.gl;
       if (!gl)  {
         return;
       }
       gl.clearColor(0, 0, 0, 0);
-      gl.clear(this.delegate.gl.COLOR_BUFFER_BIT);
-      pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.viewport(0, 0, params.canvas.width, params.canvas.height);
-      let topLeft = new L.LatLng(params.bounds.getNorth(), params.bounds.getWest());
+      pixelsToWebGLMatrix.set([2 / params.canvas.width, 0, 0, 0, 0, -2 / params.canvas.height, 0, 0, 0, 0, 0, 0, -1, 1, 0, 1]);
+      let topLeft = new L.LatLng(params.map.getBounds().getNorth(), params.map.getBounds().getWest());
       let pixelOffset = LatLongToPixelXY(topLeft.lat, topLeft.lng);
       // -- Scale to current zoom
-      let scale = Math.pow(2, params.zoom);
+      let scale = Math.pow(2, params.map.getZoom());
       scaleMatrix(pixelsToWebGLMatrix, scale, scale); //translation done in shader
-      let u_matLoc = this.delegate.gl.getUniformLocation(this.delegate.program, "u_matrix"); 
+      let u_matLoc = gl.getUniformLocation(this.delegate.program, "u_matrix"); 
       // -- attach matrix value to 'mapMatrix' uniform in shader
       gl.uniformMatrix4fv(u_matLoc, false, pixelsToWebGLMatrix);
       gl.uniform3f(u_eyepos, pixelOffset.x, pixelOffset.y, 0.0);
       let offsetLow = {x: pixelOffset.x - Math.fround(pixelOffset.x), y: pixelOffset.y - Math.fround(pixelOffset.y)}
       gl.uniform3f(u_eyeposLow, offsetLow.x, offsetLow.y, 0.0);
-      let t = this.delegate.setThickness(params.zoom);
+      let t = this.delegate.setThickness(params.map.getZoom());
       
       let centreCount  = numCentreVerts - 4; //ignores last four points as next is duplcate of current
       let lineCount  = numLineVerts - 4;
@@ -243,10 +241,10 @@ export default class GLEngine {
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, lineCount);
         } 
         if (numPointVerts > 0) {
-          let pointSize = Math.max(params.zoom - 8.0, 1.0);
+          let pointSize = Math.max(params.map.getZoom() - 8.0, 1.0);
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
-          gl.drawArrays(this.delegate.gl.POINTS, numLineVerts, pointCount); 
+          gl.drawArrays(gl.POINTS, numLineVerts, pointCount); 
         } 
         gl.uniform1f(thickness, t * 2);
         if (centreCount > 0) {
@@ -266,9 +264,9 @@ export default class GLEngine {
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numCentreVerts + numLineVerts, pointCount); 
-        } 
-        
+        }       
       }
+      //handle click
       if (this.delegate.mouseClick !== null) { 
         let index = null;
         let pixel = new Uint8Array(4);

@@ -185,7 +185,7 @@ app.post('/user', async (req, res, next) => {
               try {
                 let q = await db.addUser(req.body.client, result);
                 if(q.rowCount === 1) {
-                  res.send({success: true})
+                  res.send({success: true, type: 'insert'})
                 } else {
                   res.send({success: false, error: q})
                 }
@@ -197,8 +197,10 @@ app.post('/user', async (req, res, next) => {
         } else if (req.body.type === "delete") {
           try {
             let q = await db.deleteUser(req.body.client);
+            console.log(q)
             if(q.rowCount === 1) {
-              res.send({success: true})
+              
+              res.send({success: true, type: 'delete'})
             } else {
               res.send({success: false})
             }
@@ -209,7 +211,7 @@ app.post('/user', async (req, res, next) => {
           try {
             let q = await db.updateUser(req.body.client);
             if(q.rowCount === 1) {
-              res.send({success: true})
+              res.send({success: true, type: 'update'})
             } else {
               res.send({success: false})
             }

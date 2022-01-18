@@ -9,7 +9,7 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
-import CustomModal from './modals/CustomModal.js';
+import AdminModal from './modals/CustomModal.js';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
@@ -124,7 +124,7 @@ class App extends React.Component {
       this.setDataActive(false)
     }
     
-    this.customModal.current.delegate(this);
+    //this.customModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
@@ -1538,50 +1538,49 @@ class App extends React.Component {
   }
 
 // Admin
-  addUser(e) {
-    this.customModal.current.setShow(true);
-    this.customModal.current.setState({name: 'user'});
-  }
+  // addUser(e) {
+  //   this.customModal.current.setShow(true);
+  //   this.customModal.current.setState({name: 'user'});
+  // }
 
-  addProject(e) {
-    this.customModal.current.setState({name: 'project'});
-    this.customModal.current.setShow(true);
-  }
+  // addProject(e) {
+  //   this.customModal.current.setState({name: 'project'});
+  //   this.customModal.current.setShow(true);
+  // }
 
-  importData(e) {
-    this.customModal.current.setState({name: 'import'});
-    this.customModal.current.setShow(true);
-  }
+  // importData(e) {
+  //   this.customModal.current.setState({name: 'import'});
+  //   this.customModal.current.setShow(true);
+  // }
 
-  fileLoaded(project, data, status) {
-    this.customModal.current.setShow(false);
-    if (status) {
-      this.sendData(project, data, '/update');
-    } else {
-      this.sendData(project, data, '/import');
-    }
-  }
+  // fileLoaded(project, data, status) {
+  //   this.customModal.current.setShow(false);
+  //   if (status) {
+  //     this.sendData(project, data, '/update');
+  //   } else {
+  //     this.sendData(project, data, '/import');
+  //   }
+  // }
 
-  createUser = (name, password) => {
-    this.addNewUser(name, password);
-    this.customModal.current.setShow(false);
-  }
+  // createUser = (name, password) => {
+  //   this.addNewUser(name, password);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  deleteUser = (name) => {
-    this.deleteCurrentUser(name);
-    this.customModal.current.setShow(false);
-  }
+  // deleteUser = (name) => {
+  //   this.deleteCurrentUser(name);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  deleteProject = (project, parent) => {
-    console.log("delete")
-    this.deleteCurrentProject(project, parent);
-    this.customModal.current.setShow(false);
-  }
+  // deleteProject = (project, parent) => {
+  //   this.deleteCurrentProject(project, parent);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  createProject = (project) => {
-    this.addNewProject(project);
-    this.customModal.current.setShow(false);
-  }
+  // createProject = (project) => {
+  //   this.addNewProject(project);
+  //   this.customModal.current.setShow(false);
+  // }
 
   
 
@@ -1726,7 +1725,7 @@ class App extends React.Component {
         surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
       />  
        {/* admin modal     */}
-       <CustomModal 
+       {/* <AdminModal 
         name={'user'}
         show={this.state.showAdmin} 
         ref={this.customModal}
@@ -1740,7 +1739,7 @@ class App extends React.Component {
         callbackGetClient={this.getClient}
         callbackGetProjects={this.selectProjects}
         >
-       </CustomModal>
+       </AdminModal> */}
       <PhotoModal
         ref={this.photoModal}
       >
