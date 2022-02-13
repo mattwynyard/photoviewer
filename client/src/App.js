@@ -1553,14 +1553,14 @@ class App extends React.Component {
   //   this.customModal.current.setShow(true);
   // }
 
-  // fileLoaded(project, data, status) {
-  //   this.customModal.current.setShow(false);
-  //   if (status) {
-  //     this.sendData(project, data, '/update');
-  //   } else {
-  //     this.sendData(project, data, '/import');
-  //   }
-  // }
+  fileLoaded(project, data, status) {
+    this.customModal.current.setShow(false);
+    if (status) {
+      this.sendData(project, data, '/update');
+    } else {
+      this.sendData(project, data, '/import');
+    }
+  }
 
   // createUser = (name, password) => {
   //   this.addNewUser(name, password);

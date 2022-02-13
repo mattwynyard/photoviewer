@@ -1,4 +1,4 @@
-import React, { useState, useReducer} from 'react';
+import React, { useState} from 'react';
 import {Modal, Dropdown, Form, Button, Row, Col, DropdownButton, Container}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 
@@ -16,6 +16,45 @@ export default function AdminModal(props) {
     const [isPriority, setIsPriority] = useState(true);
     const [isReverse, setIsReverse] = useState(true);
     const [isPublic, setIsPublic] = useState(false);
+    const [data, setData] = useState(null);
+
+    const sendData = async (project, data, endpoint) => {
+        if (props.login.user !== "Login") {
+          await fetch('https://' + props.login.host + endpoint, {
+          method: 'POST',
+          headers: {
+            "authorization": props.login.token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user: props.login.user,
+            data: data,
+            project: project
+          })
+          }).then(async (response) => {
+            if(!response.ok) {
+              throw new Error(response.status);
+            } else {
+              const result = await response.json();
+              console.log(result)     
+            }
+          }).catch((error) => {
+            console.log("error: " + error);
+            alert(error);
+            return;
+          });   
+        }    
+      }
+
+    const fileLoaded = (data, info) => {
+        setData(data)
+    }
+
+    const handleImport = (e) => {
+        console.log(props)
+        if (!project) alert("No project specified")
+    }
 
     const updateUser = async (type) => {
         if (props.login.user === "admin") {
@@ -198,17 +237,6 @@ export default function AdminModal(props) {
                             >
                             </Form.Control>
                         </Form.Group>
-                        {/* <Form.Group as={Col} controlId="public">
-                            <Form.Label className="label">Search:</Form.Label>
-                            <Form.Control 
-                                className="checkbox"
-                                type="checkbox" 
-                                size='sm'
-                                checked={isPublic} 
-                                onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
-                            >
-                            </Form.Control>
-                        </Form.Group>   */}
                         <Form.Text className= "message"></Form.Text>
                         <Button 
                             variant="primary" 
@@ -443,16 +471,14 @@ export default function AdminModal(props) {
                     onHide={props.hide}
                     >
                     <Modal.Header>
-                        <div>
-                            <Modal.Title>Delete Project</Modal.Title>
-                        </div>     
+                        <Modal.Title>Delete Project</Modal.Title>  
                         <Dropdown className="dropdownproject">
                             <Dropdown.Toggle variant="success" id="dropdown-basic">
                                 {props.mode}
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
                             <Dropdown.Item
-                                onClick={(e) => this.changeMode("Insert")}
+                                onClick={(e) => props.setMode("Insert")}
                                 >
                                 Insert
                             </Dropdown.Item>
@@ -461,29 +487,6 @@ export default function AdminModal(props) {
                     </Modal.Header>
                     <Modal.Body >
                         <Form>
-                        {/* <DropdownButton className="dropdownclient" title={this.state.currentUser}>
-                            {this.state.usernames.map((value, index) =>
-                            <Dropdown.Item 
-                                key={`${index}`}
-                                onClick={(e) => this.changeUser(e, value)}
-                                >
-                                {value}
-                            </Dropdown.Item>
-                            )}
-                        </DropdownButton>	
-                        <Form.Group controlId="code">
-                            <Form.Label></Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter Project" 
-                            onChange={(e) => this.changeProject(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Button 
-                            variant="primary" 
-                            onClick={(e) => this.deleteProject(e)}>
-                            Delete
-                        </Button> */}
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>
@@ -508,7 +511,7 @@ export default function AdminModal(props) {
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
                             <Dropdown.Item
-                                onClick={(e) => this.changeMode("Insert")}
+                                onClick={(e) => props.setMode("Insert")}
                                 >
                                 Insert
                             </Dropdown.Item>
@@ -553,7 +556,7 @@ export default function AdminModal(props) {
                     show={props.show} 
                     size={'md'} 
                     centered={true} 
-                    //onHide={() => this.setState({show: false})}
+                    onHide={props.hide}
                     >
                 <Modal.Header>
                     <div>
@@ -567,7 +570,7 @@ export default function AdminModal(props) {
                             <Form.Control 
                                 type="text" 
                                 placeholder="Enter Project Code"
-                                onChange={(e) => this.changeProject(e)}
+                                onChange={(e) => setProject(e.currentTarget.value)}
                                 disabled={props.disabled}
                                 value={props.project}>
                             </Form.Control>
@@ -576,9 +579,14 @@ export default function AdminModal(props) {
                     <CSVReader
                         cssClass="csv-reader-input"
                         label="Select CSV to import.  "
-                        onFileLoaded={(data, fileInfo) => this.fileLoaded(data, fileInfo)}
+                        onFileLoaded={(data, fileInfo) => fileLoaded(data, fileInfo)}
                         inputStyle={{color: 'black'}}
                     />
+                    <Button 
+                        variant="primary" 
+                        onClick={(e) => handleImport(e)}>
+                            Import
+                        </Button>
                 </Modal.Body>
                 <Modal.Footer>
                 </Modal.Footer>

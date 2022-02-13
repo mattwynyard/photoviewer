@@ -892,9 +892,9 @@ app.post('/import', async (req, res) => {
       let errors = 0;
       for (let i = 1; i < req.body.data.length; i++) {  
         let data =  req.body.data[i];
-        if (data[0] === '') {
-          continue;
-        }
+        // if (data[0] === '') {
+        //   continue;
+        // }
         try {
           let result = await db.import(data);
           if(result.rowCount === 1) {

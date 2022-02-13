@@ -228,55 +228,54 @@ module.exports = {
     },
 
     import: (data) => {
-        //console.log(data);
-        return new Promise((resolve, reject) => {
-            data[0] = parseString(data[0]); //id
-            data[1] = parseString(data[1]); //project
-            data[2] = parseString(data[2]); //service
-            data[3] = parseString(data[3]); //group
-            data[4] = parseString(data[4]); //board
-            data[5] = parseString(data[5]); //area
-            data[6] = parseInteger(data[6]); //roadid
-            data[7] = parseInteger(data[7]); //carriagewa
-            data[8] = parseString(data[8]);  //location
-            data[9] = parseInteger(data[9]); //erp
-            data[10] = parseString(data[10]); //side
-            data[11] = parseString(data[11]); //position
-            data[12] = parseString(data[12]); //class
-            data[13] = parseString(data[13]); //fault
-            data[14] = parseString(data[14]); //repair
-            data[15] = parseInteger(data[15]); //priority
-            data[16] = parseString(data[16]); //comment
-            data[17] = parseString(data[17]); //size
-            data[18] = parseInteger(data[18]); //length
-            data[19] = parseInteger(data[19]); //width
-            data[20] = parseInteger(data[20]); //total
-            data[21] = parseFloat(data[21]); //latitude
-            data[22] = parseFloat(data[22]); //longitude
-            data[23] = parseString(data[23]); //faultime
-            data[24] = parseString(data[24]); //inspector
-            data[25] = parseString(data[25]); //inspection
-            data[26] = parseInteger(data[26]); //seq
-            data[27] = parseString(data[27]); //photoid
+        console.log(data);
+        // return new Promise((resolve, reject) => {
+        //     data[0] = parseString(data[0]); //id
+        //     data[1] = parseString(data[1]); //project
+        //     data[2] = parseString(data[2]); //service
+        //     data[3] = parseString(data[3]); //group
+        //     data[4] = parseString(data[4]); //board
+        //     data[5] = parseString(data[5]); //area
+        //     data[6] = parseInteger(data[6]); //roadid
+        //     data[7] = parseInteger(data[7]); //carriagewa
+        //     data[8] = parseString(data[8]);  //location
+        //     data[9] = parseInteger(data[9]); //erp
+        //     data[10] = parseString(data[10]); //side
+        //     data[11] = parseString(data[11]); //position
+        //     data[12] = parseString(data[12]); //class
+        //     data[13] = parseString(data[13]); //fault
+        //     data[14] = parseString(data[14]); //repair
+        //     data[15] = parseInteger(data[15]); //priority
+        //     data[16] = parseString(data[16]); //comment
+        //     data[17] = parseString(data[17]); //size
+        //     data[18] = parseInteger(data[18]); //length
+        //     data[19] = parseInteger(data[19]); //width
+        //     data[20] = parseInteger(data[20]); //total
+        //     data[21] = parseFloat(data[21]); //latitude
+        //     data[22] = parseFloat(data[22]); //longitude
+        //     data[23] = parseString(data[23]); //faultime
+        //     data[24] = parseString(data[24]); //inspector
+        //     data[25] = parseString(data[25]); //inspection
+        //     data[26] = parseInteger(data[26]); //seq
+        //     data[27] = parseString(data[27]); //photoid
 
-            //data[29] = parseString(data[29]); //status
 
-            let sql = "INSERT INTO carriageways(id, project, service," + '"group"' + ", board, area, roadid, " 
-            + "carriageway, location, erp, side," + '"position"' + ", class, fault, repair, priority, comment, "
-            + "size, length, width, total, latitude, longitude, faulttime, inspector, "
-            + "inspection, seq, photoid, geom) "
-                 + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    //console.error('Error executing query', err.stack);
-                    return reject(err);
-                } else {
-                    let priority = resolve(result);
-                    return priority;
-                }
+        //     let sql = "INSERT INTO carriageways(id, project, service," + '"group"' + ", board, area, roadid, " 
+        //     + "carriageway, location, erp, side," + '"position"' + ", class, fault, repair, priority, comment, "
+        //     + "size, length, width, total, latitude, longitude, faulttime, inspector, "
+        //     + "inspection, seq, photoid, geom) "
+        //          + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
+        //     connection.query(sql, (err, result) => {
+        //         if (err) {
+        //             return reject(err);
+        //         } else {
+        //             let priority = resolve(result);
+        //             return priority;
+        //         }Glacier_7
+        
                 
-            });
-        });
+        //     });
+        //});
     },
 
     district: (project) => {
