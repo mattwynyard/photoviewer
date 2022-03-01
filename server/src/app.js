@@ -197,7 +197,6 @@ app.post('/user', async (req, res, next) => {
         } else if (req.body.type === "delete") {
           try {
             let q = await db.deleteUser(req.body.client);
-            console.log(q)
             if(q.rowCount === 1) {
               
               res.send({success: true, type: 'delete'})
@@ -265,32 +264,26 @@ app.post('/project', async (req, res) => {
         try {
           let q = await db.addProject(req.body); 
           if(q.rowCount === 1) {
-            res.send({success: true})
+            res.send({type: "insert", rows: q.rowCount});   
           } else {
-            res.send({success: false})
+            res.send({type: "error", rows: q.rowCount});  
           }
         } catch (err) {
           res.set('Content-Type', 'application/json');
           res.send({error: err.detail});
         }
-      } else {
+      } else if (req.body.type === "delete") {
         try {
-          let surface = await db.projecttype(req.body.project);
+          let surface = await db.projecttype(req.body.code);
+          let archive = await db.isArchive(req.body.code);
           if (surface.rowCount === 1) {
-            let result = await db.deleteProjectData (req.body.project, surface.rows[0].surface);
-            let parent = false;
-            if (req.body.parent) {
-              let q = await db.deleteProject(req.body.project);
-              if(q.rowCount === 1) {
-                parent = true;
-              } 
-            }
+            let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
+            let project = await db.deleteProject(req.body.code);
             res.set('Content-Type', 'application/json');
-            res.send({rows: "Deleted " + result.rowCount + " rows", parent: parent});
-            
+            res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
           } else {
             res.set('Content-Type', 'application/json');
-            res.send({rows: "Project not found", parent: false});
+            res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
           }
         } catch (err) {
           console.log(err)
@@ -350,7 +343,6 @@ app.post('/carriage', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-    console.log(req.body)
     if (req.body.project.code === null) {
       res.send({error: "No project selected"});
     } else {
@@ -890,20 +882,20 @@ app.post('/import', async (req, res) => {
     if (surface.rows[0].surface === "road") {
       let rows = 0;
       let errors = 0;
-      for (let i = 1; i < req.body.data.length; i++) {  
+      for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
-        // if (data[0] === '') {
-        //   continue;
-        // }
         try {
           let result = await db.import(data);
           if(result.rowCount === 1) {
             rows++;
           } else {
+            console.log(result)
             errors++
           }
         } catch(err) {
-          errors++
+          errors++;
+          console.err(err)
+          break;
         }
       } 
       res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})

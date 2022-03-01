@@ -140,7 +140,6 @@ export default function Navigation(props) {
 
   // Admin
   const handleAdminClick = (e) => {
-    console.log(e.currentTarget.id)
     setShowAdmin(true)
     setAdminTable(e.currentTarget.id)
   }

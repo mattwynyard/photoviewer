@@ -33,6 +33,7 @@ body {
   height: 90%;
   width: 15%;
 }
+
 .appcontainer {
   position: absolute;
   height: 100%;
@@ -60,8 +61,6 @@ body {
   color: #fff;
   padding: 1%;
 }
-
-
 
 .layerstitle {
   position: relative;

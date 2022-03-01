@@ -4,7 +4,6 @@ import CSVReader from 'react-csv-reader';
 
 export default function AdminModal(props) {
 
-    
     const [user, setUser] = useState(null);
     const [password, setPassword] = useState(null);
     const [project, setProject] = useState(null);
@@ -19,7 +18,7 @@ export default function AdminModal(props) {
     const [data, setData] = useState(null);
 
     const sendData = async (project, data, endpoint) => {
-        if (props.login.user !== "Login") {
+        if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + endpoint, {
           method: 'POST',
           headers: {
@@ -37,7 +36,7 @@ export default function AdminModal(props) {
               throw new Error(response.status);
             } else {
               const result = await response.json();
-              console.log(result)     
+              alert(result.rows)     
             }
           }).catch((error) => {
             console.log("error: " + error);
@@ -53,7 +52,11 @@ export default function AdminModal(props) {
 
     const handleImport = (e) => {
         console.log(props)
-        if (!project) alert("No project specified")
+        if (!project) {
+            alert("No project specified");
+            return;
+        }
+        sendData(project, data, "/import");
     }
 
     const updateUser = async (type) => {
@@ -106,11 +109,11 @@ export default function AdminModal(props) {
       }
 
       const updateProject = async (type, parameters) => {
-        if (props.login.user !== "admin") {
-          await fetch('https://' + this.state.host + '/project', {
+        if (props.login.user === "admin") {
+          await fetch('https://' + props.login.host + '/project', {
             method: 'POST',
             headers: {
-              "authorization": this.state.token,
+              "authorization": props.login.token,
               'Accept': 'application/json',
               'Content-Type': 'application/json',
             },
@@ -119,10 +122,10 @@ export default function AdminModal(props) {
               type: type,
               code: project,
               client: user,
-              description: description,
-              date: date,
-              tacode: ta,
-              amazon: amazon,
+              description: description ? description : null,
+              date: date ? date : null,
+              tacode: ta ? ta : null,
+              amazon: amazon ? amazon : null,
               surface: surface
             })
           }).then(async (response) => {
@@ -130,10 +133,12 @@ export default function AdminModal(props) {
             if (body.error != null) {
               alert(`Error: ${body.error}\n`);
             } else {
-              if (body.success) {
+              if (body.type === "insert") {
                 alert("Project: " + project + " created")
+              } else if (body.type === "delete") {
+                alert("Project: " + project + "rows: " + body.rows + " deleted")
               } else {
-                alert("Project: " + project + "  failed to create")
+                alert("Project: " + project + "  failed")
               }
             }   
           })
@@ -144,9 +149,9 @@ export default function AdminModal(props) {
           });
         }
       }
-    
 
-        if (props.table === 'user') {
+      switch (props.table) {
+        case 'user':
             if(props.mode === 'Insert') {
                 return (
                     <Modal 
@@ -314,243 +319,257 @@ export default function AdminModal(props) {
                 </Modal>
                 );
             }
-        } else if (props.table === 'project') {
-            if(props.mode === 'Insert') {
-                return (
-                    <Modal 
-                    show={props.show} 
-                    size={'lg'} 
-                    centered={true}
-                    onHide={props.hide}
-                    >
-                    <Modal.Header>
-                        <div>
-                            <Modal.Title>Add New Project</Modal.Title>
-                        </div>     
-                        <Dropdown className="dropdownproject">
-                            <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                {props.mode}
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                                <Dropdown.Item
-                                    onClick={(e) => props.setMode("Delete")}
-                                    >
-                                    Delete
-                                </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>	
-                    </Modal.Header>
-                    <Modal.Body >
-                        <Form>
-                        <Container className="container">
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="code">
-                                    <Form.Label className="label">Project Code:</Form.Label>
+            case 'project':
+                if(props.mode === 'Insert') {
+                    return (
+                        <Modal 
+                        show={props.show} 
+                        size={'lg'} 
+                        centered={true}
+                        onHide={props.hide}
+                        >
+                        <Modal.Header>
+                            <div>
+                                <Modal.Title>Add New Project</Modal.Title>
+                            </div>     
+                            <Dropdown className="dropdownproject">
+                                <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                    {props.mode}
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item
+                                        onClick={(e) => props.setMode("Delete")}
+                                        >
+                                        Delete
+                                    </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>	
+                        </Modal.Header>
+                        <Modal.Body >
+                            <Form>
+                            <Container className="container">
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="code">
+                                        <Form.Label className="label">Project Code:</Form.Label>
+                                            <Form.Control 
+                                                type="text" 
+                                                size='sm'
+                                                placeholder="project code eg ASU_0921" 
+                                                onChange={(e) => e.currentTarget.checked ? setProject(true) : setProject(false)}
+                                            >
+                                            </Form.Control>
+                                    </Form.Group>
+                                    <Form.Group as={Col} controlId="public">
+                                        <Form.Label className="label">Public:</Form.Label>
+                                            <Form.Control 
+                                                className="checkbox"
+                                                type="checkbox" 
+                                                size='sm'
+                                                checked={isPublic} 
+                                                onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                            >
+                                            </Form.Control>
+                                    </Form.Group>  
+                                </Row>
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="client">
+                                        <Form.Label className="label">Client:</Form.Label>           
                                         <Form.Control 
                                             type="text" 
                                             size='sm'
-                                            placeholder="project code eg ASU_0921" 
-                                            onChange={(e) => e.currentTarget.checked ? setProject(true) : setProject(false)}
+                                            placeholder="client login code eg: asu" 
+                                            onChange={(e) => setUser(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                </Form.Group>
-                                <Form.Group as={Col} controlId="public">
-                                    <Form.Label className="label">Public:</Form.Label>
+                                    </Form.Group>
+                                    <Form.Group as={Col} controlId="priority">
+                                        <Form.Label className="label">Priority:</Form.Label>
+                                            <Form.Control
+                                                className="checkbox" 
+                                                type="checkbox" 
+                                                size='sm'
+                                                checked={isPriority}
+                                                onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
+                                            >
+                                            </Form.Control>
+                                    </Form.Group>    
+                                </Row>
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="description">
+                                        <Form.Label className="label">Description:</Form.Label>
                                         <Form.Control 
-                                            className="checkbox"
-                                            type="checkbox" 
+                                            type="text" 
                                             size='sm'
-                                            checked={isPublic} 
-                                            onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                            placeholder="Enter project description" 
+                                            onChange={(e) => setDescription(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                </Form.Group>  
-                            </Row>
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="client">
-                                    <Form.Label className="label">Client:</Form.Label>           
-                                    <Form.Control 
-                                        type="text" 
-                                        size='sm'
-                                        placeholder="client login code eg: asu" 
-                                        onChange={(e) => setUser(e.currentTarget.value)}
-                                    >
-                                    </Form.Control>
-                                </Form.Group>
-                                <Form.Group as={Col} controlId="priority">
-                                    <Form.Label className="label">Priority:</Form.Label>
+                                    </Form.Group>
+                                    <Form.Group as={Col} controlId="priority">
+                                    <Form.Label className="label">Reverse:</Form.Label>
                                         <Form.Control
                                             className="checkbox" 
                                             type="checkbox" 
                                             size='sm'
-                                            checked={isPriority}
-                                            onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
+                                            checked={isReverse}
+                                            onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
                                         >
                                         </Form.Control>
-                                </Form.Group>    
-                            </Row>
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="description">
-                                    <Form.Label className="label">Description:</Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        size='sm'
-                                        placeholder="Enter project description" 
-                                        onChange={(e) => setDescription(e.currentTarget.value)}
+                                    </Form.Group>
+                                </Row>
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="date">
+                                        <Form.Label className="label">Date:</Form.Label>
+                                        <Form.Control 
+                                            type="text" 
+                                            size='sm'
+                                            placeholder="Enter date (MMM yyyy)" 
+                                            onChange={(e) => setDate(e.currentTarget.value)}
+                                        >
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Row>
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="surface">
+                                        <Form.Label className="label">Surface:</Form.Label>
+                                        <Form.Control 
+                                            type="text" 
+                                            size='sm'
+                                            placeholder="Enter surface (road/footpath)" 
+                                            onChange={(e) => setSurface(e.currentTarget.value)}
+                                        >
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Row>
+                                <Row>
+                                    <Form.Group xs={6} md={8} as={Col} controlId="amazon">
+                                        <Form.Label className="label">Amazon URL:</Form.Label>
+                                        <Form.Control 
+                                            type="text" 
+                                            size='sm'
+                                            placeholder="Enter amazon url" 
+                                            onChange={(e) => setAmazon(e.currentTarget.value)}
+                                        >
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Row>
+                            <Button 
+                                    variant="primary" 
+                                    onClick={(e) => updateProject('insert')}
+                                >
+                                Submit
+                            </Button>
+                            </Container>
+                            </Form>
+                            
+                        </Modal.Body>
+                        <Modal.Footer>
+                        </Modal.Footer>
+                    </Modal>
+                    );
+                } else if(props.mode === 'Delete') {
+                    return (
+                        <Modal 
+                        show={props.show} 
+                        size={'lg'} 
+                        centered={true}
+                        onHide={props.hide}
+                        >
+                        <Modal.Header>
+                            <Modal.Title>Delete Project</Modal.Title>  
+                            <Dropdown className="dropdownproject">
+                                <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                    {props.mode}
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                <Dropdown.Item
+                                    onClick={(e) => props.setMode("Insert")}
                                     >
-                                    </Form.Control>
-                                </Form.Group>
-                                <Form.Group as={Col} controlId="priority">
-                                <Form.Label className="label">Reverse:</Form.Label>
-                                    <Form.Control
-                                        className="checkbox" 
-                                        type="checkbox" 
-                                        size='sm'
-                                        checked={isReverse}
-                                        onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
-                                    >
-                                    </Form.Control>
-                                </Form.Group>
-                            </Row>
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="date">
-                                    <Form.Label className="label">Date:</Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        size='sm'
-                                        placeholder="Enter date (MMM yyyy)" 
-                                        onChange={(e) => setDate(e.currentTarget.value)}
-                                    >
-                                    </Form.Control>
-                                </Form.Group>
-                            </Row>
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="surface">
-                                    <Form.Label className="label">Surface:</Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        size='sm'
-                                        placeholder="Enter surface (road/footpath)" 
-                                        onChange={(e) => setSurface(e.currentTarget.value)}
-                                    >
-                                    </Form.Control>
-                                </Form.Group>
-                            </Row>
-                            <Row>
-                                <Form.Group xs={6} md={8} as={Col} controlId="amazon">
-                                    <Form.Label className="label">Amazon URL:</Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        size='sm'
-                                        placeholder="Enter amazon url" 
-                                        onChange={(e) => setAmazon(e.currentTarget.value)}
-                                    >
-                                    </Form.Control>
-                                </Form.Group>
-                            </Row>
-                        <Button 
+                                    Insert
+                                </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>	
+                            
+                        </Modal.Header>
+                        <Modal.Body >
+                            <Form>
+                            <Form.Label className="label">Project Code:</Form.Label>
+                                <Form.Control 
+                                    type="text" 
+                                    size='sm'
+                                    placeholder="Enter project code" 
+                                    onChange={(e) => setProject(e.currentTarget.value)}
+                                >
+                                </Form.Control>
+                            </Form>
+                            <Button 
                                 variant="primary" 
-                                onClick={(e) => updateProject('insert')}
-                            >
-                            Submit
-                        </Button>
-                        </Container>
-                        </Form>
-                        
-                    </Modal.Body>
-                    <Modal.Footer>
-                    </Modal.Footer>
-                </Modal>
-                );
-            } else if(props.mode === 'Delete') {
-                return (
-                    <Modal 
-                    show={props.show} 
-                    size={'lg'} 
-                    centered={true}
-                    onHide={props.hide}
-                    >
-                    <Modal.Header>
-                        <Modal.Title>Delete Project</Modal.Title>  
-                        <Dropdown className="dropdownproject">
-                            <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                {props.mode}
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                            <Dropdown.Item
-                                onClick={(e) => props.setMode("Insert")}
-                                >
-                                Insert
-                            </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>	
-                    </Modal.Header>
-                    <Modal.Body >
-                        <Form>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                    </Modal.Footer>
-                </Modal>
-                );
-            } else {
-                return (
-                    <Modal 
-                    show={props.show} 
-                    size={'lg'} 
-                    centered={true}
-                    onHide={props.hide}
-                    >
-                    <Modal.Header>
-                        <div>
-                            <Modal.Title>Delete Project Data</Modal.Title>
-                        </div>     
-                        <Dropdown className="dropdownproject">
-                            <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                {props.mode}
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                            <Dropdown.Item
-                                onClick={(e) => props.setMode("Insert")}
-                                >
-                                Insert
-                            </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>	
-                    </Modal.Header>
-                    <Modal.Body >
-                        <Form>
-                        <DropdownButton className="dropdownclient" title={this.state.currentUser}>
-                            {this.state.usernames.map((value, index) =>
-                            <Dropdown.Item 
-                                key={`${index}`}
-                                onClick={(e) => this.changeUser(e, value)}
-                                >
-                                {value}
-                            </Dropdown.Item>
-                            )}
-                        </DropdownButton>	
-                        <Form.Group controlId="code">
-                            <Form.Label></Form.Label>
-                            <Form.Control 
-                            type="text" 
-                            placeholder="Enter Project" 
-                            onChange={(e) => this.changeProject(e)}>
-                            </Form.Control>
-                        </Form.Group>
-                        <Button 
-                            variant="primary" 
-                            onClick={(e) => this.deleteProject(e)}>
-                            Delete
-                        </Button>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                    </Modal.Footer>
-                </Modal>
-                );
-            }
-        } else {
+                                onClick={(e) => updateProject('delete')}>
+                                Delete
+                            </Button>
+                        </Modal.Body>
+                        <Modal.Footer>
+                        </Modal.Footer>
+                    </Modal>
+                    );
+                } else {
+                    return (
+                        <Modal 
+                        show={props.show} 
+                        size={'lg'} 
+                        centered={true}
+                        onHide={props.hide}
+                        >
+                        <Modal.Header>
+                            <div>
+                                <Modal.Title>Delete Project Data</Modal.Title>
+                            </div>     
+                            <Dropdown className="dropdownproject">
+                                <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                    {props.mode}
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                <Dropdown.Item
+                                    onClick={(e) => props.setMode("Insert")}
+                                    >
+                                    Insert
+                                </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>	
+                        </Modal.Header>
+                        <Modal.Body >
+                            <Form>
+                            <DropdownButton className="dropdownclient" title={this.state.currentUser}>
+                                {this.state.usernames.map((value, index) =>
+                                <Dropdown.Item 
+                                    key={`${index}`}
+                                    onClick={(e) => this.changeUser(e, value)}
+                                    >
+                                    {value}
+                                </Dropdown.Item>
+                                )}
+                            </DropdownButton>	
+                            <Form.Group controlId="code">
+                                <Form.Label></Form.Label>
+                                <Form.Control 
+                                type="text" 
+                                placeholder="Enter Project" 
+                                onChange={(e) => this.changeProject(e)}>
+                                </Form.Control>
+                            </Form.Group>
+                            <Button 
+                                variant="primary" 
+                                onClick={(e) => this.deleteProject(e)}>
+                                Delete
+                            </Button>
+                            </Form>
+                        </Modal.Body>
+                        <Modal.Footer>
+                        </Modal.Footer>
+                    </Modal>
+                    );
+                }
+        default:
             return (
                 <Modal 
                     show={props.show} 
@@ -592,6 +611,6 @@ export default function AdminModal(props) {
                 </Modal.Footer>
             </Modal>
             );
-        }
-    
+      }
+
 }

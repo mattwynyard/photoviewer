@@ -143,9 +143,11 @@ class App extends React.Component {
             this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
           }
           let body = this.filterLayer(this.state.activeLayer, true);
-          body.then((body) => {
-            this.addGLGeometry(body.points, body.lines, body.type, true);
-          })
+          if (body) {
+            body.then((body) => {
+              this.addGLGeometry(body.points, body.lines, body.type, true);
+            });
+          }
         }
       }
     } 
@@ -1174,27 +1176,32 @@ class App extends React.Component {
     this.context.showLoader();
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
-    const response = await fetch('https://' + this.context.login.host + '/layer', {
-      method: 'POST',
-      headers: {
-        "authorization": this.context.login.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-    },
-    body: body
-    });
-   
-    if(!response.ok) {
-      throw new Error(response.status);
-    } else {
-      const body = await response.json();
-      if (body.error != null) {
-        alert(body.error);
-        return body;
+    try {
+      const response = await fetch('https://' + this.context.login.host + '/layer', {
+        method: 'POST',
+        headers: {
+          "authorization": this.context.login.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      },
+      body: body
+      });
+     
+      if(!response.ok) {
+        throw new Error(response.status);
       } else {
-        return body;
-      }     
-    }                
+        const body = await response.json();
+        if (body.error != null) {
+          alert(body.error);
+          return body;
+        } else {
+          return body;
+        }     
+      }    
+    } catch (error) {
+      console.error(error);
+    }
+                
   }
 
   async loadCentreline(e) {
