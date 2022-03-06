@@ -1,5 +1,5 @@
 import React, { useState} from 'react';
-import {Modal, Dropdown, Form, Button, Row, Col, DropdownButton, Container}  from 'react-bootstrap';
+import {Modal, Dropdown, Form, Button, Col, DropdownButton, Container}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 
 export default function AdminModal(props) {
@@ -13,8 +13,12 @@ export default function AdminModal(props) {
     const [ta, setTA] = useState(null);
     const [amazon, setAmazon] = useState(null);
     const [isPriority, setIsPriority] = useState(true);
-    const [isReverse, setIsReverse] = useState(true);
+    const [isReverse, setIsReverse] = useState(false);
+    const [hasVideo, setHasVideo] = useState(false);
     const [isPublic, setIsPublic] = useState(false);
+    const [hasCentreline, setHasCentreline] = useState(false);
+    const [hasRamm, setHasRamm] = useState(false);
+    const [hasRMClass, setHasRMClass] = useState(false);
     const [data, setData] = useState(null);
 
     const sendData = async (project, data, endpoint) => {
@@ -51,7 +55,6 @@ export default function AdminModal(props) {
     }
 
     const handleImport = (e) => {
-        console.log(props)
         if (!project) {
             alert("No project specified");
             return;
@@ -118,15 +121,22 @@ export default function AdminModal(props) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              user: props.login.user,
-              type: type,
-              code: project,
-              client: user,
-              description: description ? description : null,
-              date: date ? date : null,
-              tacode: ta ? ta : null,
-              amazon: amazon ? amazon : null,
-              surface: surface
+                user: props.login.user,
+                type: type,
+                code: project,
+                client: user,
+                description: description ? description : null,
+                date: date ? date : null,
+                amazon: amazon ? amazon : null,
+                surface: surface,
+                public: isPublic,
+                priority: isPriority,
+                reverse: isReverse,
+                video: hasVideo,
+                ramm: hasRamm,
+                centreline: hasCentreline,
+                rmclass: hasRMClass
+
             })
           }).then(async (response) => {
             const body = await response.json();
@@ -348,31 +358,15 @@ export default function AdminModal(props) {
                         <Modal.Body >
                             <Form>
                             <Container className="container">
-                                <Row>
                                     <Form.Group xs={6} md={8} as={Col} controlId="code">
                                         <Form.Label className="label">Project Code:</Form.Label>
                                             <Form.Control 
                                                 type="text" 
                                                 size='sm'
                                                 placeholder="project code eg ASU_0921" 
-                                                onChange={(e) => e.currentTarget.checked ? setProject(true) : setProject(false)}
+                                                onChange={(e) => setProject(e.currentTarget.value)}
                                             >
                                             </Form.Control>
-                                    </Form.Group>
-                                    <Form.Group as={Col} controlId="public">
-                                        <Form.Label className="label">Public:</Form.Label>
-                                            <Form.Control 
-                                                className="checkbox"
-                                                type="checkbox" 
-                                                size='sm'
-                                                checked={isPublic} 
-                                                onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
-                                            >
-                                            </Form.Control>
-                                    </Form.Group>  
-                                </Row>
-                                <Row>
-                                    <Form.Group xs={6} md={8} as={Col} controlId="client">
                                         <Form.Label className="label">Client:</Form.Label>           
                                         <Form.Control 
                                             type="text" 
@@ -381,21 +375,6 @@ export default function AdminModal(props) {
                                             onChange={(e) => setUser(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                    </Form.Group>
-                                    <Form.Group as={Col} controlId="priority">
-                                        <Form.Label className="label">Priority:</Form.Label>
-                                            <Form.Control
-                                                className="checkbox" 
-                                                type="checkbox" 
-                                                size='sm'
-                                                checked={isPriority}
-                                                onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
-                                            >
-                                            </Form.Control>
-                                    </Form.Group>    
-                                </Row>
-                                <Row>
-                                    <Form.Group xs={6} md={8} as={Col} controlId="description">
                                         <Form.Label className="label">Description:</Form.Label>
                                         <Form.Control 
                                             type="text" 
@@ -404,21 +383,6 @@ export default function AdminModal(props) {
                                             onChange={(e) => setDescription(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                    </Form.Group>
-                                    <Form.Group as={Col} controlId="priority">
-                                    <Form.Label className="label">Reverse:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={isReverse}
-                                            onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
-                                        >
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Row>
-                                <Row>
-                                    <Form.Group xs={6} md={8} as={Col} controlId="date">
                                         <Form.Label className="label">Date:</Form.Label>
                                         <Form.Control 
                                             type="text" 
@@ -427,10 +391,6 @@ export default function AdminModal(props) {
                                             onChange={(e) => setDate(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                    </Form.Group>
-                                </Row>
-                                <Row>
-                                    <Form.Group xs={6} md={8} as={Col} controlId="surface">
                                         <Form.Label className="label">Surface:</Form.Label>
                                         <Form.Control 
                                             type="text" 
@@ -439,10 +399,6 @@ export default function AdminModal(props) {
                                             onChange={(e) => setSurface(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                    </Form.Group>
-                                </Row>
-                                <Row>
-                                    <Form.Group xs={6} md={8} as={Col} controlId="amazon">
                                         <Form.Label className="label">Amazon URL:</Form.Label>
                                         <Form.Control 
                                             type="text" 
@@ -452,16 +408,82 @@ export default function AdminModal(props) {
                                         >
                                         </Form.Control>
                                     </Form.Group>
-                                </Row>
-                            <Button 
-                                    variant="primary" 
-                                    onClick={(e) => updateProject('insert')}
-                                >
-                                Submit
-                            </Button>
+                                    
+                                    <Form.Group xs={6} md={8} as={Col} controlId="public">
+                                        <Form.Label className="label">Public:</Form.Label>
+                                            <Form.Control 
+                                                className="checkbox"
+                                                type="checkbox" 
+                                                size='sm'
+                                                checked={isPublic} 
+                                                onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                            >
+                                            </Form.Control>
+                                   
+                                    <Form.Label className="label">Reverse:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={isReverse}
+                                            onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
+                                        >
+                                        </Form.Control>
+                                        <Form.Label className="label">Priority:</Form.Label>
+                                            <Form.Control
+                                                className="checkbox" 
+                                                type="checkbox" 
+                                                size='sm'
+                                                checked={isPriority}
+                                                onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
+                                            >
+                                            </Form.Control>
+  
+                                    <Form.Label className="label">Video:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={hasVideo}
+                                            onChange={(e) => e.currentTarget.checked ? setHasVideo(true) : setHasVideo(false)}
+                                        >
+                                        </Form.Control>
+                                    <Form.Label className="label">RAMM:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={hasRamm}
+                                            onChange={(e) => e.currentTarget.checked ? setHasRamm(true) : setHasRamm(false)}
+                                        >
+                                        </Form.Control>
+                                    <Form.Label className="label">Centreline:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={hasCentreline}
+                                            onChange={(e) => e.currentTarget.checked ? setHasCentreline(true) : setHasCentreline(false)}
+                                        >
+                                        </Form.Control>
+                                    <Form.Label className="label">RM Class:</Form.Label>
+                                        <Form.Control
+                                            className="checkbox" 
+                                            type="checkbox" 
+                                            size='sm'
+                                            checked={hasRMClass}
+                                            onChange={(e) => e.currentTarget.checked ? setHasRMClass(true) : setHasRMClass(false)}
+                                        >
+                                        </Form.Control>
+                                    <Button 
+                                        variant="primary" 
+                                        onClick={(e) => updateProject('insert')}
+                                    >
+                                    Submit
+                                </Button>
+                                </Form.Group>     
                             </Container>
-                            </Form>
-                            
+                         </Form>                         
                         </Modal.Body>
                         <Modal.Footer>
                         </Modal.Footer>

@@ -239,36 +239,35 @@ module.exports = {
     },
 
     import: (data) => {
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseString(data[2]); //roadid
+        data[3] = parseString(data[3]); //carriage
+        data[4] = parseString(data[4]); //location
+        data[5] = parseInteger(data[5]); //starterp
+        data[6] = parseInteger(data[6]); //enderp
+        data[7] = parseString(data[7]); //side
+        data[8] = parseString(data[8]);  //position
+        data[9] = parseString(data[9]); //class
+        data[10] = parseString(data[10]); //fault
+        data[11] = parseString(data[11]); //repair
+        data[12] = parseInteger(data[12]); //priority
+        data[13] = parseString(data[13]); //comment
+        data[14] = parseInteger(data[14]); //length
+        data[15] = parseInteger(data[15]); //width
+        data[16] = parseInteger(data[16]); //count
+        data[17] = parseDate(data[17]); //faulttime
+        data[18] = parseString(data[18]); //inspector
+        data[19] = parseString(data[19]); //inspection
+        data[20] = parseInteger(data[20]); //seq
+        data[21] = parseString(data[21]); //photoid
+        data[22] = parseString(data[22]); //status
+        data[23] = parseString(data[23]); //wkt
+
+        let sql = "INSERT INTO roadfaults(id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
+        + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
         return new Promise((resolve, reject) => {
-            data[0] = parseString(data[0]); //id
-            data[1] = parseString(data[1]); //project
-            data[2] = parseString(data[2]); //roadid
-            data[3] = parseString(data[3]); //carriage
-            data[4] = parseString(data[4]); //location
-            data[5] = parseInteger(data[5]); //starterp
-            data[6] = parseInteger(data[6]); //enderp
-            data[7] = parseString(data[7]); //side
-            data[8] = parseString(data[8]);  //position
-            data[9] = parseString(data[9]); //class
-            data[10] = parseString(data[10]); //fault
-            data[11] = parseString(data[11]); //repair
-            data[12] = parseInteger(data[12]); //priority
-            data[13] = parseString(data[13]); //comment
-            data[14] = parseInteger(data[14]); //length
-            data[15] = parseInteger(data[15]); //width
-            data[16] = parseInteger(data[16]); //count
-            data[17] = parseDate(data[17]); //faulttime
-            data[18] = parseString(data[18]); //inspector
-            data[19] = parseString(data[19]); //inspection
-            data[20] = parseInteger(data[20]); //seq
-            data[21] = parseString(data[21]); //photoid
-            data[22] = parseString(data[22]); //status
-            data[23] = parseString(data[23]); //wkt
-
-            let sql = "INSERT INTO roadfaults(id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
-            + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, "
-            + "geom)" + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
-
             connection.query(sql, (err, result) => {
                 if (err) {
                     return reject(err);
@@ -1088,9 +1087,10 @@ module.exports = {
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO projects(" +
                 "code, client, description, date, active, amazon, layercount, layermodified, " +
-                "filtercount, lastfilter, surface, public, priority, reverse)" +
+                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass)" +
                 "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
-                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + body.priority + ", " + body.reverse + ")";
+                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + 
+                body.priority + ", " + body.reverse + ", " + body.video + ", " + body.centreline + ", " + body.ramm + ", " + body.rmclass + ")";
 
             connection.query(sql, (err, results) => {
                 if (err) {

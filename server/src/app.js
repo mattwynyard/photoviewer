@@ -894,7 +894,7 @@ app.post('/import', async (req, res) => {
           }
         } catch(err) {
           errors++;
-          console.err(err)
+          console.log(err)
           break;
         }
       } 
