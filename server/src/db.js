@@ -23,12 +23,23 @@ function parseInteger(x) {
 }
 
 function parseString(s) { 
+
     if (s.indexOf('\'') >= 0) {
         let index = s.indexOf('\'');
         let str = s.substring(0, index) + s.substring(index + 1, s.length);
         return parseString(str);
     } else {
         return "'" + s + "'";
+    }
+}
+
+function parseDate(d) {
+    if (!d.indexOf('-') && d.indexOf('\/')) {
+        let index = s.indexOf('\ ');
+        let date = d.substring(0, index);
+        let time = d.substring(index, d.length);
+    } else {
+        return "'" + d + "'";
     }
 }
 
@@ -200,7 +211,7 @@ module.exports = {
         data[17] = parseFloat(data[17]); //width
         data[18] = parseInteger(data[18]); //grade
         data[19] = parseString(data[19]); //comment
-        data[20] = parseString(data[20]); //date
+        data[20] = parseDate(data[20]); //date
         data[21] = parseFloat(data[21]); //latitude
         data[22] = parseFloat(data[22]); //longitude
         data[23] = parseString(data[23]); //faulttime
@@ -228,53 +239,42 @@ module.exports = {
     },
 
     import: (data) => {
-        //console.log(data);
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseString(data[2]); //roadid
+        data[3] = parseString(data[3]); //carriage
+        data[4] = parseString(data[4]); //location
+        data[5] = parseInteger(data[5]); //starterp
+        data[6] = parseInteger(data[6]); //enderp
+        data[7] = parseString(data[7]); //side
+        data[8] = parseString(data[8]);  //position
+        data[9] = parseString(data[9]); //class
+        data[10] = parseString(data[10]); //fault
+        data[11] = parseString(data[11]); //repair
+        data[12] = parseInteger(data[12]); //priority
+        data[13] = parseString(data[13]); //comment
+        data[14] = parseInteger(data[14]); //length
+        data[15] = parseInteger(data[15]); //width
+        data[16] = parseInteger(data[16]); //count
+        data[17] = parseDate(data[17]); //faulttime
+        data[18] = parseString(data[18]); //inspector
+        data[19] = parseString(data[19]); //inspection
+        data[20] = parseInteger(data[20]); //seq
+        data[21] = parseString(data[21]); //photoid
+        data[22] = parseString(data[22]); //status
+        data[23] = parseString(data[23]); //wkt
+
+        let sql = "INSERT INTO roadfaults(id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
+        + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
         return new Promise((resolve, reject) => {
-            data[0] = parseString(data[0]); //id
-            data[1] = parseString(data[1]); //project
-            data[2] = parseString(data[2]); //service
-            data[3] = parseString(data[3]); //group
-            data[4] = parseString(data[4]); //board
-            data[5] = parseString(data[5]); //area
-            data[6] = parseInteger(data[6]); //roadid
-            data[7] = parseInteger(data[7]); //carriagewa
-            data[8] = parseString(data[8]);  //location
-            data[9] = parseInteger(data[9]); //erp
-            data[10] = parseString(data[10]); //side
-            data[11] = parseString(data[11]); //position
-            data[12] = parseString(data[12]); //class
-            data[13] = parseString(data[13]); //fault
-            data[14] = parseString(data[14]); //repair
-            data[15] = parseInteger(data[15]); //priority
-            data[16] = parseString(data[16]); //comment
-            data[17] = parseString(data[17]); //size
-            data[18] = parseInteger(data[18]); //length
-            data[19] = parseInteger(data[19]); //width
-            data[20] = parseInteger(data[20]); //total
-            data[21] = parseFloat(data[21]); //latitude
-            data[22] = parseFloat(data[22]); //longitude
-            data[23] = parseString(data[23]); //faultime
-            data[24] = parseString(data[24]); //inspector
-            data[25] = parseString(data[25]); //inspection
-            data[26] = parseInteger(data[26]); //seq
-            data[27] = parseString(data[27]); //photoid
-
-            //data[29] = parseString(data[29]); //status
-
-            let sql = "INSERT INTO carriageways(id, project, service," + '"group"' + ", board, area, roadid, " 
-            + "carriageway, location, erp, side," + '"position"' + ", class, fault, repair, priority, comment, "
-            + "size, length, width, total, latitude, longitude, faulttime, inspector, "
-            + "inspection, seq, photoid, geom) "
-                 + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
             connection.query(sql, (err, result) => {
                 if (err) {
-                    //console.error('Error executing query', err.stack);
                     return reject(err);
                 } else {
                     let priority = resolve(result);
                     return priority;
-                }
-                
+                }        
             });
         });
     },
@@ -302,7 +302,7 @@ module.exports = {
     //                 return reject(err);
     //             }
     //             let priority = resolve(result);       
-    //             return priority;
+    //             return priority;deleteProjectData
     //         });
     //     });
     // },
@@ -1056,12 +1056,16 @@ module.exports = {
         })
     },
 
-    deleteProjectData: (project, surface) => {
+    deleteProjectData: (project, surface, isArchive) => {
         return new Promise((resolve, reject) => {
             let sql = null;
-            //console.log(surface)
             if (surface === "road") {
-                sql = "DELETE FROM carriageways WHERE project= '" + project + "'";
+                if (isArchive) {
+                    sql = "DELETE FROM carriageways WHERE project= '" + project + "'";
+                } else {
+                    sql = "DELETE FROM roadfaults WHERE project= '" + project + "'";
+                }
+                
             } else if (surface === "footpath") {
                 sql = "DELETE FROM footpaths WHERE project= '" + project + "'";
             } else {
@@ -1083,9 +1087,10 @@ module.exports = {
         return new Promise((resolve, reject) => {
             let sql = "INSERT INTO projects(" +
                 "code, client, description, date, active, amazon, layercount, layermodified, " +
-                "filtercount, lastfilter, surface, public, priority, reverse)" +
+                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass)" +
                 "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
-                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + body.priority + ", " + body.reverse + ")";
+                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + 
+                body.priority + ", " + body.reverse + ", " + body.video + ", " + body.centreline + ", " + body.ramm + ", " + body.rmclass + ")";
 
             connection.query(sql, (err, results) => {
                 if (err) {

@@ -9,7 +9,6 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
-import CustomModal from './modals/CustomModal.js';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
@@ -124,7 +123,7 @@ class App extends React.Component {
       this.setDataActive(false)
     }
     
-    this.customModal.current.delegate(this);
+    //this.customModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
@@ -143,9 +142,11 @@ class App extends React.Component {
             this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
           }
           let body = this.filterLayer(this.state.activeLayer, true);
-          body.then((body) => {
-            this.addGLGeometry(body.points, body.lines, body.type, true);
-          })
+          if (body) {
+            body.then((body) => {
+              this.addGLGeometry(body.points, body.lines, body.type, true);
+            });
+          }
         }
       }
     } 
@@ -1174,27 +1175,32 @@ class App extends React.Component {
     this.context.showLoader();
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
-    const response = await fetch('https://' + this.context.login.host + '/layer', {
-      method: 'POST',
-      headers: {
-        "authorization": this.context.login.token,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-    },
-    body: body
-    });
-   
-    if(!response.ok) {
-      throw new Error(response.status);
-    } else {
-      const body = await response.json();
-      if (body.error != null) {
-        alert(body.error);
-        return body;
+    try {
+      const response = await fetch('https://' + this.context.login.host + '/layer', {
+        method: 'POST',
+        headers: {
+          "authorization": this.context.login.token,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      },
+      body: body
+      });
+     
+      if(!response.ok) {
+        throw new Error(response.status);
       } else {
-        return body;
-      }     
-    }                
+        const body = await response.json();
+        if (body.error != null) {
+          alert(body.error);
+          return body;
+        } else {
+          return body;
+        }     
+      }    
+    } catch (error) {
+      console.error(error);
+    }
+                
   }
 
   async loadCentreline(e) {
@@ -1538,20 +1544,20 @@ class App extends React.Component {
   }
 
 // Admin
-  addUser(e) {
-    this.customModal.current.setShow(true);
-    this.customModal.current.setState({name: 'user'});
-  }
+  // addUser(e) {
+  //   this.customModal.current.setShow(true);
+  //   this.customModal.current.setState({name: 'user'});
+  // }
 
-  addProject(e) {
-    this.customModal.current.setState({name: 'project'});
-    this.customModal.current.setShow(true);
-  }
+  // addProject(e) {
+  //   this.customModal.current.setState({name: 'project'});
+  //   this.customModal.current.setShow(true);
+  // }
 
-  importData(e) {
-    this.customModal.current.setState({name: 'import'});
-    this.customModal.current.setShow(true);
-  }
+  // importData(e) {
+  //   this.customModal.current.setState({name: 'import'});
+  //   this.customModal.current.setShow(true);
+  // }
 
   fileLoaded(project, data, status) {
     this.customModal.current.setShow(false);
@@ -1562,26 +1568,25 @@ class App extends React.Component {
     }
   }
 
-  createUser = (name, password) => {
-    this.addNewUser(name, password);
-    this.customModal.current.setShow(false);
-  }
+  // createUser = (name, password) => {
+  //   this.addNewUser(name, password);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  deleteUser = (name) => {
-    this.deleteCurrentUser(name);
-    this.customModal.current.setShow(false);
-  }
+  // deleteUser = (name) => {
+  //   this.deleteCurrentUser(name);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  deleteProject = (project, parent) => {
-    console.log("delete")
-    this.deleteCurrentProject(project, parent);
-    this.customModal.current.setShow(false);
-  }
+  // deleteProject = (project, parent) => {
+  //   this.deleteCurrentProject(project, parent);
+  //   this.customModal.current.setShow(false);
+  // }
 
-  createProject = (project) => {
-    this.addNewProject(project);
-    this.customModal.current.setShow(false);
-  }
+  // createProject = (project) => {
+  //   this.addNewProject(project);
+  //   this.customModal.current.setShow(false);
+  // }
 
   
 
@@ -1726,7 +1731,7 @@ class App extends React.Component {
         surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
       />  
        {/* admin modal     */}
-       <CustomModal 
+       {/* <AdminModal 
         name={'user'}
         show={this.state.showAdmin} 
         ref={this.customModal}
@@ -1740,7 +1745,7 @@ class App extends React.Component {
         callbackGetClient={this.getClient}
         callbackGetProjects={this.selectProjects}
         >
-       </CustomModal>
+       </AdminModal> */}
       <PhotoModal
         ref={this.photoModal}
       >

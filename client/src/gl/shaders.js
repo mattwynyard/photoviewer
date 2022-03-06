@@ -8,14 +8,10 @@
  * @return {!WebGLShader} The shader.
  */
  export let compileShader = (gl, shaderSource, shaderType) => {
-    // Create the shader object
-    var shader = gl.createShader(shaderType);
-    // Set the shader source code.
+    let shader = gl.createShader(shaderType);
     gl.shaderSource(shader, shaderSource);
-    // Compile the shader
     gl.compileShader(shader);
-    // Check if it compiled
-    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (!success) {
         // Something went wrong during compilation; get the error
         alert("could not compile shader:" + gl.getShaderInfoLog(shader));
@@ -33,13 +29,13 @@
 */
 export let createProgram = (gl, vertexShader, fragmentShader) => {
 // create a program.
-var program = gl.createProgram();
+let program = gl.createProgram();
 gl.attachShader(program, vertexShader);
 gl.attachShader(program, fragmentShader);
 gl.linkProgram(program);
 let success = gl.getProgramParameter(program, gl.LINK_STATUS);
 if (!success) {
-    alert("program failed to link:" + gl.getProgramInfoLog (program));
+    alert("program failed to link:" + gl.getProgramInfoLog(program));
 }
 return program;
 };
@@ -49,13 +45,7 @@ return program;
 
 export let vshader300 = 
 `#version 300 es
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
-precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
+precision mediump float;
 uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
@@ -122,14 +112,7 @@ void main() {
 
 export let fshader300 = 
 `#version 300 es
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
-precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
-//precision highp float;
+precision mediump float; 
 in vec4 v_color;
 in vec2 v_index;
 out vec4 frag_color;
@@ -154,13 +137,7 @@ void main() {
 
 export let vshader = 
 `
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
-precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
+precision mediump float; // highp is not supported. floats have medium precision 
 uniform mat4 u_matrix;
 uniform vec3 u_offset;
 uniform vec3 u_offset_low;
@@ -224,13 +201,7 @@ void main() {
 
 export let fshader = 
 `
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float; // highp is supported. floats have high precision
-#else
 precision mediump float; // highp is not supported. floats have medium precision
-#endif
-#endif 
 varying vec4 v_color;
 void main() {
 float border = 0.05;

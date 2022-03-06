@@ -11,15 +11,15 @@
 */
 import L from 'leaflet'
 
-L.DomUtil.setTransform = L.DomUtil.setTransform || function(el, offset, scale) {
-    var pos = offset || new L.Point(0, 0);
+// L.DomUtil.setTransform = L.DomUtil.setTransform || function(el, offset, scale) {
+//     var pos = offset || new L.Point(0, 0);
   
-    el.style[L.DomUtil.TRANSFORM] =
-      (L.Browser.ie3d ?
-        'translate(' + pos.x + 'px,' + pos.y + 'px)' :
-        'translate3d(' + pos.x + 'px,' + pos.y + 'px,0)') +
-      (scale ? ' scale(' + scale + ')' : '');
-  };
+//     el.style[L.DomUtil.TRANSFORM] =
+//       (L.Browser.ie3d ?
+//         'translate(' + pos.x + 'px,' + pos.y + 'px)' :
+//         'translate3d(' + pos.x + 'px,' + pos.y + 'px,0)') +
+//       (scale ? ' scale(' + scale + ')' : '');
+//   };
 
 L.CanvasOverlay = L.Layer.extend({
 
@@ -33,7 +33,7 @@ L.CanvasOverlay = L.Layer.extend({
         return this;
     },
 
-    params:function(options){
+    params: function(options){
         L.setOptions(this, options);
         return this;
     },
@@ -42,15 +42,7 @@ L.CanvasOverlay = L.Layer.extend({
         return this._canvas;
     },
 
-    getIndex: function () {
-        return this._index;
-    },
-
-    setIndex: function (index) {
-        this._index = index;
-    },
-
-    redraw: function () {
+    render: function () {
         if (!this._frame) {
             this._frame = L.Util.requestAnimFrame(this._redraw, this);
         }
@@ -58,19 +50,16 @@ L.CanvasOverlay = L.Layer.extend({
     },
 
     gl: function(gl) {
-        this.gl = gl;
-    },
-
-    matrix: function(matrix) {
-        this.mapMatrix = matrix;
+        this._gl = gl;
     },
 
     delegate: function(delegate) {
         this.delegate = delegate;
+        this._gl = delegate.gl;
     },
 
     refresh: function(redraw) {
-        this.refresh = redraw// app.js redraw function
+        this.refresh = redraw
     },
 
     onAdd: function (map) {
@@ -95,15 +84,12 @@ L.CanvasOverlay = L.Layer.extend({
 
     onRemove: function (map) {
         map.getPanes().overlayPane.removeChild(this._canvas);
- 
         map.off('moveend', this._reset, this);
         map.off('resize', this._resize, this);
-
         if (map.options.zoomAnimation) {
             map.off('zoomanim', this._animateZoom, this);
         }
         this._canvas = null;
-
     },
 
     addTo: function (map) {
@@ -115,6 +101,7 @@ L.CanvasOverlay = L.Layer.extend({
         this._canvas.width  = resizeEvent.newSize.x;
         this._canvas.height = resizeEvent.newSize.y;
     },
+
     _reset: function () {
         var topLeft = this._map.containerPointToLayerPoint([0, 0]);
         L.DomUtil.setPosition(this._canvas, topLeft);
@@ -122,18 +109,12 @@ L.CanvasOverlay = L.Layer.extend({
     },
 
     _redraw: function () {
-        var size     = this._map.getSize();
-        var bounds   = this._map.getBounds();
-        var zoomScale = (size.x * 180) / (20037508.34  * (bounds.getEast() - bounds.getWest())); // resolution = 1/zoomScale
-        var zoom = this._map.getZoom();
         if (this._userDrawFunc) {
-            this._userDrawFunc(this,
+            this._userDrawFunc(
                                 {
-                                    canvas   :this._canvas,
-                                    bounds   : bounds,
-                                    size     : size,
-                                    zoomScale: zoomScale,
-                                    zoom : zoom,
+                                    canvas: this._canvas,
+                                    map: this._map,
+                                    gl: this._gl,
                                     options: this.options
                                });
         }
