@@ -58,7 +58,7 @@ class App extends React.Component {
       zIndex: 900,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
       mode: "map", //for satellite thumbnail
       mapMode: "map",
       zoom: 8,

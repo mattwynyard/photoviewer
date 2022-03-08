@@ -1,5 +1,5 @@
 import React, { useState} from 'react';
-import {Modal, Dropdown, Form, Button, Col, DropdownButton, Container}  from 'react-bootstrap';
+import {Modal, Dropdown, Form, Button, Row, Col, DropdownButton, Container}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 
 export default function AdminModal(props) {
@@ -20,8 +20,9 @@ export default function AdminModal(props) {
     const [hasRamm, setHasRamm] = useState(false);
     const [hasRMClass, setHasRMClass] = useState(false);
     const [data, setData] = useState(null);
+    const [isStaged, setIsStaged] = useState(false);
 
-    const sendData = async (project, data, endpoint) => {
+    const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + endpoint, {
           method: 'POST',
@@ -33,7 +34,8 @@ export default function AdminModal(props) {
           body: JSON.stringify({
             user: props.login.user,
             data: data,
-            project: project
+            project: project,
+            staged: isStaged
           })
           }).then(async (response) => {
             if(!response.ok) {
@@ -59,7 +61,7 @@ export default function AdminModal(props) {
             alert("No project specified");
             return;
         }
-        sendData(project, data, "/import");
+        sendData("/import");
     }
 
     const updateUser = async (type) => {
@@ -606,7 +608,7 @@ export default function AdminModal(props) {
                 </Modal.Header>
                 <Modal.Body >
                     <Form>
-                        <Form.Group controlId="project">
+                        <Form.Group xs={7} md={8} as={Row}  controlId="import">
                             <Form.Label>Project</Form.Label>
                             <Form.Control 
                                 type="text" 

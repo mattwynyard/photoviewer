@@ -879,13 +879,21 @@ app.post('/import', async (req, res) => {
   if(token) {
     let project = req.body.project;
     let surface = await db.projecttype(project);
+    let result = await db.table(project);
+    let client = result.rows[0].client;
+    let table = result.rows[0].ftable;
     if (surface.rows[0].surface === "road") {
       let rows = 0;
       let errors = 0;
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
         try {
-          let result = await db.import(data);
+          let result = null;
+          if (client !== 'asu' || client !== 'asm') {
+            result = await db.import(data);
+          } else {
+            result = await db.stagedImport(data);
+          }
           if(result.rowCount === 1) {
             rows++;
           } else {
@@ -898,7 +906,7 @@ app.post('/import', async (req, res) => {
           break;
         }
       } 
-      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
     } else {
       let rows = 0;
       let errors = 0;
