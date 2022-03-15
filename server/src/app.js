@@ -257,6 +257,18 @@ app.post('/selectprojects', async (req, res) => {
   }
 });
 
+app.post('/projects', async (req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    try {
+      let projects = await db.projects(req.body.user);
+      console.log(projects)
+    } catch (err) {
+      res.send({error: err.detail});
+    }
+  }
+});
+
 app.post('/project', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if(result) {
@@ -290,11 +302,29 @@ app.post('/project', async (req, res) => {
           res.set('Content-Type', 'application/json');
           res.send({error: err.err.detail});
         }
-      }     
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
+      } else if (req.body.type === "update") {
+        try {
+          let surface = await db.projecttype(req.body.code);
+          let archive = await db.isArchive(req.body.code);
+          if (surface.rowCount === 1) {
+            let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
+            let project = await db.deleteProject(req.body.code);
+            res.set('Content-Type', 'application/json');
+            res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
+          } else {
+            res.set('Content-Type', 'application/json');
+            res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
+          }
+        } catch (err) {
+          console.log(err)
+          res.set('Content-Type', 'application/json');
+          res.send({error: err.err.detail});
+        }
+      }      
+    } else {
+      res.set('Content-Type', 'application/json');
+      res.send({error: "Invalid token"});
+    }
     
 });
 
