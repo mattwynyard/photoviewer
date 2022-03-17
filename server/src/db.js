@@ -112,6 +112,20 @@ module.exports = {
         });
     },
 
+    clients : () => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT username FROM users';
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let users = resolve(result);
+                return users;
+            });
+        });
+    },
+
     urls: () => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT username, ramm FROM users WHERE ramm IS NOT NULL';

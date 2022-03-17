@@ -257,15 +257,33 @@ app.post('/selectprojects', async (req, res) => {
   }
 });
 
-app.post('/projects', async (req, res) => {
+app.post('/clients', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   if (result) {
     try {
-      let projects = await db.projects(req.body.user);
-      console.log(projects)
+      let clients = await db.clients();
+      res.send({result: clients.rows});
+    } catch (err) {
+      console.log(err)
+      res.send({error: err.detail});
+    }
+  } else {
+    res.send({error: "Invalid token"});
+}
+});
+
+app.post('/projects', async (req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  res.set('Content-Type', 'application/json');
+  if (result) {
+    try {
+      let projects = await db.projects(req.body.query.user);
+      res.send({result: projects.rows});
     } catch (err) {
       res.send({error: err.detail});
     }
+  } else {
+      res.send({error: "Invalid token"});
   }
 });
 

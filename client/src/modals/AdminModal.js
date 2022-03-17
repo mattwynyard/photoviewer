@@ -1,14 +1,16 @@
-import React, { useState} from 'react';
-import {Modal, Dropdown, Form, Button, Row, Col, DropdownButton, Container}  from 'react-bootstrap';
+import React, { useEffect, useState} from 'react';
+import {Modal, Dropdown, Form, Button, Row, Col, Container}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
+import './AdminModal.css';
+import {apiRequest} from '../api/Api.js';
+
 
 export default function AdminModal(props) {
-
-    const [user, setUser] = useState(null);
     const [password, setPassword] = useState(null);
     const [project, setProject] = useState(null);
     const [projects, setProjects] = useState([]);
     const [clients, setClients] = useState([]);
+    const [client, setClient] = useState(null);
     const [description, setDescription] = useState(null);
     const [date, setDate] = useState(null);
     const [surface, setSurface] = useState(null);
@@ -23,6 +25,9 @@ export default function AdminModal(props) {
     const [hasRMClass, setHasRMClass] = useState(false);
     const [data, setData] = useState(null);
     const [isStaged, setIsStaged] = useState(false);
+
+    const AddClient = clients.map(AddClient => AddClient);
+    const AddProject = projects.map(AddProject => AddProject);
 
     const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
@@ -69,32 +74,68 @@ export default function AdminModal(props) {
     const setMode = (mode) => {
         props.setMode(mode)
         if (mode === "Update") {
-            getProjects();
+            getClients();
+            getProjects(clients[0]);
         }     
     }
 
-    const getProjects = async (type) => {
+    const changeClient = async (index) => {
+        setClient(clients[index]);
+        let result = await getProjects(clients[index]);
+        if (!result) {
+            console.log(result)
+            //refreshUI(0);
+        } else {
+            setDescription(result.description);
+            setDate(result.date);
+            setSurface(result.surface);  
+            setAmazon(result.amazon); 
+            setIsPublic(result.public);
+            setIsReverse(result.reverse);
+        }
+           
+    }
+
+    const changeProject = (index) => {
+        setProject(projects[index]);
+        console.log(projects[index])
+        refreshUI(index);      
+    }
+
+    const refreshUI = (index) => {
+        if (projects) {
+            setDescription(projects[index].description);
+            setDate(projects[index].date);
+            setSurface(projects[index].surface);  
+            setAmazon(projects[index].amazon); 
+            setIsPublic(projects[index].public);
+            setIsReverse(projects[index].reverse);
+        }
+        
+    }
+
+    const getClients = async () => {
         if (props.login.user === "admin") {
-            await fetch('https://' + props.login.host + '/selectprojects', {
-              method: 'POST',
-              headers: {
-                "authorization": props.login.token,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                user: props.login.user,
-                client: user
-              })
-            }).then(async (response) => {
-              const body = await response.json();
-              console.log(body)
-            }).catch((error) => {
-              console.log("error: " + error);
-              alert(error);
-              return;
-            });
+            let clients = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
+                 {project: null, query: null}, "/clients");
+            setClients(clients.map((client) => client.username));
           }
+    }
+
+    const getProjects = async (client) => {
+        if (props.login.user === "admin") {
+            let result = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
+                {project: null, query: {user: client}}, "/projects");
+            setProjects(result.map((project) => project));
+            if (result.length === 0) {
+                setProject(null);
+                return null;
+            } else {
+                setProject(result[0]);
+                return result[0]
+            }
+          }
+         
     }
 
     const updateUser = async (type) => {
@@ -109,7 +150,7 @@ export default function AdminModal(props) {
             body: JSON.stringify({
               type: type,
               user: props.login.user,
-              client: user,
+              client: client,
               password: password
             })
           }).then(async (response) => {
@@ -120,19 +161,19 @@ export default function AdminModal(props) {
             } else {
               if (body.success) {
                   if (body.type === 'insert') {
-                    alert("User: " + user + " created")
+                    alert("User: " + client + " created")
                   } else if (body.type === 'delete') {
-                    alert("User: " + user + " deleted")
+                    alert("User: " + client + " deleted")
                   } else if (body.type === 'update') {
-                    alert("User: " + user + " updated")
+                    alert("User: " + client + " updated")
                   }
               } else {
                 if (body.type === 'insert') {
-                    alert("User: " + user + " failed to insert")
+                    alert("User: " + client + " failed to insert")
                   } else if (body.type === 'delete') {
-                    alert("User: " + user + " failed to delete")
+                    alert("User: " + client + " failed to delete")
                   } else if (body.type === 'update') {
-                    alert("User: " + user + " failed to update")
+                    alert("User: " + client + " failed to update")
                   }
                 
               }
@@ -159,7 +200,7 @@ export default function AdminModal(props) {
                 user: props.login.user,
                 type: type,
                 code: project,
-                client: user,
+                client: client,
                 description: description ? description : null,
                 date: date ? date : null,
                 amazon: amazon ? amazon : null,
@@ -227,7 +268,7 @@ export default function AdminModal(props) {
                             <Form.Control 
                             type="text" 
                             placeholder="Enter username" 
-                            onChange={(e) => setUser(e.currentTarget.value)}
+                            onChange={(e) => setClient(e.currentTarget.value)}
                             >
                             </Form.Control>
                         </Form.Group>
@@ -242,7 +283,7 @@ export default function AdminModal(props) {
                         </Form.Group>
                         <Button 
                             variant="primary" 
-                            onClick={(e) => updateUser('insert', user, password)}
+                            onClick={(e) => updateUser('insert', client, password)}
                             >
                             Submit
                         </Button>
@@ -282,7 +323,7 @@ export default function AdminModal(props) {
                             <Form.Control 
                             type="text" 
                             placeholder="Enter username" 
-                            onChange={(e) => setUser(e.currentTarget.value)}
+                            onChange={(e) => setClient(e.currentTarget.value)}
                             >
                             </Form.Control>
                         </Form.Group>
@@ -336,7 +377,7 @@ export default function AdminModal(props) {
                             <Form.Control 
                             type="text" 
                             placeholder="Enter username" 
-                            onChange={(e) => setUser(e.currentTarget.value)}
+                            onChange={(e) => setClient(e.currentTarget.value)}
                             >
                             </Form.Control>
                         </Form.Group>
@@ -411,7 +452,7 @@ export default function AdminModal(props) {
                                             type="text" 
                                             size='sm'
                                             placeholder="client login code eg: asu" 
-                                            onChange={(e) => setUser(e.currentTarget.value)}
+                                            onChange={(e) => setClient(e.currentTarget.value)}
                                         >
                                         </Form.Control>
                                         <Form.Label className="label">Description:</Form.Label>
@@ -559,7 +600,7 @@ export default function AdminModal(props) {
                         </Modal.Header>
                         <Modal.Body >
                             <Form>
-                            <Form.Label className="label">Project Code:</Form.Label>
+                                <Form.Label className="label">Project Code:</Form.Label>
                                 <Form.Control 
                                     type="text" 
                                     size='sm'
@@ -590,7 +631,7 @@ export default function AdminModal(props) {
                             <div>
                                 <Modal.Title>Update Project </Modal.Title>
                             </div>     
-                            <Dropdown className="dropdownproject">
+                            <Dropdown>
                                 <Dropdown.Toggle variant="success" id="dropdown-basic">
                                     {props.mode}
                                 </Dropdown.Toggle>
@@ -609,25 +650,125 @@ export default function AdminModal(props) {
                             </Dropdown>	
                         </Modal.Header>
                         <Modal.Body >
-                        <Form>
-                            <Container className="container">
-                                    <Form.Group xs={6} md={8} as={Col} controlId="code">
-                                    <Form.Label className="label">Client:</Form.Label>
-                                        <Dropdown className="dropdownproject">
-                                            <Dropdown.Toggle variant="success" id="dropdown-basic">
-                                                {props.mode}
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu>
-                                            {clients.map((obj, index) =>   
-                                                <Dropdown.Item>
-                                                    {obj}
-                                                </Dropdown.Item>
-                                                )}
-                                            </Dropdown.Menu>
-                                        </Dropdown>	
+                        {/* <Form> */}
+                            <div className="container">
+                                <label className={"label-client"} 
+                                    htmlFor="client">
+                                        {"Client:"}
+                                </label>
+                                <select 
+                                className={"select-client"}
+                                name="client"
+                                id="client"
+                                onChange = {(e) => changeClient(e.currentTarget.value)}
+                                >
+                                {
+                                    AddClient.map((client, key) => <option key={key} value={key}>{client}</option>)
+                                }
+                                </select>
+                                <label className={"label-project"} 
+                                    htmlFor="project">
+                                        {"Project:"}
+                                </label>
+                                <select 
+                                className={"select-project"}
+                                name="project"
+                                id="project"
+                                onChange={(e) => changeProject(e.currentTarget.value)}
+                                >
+                                {
+                                    AddProject.map((project, key) => <option key={key} value={key}>{project.code}</option>)
+                                }
+                                </select>
+                                <label className={"label-description"} 
+                                    htmlFor="description">
+                                        {"Description:"}
+                                </label>
+                                <input 
+                                    type={"text"} 
+                                    id={"description"} 
+                                    name={"description"}
+                                    size='sm'
+                                    placeholder={project === null ? "" : project.description} 
+                                    onChange={(e) => setDescription(e.currentTarget.value)}
+                                ></input>
+                                <label className={"label-date"} 
+                                    htmlFor="date">
+                                        {"Date:"}
+                                </label>
+                                <input 
+                                    type={"text"} 
+                                    id={"date"} 
+                                    name={"date"}
+                                    size='sm'
+                                    placeholder={project === null ? "" : project.date} 
+                                    onChange={(e) => setDate(e.currentTarget.value)}
+                                ></input>
+                                <label className={"label-surface"} 
+                                    htmlFor="surface">
+                                        {"Surface:"}
+                                </label>
+                                <input 
+                                    type={"text"} 
+                                    id={"surface"} 
+                                    name={"surface"}
+                                    size='sm'
+                                    placeholder={project === null ? "" : project.surface} 
+                                    onChange={(e) => setDate(e.currentTarget.value)}
+                                ></input>
+                                <label className={"label-amazon"} 
+                                    htmlFor="amazon">
+                                        {"Amazon:"}
+                                </label>
+                                <input 
+                                    type={"text"} 
+                                    id={"amazon"} 
+                                    name={"amazon"}
+                                    size='sm'
+                                    placeholder={project === null ? "" : project.amazon} 
+                                    onChange={(e) => setAmazon(e.currentTarget.value)}
+                                ></input>
+                                <label className={"label-public"} 
+                                    htmlFor="public">
+                                        {"Public:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"public"} 
+                                    name={"public"}
+                                    size='sm'
+                                    checked={project ? isPublic : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                ></input>
+                                <label className={"label-reverse"} 
+                                    htmlFor="reverse">
+                                        {"Reverse:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"reverse"} 
+                                    name={"reverse"}
+                                    size='sm'
+                                    checked={project ? isReverse : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
+                                ></input>
+                                {/* <Form.Label className="label-public">Public:</Form.Label>
+                                <Form.Control 
+                                    className="checkbox"
+                                    type="checkbox" 
+                                    size='sm'
+                                    checked={isPublic} 
+                                    onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                >
+                                </Form.Control>
+                                <label className="label-project">Project Code:</label> */}
+                                {/* <Row>
+                                    <Col sm={6}>
                                         <Form.Label className="label">Project Code:</Form.Label>
-                                        <Dropdown className="dropdownproject">
-                                            <Dropdown.Toggle variant="success" id="dropdown-basic">
+                                    </Col>
+                                    <Col sm={6}>
+                                        <Dropdown>
+                                            <Dropdown.Toggle variant="secondary">
                                                 {props.mode}
                                             </Dropdown.Toggle>
                                             <Dropdown.Menu>
@@ -637,43 +778,11 @@ export default function AdminModal(props) {
                                                 </Dropdown.Item>
                                                 )}
                                             </Dropdown.Menu>
-                                        </Dropdown>	
-
-                                        <Form.Label className="label">Description:</Form.Label>
-                                        <Form.Control 
-                                            type="text" 
-                                            size='sm'
-                                            placeholder="Enter project description" 
-                                            onChange={(e) => setDescription(e.currentTarget.value)}
-                                        >
-                                        </Form.Control>
-                                        <Form.Label className="label">Date:</Form.Label>
-                                        <Form.Control 
-                                            type="text" 
-                                            size='sm'
-                                            placeholder="Enter date (MMM yyyy)" 
-                                            onChange={(e) => setDate(e.currentTarget.value)}
-                                        >
-                                        </Form.Control>
-                                        <Form.Label className="label">Surface:</Form.Label>
-                                        <Form.Control 
-                                            type="text" 
-                                            size='sm'
-                                            placeholder="Enter surface (road/footpath)" 
-                                            onChange={(e) => setSurface(e.currentTarget.value)}
-                                        >
-                                        </Form.Control>
-                                        <Form.Label className="label">Amazon URL:</Form.Label>
-                                        <Form.Control 
-                                            type="text" 
-                                            size='sm'
-                                            placeholder="Enter amazon url" 
-                                            onChange={(e) => setAmazon(e.currentTarget.value)}
-                                        >
-                                        </Form.Control>
-                                    </Form.Group>
-                                    
-                                    <Form.Group xs={6} md={8} as={Col} controlId="public">
+                                        </Dropdown>
+                                    </Col>
+                                    </Row> */}
+{/* 
+                                    <Form.Group xs={12} md={8} as={Col} controlId="public">
                                         <Form.Label className="label">Public:</Form.Label>
                                             <Form.Control 
                                                 className="checkbox"
@@ -745,9 +854,9 @@ export default function AdminModal(props) {
                                     >
                                     Submit
                                 </Button>
-                                </Form.Group>     
-                            </Container>
-                         </Form>                        
+                                </Form.Group>      */}
+                            </div>
+                         {/* </Form>                         */}
                         </Modal.Body>
                         <Modal.Footer>
                         </Modal.Footer>
