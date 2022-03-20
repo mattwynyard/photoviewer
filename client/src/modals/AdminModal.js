@@ -29,6 +29,12 @@ export default function AdminModal(props) {
     const AddClient = clients.map(AddClient => AddClient);
     const AddProject = projects.map(AddProject => AddProject);
 
+    // useEffect(() => {
+    //     getClients();
+    //     getProjects(clients[0]);
+        
+    // }, []);
+
     const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + endpoint, {
@@ -92,6 +98,11 @@ export default function AdminModal(props) {
             setAmazon(result.amazon); 
             setIsPublic(result.public);
             setIsReverse(result.reverse);
+            setIsPriority(result.priority);
+            setHasVideo(result.hasvideo);
+            setHasRamm(result.ramm);
+            setHasCentreline(result.centreline);
+            setHasRMClass(result.rmclass);
         }
            
     }
@@ -110,6 +121,11 @@ export default function AdminModal(props) {
             setAmazon(projects[index].amazon); 
             setIsPublic(projects[index].public);
             setIsReverse(projects[index].reverse);
+            setIsPriority(projects[index].priority);
+            setHasVideo(projects[index].hasvideo);
+            setHasRamm(projects[index].ramm);
+            setHasCentreline(projects[index].centreline);
+            setHasRMClass(projects[index].rmclass);
         }
         
     }
@@ -118,7 +134,7 @@ export default function AdminModal(props) {
         if (props.login.user === "admin") {
             let clients = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
                  {project: null, query: null}, "/clients");
-            setClients(clients.map((client) => client.username));
+            setClients(clients.map((client) => client.username).sort());
           }
     }
 
@@ -183,11 +199,12 @@ export default function AdminModal(props) {
             console.log("error: " + error);
             alert(error);
             return;
+
           });
         }
       }
 
-      const updateProject = async (type, parameters) => {
+      const updateProject = async (type) => {
         if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + '/project', {
             method: 'POST',
@@ -236,6 +253,12 @@ export default function AdminModal(props) {
         }
       }
 
+      const handleHide = () => {
+        setProjects([]);
+        setProject(null);
+        props.hide();
+      }
+
       switch (props.table) {
         case 'user':
             if(props.mode === 'Insert') {
@@ -244,7 +267,7 @@ export default function AdminModal(props) {
                         show={props.show} 
                         size={'md'} 
                         centered={true}
-                        onHide={props.hide}
+                        onHide={props.onHide}
                         >
                     <Modal.Header>
                         <Modal.Title>Add New User</Modal.Title>
@@ -625,7 +648,7 @@ export default function AdminModal(props) {
                         show={props.show} 
                         size={'lg'} 
                         centered={true}
-                        onHide={props.hide}
+                        onHide={() => handleHide()}
                         >
                         <Modal.Header>
                             <div>
@@ -738,13 +761,15 @@ export default function AdminModal(props) {
                                     name={"public"}
                                     size='sm'
                                     checked={project ? isPublic : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                    onClick={(e) => e.currentTarget.checked ? setIsPublic(false) : setIsPublic(true)}
+                                    //onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
                                 ></input>
                                 <label className={"label-reverse"} 
                                     htmlFor="reverse">
                                         {"Reverse:"}
                                 </label>
                                 <input 
+
                                     type={"checkbox"} 
                                     id={"reverse"} 
                                     name={"reverse"}
@@ -752,111 +777,74 @@ export default function AdminModal(props) {
                                     checked={project ? isReverse : false} 
                                     onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
                                 ></input>
-                                {/* <Form.Label className="label-public">Public:</Form.Label>
-                                <Form.Control 
-                                    className="checkbox"
-                                    type="checkbox" 
+                                <label className={"label-priority"} 
+                                    htmlFor="priority">
+                                        {"Priority:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"priority"} 
+                                    name={"priority"}
                                     size='sm'
-                                    checked={isPublic} 
-                                    onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
-                                >
-                                </Form.Control>
-                                <label className="label-project">Project Code:</label> */}
-                                {/* <Row>
-                                    <Col sm={6}>
-                                        <Form.Label className="label">Project Code:</Form.Label>
-                                    </Col>
-                                    <Col sm={6}>
-                                        <Dropdown>
-                                            <Dropdown.Toggle variant="secondary">
-                                                {props.mode}
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu>
-                                            {projects.map((obj, index) =>   
-                                                <Dropdown.Item>
-                                                    {obj}
-                                                </Dropdown.Item>
-                                                )}
-                                            </Dropdown.Menu>
-                                        </Dropdown>
-                                    </Col>
-                                    </Row> */}
-{/* 
-                                    <Form.Group xs={12} md={8} as={Col} controlId="public">
-                                        <Form.Label className="label">Public:</Form.Label>
-                                            <Form.Control 
-                                                className="checkbox"
-                                                type="checkbox" 
-                                                size='sm'
-                                                checked={isPublic} 
-                                                onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
-                                            >
-                                            </Form.Control>
-                                   
-                                    <Form.Label className="label">Reverse:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={isReverse}
-                                            onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
-                                        >
-                                        </Form.Control>
-                                        <Form.Label className="label">Priority:</Form.Label>
-                                            <Form.Control
-                                                className="checkbox" 
-                                                type="checkbox" 
-                                                size='sm'
-                                                checked={isPriority}
-                                                onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
-                                            >
-                                            </Form.Control>
-  
-                                    <Form.Label className="label">Video:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={hasVideo}
-                                            onChange={(e) => e.currentTarget.checked ? setHasVideo(true) : setHasVideo(false)}
-                                        >
-                                        </Form.Control>
-                                    <Form.Label className="label">RAMM:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={hasRamm}
-                                            onChange={(e) => e.currentTarget.checked ? setHasRamm(true) : setHasRamm(false)}
-                                        >
-                                        </Form.Control>
-                                    <Form.Label className="label">Centreline:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={hasCentreline}
-                                            onChange={(e) => e.currentTarget.checked ? setHasCentreline(true) : setHasCentreline(false)}
-                                        >
-                                        </Form.Control>
-                                    <Form.Label className="label">RM Class:</Form.Label>
-                                        <Form.Control
-                                            className="checkbox" 
-                                            type="checkbox" 
-                                            size='sm'
-                                            checked={hasRMClass}
-                                            onChange={(e) => e.currentTarget.checked ? setHasRMClass(true) : setHasRMClass(false)}
-                                        >
-                                        </Form.Control>
-                                    <Button 
-                                        variant="primary" 
-                                        onClick={(e) => updateProject('insert')}
-                                    >
-                                    Submit
-                                </Button>
-                                </Form.Group>      */}
+                                    checked={project ? isPriority : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
+                                ></input>
+                                <label className={"label-video"} 
+                                    htmlFor="video">
+                                        {"Video:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"video"} 
+                                    name={"video"}
+                                    size='sm'
+                                    checked={project ? hasVideo : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setHasVideo(true) : setHasVideo(false)}
+                                ></input>
+                                <label className={"label-ramm"} 
+                                    htmlFor="ramm">
+                                        {"Ramm:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"ramm"} 
+                                    name={"ramm"}
+                                    size='sm'
+                                    checked={project ? hasRamm : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setHasRamm(true) : setHasRamm(false)}
+                                ></input>
+                                <label className={"label-centreline"} 
+                                    htmlFor="centreline">
+                                        {"Centreline:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"centreline"} 
+                                    name={"centreline"}
+                                    size='sm'
+                                    checked={project ? hasCentreline : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setHasCentreline(true) : setHasCentreline(false)}
+                                ></input>
+                                <label className={"label-rmclass"} 
+                                    htmlFor="rmclass">
+                                        {"RM Class:"}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"rmclass"} 
+                                    name={"rmclass"}
+                                    size='sm'
+                                    checked={project ? hasRMClass : false} 
+                                    onChange={(e) => e.currentTarget.checked ? setHasRMClass(true) : setHasRMClass(false)}
+                                ></input>
+                                <input 
+                                    type={"button"} 
+                                    size='sm'
+                                    value={"submit"}
+                                    onClick={(e) => updateProject('update')}
+                                ></input>
                             </div>
-                         {/* </Form>                         */}
+                        
                         </Modal.Body>
                         <Modal.Footer>
                         </Modal.Footer>
