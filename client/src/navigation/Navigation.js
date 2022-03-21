@@ -33,9 +33,8 @@ export default function Navigation(props) {
     setLoginError("")
     let body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
     if (body.result) {
-      let token = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
-      console.log(token)
-      props.mapbox(token);
+      let mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
+      props.mapbox(mapbox);
       window.sessionStorage.setItem('token', body.token);
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);

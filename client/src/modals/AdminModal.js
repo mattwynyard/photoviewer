@@ -15,6 +15,7 @@ export default function AdminModal(props) {
     const [date, setDate] = useState(null);
     const [surface, setSurface] = useState(null);
     const [amazon, setAmazon] = useState(null);
+    const [table, setTable] = useState(null);
     const [isPriority, setIsPriority] = useState(true);
     const [isReverse, setIsReverse] = useState(false);
     const [hasVideo, setHasVideo] = useState(false);
@@ -31,8 +32,7 @@ export default function AdminModal(props) {
 
     useEffect(() => {
         getClients();
-        getProjects(clients[0]);
-        
+        getProjects(clients[0]);       
     }, []);
 
     const sendData = async (endpoint) => {
@@ -90,7 +90,6 @@ export default function AdminModal(props) {
         let result = await getProjects(clients[index]);
         if (!result) {
             console.log(result)
-            //refreshUI(0);
         } else {
             setDescription(result.description);
             setDate(result.date);
@@ -103,6 +102,7 @@ export default function AdminModal(props) {
             setHasRamm(result.ramm);
             setHasCentreline(result.centreline);
             setHasRMClass(result.rmclass);
+            setTable(result.ftable);
         }           
     }
 
@@ -124,6 +124,7 @@ export default function AdminModal(props) {
             setHasRamm(projects[index].ramm);
             setHasCentreline(projects[index].centreline);
             setHasRMClass(projects[index].rmclass);
+            setTable(projects[index].ftable);
         }       
     }
 
@@ -212,7 +213,7 @@ export default function AdminModal(props) {
             body: JSON.stringify({
                 user: props.login.user,
                 type: type,
-                code: project.code,
+                code: type === 'update' ? project.code: project,
                 client: client,
                 description: description ? description : null,
                 date: date ? date : null,
@@ -224,7 +225,8 @@ export default function AdminModal(props) {
                 video: hasVideo,
                 ramm: hasRamm,
                 centreline: hasCentreline,
-                rmclass: hasRMClass
+                rmclass: hasRMClass,
+                ftable: table
 
             })
           }).then(async (response) => {
@@ -331,6 +333,9 @@ export default function AdminModal(props) {
                 break;
             case 'amazon':
                 setAmazon(e.currentTarget.value);
+                break
+            case 'table':
+                setTable(e.currentTarget.value);
                 break;
             default:
 
@@ -589,6 +594,14 @@ export default function AdminModal(props) {
                                             onChange={(e) => setAmazon(e.currentTarget.value)}
                                         >
                                         </Form.Control>
+                                        <Form.Label className="label">Fault table:</Form.Label>
+                                        <Form.Control 
+                                            type="text" 
+                                            size='sm'
+                                            placeholder="Enter fault table" 
+                                            onChange={(e) => setTable(e.currentTarget.value)}
+                                        >
+                                        </Form.Control>
                                     </Form.Group>                                   
                                     <Form.Group xs={6} md={8} as={Col} controlId="public">
                                         <Form.Label className="label">Public:</Form.Label>
@@ -827,6 +840,18 @@ export default function AdminModal(props) {
                                     placeholder={project === null ? "" : project.amazon} 
                                     onChange={(e) => handleTextChange(e)}
                                 ></input>
+                                <label className={"label-table"} 
+                                    htmlFor="Table">
+                                        {"Table:"}
+                                </label>
+                                <input 
+                                    type={"text"} 
+                                    id={"table"} 
+                                    name={"table"}
+                                    size='sm'
+                                    placeholder={project === null ? "" : project.ftable} 
+                                    onChange={(e) => handleTextChange(e)}
+                                ></input>
                                 <label className={"label-public"} 
                                     htmlFor="public">
                                         {"Public:"}
@@ -844,7 +869,6 @@ export default function AdminModal(props) {
                                         {"Reverse:"}
                                 </label>
                                 <input 
-
                                     type={"checkbox"} 
                                     id={"reverse"} 
                                     name={"reverse"}

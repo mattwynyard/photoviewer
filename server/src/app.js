@@ -320,10 +320,10 @@ app.post('/project', async (req, res) => {
           res.send({error: err.err.detail});
         }
       } else if (req.body.type === "update") {
-        console.log(req.body);
         try {
-          let project = {code: req.body.code, description: req.body.description, date: req.body.date, surface: req.body.surface, amazon: req.body.amazon, public: req.body.public,
-            priority: req.body.priority, reverse: req.body.reverse, video: req.body.video, ramm: req.body.ramm, centreline: req.body.centreline, rmclass: req.body.rmclass};
+          let project = {code: req.body.code, description: req.body.description, date: req.body.date, surface: req.body.surface, amazon: req.body.amazon, 
+            public: req.body.public, priority: req.body.priority, reverse: req.body.reverse, video: req.body.video, ramm: req.body.ramm, 
+            centreline: req.body.centreline, rmclass: req.body.rmclass, ftable: req.body.ftable};
           let result = await db.updateProject(project); 
           res.send({type: "update", rows: result.rowCount});     
         } catch (err) {

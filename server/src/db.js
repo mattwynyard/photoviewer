@@ -101,7 +101,7 @@ module.exports = {
     projects : (user) => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ' 
-            + 'ramm, rmclass FROM projects WHERE client = $1::text AND active = true';
+            + 'ramm, rmclass, ftable, active FROM projects WHERE client = $1::text';
             connection.query(sql, [user], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -118,7 +118,7 @@ module.exports = {
             let sql = `UPDATE public.projects SET description='${project.description}', date='${project.date}', 
             amazon='${project.amazon}', layermodified=now(), public=${project.public}, priority=${project.priority}, 
             reverse=${project.reverse}, hasvideo=${project.video},centreline=${project.centreline}, 
-            ramm=${project.ramm}, rmclass=${project.rmclass} WHERE code='${project.code}'`;
+            ramm=${project.ramm}, rmclass=${project.rmclass}, ftable='${project.ftable}' WHERE code='${project.code}'`;
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
