@@ -25,15 +25,16 @@ export default function AdminModal(props) {
     const [hasRMClass, setHasRMClass] = useState(false);
     const [data, setData] = useState(null);
     const [isStaged, setIsStaged] = useState(false);
+    const [buttonDisabled, setButtonDisabled] = useState(true)
 
     const AddClient = clients.map(AddClient => AddClient);
     const AddProject = projects.map(AddProject => AddProject);
 
-    // useEffect(() => {
-    //     getClients();
-    //     getProjects(clients[0]);
+    useEffect(() => {
+        getClients();
+        getProjects(clients[0]);
         
-    // }, []);
+    }, []);
 
     const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
@@ -148,7 +149,7 @@ export default function AdminModal(props) {
                 return null;
             } else {
                 setProject(result[0]);
-                return result[0]
+                return result[0];
             }
           }
          
@@ -216,7 +217,7 @@ export default function AdminModal(props) {
             body: JSON.stringify({
                 user: props.login.user,
                 type: type,
-                code: project,
+                code: project.code,
                 client: client,
                 description: description ? description : null,
                 date: date ? date : null,
@@ -257,6 +258,87 @@ export default function AdminModal(props) {
         setProjects([]);
         setProject(null);
         props.hide();
+      }
+
+      const handleCheckboxChange = (e) => {
+        switch(e.currentTarget.id) {
+            case 'public':
+                if(e.currentTarget.checked) {
+                    setIsPublic(true)
+                } else {
+                    setIsPublic(false)
+                }
+                break;
+            case 'reverse':
+                if(e.currentTarget.checked) {
+                    setIsReverse(true)
+                } else {
+                    setIsReverse(false)
+                }
+                break;
+            case 'priority':
+                if(e.currentTarget.checked) {
+                    setIsPriority(true)
+                } else {
+                    setIsPriority(false)
+                }
+                break;
+            case 'video':
+                if(e.currentTarget.checked) {
+                    setHasVideo(true)
+                } else {
+                    setHasVideo(false)
+                }
+                break;
+            case 'ramm':
+                if(e.currentTarget.checked) {
+                    setHasRamm(true)
+                } else {
+                    setHasRamm(false)
+                }
+                break;
+            case 'centreline':
+                if(e.currentTarget.checked) {
+                    setHasCentreline(true)
+                } else {
+                    setHasCentreline(false)
+                }
+                break;
+            case 'rmclass':
+                if(e.currentTarget.checked) {
+                    setHasRMClass(true)
+                } else {
+                    setHasRMClass(false)
+                }
+                break;
+            default:
+
+        }
+        if(buttonDisabled) {
+            setButtonDisabled(false);
+        }
+      }
+
+      const handleTextChange = (e) => {
+        switch(e.currentTarget.id) {
+            case 'description':
+                setDescription(e.currentTarget.value);
+                break;
+            case 'date':
+                setDate(e.currentTarget.value);
+                break;
+            case 'surface':
+                setSurface(e.currentTarget.value);
+                break;
+            case 'amazon':
+                setAmazon(e.currentTarget.value);
+                break;
+            default:
+
+        }
+        if(buttonDisabled) {
+            setButtonDisabled(false);
+        }
       }
 
       switch (props.table) {
@@ -434,7 +516,7 @@ export default function AdminModal(props) {
                         show={props.show} 
                         size={'lg'} 
                         centered={true}
-                        onHide={props.hide}
+                        onHide={() => handleHide()}
                         >
                         <Modal.Header>
                             <div>
@@ -598,7 +680,7 @@ export default function AdminModal(props) {
                         show={props.show} 
                         size={'lg'} 
                         centered={true}
-                        onHide={props.hide}
+                        onHide={() => handleHide()}
                         >
                         <Modal.Header>
                             <Modal.Title>Delete Project</Modal.Title>  
@@ -713,7 +795,7 @@ export default function AdminModal(props) {
                                     name={"description"}
                                     size='sm'
                                     placeholder={project === null ? "" : project.description} 
-                                    onChange={(e) => setDescription(e.currentTarget.value)}
+                                    onChange={(e) => handleTextChange(e)}
                                 ></input>
                                 <label className={"label-date"} 
                                     htmlFor="date">
@@ -725,7 +807,7 @@ export default function AdminModal(props) {
                                     name={"date"}
                                     size='sm'
                                     placeholder={project === null ? "" : project.date} 
-                                    onChange={(e) => setDate(e.currentTarget.value)}
+                                    onChange={(e) => handleTextChange(e)}
                                 ></input>
                                 <label className={"label-surface"} 
                                     htmlFor="surface">
@@ -737,7 +819,7 @@ export default function AdminModal(props) {
                                     name={"surface"}
                                     size='sm'
                                     placeholder={project === null ? "" : project.surface} 
-                                    onChange={(e) => setDate(e.currentTarget.value)}
+                                    onChange={(e) => handleTextChange(e)}
                                 ></input>
                                 <label className={"label-amazon"} 
                                     htmlFor="amazon">
@@ -749,7 +831,7 @@ export default function AdminModal(props) {
                                     name={"amazon"}
                                     size='sm'
                                     placeholder={project === null ? "" : project.amazon} 
-                                    onChange={(e) => setAmazon(e.currentTarget.value)}
+                                    onChange={(e) => handleTextChange(e)}
                                 ></input>
                                 <label className={"label-public"} 
                                     htmlFor="public">
@@ -761,8 +843,7 @@ export default function AdminModal(props) {
                                     name={"public"}
                                     size='sm'
                                     checked={project ? isPublic : false} 
-                                    onClick={(e) => e.currentTarget.checked ? setIsPublic(false) : setIsPublic(true)}
-                                    //onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-reverse"} 
                                     htmlFor="reverse">
@@ -775,7 +856,7 @@ export default function AdminModal(props) {
                                     name={"reverse"}
                                     size='sm'
                                     checked={project ? isReverse : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setIsReverse(true) : setIsReverse(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-priority"} 
                                     htmlFor="priority">
@@ -787,7 +868,7 @@ export default function AdminModal(props) {
                                     name={"priority"}
                                     size='sm'
                                     checked={project ? isPriority : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-video"} 
                                     htmlFor="video">
@@ -799,7 +880,7 @@ export default function AdminModal(props) {
                                     name={"video"}
                                     size='sm'
                                     checked={project ? hasVideo : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setHasVideo(true) : setHasVideo(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-ramm"} 
                                     htmlFor="ramm">
@@ -811,7 +892,7 @@ export default function AdminModal(props) {
                                     name={"ramm"}
                                     size='sm'
                                     checked={project ? hasRamm : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setHasRamm(true) : setHasRamm(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-centreline"} 
                                     htmlFor="centreline">
@@ -823,7 +904,7 @@ export default function AdminModal(props) {
                                     name={"centreline"}
                                     size='sm'
                                     checked={project ? hasCentreline : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setHasCentreline(true) : setHasCentreline(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <label className={"label-rmclass"} 
                                     htmlFor="rmclass">
@@ -835,12 +916,13 @@ export default function AdminModal(props) {
                                     name={"rmclass"}
                                     size='sm'
                                     checked={project ? hasRMClass : false} 
-                                    onChange={(e) => e.currentTarget.checked ? setHasRMClass(true) : setHasRMClass(false)}
+                                    onChange={(e) => handleCheckboxChange(e)}
                                 ></input>
                                 <input 
                                     type={"button"} 
                                     size='sm'
                                     value={"submit"}
+                                    disabled={buttonDisabled}
                                     onClick={(e) => updateProject('update')}
                                 ></input>
                             </div>

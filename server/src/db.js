@@ -112,6 +112,21 @@ module.exports = {
         });
     },
 
+    updateProejcts: (project) => {
+        let sql = `UPDATE public.projects SET description='${project.description}', date='${project.date}', active='${project.active}', 
+            amazon='${project.amazon}', layermodified=now(), public='${project.public}', priority='${project.priority}', 
+            reverse='${project.reverse}', hasvideo='${project.video}',centreline='${project.centreline}', 
+            ramm='${project.ramm}', rmclass='${project.rmclass}' WHERE project='${project.code}'`
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let project = resolve(result);
+                return project;
+            });
+    },
+
     clients : () => {
         return new Promise((resolve, reject) => {
             let sql = 'SELECT username FROM users';

@@ -321,23 +321,32 @@ app.post('/project', async (req, res) => {
           res.send({error: err.err.detail});
         }
       } else if (req.body.type === "update") {
+        console.log(req.body);
         try {
-          let surface = await db.projecttype(req.body.code);
-          let archive = await db.isArchive(req.body.code);
-          if (surface.rowCount === 1) {
-            let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
-            let project = await db.deleteProject(req.body.code);
-            res.set('Content-Type', 'application/json');
-            res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
-          } else {
-            res.set('Content-Type', 'application/json');
-            res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
-          }
+          let project = req.body.project;
+          let result = updateProject(project)
         } catch (err) {
           console.log(err)
           res.set('Content-Type', 'application/json');
           res.send({error: err.err.detail});
         }
+        // try {
+        //   let surface = await db.projecttype(req.body.code);
+        //   let archive = await db.isArchive(req.body.code);
+        //   if (surface.rowCount === 1) {
+        //     let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
+        //     let project = await db.deleteProject(req.body.code);
+        //     res.set('Content-Type', 'application/json');
+        //     res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
+        //   } else {
+        //     res.set('Content-Type', 'application/json');
+        //     res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
+        //   }
+        // } catch (err) {
+        //   console.log(err)
+        //   res.set('Content-Type', 'application/json');
+        //   res.send({error: err.err.detail});
+        // }
       }      
     } else {
       res.set('Content-Type', 'application/json');
