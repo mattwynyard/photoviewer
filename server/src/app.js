@@ -289,7 +289,9 @@ app.post('/projects', async (req, res) => {
 
 app.post('/project', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
+  res.set('Content-Type', 'application/json');
   if(result) {
+
       if (req.body.type === "insert") {
         try {
           let q = await db.addProject(req.body); 
@@ -299,7 +301,7 @@ app.post('/project', async (req, res) => {
             res.send({type: "error", rows: q.rowCount});  
           }
         } catch (err) {
-          res.set('Content-Type', 'application/json');
+          
           res.send({error: err.detail});
         }
       } else if (req.body.type === "delete") {
@@ -309,50 +311,29 @@ app.post('/project', async (req, res) => {
           if (surface.rowCount === 1) {
             let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
             let project = await db.deleteProject(req.body.code);
-            res.set('Content-Type', 'application/json');
             res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
           } else {
-            res.set('Content-Type', 'application/json');
             res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
           }
         } catch (err) {
           console.log(err)
-          res.set('Content-Type', 'application/json');
           res.send({error: err.err.detail});
         }
       } else if (req.body.type === "update") {
         console.log(req.body);
         try {
-          let project = req.body.project;
-          let result = updateProject(project)
+          let project = {code: req.body.code, description: req.body.description, date: req.body.date, surface: req.body.surface, amazon: req.body.amazon, public: req.body.public,
+            priority: req.body.priority, reverse: req.body.reverse, video: req.body.video, ramm: req.body.ramm, centreline: req.body.centreline, rmclass: req.body.rmclass};
+          let result = await db.updateProject(project); 
+          res.send({type: "update", rows: result.rowCount});     
         } catch (err) {
           console.log(err)
-          res.set('Content-Type', 'application/json');
           res.send({error: err.err.detail});
         }
-        // try {
-        //   let surface = await db.projecttype(req.body.code);
-        //   let archive = await db.isArchive(req.body.code);
-        //   if (surface.rowCount === 1) {
-        //     let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
-        //     let project = await db.deleteProject(req.body.code);
-        //     res.set('Content-Type', 'application/json');
-        //     res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
-        //   } else {
-        //     res.set('Content-Type', 'application/json');
-        //     res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
-        //   }
-        // } catch (err) {
-        //   console.log(err)
-        //   res.set('Content-Type', 'application/json');
-        //   res.send({error: err.err.detail});
-        // }
       }      
     } else {
-      res.set('Content-Type', 'application/json');
       res.send({error: "Invalid token"});
-    }
-    
+    }    
 });
 
 app.post('/carriageway', async(req, res) => {

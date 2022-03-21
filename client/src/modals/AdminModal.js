@@ -14,7 +14,6 @@ export default function AdminModal(props) {
     const [description, setDescription] = useState(null);
     const [date, setDate] = useState(null);
     const [surface, setSurface] = useState(null);
-    const [ta, setTA] = useState(null);
     const [amazon, setAmazon] = useState(null);
     const [isPriority, setIsPriority] = useState(true);
     const [isReverse, setIsReverse] = useState(false);
@@ -79,7 +78,7 @@ export default function AdminModal(props) {
     }
 
     const setMode = (mode) => {
-        props.setMode(mode)
+        props.setMode(mode);
         if (mode === "Update") {
             getClients();
             getProjects(clients[0]);
@@ -104,13 +103,11 @@ export default function AdminModal(props) {
             setHasRamm(result.ramm);
             setHasCentreline(result.centreline);
             setHasRMClass(result.rmclass);
-        }
-           
+        }           
     }
 
     const changeProject = (index) => {
         setProject(projects[index]);
-        console.log(projects[index])
         refreshUI(index);      
     }
 
@@ -127,8 +124,7 @@ export default function AdminModal(props) {
             setHasRamm(projects[index].ramm);
             setHasCentreline(projects[index].centreline);
             setHasRMClass(projects[index].rmclass);
-        }
-        
+        }       
     }
 
     const getClients = async () => {
@@ -200,7 +196,6 @@ export default function AdminModal(props) {
             console.log("error: " + error);
             alert(error);
             return;
-
           });
         }
       }
@@ -240,7 +235,9 @@ export default function AdminModal(props) {
               if (body.type === "insert") {
                 alert("Project: " + project + " created")
               } else if (body.type === "delete") {
-                alert("Project: " + project + "rows: " + body.rows + " deleted")
+                alert("Project: " + project + "rows: " + body.rows + " deleted");
+            } else if (body.type === "update") {
+                alert("Project: " + project.code + " rows: " + body.rows + " updated")
               } else {
                 alert("Project: " + project + "  failed")
               }
@@ -257,6 +254,8 @@ export default function AdminModal(props) {
       const handleHide = () => {
         setProjects([]);
         setProject(null);
+        setButtonDisabled(true);
+        setMode('Insert');
         props.hide();
       }
 
@@ -349,7 +348,7 @@ export default function AdminModal(props) {
                         show={props.show} 
                         size={'md'} 
                         centered={true}
-                        onHide={props.onHide}
+                        onHide={props.hide}
                         >
                     <Modal.Header>
                         <Modal.Title>Add New User</Modal.Title>
@@ -459,7 +458,6 @@ export default function AdminModal(props) {
                             <Dropdown.Toggle variant="success" id="dropdown-basic">
                                 {props.mode}
                             </Dropdown.Toggle>
-
                             <Dropdown.Menu>
                             <Dropdown.Item
                                 onClick={(e) => setMode("Insert")}
@@ -470,8 +468,7 @@ export default function AdminModal(props) {
                                 onClick={(e) => setMode("Delete")}
                                 >
                                 Delete
-                            </Dropdown.Item>
-                            
+                            </Dropdown.Item>                         
                             </Dropdown.Menu>
                         </Dropdown>
                     </Modal.Header>
@@ -592,8 +589,7 @@ export default function AdminModal(props) {
                                             onChange={(e) => setAmazon(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                    </Form.Group>
-                                    
+                                    </Form.Group>                                   
                                     <Form.Group xs={6} md={8} as={Col} controlId="public">
                                         <Form.Label className="label">Public:</Form.Label>
                                             <Form.Control 
@@ -603,8 +599,7 @@ export default function AdminModal(props) {
                                                 checked={isPublic} 
                                                 onChange={(e) => e.currentTarget.checked ? setIsPublic(true) : setIsPublic(false)}
                                             >
-                                            </Form.Control>
-                                   
+                                            </Form.Control>        
                                     <Form.Label className="label">Reverse:</Form.Label>
                                         <Form.Control
                                             className="checkbox" 
@@ -623,7 +618,6 @@ export default function AdminModal(props) {
                                                 onChange={(e) => e.currentTarget.checked ? setIsPriority(true) : setIsPriority(false)}
                                             >
                                             </Form.Control>
-  
                                     <Form.Label className="label">Video:</Form.Label>
                                         <Form.Control
                                             className="checkbox" 
