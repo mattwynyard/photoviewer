@@ -80,6 +80,7 @@ export default function AdminModal(props) {
     const setMode = (mode) => {
         props.setMode(mode);
         if (mode === "Update") {
+            setButtonDisabled(true);
             getClients();
             getProjects(clients[0]);
         }     
@@ -310,6 +311,13 @@ export default function AdminModal(props) {
                     setHasRMClass(true)
                 } else {
                     setHasRMClass(false)
+                }
+                break;
+            case 'staged':
+                if(e.currentTarget.checked) {
+                    setIsStaged(true)
+                } else {
+                    setIsStaged(false)
                 }
                 break;
             default:
@@ -975,6 +983,18 @@ export default function AdminModal(props) {
                                 disabled={props.disabled}
                                 value={props.project}>
                             </Form.Control>
+                            <label className={"label-staged"} 
+                                    htmlFor="staged">
+                                        {"Staged: "}
+                                </label>
+                                <input 
+                                    type={"checkbox"} 
+                                    id={"staged"} 
+                                    name={"staged"}
+                                    size='sm'
+                                    checked={isStaged} 
+                                    onChange={(e) => handleCheckboxChange(e)}
+                                ></input>
                         </Form.Group>
                     </Form>
                     <CSVReader

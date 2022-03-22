@@ -916,10 +916,11 @@ app.post('/import', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
   if(token) {
     let project = req.body.project;
+    let staged = req.body.staged;
     let surface = await db.projecttype(project);
-    let result = await db.table(project);
-    let client = result.rows[0].client;
-    let table = result.rows[0].ftable;
+    let tableResult = await db.table(project);
+    let client = tableResult.rows[0].client;
+    let table = tableResult.rows[0].ftable;
     if (surface.rows[0].surface === "road") {
       let rows = 0;
       let errors = 0;
@@ -927,7 +928,7 @@ app.post('/import', async (req, res) => {
         let data =  req.body.data[i];
         try {
           let result = null;
-          if (client !== 'asu' || client !== 'asm') {
+          if (!staged) {
             result = await db.import(data);
           } else {
             result = await db.stagedImport(data);
