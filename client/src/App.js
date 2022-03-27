@@ -58,7 +58,7 @@ class App extends React.Component {
       zIndex: 900,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
       mode: "map", //for satellite thumbnail
       mapMode: "map",
       zoom: 8,
@@ -1543,22 +1543,6 @@ class App extends React.Component {
     console.log(this.state.isVideo);
   }
 
-// Admin
-  // addUser(e) {
-  //   this.customModal.current.setShow(true);
-  //   this.customModal.current.setState({name: 'user'});
-  // }
-
-  // addProject(e) {
-  //   this.customModal.current.setState({name: 'project'});
-  //   this.customModal.current.setShow(true);
-  // }
-
-  // importData(e) {
-  //   this.customModal.current.setState({name: 'import'});
-  //   this.customModal.current.setShow(true);
-  // }
-
   fileLoaded(project, data, status) {
     this.customModal.current.setShow(false);
     if (status) {
@@ -1567,28 +1551,6 @@ class App extends React.Component {
       this.sendData(project, data, '/import');
     }
   }
-
-  // createUser = (name, password) => {
-  //   this.addNewUser(name, password);
-  //   this.customModal.current.setShow(false);
-  // }
-
-  // deleteUser = (name) => {
-  //   this.deleteCurrentUser(name);
-  //   this.customModal.current.setShow(false);
-  // }
-
-  // deleteProject = (project, parent) => {
-  //   this.deleteCurrentProject(project, parent);
-  //   this.customModal.current.setShow(false);
-  // }
-
-  // createProject = (project) => {
-  //   this.addNewProject(project);
-  //   this.customModal.current.setShow(false);
-  // }
-
-  
 
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
@@ -1730,22 +1692,6 @@ class App extends React.Component {
         centre={this.centreMap}
         surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
       />  
-       {/* admin modal     */}
-       {/* <AdminModal 
-        name={'user'}
-        show={this.state.showAdmin} 
-        ref={this.customModal}
-        token={this.state.token}
-        host={this.state.host}
-        callbackUser={this.createUser} //insert user
-        callbackDeleteUser={this.deleteUser}
-        callbackProject={this.createProject}
-        callbackDeleteProject={this.deleteProject}
-        callbackImportData={this.importData}
-        callbackGetClient={this.getClient}
-        callbackGetProjects={this.selectProjects}
-        >
-       </AdminModal> */}
       <PhotoModal
         ref={this.photoModal}
       >

@@ -257,9 +257,41 @@ app.post('/selectprojects', async (req, res) => {
   }
 });
 
+app.post('/clients', async (req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  if (result) {
+    try {
+      let clients = await db.clients();
+      res.send({result: clients.rows});
+    } catch (err) {
+      console.log(err)
+      res.send({error: err.detail});
+    }
+  } else {
+    res.send({error: "Invalid token"});
+}
+});
+
+app.post('/projects', async (req, res) => {
+  const result = users.findUserToken(req.headers.authorization, req.body.user);
+  res.set('Content-Type', 'application/json');
+  if (result) {
+    try {
+      let projects = await db.projects(req.body.query.user);
+      res.send({result: projects.rows});
+    } catch (err) {
+      res.send({error: err.detail});
+    }
+  } else {
+      res.send({error: "Invalid token"});
+  }
+});
+
 app.post('/project', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
+  res.set('Content-Type', 'application/json');
   if(result) {
+
       if (req.body.type === "insert") {
         try {
           let q = await db.addProject(req.body); 
@@ -269,7 +301,7 @@ app.post('/project', async (req, res) => {
             res.send({type: "error", rows: q.rowCount});  
           }
         } catch (err) {
-          res.set('Content-Type', 'application/json');
+          
           res.send({error: err.detail});
         }
       } else if (req.body.type === "delete") {
@@ -279,23 +311,29 @@ app.post('/project', async (req, res) => {
           if (surface.rowCount === 1) {
             let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
             let project = await db.deleteProject(req.body.code);
-            res.set('Content-Type', 'application/json');
             res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
           } else {
-            res.set('Content-Type', 'application/json');
             res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
           }
         } catch (err) {
           console.log(err)
-          res.set('Content-Type', 'application/json');
           res.send({error: err.err.detail});
         }
-      }     
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-    
+      } else if (req.body.type === "update") {
+        try {
+          let project = {code: req.body.code, description: req.body.description, date: req.body.date, surface: req.body.surface, amazon: req.body.amazon, 
+            public: req.body.public, priority: req.body.priority, reverse: req.body.reverse, video: req.body.video, ramm: req.body.ramm, 
+            centreline: req.body.centreline, rmclass: req.body.rmclass, ftable: req.body.ftable};
+          let result = await db.updateProject(project); 
+          res.send({type: "update", rows: result.rowCount});     
+        } catch (err) {
+          console.log(err)
+          res.send({error: err.err.detail});
+        }
+      }      
+    } else {
+      res.send({error: "Invalid token"});
+    }    
 });
 
 app.post('/carriageway', async(req, res) => {
@@ -878,27 +916,56 @@ app.post('/import', async (req, res) => {
   const token = users.findUserToken(req.headers.authorization, req.body.user);
   if(token) {
     let project = req.body.project;
+    let staged = req.body.staged;
     let surface = await db.projecttype(project);
+    let tableResult = await db.table(project);
+    let client = tableResult.rows[0].client;
+    let table = tableResult.rows[0].ftable;
     if (surface.rows[0].surface === "road") {
       let rows = 0;
       let errors = 0;
+      let inserted = 0;
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
         try {
-          let result = await db.import(data);
-          if(result.rowCount === 1) {
-            rows++;
-          } else {
-            console.log(result)
-            errors++
+          let result = null;
+          
+          if (!staged) {
+            result = await db.import(data);
+            if(result.rowCount === 1) {
+              rows++;
+            } else {
+              console.log(result)
+              errors++
+            }
+          } else { //staged
+            try {
+              result = await db.tableImport(data, table);
+              if(result.rowCount === 1) {
+                inserted++;
+              } else {
+                console.log(result)
+                errors++
+              }
+            } catch(err) {
+              console.log(err)
+            }
+            
+
           }
         } catch(err) {
           errors++;
           console.log(err)
           break;
         }
-      } 
-      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+      }
+      //if (errors > 0) {
+        res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+      //} else {
+       // result = await db.tableImport(data, table);
+
+
+      //} 
     } else {
       let rows = 0;
       let errors = 0;

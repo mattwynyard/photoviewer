@@ -1,0 +1,31 @@
+.container {
+    display: grid;
+    gap: 5px;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-rows: minmax(5px, auto);
+    padding: 5px;
+    font-family: "Century Gothic", sans-serif;
+    margin-right: 5px;
+    font-size: 16px !important;
+    white-space: nowrap;    
+}
+
+.label-client {
+    grid-column: 1 / 2;
+    grid-row: 1;
+}
+
+.select-client {
+    grid-column: 2 / 2;
+    grid-row: 1;
+}
+
+/* .label-public {
+    grid-column: 3 / 4;
+    grid-row: 1;
+} */
+
+/* .checkbox-client {
+    grid-column: 4 / 4;
+    grid-row: 1;
+} */

@@ -100,14 +100,46 @@ module.exports = {
     },
     projects : (user) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ramm, rmclass FROM projects WHERE client = $1::text AND active = true';
+            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ' 
+            + 'ramm, rmclass, ftable, active FROM projects WHERE client = $1::text';
             connection.query(sql, [user], (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let project = resolve(result)
+                return project;
+            });
+        });
+    },
+
+    updateProject: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = `UPDATE public.projects SET description='${project.description}', date='${project.date}', 
+            amazon='${project.amazon}', layermodified=now(), public=${project.public}, priority=${project.priority}, 
+            reverse=${project.reverse}, hasvideo=${project.video},centreline=${project.centreline}, 
+            ramm=${project.ramm}, rmclass=${project.rmclass}, ftable='${project.ftable}' WHERE code='${project.code}'`;
+            connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
                 let project = resolve(result);
                 return project;
+            });
+        });
+    },
+
+    clients : () => {
+        return new Promise((resolve, reject) => {
+            let sql = 'SELECT username FROM users';
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let users = resolve(result);
+                return users;
             });
         });
     },
@@ -264,7 +296,7 @@ module.exports = {
         data[22] = parseString(data[22]); //status
         data[23] = parseString(data[23]); //wkt
 
-        let sql = "INSERT INTO roadfaults(id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        let sql = "INSERT INTO roadfaults (id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
         + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
         + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
         return new Promise((resolve, reject) => {
@@ -274,6 +306,90 @@ module.exports = {
                 } else {
                     let priority = resolve(result);
                     return priority;
+                }        
+            });
+        });
+    },
+
+    tableImport: (data, table) => {
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseString(data[1]); //rclass
+        data[3] = parseString(data[3]); //roadid
+        data[4] = parseString(data[4]); //carriage
+        data[5] = parseString(data[5]); //location
+        data[6] = parseInteger(data[6]); //starterp
+        data[7] = parseInteger(data[7]); //enderp
+        data[8] = parseString(data[8]); //side
+        data[9] = parseString(data[9]);  //position
+        data[10] = parseString(data[10]); //class
+        data[11] = parseString(data[11]); //fault
+        data[12] = parseString(data[12]); //repair
+        data[13] = parseInteger(data[13]); //priority
+        data[14] = parseString(data[14]); //comment
+        data[15] = parseInteger(data[15]); //length
+        data[16] = parseInteger(data[16]); //width
+        data[17] = parseInteger(data[17]); //count
+        data[18] = parseDate(data[18]); //faulttime
+        data[19] = parseString(data[19]); //inspector
+        data[20] = parseString(data[20]); //inspection
+        data[21] = parseInteger(data[21]); //seq
+        data[22] = parseString(data[22]); //photoid
+        data[23] = parseString(data[23]); //status
+        data[24] = parseString(data[24]); //wkt
+        let sql = "INSERT INTO " + table + " (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
+        + " VALUES (" + data + ", ST_GeomFromText(" + data[24] + "));"
+
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    let results = resolve(result);
+                    return results;
+                }        
+            });
+        });
+    },
+
+    stagedImport: (data) => {
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseString(data[1]); //rclass
+        data[3] = parseString(data[3]); //roadid
+        data[4] = parseString(data[4]); //carriage
+        data[5] = parseString(data[5]); //location
+        data[6] = parseInteger(data[6]); //starterp
+        data[7] = parseInteger(data[7]); //enderp
+        data[8] = parseString(data[8]); //side
+        data[9] = parseString(data[9]);  //position
+        data[10] = parseString(data[10]); //class
+        data[11] = parseString(data[11]); //fault
+        data[12] = parseString(data[12]); //repair
+        data[13] = parseInteger(data[13]); //priority
+        data[14] = parseString(data[14]); //comment
+        data[15] = parseInteger(data[15]); //length
+        data[16] = parseInteger(data[16]); //width
+        data[17] = parseInteger(data[17]); //count
+        data[18] = parseDate(data[18]); //faulttime
+        data[19] = parseString(data[19]); //inspector
+        data[20] = parseString(data[20]); //inspection
+        data[21] = parseInteger(data[21]); //seq
+        data[22] = parseString(data[22]); //photoid
+        data[23] = parseString(data[23]); //status
+        data[24] = parseString(data[24]); //wkt
+        let sql = "INSERT INTO importer (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt) "
+        + " VALUES (" + data + ");"
+
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    let results = resolve(result);
+                    return results;
                 }        
             });
         });
@@ -293,19 +409,19 @@ module.exports = {
         });  
     },
 
-    // age: (project) => {
-    //     return new Promise((resolve, reject) => {
-    //         let sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
-    //         connection.query(sql, (err, result) => {
-    //             if (err) {
-    //                 console.error('Error executing query', err.stack)
-    //                 return reject(err);
-    //             }
-    //             let priority = resolve(result);       
-    //             return priority;deleteProjectData
-    //         });
-    //     });
-    // },
+    table: (project) => {
+        return new Promise((resolve, reject) => {
+            let sql = "SELECT client, ftable FROM projects WHERE code = '" + project + "'";
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let client = resolve(result);       
+                return client;
+            });
+        });
+    },
 
     isArchive: (project) => {
         return new Promise((resolve, reject) => {
