@@ -924,28 +924,48 @@ app.post('/import', async (req, res) => {
     if (surface.rows[0].surface === "road") {
       let rows = 0;
       let errors = 0;
+      let inserted = 0;
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
         try {
           let result = null;
+          
           if (!staged) {
             result = await db.import(data);
-          } else {
-            result = await db.stagedImport(data);
-          }
-          if(result.rowCount === 1) {
-            rows++;
-          } else {
-            console.log(result)
-            errors++
+            if(result.rowCount === 1) {
+              rows++;
+            } else {
+              console.log(result)
+              errors++
+            }
+          } else { //staged
+            try {
+              result = await db.tableImport(data, table);
+              if(result.rowCount === 1) {
+                inserted++;
+              } else {
+                console.log(result)
+                errors++
+              }
+            } catch(err) {
+              console.log(err)
+            }
+            
+
           }
         } catch(err) {
           errors++;
           console.log(err)
           break;
         }
-      } 
-      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+      }
+      //if (errors > 0) {
+        res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+      //} else {
+       // result = await db.tableImport(data, table);
+
+
+      //} 
     } else {
       let rows = 0;
       let errors = 0;

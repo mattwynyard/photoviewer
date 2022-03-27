@@ -311,6 +311,48 @@ module.exports = {
         });
     },
 
+    tableImport: (data, table) => {
+        data[0] = parseString(data[0]); //id
+        data[1] = parseString(data[1]); //project
+        data[2] = parseString(data[1]); //rclass
+        data[3] = parseString(data[3]); //roadid
+        data[4] = parseString(data[4]); //carriage
+        data[5] = parseString(data[5]); //location
+        data[6] = parseInteger(data[6]); //starterp
+        data[7] = parseInteger(data[7]); //enderp
+        data[8] = parseString(data[8]); //side
+        data[9] = parseString(data[9]);  //position
+        data[10] = parseString(data[10]); //class
+        data[11] = parseString(data[11]); //fault
+        data[12] = parseString(data[12]); //repair
+        data[13] = parseInteger(data[13]); //priority
+        data[14] = parseString(data[14]); //comment
+        data[15] = parseInteger(data[15]); //length
+        data[16] = parseInteger(data[16]); //width
+        data[17] = parseInteger(data[17]); //count
+        data[18] = parseDate(data[18]); //faulttime
+        data[19] = parseString(data[19]); //inspector
+        data[20] = parseString(data[20]); //inspection
+        data[21] = parseInteger(data[21]); //seq
+        data[22] = parseString(data[22]); //photoid
+        data[23] = parseString(data[23]); //status
+        data[24] = parseString(data[24]); //wkt
+        let sql = "INSERT INTO " + table + " (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
+        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
+        + " VALUES (" + data + ", ST_GeomFromText(" + data[24] + "));"
+
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    let results = resolve(result);
+                    return results;
+                }        
+            });
+        });
+    },
+
     stagedImport: (data) => {
         data[0] = parseString(data[0]); //id
         data[1] = parseString(data[1]); //project
@@ -337,10 +379,10 @@ module.exports = {
         data[22] = parseString(data[22]); //photoid
         data[23] = parseString(data[23]); //status
         data[24] = parseString(data[24]); //wkt
-
         let sql = "INSERT INTO importer (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
         + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt) "
-        + " VALUES (" + data + ", ST_GeomFromText(" + data[24] + "));"
+        + " VALUES (" + data + ");"
+
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
