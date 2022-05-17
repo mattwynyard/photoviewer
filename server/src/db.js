@@ -544,7 +544,7 @@ module.exports = {
         
         return new Promise((resolve, reject) => {
             let sql = null;
-            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
+            let table = getTable(user)
             if (archive) {
                 sql = "SELECT fault FROM carriageways WHERE project = '" + project + "' AND class = '" + code + "' GROUP BY fault";
             } else {
