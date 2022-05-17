@@ -44,7 +44,7 @@ export default function Modals(props) {
         <Modal.Title><h2>About</h2> </Modal.Title>
       </Modal.Header>
       <Modal.Body >	
-        <b>Road Inspection Version 2.4</b><br></br>
+        <b>Road Inspection Version 2.5</b><br></br>
         Relased: 23/04/2020<br></br>
         Company: Onsite Developments Ltd.<br></br>
         Software Developer: Matt Wynyard <br></br>
