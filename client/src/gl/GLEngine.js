@@ -241,7 +241,7 @@ export default class GLEngine {
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, lineCount);
         } 
         if (numPointVerts > 0) {
-          let pointSize = Math.max(params.map.getZoom() - 8.0, 1.0);
+          let pointSize = Math.max(params.map.getZoom() - 6.0, 1.0);
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numLineVerts, pointCount); 
@@ -260,7 +260,7 @@ export default class GLEngine {
           gl.drawArrays(gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
         } 
         if (numPointVerts > 0) {
-          let pointSize = Math.max(params.zoom - 8.0, 1.0);
+          let pointSize = Math.max(params.zoom - 6.0, 1.0);
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numCentreVerts + numLineVerts, pointCount); 
