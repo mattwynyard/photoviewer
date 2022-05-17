@@ -43,6 +43,21 @@ function parseDate(d) {
     }
 }
 
+function getTable(user) {
+    let table = null;
+    switch (user) {
+        case 'asu':
+            table = 'asufaults';
+            break;
+        case 'asm':
+            table = 'asmfaults';
+            break;
+        default:
+            table = 'roadfaults'      
+    }
+    return table;
+}
+
 const { Pool } = require('pg');
 
 const connection = new Pool({
@@ -173,14 +188,15 @@ module.exports = {
     },
 
     priority: (user, project, archive) => {
+        let sql = null;
+        let table = getTable(user)
+        if (archive) {
+            sql = "SELECT priority FROM carriageways WHERE project = '" + project + "' GROUP BY priority";
+        } else {
+            sql = `SELECT priority FROM ${table} WHERE project = '${project}' GROUP BY priority`;
+        }
         return new Promise((resolve, reject) => {
-            let sql = null;
-            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
-            if (archive) {
-                sql = "SELECT priority FROM carriageways WHERE project = '" + project + "' GROUP BY priority";
-            } else {
-                sql = `SELECT priority FROM ${table} WHERE project = '${project}' GROUP BY priority`;
-            }
+            
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -438,14 +454,16 @@ module.exports = {
     },
 
     inspection: (user, project, isArchive) => {
+        let sql = null;
+        let table = getTable(user);
+        
+        if (isArchive) {
+            sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
+        } else {
+            sql = `SELECT inspection FROM ${table} WHERE project = '${project}' GROUP BY inspection`;
+        }   
         return new Promise((resolve, reject) => {
-            let sql = null;
-            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
-            if (isArchive) {
-                sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
-            } else {
-                sql = `SELECT inspection FROM ${table} WHERE project = '${project}' GROUP BY inspection`;
-            }           
+                    
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -472,16 +490,17 @@ module.exports = {
     // },
 
     class: (user, project, isArchive) => {
+        let sql = null;
+        let table = getTable(user)
+        if (isArchive) {
+            sql = "SELECT code, description FROM assetclass WHERE code IN "
+            + "(SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
+        } else {
+            sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
+                WHERE project = '${project}' GROUP BY class) ORDER BY priority`
+        }
         return new Promise((resolve, reject) => {
-            let sql = null;
-            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
-            if (isArchive) {
-                sql = "SELECT code, description FROM assetclass WHERE code IN "
-                + "(SELECT class FROM carriageways WHERE project = '" + project + "' GROUP BY class) ORDER BY priority";
-            } else {
-                sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
-                    WHERE project = '${project}' GROUP BY class) ORDER BY priority`
-            }
+            
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -850,9 +869,10 @@ module.exports = {
     },
 
     rmclass: (project, user) => {
+        let table = getTable(user)
+        let sql = `SELECT rclass FROM ${table} WHERE project = '${project}' GROUP BY rclass ORDER BY rclass ASC`;
         return new Promise((resolve, reject) => {
-            let table = user === 'asu' ? 'asufaults' : 'roadfaults'
-            let sql = `SELECT rclass FROM ${table} WHERE project = '${project}' GROUP BY rclass ORDER BY rclass ASC`;
+            
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -981,7 +1001,7 @@ module.exports = {
         let pCodes = null;
         let qOptions = null;
         let rmclass = null;
-        let table = user === 'asu' ? 'asufaults' : 'roadfaults'
+        let table = getTable(user)
         if (options.priority.length !== 0) {
             pCodes = buildQuery(options.priority);
         }
