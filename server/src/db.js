@@ -33,14 +33,20 @@ function parseString(s) {
     }
 }
 
-function parseDate(d) {
-    if (!d.indexOf('-') && d.indexOf('\/')) {
-        let index = s.indexOf('\ ');
-        let date = d.substring(0, index);
-        let time = d.substring(index, d.length);
-    } else {
+function parseDate(d) { 
+    let dateformat = /^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$/;
+    if(d.match(dateformat))
+    {   
         return "'" + d + "'";
+    } else {
+        dateformat = /^(((0[1-9]|[12]\d|3[01])[\/](0[13578]|1[02])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|[12]\d|30)[\/](0[13456789]|1[012])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|1\d|2[0-8])[\/](02)[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((29)[\/](02)[\/]((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm)))$/;
+        if (d.match(dateformat)) {
+            return "'" + d + "'"; //not handled
+        } else {
+            return "'" + d + "'"; 
+        }
     }
+            
 }
 
 function getTable(user) {
@@ -115,8 +121,8 @@ module.exports = {
     },
     projects : (user) => {
         return new Promise((resolve, reject) => {
-            let sql = 'SELECT code, description, date, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ' 
-            + 'ramm, rmclass, ftable, active FROM projects WHERE client = $1::text';
+            let sql = 'SELECT code, description, date, tacode, amazon, surface, public, priority, reverse, hasvideo, isarchive, centreline, ' 
+            + 'ramm, rmclass, active FROM projects WHERE client = $1::text';
             connection.query(sql, [user], (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -129,11 +135,12 @@ module.exports = {
     },
 
     updateProject: (project) => {
-        return new Promise((resolve, reject) => {
-            let sql = `UPDATE public.projects SET description='${project.description}', date='${project.date}', 
+        let sql = `UPDATE public.projects SET description='${project.description}', date='${project.date}', 
             amazon='${project.amazon}', layermodified=now(), public=${project.public}, priority=${project.priority}, 
             reverse=${project.reverse}, hasvideo=${project.video},centreline=${project.centreline}, 
-            ramm=${project.ramm}, rmclass=${project.rmclass}, ftable='${project.ftable}' WHERE code='${project.code}'`;
+            ramm=${project.ramm}, rmclass=${project.rmclass}, tacode='${project.tacode}' WHERE code='${project.code}'`;
+        return new Promise((resolve, reject) => {
+            
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -299,7 +306,11 @@ module.exports = {
         data[9] = parseString(data[9]); //class
         data[10] = parseString(data[10]); //fault
         data[11] = parseString(data[11]); //repair
-        data[12] = parseInteger(data[12]); //priority
+        if (data[12] === '0') {
+            data[12] = 99; //priority
+        } else {
+            data[12] = parseInteger(data[12]); //priority
+        }
         data[13] = parseString(data[13]); //comment
         data[14] = parseInteger(data[14]); //length
         data[15] = parseInteger(data[15]); //width
@@ -1220,14 +1231,15 @@ module.exports = {
     },
 
     addProject: (body) => {
-        return new Promise((resolve, reject) => {
-            let sql = "INSERT INTO projects(" +
-                "code, client, description, date, active, amazon, layercount, layermodified, " +
-                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass)" +
+        const tacode = parseInteger(body.tacode);
+        let sql = "INSERT INTO projects(" +
+                "code, client, description, date, tacode, active, amazon, layercount, layermodified, " +
+                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass, ftable)" +
                 "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
-                "', true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + body.public + ", " + 
-                body.priority + ", " + body.reverse + ", " + body.video + ", " + body.centreline + ", " + body.ramm + ", " + body.rmclass + ")";
-
+                "', " + tacode +  ", true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + 
+                body.public + ", " + body.priority + ", " + body.reverse + ", " + body.video + ", " + body.centreline + 
+                ", " + body.ramm + ", " + body.rmclass + ")";
+        return new Promise((resolve, reject) => {
             connection.query(sql, (err, results) => {
                 if (err) {
                     reject({ type: 'SQL', err});

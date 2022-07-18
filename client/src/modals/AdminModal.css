@@ -20,6 +20,18 @@
     grid-row: 1;
 }
 
+.delete-project-form {
+    display: grid;
+    gap: 5px;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-rows: minmax(5px, auto);
+    padding: 5px;
+    font-family: "Century Gothic", sans-serif;
+    margin-right: 5px;
+    font-size: 16px !important;
+    white-space: nowrap;
+}
+
 /* .label-public {
     grid-column: 3 / 4;
     grid-row: 1;

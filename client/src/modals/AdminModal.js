@@ -15,7 +15,7 @@ export default function AdminModal(props) {
     const [date, setDate] = useState(null);
     const [surface, setSurface] = useState(null);
     const [amazon, setAmazon] = useState(null);
-    const [table, setTable] = useState(null);
+    const [tacode, setTAcode] = useState(null);
     const [isPriority, setIsPriority] = useState(true);
     const [isReverse, setIsReverse] = useState(false);
     const [hasVideo, setHasVideo] = useState(false);
@@ -26,7 +26,7 @@ export default function AdminModal(props) {
     const [data, setData] = useState(null);
     const [isStaged, setIsStaged] = useState(false);
     const [buttonDisabled, setButtonDisabled] = useState(true)
-
+    const [deleteProjectDataOnly, setDeleteProjectDataOnly] = useState(false)
     const AddClient = clients.map(AddClient => AddClient);
     const AddProject = projects.map(AddProject => AddProject);
 
@@ -103,7 +103,7 @@ export default function AdminModal(props) {
             setHasRamm(result.ramm);
             setHasCentreline(result.centreline);
             setHasRMClass(result.rmclass);
-            setTable(result.ftable);
+            setTAcode(result.tacode);
         }           
     }
 
@@ -125,13 +125,13 @@ export default function AdminModal(props) {
             setHasRamm(projects[index].ramm);
             setHasCentreline(projects[index].centreline);
             setHasRMClass(projects[index].rmclass);
-            setTable(projects[index].ftable);
+            setTAcode(projects[index].tacode);
         }       
     }
 
     const getClients = async () => {
         if (props.login.user === "admin") {
-            let clients = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
+            const clients = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
                  {project: null, query: null}, "/clients");
             setClients(clients.map((client) => client.username).sort());
           }
@@ -203,6 +203,7 @@ export default function AdminModal(props) {
       }
 
       const updateProject = async (type) => {
+        if (props.login.user !== "admin") return;
         if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + '/project', {
             method: 'POST',
@@ -215,6 +216,7 @@ export default function AdminModal(props) {
                 user: props.login.user,
                 type: type,
                 code: type === 'update' ? project.code: project,
+                dataOnly: type === 'delete' ? deleteProjectDataOnly: null,
                 client: client,
                 description: description ? description : null,
                 date: date ? date : null,
@@ -227,7 +229,7 @@ export default function AdminModal(props) {
                 ramm: hasRamm,
                 centreline: hasCentreline,
                 rmclass: hasRMClass,
-                ftable: table
+                tacode: tacode
 
             })
           }).then(async (response) => {
@@ -342,8 +344,8 @@ export default function AdminModal(props) {
             case 'amazon':
                 setAmazon(e.currentTarget.value);
                 break
-            case 'table':
-                setTable(e.currentTarget.value);
+            case 'tacode':
+                setTAcode(e.currentTarget.value);
                 break;
             default:
 
@@ -602,12 +604,12 @@ export default function AdminModal(props) {
                                             onChange={(e) => setAmazon(e.currentTarget.value)}
                                         >
                                         </Form.Control>
-                                        <Form.Label className="label">Fault table:</Form.Label>
+                                        <Form.Label className="label">Territorial Authority Code:</Form.Label>
                                         <Form.Control 
                                             type="text" 
                                             size='sm'
-                                            placeholder="Enter fault table" 
-                                            onChange={(e) => setTable(e.currentTarget.value)}
+                                            placeholder="TA code" 
+                                            onChange={(e) => setTAcode(e.currentTarget.value)}
                                         >
                                         </Form.Control>
                                     </Form.Group>                                   
@@ -719,7 +721,7 @@ export default function AdminModal(props) {
                             
                         </Modal.Header>
                         <Modal.Body >
-                            <Form>
+                            <Form className="delete-project-form">
                                 <Form.Label className="label">Project Code:</Form.Label>
                                 <Form.Control 
                                     type="text" 
@@ -728,6 +730,16 @@ export default function AdminModal(props) {
                                     onChange={(e) => setProject(e.currentTarget.value)}
                                 >
                                 </Form.Control>
+                                <Form.Label className="label">Delete Project Data Only:</Form.Label>
+                                <Form.Control 
+                                    className="checkbox" 
+                                    type="checkbox" 
+                                    size='sm'
+                                    checked={deleteProjectDataOnly}
+                                    onChange={(e) => deleteProjectDataOnly ? setDeleteProjectDataOnly(false) : setDeleteProjectDataOnly(true)}
+                                >
+                                </Form.Control>
+                            
                             </Form>
                             <Button 
                                 variant="primary" 
@@ -848,16 +860,16 @@ export default function AdminModal(props) {
                                     placeholder={project === null ? "" : project.amazon} 
                                     onChange={(e) => handleTextChange(e)}
                                 ></input>
-                                <label className={"label-table"} 
-                                    htmlFor="Table">
-                                        {"Table:"}
+                                <label className={"label-tacode"} 
+                                    htmlFor="tacode">
+                                        {"TA Code:"}
                                 </label>
                                 <input 
                                     type={"text"} 
-                                    id={"table"} 
-                                    name={"table"}
+                                    id={"tacode"} 
+                                    name={"tacode"}
                                     size='sm'
-                                    placeholder={project === null ? "" : project.ftable} 
+                                    placeholder={project === null ? "" : project.tacode} 
                                     onChange={(e) => handleTextChange(e)}
                                 ></input>
                                 <label className={"label-public"} 
