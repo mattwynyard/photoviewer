@@ -959,13 +959,7 @@ app.post('/import', async (req, res) => {
           break;
         }
       }
-      //if (errors > 0) {
-        res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
-      //} else {
-       // result = await db.tableImport(data, table);
-
-
-      //} 
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
     } else {
       let rows = 0;
       let errors = 0;

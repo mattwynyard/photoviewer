@@ -32,6 +32,11 @@
     white-space: nowrap;
 }
 
+.import-form {
+    font-family: "Century Gothic", sans-serif;
+    margin: 10px
+}
+
 /* .label-public {
     grid-column: 3 / 4;
     grid-row: 1;

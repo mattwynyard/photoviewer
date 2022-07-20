@@ -326,6 +326,7 @@ module.exports = {
         let sql = "INSERT INTO roadfaults (id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
         + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
         + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
+        
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
