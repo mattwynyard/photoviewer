@@ -21,22 +21,22 @@ const schedule = require('node-schedule');
 
 // comment out create server code below when deploying to server
 // server created in index.js
-// const options = {
-//   key: fs.readFileSync('./server.key', 'utf8'),
-//   cert: fs.readFileSync('./server.cert', 'utf8')
-// }
-// console.log("mode: " + environment);
-// if(environment === 'production') {
-//   let hostname = "localhost";
-//  http.createServer(function() {
-//   }).listen(port, hostname, () => {
-//       console.log(`Listening: http://${hostname}:${port}`);
-//    });
-// } else {
-//   https.createServer(options, app).listen(port, () => {
-//     console.log(`Listening: https://${host}:${port}`);
-//     });
-// }
+const options = {
+  key: fs.readFileSync('./server.key', 'utf8'),
+  cert: fs.readFileSync('./server.cert', 'utf8')
+}
+console.log("mode: " + environment);
+if(environment === 'production') {
+  let hostname = "localhost";
+ http.createServer(function() {
+  }).listen(port, hostname, () => {
+      console.log(`Listening: http://${hostname}:${port}`);
+   });
+} else {
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening: https://${host}:${port}`);
+    });
+}
 
 schedule.scheduleJob('0 0 6 * * *', async () => {
   updateStatus();
@@ -291,7 +291,6 @@ app.post('/project', async (req, res) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
   res.set('Content-Type', 'application/json');
   if(result) {
-
       if (req.body.type === "insert") {
         try {
           let q = await db.addProject(req.body); 
@@ -308,27 +307,30 @@ app.post('/project', async (req, res) => {
         try {
           let surface = await db.projecttype(req.body.code);
           let archive = await db.isArchive(req.body.code);
+          let project = null
           if (surface.rowCount === 1) {
             let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
-            let project = await db.deleteProject(req.body.code);
-            res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
+            if (!req.body.dataOnly) {
+              project = await db.deleteProject(req.body.code);
+            }
+            res.send({type: "delete", rows: data.rowCount, parent: project ? project.rowCount : 0});          
           } else {
             res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
           }
         } catch (err) {
           console.log(err)
-          res.send({error: err.err.detail});
+          res.send({error: err.detail});
         }
       } else if (req.body.type === "update") {
         try {
           let project = {code: req.body.code, description: req.body.description, date: req.body.date, surface: req.body.surface, amazon: req.body.amazon, 
             public: req.body.public, priority: req.body.priority, reverse: req.body.reverse, video: req.body.video, ramm: req.body.ramm, 
-            centreline: req.body.centreline, rmclass: req.body.rmclass, ftable: req.body.ftable};
+            centreline: req.body.centreline, rmclass: req.body.rmclass, tacode: req.body.tacode};
           let result = await db.updateProject(project); 
           res.send({type: "update", rows: result.rowCount});     
         } catch (err) {
           console.log(err)
-          res.send({error: err.err.detail});
+          res.send({error: err.detail});
         }
       }      
     } else {
@@ -929,7 +931,6 @@ app.post('/import', async (req, res) => {
         let data =  req.body.data[i];
         try {
           let result = null;
-          
           if (!staged) {
             result = await db.import(data);
             if(result.rowCount === 1) {
@@ -950,8 +951,6 @@ app.post('/import', async (req, res) => {
             } catch(err) {
               console.log(err)
             }
-            
-
           }
         } catch(err) {
           errors++;
@@ -959,30 +958,32 @@ app.post('/import', async (req, res) => {
           break;
         }
       }
-      //if (errors > 0) {
-        res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
-      //} else {
-       // result = await db.tableImport(data, table);
-
-
-      //} 
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
     } else {
       let rows = 0;
       let errors = 0;
+      let fatal = null;
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
         try {
-        let result = await db.importFootpath(data);
-        if(result.rowCount === 1) {
-          rows++;
-        } else {
-          errors++
-        }
-      } catch(err) {
-        errors++
-      }   
+          let result = await db.importFootpath(data);
+          if(result.rowCount === 1) {
+            rows++;
+          } else {
+            errors++;
+          }
+        } catch(err) {
+          errors++;
+          fatal = err;
+          break;
+        }   
     }
-    res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+    if (fatal == null) {
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+    } else {
+      res.send({rows: "Inserted " + rows + " rows", error: fatal.detail});
+    }
+    
   }
  
   } else {

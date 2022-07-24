@@ -1,4 +1,4 @@
-import { React, useState, useReducer, useEffect} from 'react';
+import { React, useState, useEffect} from 'react';
 import {Modal, Button}  from 'react-bootstrap';
 import "./ExportModal.css";
 
