@@ -307,12 +307,13 @@ app.post('/project', async (req, res) => {
         try {
           let surface = await db.projecttype(req.body.code);
           let archive = await db.isArchive(req.body.code);
+          let project = null
           if (surface.rowCount === 1) {
             let data = await db.deleteProjectData (req.body.code, surface.rows[0].surface, archive.rows[0].isarchive);
             if (!req.body.dataOnly) {
-              let project = await db.deleteProject(req.body.code);
+              project = await db.deleteProject(req.body.code);
             }
-            res.send({type: "delete", rows: data.rowCount, parent: project.rowCount});          
+            res.send({type: "delete", rows: data.rowCount, parent: project ? project.rowCount : 0});          
           } else {
             res.send({type: "error", rows: data.rowCount, parent: project.rowCount});
           }
@@ -950,8 +951,6 @@ app.post('/import', async (req, res) => {
             } catch(err) {
               console.log(err)
             }
-            
-
           }
         } catch(err) {
           errors++;
@@ -963,20 +962,28 @@ app.post('/import', async (req, res) => {
     } else {
       let rows = 0;
       let errors = 0;
+      let fatal = null;
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
         try {
-        let result = await db.importFootpath(data);
-        if(result.rowCount === 1) {
-          rows++;
-        } else {
-          errors++
-        }
-      } catch(err) {
-        errors++
-      }   
+          let result = await db.importFootpath(data);
+          if(result.rowCount === 1) {
+            rows++;
+          } else {
+            errors++;
+          }
+        } catch(err) {
+          errors++;
+          fatal = err;
+          break;
+        }   
     }
-    res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"})
+    if (fatal == null) {
+      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+    } else {
+      res.send({rows: "Inserted " + rows + " rows", error: fatal.detail});
+    }
+    
   }
  
   } else {

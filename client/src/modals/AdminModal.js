@@ -1,4 +1,4 @@
-import React, { useEffect, useState} from 'react';
+import React, { useState} from 'react';
 // import {Modal, Form, Button, Row}  from 'react-bootstrap';
 // import CSVReader from 'react-csv-reader';
 import './AdminModal.css';
@@ -37,11 +37,6 @@ export default function AdminModal(props) {
     const AddClient = clients.map(AddClient => AddClient);
     const AddProject = projects.map(AddProject => AddProject);
 
-    useEffect(() => {
-        getClients();
-        getProjects(clients[0]);       
-    }, []);
-
     const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
           await fetch('https://' + props.login.host + endpoint, {
@@ -62,13 +57,17 @@ export default function AdminModal(props) {
               throw new Error(response.status);
             } else {
               const result = await response.json();
-              alert(result.rows)     
+              if (result.error) {
+                alert(result.rows + " " + result.error)   
+              } else {
+                  alert(result.rows)   
+              }  
             }
           }).catch((error) => {
             console.log("error: " + error);
             alert(error);
-            return;
-          });   
+          });
+          props.hide();   
         }    
       }
 
@@ -97,7 +96,7 @@ export default function AdminModal(props) {
         setClient(clients[index]);
         let result = await getProjects(clients[index]);
         if (!result) {
-            console.log(result)
+            return;
         } else {
             setDescription(result.description);
             setDate(result.date);
@@ -141,7 +140,7 @@ export default function AdminModal(props) {
             const clients = await apiRequest({user: props.login.user, token: props.login.token, host: props.login.host},
                  {project: null, query: null}, "/clients");
             setClients(clients.map((client) => client.username).sort());
-          }
+        }
     }
 
     const getProjects = async (client) => {
@@ -247,7 +246,7 @@ export default function AdminModal(props) {
               if (body.type === "insert") {
                 alert("Project: " + project + " created")
               } else if (body.type === "delete") {
-                alert("Project: " + project + "rows: " + body.rows + " deleted");
+                alert("Project: " + project + "  data rows: " + body.rows + " and " + body.parent + " header rows deleted\n ");
             } else if (body.type === "update") {
                 alert("Project: " + project.code + " rows: " + body.rows + " updated")
               } else {
@@ -260,6 +259,7 @@ export default function AdminModal(props) {
             alert(error);
             return;
           });
+          props.hide();
         }
       }
 
@@ -362,8 +362,7 @@ export default function AdminModal(props) {
         }
       }
 
-      switch (props.table) {
-        case 'user':
+        if (props.table === 'user') {
             if(props.mode === 'Insert') {
                 return (
                     <InsertUserModal 
@@ -394,79 +393,78 @@ export default function AdminModal(props) {
                     />
                 );
             }
-            case 'project':
-                if(props.mode === 'Insert') {
-                    return (
-                        <InsertProjectModal
+        } else if (props.table === 'project') {
+            if(props.mode === 'Insert') {
+                return (
+                    <InsertProjectModal
+                    props={props} 
+                    handleHide={handleHide}
+                    setMode={setMode} 
+                    setClient={setClient} 
+                    setProject={setProject}
+                    setDescription={setDescription}
+                    setDate={setDate}
+                    setSurface={setSurface}
+                    setAmazon={setAmazon}
+                    setTAcode={setTAcode}
+                    setIsPublic={setIsPublic}
+                    setIsReverse={setIsReverse}
+                    setIsPriority={setIsPriority}
+                    setHasVideo={setHasVideo}
+                    setHasRamm={setHasRamm}
+                    setHasCentreline={setHasCentreline}
+                    setHasRMClass={setHasRMClass}
+                    updateProject={updateProject}
+                />
+                );
+            } else if(props.mode === 'Delete') {
+                return (
+                    <DeleteProjectModal
+                    props={props} 
+                    handleHide={handleHide}
+                    setMode={setMode} 
+                    setProject={setProject}
+                    updateProject={updateProject}
+                    setDeleteProjectDataOnly={setDeleteProjectDataOnly}
+                    deleteProjectDataOnly={deleteProjectDataOnly}
+                />
+                );
+            } else if(props.mode === 'Update') {
+                return (
+                    <UpdateProjectModal
                         props={props} 
+                        project={project}
+                        isPublic={isPublic}
+                        isReverse={isReverse}
+                        isPriority={isPriority}
+                        hasRMClass={hasRMClass}
+                        hasCentreline={hasCentreline}
+                        hasRamm={hasRamm}
+                        hasVideo={hasVideo}
                         handleHide={handleHide}
-                        setMode={setMode} 
-                        setClient={setClient} 
-                        setProject={setProject}
-                        setDescription={setDescription}
-                        setDate={setDate}
-                        setSurface={setSurface}
-                        setAmazon={setAmazon}
-                        setTAcode={setTAcode}
-                        setIsPublic={setIsPublic}
-                        setIsReverse={setIsReverse}
-                        setIsPriority={setIsPriority}
-                        setHasVideo={setHasVideo}
-                        setHasRamm={setHasRamm}
-                        setHasCentreline={setHasCentreline}
-                        setHasRMClass={setHasRMClass}
-                        updateProject={updateProject}
+                        setMode={setMode}
+                        changeClient={changeClient}
+                        changeProject={changeProject}
+                        AddClient={AddClient}
+                        AddProject={AddProject}
+                        handleTextChange={handleTextChange}
+                        handleCheckboxChange={handleCheckboxChange}
+                        buttonDisabled={buttonDisabled}
                     />
-                    );
-                } else if(props.mode === 'Delete') {
-                    return (
-                        <DeleteProjectModal
-                        props={props} 
-                        handleHide={handleHide}
-                        setMode={setMode} 
-                        setProject={setProject}
-                        updateProject={updateProject}
-                        setDeleteProjectDataOnly={setDeleteProjectDataOnly}
-                        deleteProjectDataOnly={deleteProjectDataOnly}
-                    />
-                    );
-                } else if(props.mode === 'Update') {
-                    return (
-                        <UpdateProjectModal
-                            props={props} 
-                            project={project}
-                            isPublic={isPublic}
-                            isReverse={isReverse}
-                            isPriority={isPriority}
-                            hasRMClass={hasRMClass}
-                            hasCentreline={hasCentreline}
-                            hasRamm={hasRamm}
-                            hasVideo={hasVideo}
-                            handleHide={handleHide}
-                            setMode={setMode}
-                            changeClient={changeClient}
-                            changeProject={changeProject}
-                            AddClient={AddClient}
-                            AddProject={AddProject}
-                            handleTextChange={handleTextChange}
-                            buttonDisabled={buttonDisabled}
-                        />
-        
-                    );
-                }
-        default:
+                );
+            }
+        } else {
             return (
                 <ImportDataModal
                     props={props} 
                     project={project !== null ? project : ""}
                     setProject={setProject}
-                    handleImport={handleImport}
                     fileLoaded={fileLoaded}
                     handleCheckboxChange={handleCheckboxChange}
                     isStaged={isStaged}
+                    handleImport={handleImport}
                 />
 
             );
+        }      
       }
-
-}

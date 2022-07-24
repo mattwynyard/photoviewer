@@ -208,7 +208,6 @@ class App extends React.Component {
   }
 
   setDataActive = (isActive) => {
-   
     this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
     });
@@ -523,8 +522,6 @@ class App extends React.Component {
     this.setState({rulerDistance: total});
   }
 
-
-
   /**
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
@@ -566,21 +563,6 @@ class App extends React.Component {
     this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
-  getPhoto(direction) {
-    let photo = this.state.currentPhoto;
-    let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
-    let n = null;
-    if (direction === "prev") {
-      n = intSuffix - 1;
-    } else {
-      n = intSuffix + 1;
-    }
-    let newSuffix = pad(n, 5);
-    let prefix = photo.slice(0, photo.length - 5);
-    let newPhoto = prefix + newSuffix;
-    this.setState({currentPhoto: newPhoto});
-    return newPhoto;
-  }
   /**
    * resets to null state when user logouts
    */
@@ -1236,218 +1218,6 @@ class App extends React.Component {
     }
   }
 
-  async addNewUser(client, password) {
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/user', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: "insert",
-          user: this.context.login.user,
-          client: client,
-          password: password
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.success) {
-            alert("User: " + client + " created")
-          } else {
-            alert("User: " + client + " failed to create")
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  getClient = async () => {
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/usernames', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: "select",
-          user: this.context.login.user,
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.success) {
-            console.log(body);
-            this.customModal.current.setUsernames(body.usernames);
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  selectProjects = async (client) => {
-    console.log("get projects")
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/selectprojects', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: "select",
-          client: client,
-          user: this.context.login.user,
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.success) {
-            console.log(body);
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  async deleteCurrentUser(client) {
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/user', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: "delete",
-          user: this.context.login.user,
-          client: client,
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.success) {
-            alert("User: " + client + " deleted")
-          } else {
-            alert("User: " + client + " not found")
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  async deleteCurrentProject(project, parent) {
-    console.log(project);
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/project', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.context.login.user,
-          type: "delete",
-          project: project,
-          parent: parent
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.parent) {
-            alert(body.rows +  '\n Parent project deleted')
-          }
-            alert(body.rows)
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
-  async addNewProject(project) {
-    if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + '/project', {
-        method: 'POST',
-        headers: {
-          "authorization": this.state.token,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: this.context.login.user,
-          type: "insert",
-          code: project.code,
-          client: project.client,
-          description: project.description,
-          date: project.date,
-          tacode: project.tacode,
-          amazon: project.amazon,
-          surface: project.surface,
-          public: project.public,
-          priority: project.priority,
-          reverse: project.reverse
-        })
-      }).then(async (response) => {
-        const body = await response.json();
-        if (body.error != null) {
-          alert(`Error: ${body.error}\n`);
-        } else {
-          if (body.success) {
-            alert("Project: " + project.code + " created")
-          } else {
-            alert("Project: " + project.code + "  failed to create")
-          }
-        }   
-      })
-      .catch((error) => {
-        console.log("error: " + error);
-        alert(error);
-        return;
-      });
-    }
-  }
-
   /**
    * Copies the lat lng from photo modal to users clipboard
    * @param {*} e button lcick event
@@ -1522,34 +1292,6 @@ class App extends React.Component {
       this.addGLGeometry(body.points, body.lines, body.type, false);
     });
     
-  }
-
-  clickArchive(e) {
-    if (this.state.isArchive) {
-      this.setState({archiveMarker: []});
-      this.setState({isArchive: false});
-    } else {
-      this.setState({isArchive: true});
-    }
-  }
-
-  clickVideo() {
-    console.log(this.state.isVideo);
-    if (this.state.isVideo) {
-      this.setState({isVideo: false});
-    } else {
-      this.setState({isVideo: true});
-    }
-    console.log(this.state.isVideo);
-  }
-
-  fileLoaded(project, data, status) {
-    this.customModal.current.setShow(false);
-    if (status) {
-      this.sendData(project, data, '/update');
-    } else {
-      this.sendData(project, data, '/import');
-    }
   }
 
   render() {

@@ -13,6 +13,37 @@ function buildQuery(arr) {
     return query;
 }
 
+function monthToNumeric(month) {
+    switch (month) {
+        case 'jan':
+            return '01';
+        case 'feb':
+            return '02';
+        case 'mar':
+            return '03';
+        case 'apr':
+            return '04';
+        case 'may':
+            return '05';
+        case 'jun':
+            return '06';
+        case 'jul':
+            return '07';
+        case 'aug':
+            return '08';
+        case 'sep':
+            return '09';
+        case 'oct':
+            return '10';
+        case 'nov':
+            return '11';
+        case 'dec':
+            return '12'
+        default:
+            return new Error("Incorrect month format")
+    }
+}
+
 function parseInteger(x) {
     let n = parseInt(x)
     if (Number.isNaN(n)) {
@@ -33,20 +64,41 @@ function parseString(s) {
     }
 }
 
-function parseDate(d) { 
+function parseDateTime(dateTime) { 
     let dateformat = /^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$/;
-    if(d.match(dateformat))
+    if(dateTime.match(dateformat)) //yyyy-mm-dd HH:mm:ss
     {   
-        return "'" + d + "'";
+        return "'" + dateTime + "'";
     } else {
-        dateformat = /^(((0[1-9]|[12]\d|3[01])[\/](0[13578]|1[02])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|[12]\d|30)[\/](0[13456789]|1[012])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|1\d|2[0-8])[\/](02)[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((29)[\/](02)[\/]((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm)))$/;
-        if (d.match(dateformat)) {
-            return "'" + d + "'"; //not handled
-        } else {
-            return "'" + d + "'"; 
+        let dateformat = /^(((0[1-9]|[12]\d|3[01])[\/](0[13578]|1[02])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|[12]\d|30)[\/](0[13456789]|1[012])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|1\d|2[0-8])[\/](02)[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((29)[\/](02)[\/]((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm)))$/;
+        if (dateTime.match(dateformat)) { //dd/mm/yyyy hh:mm:ss AM|PM
+            return "'" + dateTime + "'"; //not handled
+        } else 
+            dateformat = /^(0?[1-9]|[12][0-9]|3[01])-(jan|Jan|JAN|feb|Feb|FEB|mar|Mar|MAR|apr|Apr|APR|may|May|MAY|jun|Jun|JUN|jul|Jul|JUL|aug|Aug|AUG|sep|Sep|SEP|oct|Oct|OCT|nov|Nov|NOV|dec|Dec|DEC)-(19|20)\d\d\s([0-1][0-9]|[2][0-3]):([0-5][0-9]):([0-5][0-9])$/;
+            if (dateTime.match(dateformat)) { //dd-MMM-yyyy HH:mm:ss
+                let dt = dateTime.split(" ");
+                let date = dt[0];
+                let time = dt[1];
+                let [day, month, year] = date.split('-');
+                let monthNumeric = monthToNumeric(month.toLowerCase());
+                let timestamp =  `${year}-${monthNumeric}-${day} ${time}`;
+                return "'" + timestamp + "'"; 
+            } else {
+                return new Error("Invalid date type")
+            }
         }
-    }
-            
+    }           
+
+
+function parseDate(date) {
+    const dateFormat = /^(0?[1-9]|[12][0-9]|3[01])[\/](0?[1-9]|1[012])[\/]\d{4}$/;
+    if(date.match(dateFormat))
+    {   
+        const [day, month, year] = date.split('/')
+        return "'" + `${year}-${month}-${day}` + "'";
+    } else {
+
+    } 
 }
 
 function getTable(user) {
@@ -245,7 +297,6 @@ module.exports = {
     },
 
     importFootpath: (data) => {
-        //console.log(data);
         data[0] = parseString(data[0]); //id
         data[1] = parseString(data[1]); //project
         data[2] = parseInteger(data[2]); //footpathid
@@ -269,19 +320,27 @@ module.exports = {
         data[20] = parseDate(data[20]); //date
         data[21] = parseFloat(data[21]); //latitude
         data[22] = parseFloat(data[22]); //longitude
-        data[23] = parseString(data[23]); //faulttime
+        data[23] = parseDateTime(data[23]); //faulttime
         data[24] = parseString(data[24]); //inspector
         data[25] = parseInteger(data[25]); //seq
         data[26] = parseString(data[26]); //photoid
-        //data[27] = parseString(data[27]); //status
-        // data[28] = parseString(data[28]); //datefixed
-        // data[29] = parseString(data[29]); //notes
-
+        data[27] = parseString(data[27]); //status
+        data[28] = parseString(data[28]); //wkt
+        const wkt = parseString(data[28]);
+        let sql = null;
+        if (wkt == null) {     
+            sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
+                    "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
+                    + "status, geom) "
+             + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
+        } else {
+            data.splice(-1);
+            sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
+            "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
+            + "status, geom) "
+            + "VALUES (" + data + ", ST_GeomFromText(" + wkt + "));" 
+        }
         return new Promise((resolve, reject) => {
-            let sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
-                        "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
-                        + "geom) "
-                 + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -315,7 +374,7 @@ module.exports = {
         data[14] = parseInteger(data[14]); //length
         data[15] = parseInteger(data[15]); //width
         data[16] = parseInteger(data[16]); //count
-        data[17] = parseDate(data[17]); //faulttime
+        data[17] = parseDateTime(data[17]); //faulttime
         data[18] = parseString(data[18]); //inspector
         data[19] = parseString(data[19]); //inspection
         data[20] = parseInteger(data[20]); //seq
@@ -326,7 +385,7 @@ module.exports = {
         let sql = "INSERT INTO roadfaults (id, project, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
         + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
         + " VALUES (" + data + ", ST_GeomFromText(" + data[23] + "));"
-        
+
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -486,20 +545,6 @@ module.exports = {
             });
         });
     },
-
-    // classes: ()=> {
-    //     return new Promise((resolve, reject) => {
-    //         let sql = 'SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM carriageways GROUP BY class) ORDER BY priority';
-    //         connection.query(sql, (err, result) => {
-    //             if (err) {
-    //                 console.error('Error executing query', err.stack)
-    //                 return reject(err);
-    //             }
-    //             let classes = resolve(result);
-    //             return classes;
-    //         });
-    //     });
-    // },
 
     class: (user, project, isArchive) => {
         let sql = null;
@@ -1205,20 +1250,20 @@ module.exports = {
     },
 
     deleteProjectData: (project, surface, isArchive) => {
-        return new Promise((resolve, reject) => {
-            let sql = null;
+        let sql = null;
             if (surface === "road") {
                 if (isArchive) {
                     sql = "DELETE FROM carriageways WHERE project= '" + project + "'";
                 } else {
                     sql = "DELETE FROM roadfaults WHERE project= '" + project + "'";
-                }
-                
+                }    
             } else if (surface === "footpath") {
                 sql = "DELETE FROM footpaths WHERE project= '" + project + "'";
             } else {
                 throw "surface not found";
             }
+        return new Promise((resolve, reject) => {
+            
             connection.query(sql, (err, results) => {
                 if (err)  {
                     console.log(err);
@@ -1235,8 +1280,8 @@ module.exports = {
         const tacode = parseInteger(body.tacode);
         let sql = "INSERT INTO projects(" +
                 "code, client, description, date, tacode, active, amazon, layercount, layermodified, " +
-                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass, ftable)" +
-                "VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
+                "filtercount, lastfilter, surface, public, priority, reverse, hasvideo, centreline, ramm, rmclass)" +
+                " VALUES ('" + body.code + "', '" + body.client + "', '" + body.description + "', '" + body.date +   
                 "', " + tacode +  ", true, '" + body.amazon + "', 0, now(), 0, now(), '" + body.surface + "', " + 
                 body.public + ", " + body.priority + ", " + body.reverse + ", " + body.video + ", " + body.centreline + 
                 ", " + body.ramm + ", " + body.rmclass + ")";
