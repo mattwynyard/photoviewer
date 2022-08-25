@@ -12,7 +12,7 @@ import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
-import {pad, calcGCDistance} from  './util.js';
+import {calcGCDistance} from  './util.js';
 import LayerCard from './components/LayerCard.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
@@ -122,8 +122,6 @@ class App extends React.Component {
     if (this.state.dataActive) {
       this.setDataActive(false)
     }
-    
-    //this.customModal.current.delegate(this);
     this.archivePhotoModal.current.delegate(this);
     this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;

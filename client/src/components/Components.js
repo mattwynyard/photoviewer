@@ -113,7 +113,7 @@ const CustomMenu = (props) => {
 const CustomPopup = (props) => {
   if (props.src) {
     let src = null;
-    if (props.login === "asu") {
+    if (props.login === "asu" || props.login === "asm") {
       src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
     } else {
       src = props.src;
