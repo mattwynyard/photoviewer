@@ -65,7 +65,8 @@ function parseString(s) {
 }
 
 function parseDateTime(dateTime) { 
-    let dateformat = /^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$/;
+    //let dateformat = /^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$/;
+    let dateformat = /^([0-9]{4})-([0-1][0-9])-([0-3][0-9])\s([0-1][0-9]|[2][0-3]):([0-5][0-9]):([0-5][0-9])$/;
     if(dateTime.match(dateformat)) //yyyy-mm-dd HH:mm:ss
     {   
         return "'" + dateTime + "'";
@@ -398,10 +399,18 @@ module.exports = {
         });
     },
 
-    tableImport: (data, table) => {
+    stagedImport: (data, client) => {
+        let table =null;
+        if (client === 'asm') {
+            table = 'asmfaults'
+        } else if (client = 'asu') {
+            table = 'asufaults'
+        } else {
+            return;
+        }
         data[0] = parseString(data[0]); //id
         data[1] = parseString(data[1]); //project
-        data[2] = parseString(data[1]); //rclass
+        data[2] = parseString(data[2]); //rclass
         data[3] = parseString(data[3]); //roadid
         data[4] = parseString(data[4]); //carriage
         data[5] = parseString(data[5]); //location
@@ -417,7 +426,7 @@ module.exports = {
         data[15] = parseInteger(data[15]); //length
         data[16] = parseInteger(data[16]); //width
         data[17] = parseInteger(data[17]); //count
-        data[18] = parseDate(data[18]); //faulttime
+        data[18] = parseDateTime(data[18]); //faulttime
         data[19] = parseString(data[19]); //inspector
         data[20] = parseString(data[20]); //inspection
         data[21] = parseInteger(data[21]); //seq
@@ -427,48 +436,6 @@ module.exports = {
         let sql = "INSERT INTO " + table + " (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
         + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt, geom) "
         + " VALUES (" + data + ", ST_GeomFromText(" + data[24] + "));"
-
-        return new Promise((resolve, reject) => {
-            connection.query(sql, (err, result) => {
-                if (err) {
-                    return reject(err);
-                } else {
-                    let results = resolve(result);
-                    return results;
-                }        
-            });
-        });
-    },
-
-    stagedImport: (data) => {
-        data[0] = parseString(data[0]); //id
-        data[1] = parseString(data[1]); //project
-        data[2] = parseString(data[1]); //rclass
-        data[3] = parseString(data[3]); //roadid
-        data[4] = parseString(data[4]); //carriage
-        data[5] = parseString(data[5]); //location
-        data[6] = parseInteger(data[6]); //starterp
-        data[7] = parseInteger(data[7]); //enderp
-        data[8] = parseString(data[8]); //side
-        data[9] = parseString(data[9]);  //position
-        data[10] = parseString(data[10]); //class
-        data[11] = parseString(data[11]); //fault
-        data[12] = parseString(data[12]); //repair
-        data[13] = parseInteger(data[13]); //priority
-        data[14] = parseString(data[14]); //comment
-        data[15] = parseInteger(data[15]); //length
-        data[16] = parseInteger(data[16]); //width
-        data[17] = parseInteger(data[17]); //count
-        data[18] = parseDate(data[18]); //faulttime
-        data[19] = parseString(data[19]); //inspector
-        data[20] = parseString(data[20]); //inspection
-        data[21] = parseInteger(data[21]); //seq
-        data[22] = parseString(data[22]); //photoid
-        data[23] = parseString(data[23]); //status
-        data[24] = parseString(data[24]); //wkt
-        let sql = "INSERT INTO importer (id, project, rclass, roadid, carriage, location, starterp, enderp, side, position, class, fault, repair, "
-        + "priority, comment, length, width, count, faulttime, inspector, inspection, seq, photoid, status, wkt) "
-        + " VALUES (" + data + ");"
 
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
@@ -496,9 +463,9 @@ module.exports = {
         });  
     },
 
-    table: (project) => {
+    client: (project) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT client, ftable FROM projects WHERE code = '" + project + "'";
+            let sql = "SELECT client FROM projects WHERE code = '" + project + "'";
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
@@ -941,19 +908,19 @@ module.exports = {
         });
     },
 
-    client: (project) => {
-        return new Promise((resolve, reject) => {
-            connection.query("SELECT client FROM projects WHERE code = '" + project + "'", (err, result) => {
-            if (err) {
-                console.error('Error executing query', err.stack)
-                return reject(err);
-            }
-            let surface = resolve(result);          
-            return surface;
-            }); 
-        });
+    // client: (project) => {
+    //     return new Promise((resolve, reject) => {
+    //         connection.query("SELECT client FROM projects WHERE code = '" + project + "'", (err, result) => {
+    //         if (err) {
+    //             console.error('Error executing query', err.stack)
+    //             return reject(err);
+    //         }
+    //         let surface = resolve(result);          
+    //         return surface;
+    //         }); 
+    //     });
 
-    },
+    // },
 
     footpath: (project, options, filter) => {
         let assets = filter.find(object => object.code === "Asset");

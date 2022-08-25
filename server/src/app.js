@@ -920,28 +920,29 @@ app.post('/import', async (req, res) => {
     let project = req.body.project;
     let staged = req.body.staged;
     let surface = await db.projecttype(project);
-    let tableResult = await db.table(project);
-    let client = tableResult.rows[0].client;
-    let table = tableResult.rows[0].ftable;
+    let clientResult = await db.client(project);
+    let client = clientResult.rows[0].client;
+    let rows = 0;
+    let errors = 0;
+    let inserted = 0;
     if (surface.rows[0].surface === "road") {
-      let rows = 0;
-      let errors = 0;
-      let inserted = 0;
+     
       for (let i = 1; i < req.body.data.length - 1; i++) {  
         let data =  req.body.data[i];
+        rows++;
         try {
           let result = null;
           if (!staged) {
             result = await db.import(data);
             if(result.rowCount === 1) {
-              rows++;
+              inserted++;
             } else {
               console.log(result)
               errors++
             }
           } else { //staged
             try {
-              result = await db.tableImport(data, table);
+              result = await db.stagedImport(data, client);
               if(result.rowCount === 1) {
                 inserted++;
               } else {
@@ -958,7 +959,7 @@ app.post('/import', async (req, res) => {
           break;
         }
       }
-      res.send({rows: "Inserted " + rows + " rows", errors: errors + " rows failed to insert"});
+      res.send({rows: `Inserted ${inserted} of ${rows} records, errors: ${errors} rows failed to insert`});
     } else {
       let rows = 0;
       let errors = 0;
