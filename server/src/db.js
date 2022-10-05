@@ -328,21 +328,21 @@ module.exports = {
         data[25] = parseInteger(data[25]); //seq
         data[26] = parseString(data[26]); //photoid
         data[27] = parseString(data[27]); //status
-        data[28] = parseString(data[28]); //wkt
-        const wkt = parseString(data[28]);
+        //data[28] = parseString(data[28]); //wkt
+        //const wkt = parseString(data[28]);
         let sql = null;
-        if (wkt == null) {     
+        //if (wkt == null) {     
             sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
                     "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
                     + "status, geom) "
              + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
-        } else {
-            data.splice(-1);
-            sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
-            "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
-            + "status, geom) "
-            + "VALUES (" + data + ", ST_GeomFromText(" + wkt + "));" 
-        }
+        // } else {
+        //     data.splice(-1);
+        //     sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
+        //     "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
+        //     + "status, geom) "
+        //     + "VALUES (" + data + ", ST_GeomFromText(" + wkt + "));" 
+        // }
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
