@@ -357,6 +357,8 @@ export default class GLEngine {
     let pointSet = new Set();
     for (let i = 0; i < points.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(points[i].st_asgeojson);
+      const asset = points[i].asset;
+      let index = this.getIndex(asset);
       let colors = this.setColors(points[i], options.type, options.priorities);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
@@ -366,7 +368,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      buffer.push(pixelHigh.x, pixelHigh.y, -1.0, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
+      buffer.push(pixelHigh.x, pixelHigh.y, index, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
       let fault = this.createFaultObject(points[i], options.type, latlng, position)
       faults.push(fault);         
     }
@@ -376,6 +378,19 @@ export default class GLEngine {
     buffer.push(0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0);
     return { faults: faults, vertices: buffer, count: count}
   }
+
+
+  getIndex(asset) {
+    if (asset.toLowerCase() === 'footpath') {
+      return -1;
+    } else if (asset.toLowerCase() === 'kerb & channel') {
+      return -2;
+    } else if (asset.toLowerCase() === 'pram crossing') {
+        return -3;
+    } else {
+      return -4;
+    }
+  } 
 
     /**
  * Loops through json objects and extracts fault information
