@@ -113,15 +113,18 @@ const CustomMenu = (props) => {
 const CustomPopup = (props) => {
   if (props.src) {
     let src = null;
+    let location = props.data.location;
     if (props.login === "asu" || props.login === "asm") {
-      src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg` ;
+      src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg`;
+    } else if (props.data.type === 'footpath') {
+      location = props.data.roadname;
+      if (props.data.asset.toLowerCase() == "kerb & channel") {
+        src = `${props.amazon}kerbs/${props.data.inspection}/${props.data.photo}.jpg`;
+      } else {
+        src = `${props.amazon}footpaths/${props.data.inspection}/${props.data.photo}.jpg`;
+      }
     } else {
       src = props.src;
-    }
-
-    let location = props.data.location;
-    if (props.data.type === "footpath") {
-      location = props.data.roadname;
     }
     return (
       <Popup className="popup" position={props.position}>

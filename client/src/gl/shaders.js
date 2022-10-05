@@ -119,7 +119,7 @@ out vec4 frag_color;
 void main() {
     highp int index = int(v_index[0]);
     if (index < 0) {
-        if (index == -1) {
+        if (index == -2) {
             frag_color = v_color;
         } else {
             float border = 0.05;

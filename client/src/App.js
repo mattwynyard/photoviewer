@@ -910,7 +910,7 @@ class App extends React.Component {
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
-    if (mode === "road") {
+    //if (mode === "road") {
       let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
       if(!body) return;
       if (!body.error) {
@@ -918,9 +918,9 @@ class App extends React.Component {
       } else {
         return;
       } 
-    } else {
-      inspections = [];
-    }
+    // } else {
+    //   inspections = [];
+    // }
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return; 
     request = {project: project, query: null}

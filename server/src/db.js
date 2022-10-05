@@ -354,7 +354,7 @@ module.exports = {
         data[17] = parseFloat(data[17]); //width
         data[18] = parseInteger(data[18]); //grade
         data[19] = parseString(data[19]); //comment
-        data[20] = parseDate(data[20]); //date
+        data[20] = parseString(data[20]); //inspection
         data[21] = parseFloat(data[21]); //latitude
         data[22] = parseFloat(data[22]); //longitude
         data[23] = parseDateTime(data[23]); //faulttime
@@ -527,15 +527,19 @@ module.exports = {
         });
     },
 
-    inspection: (user, project, isArchive) => {
+    inspection: (user, project, isArchive ,type) => {
         let sql = null;
         let table = getTable(user);
         
-        if (isArchive) {
-            sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
+        if (type.surface === 'footpath') {
+            sql = "SELECT inspection FROM footpaths WHERE project = '" + project + "' GROUP BY inspection";
         } else {
-            sql = `SELECT inspection FROM ${table} WHERE project = '${project}' GROUP BY inspection`;
-        }   
+            if (isArchive) {
+                sql = "SELECT inspection FROM carriageways WHERE project = '" + project + "' GROUP BY inspection";
+            } else {
+                sql = `SELECT inspection FROM ${table} WHERE project = '${project}' GROUP BY inspection`;
+            }
+        }       
         return new Promise((resolve, reject) => {
                     
             connection.query(sql, (err, result) => {
@@ -968,7 +972,7 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
+        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
             

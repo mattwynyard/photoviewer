@@ -664,7 +664,8 @@ app.post('/age', async (req, res) => {
     if (result) {
       let project = req.body.project;
       let archive = await db.isArchive(project);
-      let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive);
+      let type = await db.projecttype(req.body.project);
+      let result = await db.inspection(req.body.user, project, archive.rows[0].isarchive, type.rows[0]);
       res.set('Content-Type', 'application/json'); 
       res.send({result: result.rows});  
     } else {

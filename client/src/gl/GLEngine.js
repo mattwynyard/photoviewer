@@ -510,6 +510,7 @@ export default class GLEngine {
         starterp: starterp,
         enderp: enderp,
         side: data.side,
+        inspection: data.inspection,
         asset:  data.asset,
         fpsurface: data.type,
         fault: data.fault,

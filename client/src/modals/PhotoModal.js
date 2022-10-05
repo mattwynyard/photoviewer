@@ -26,7 +26,16 @@ export default class PhotoModal extends React.Component {
         this.setState({amazon: amazon + marker[0].inspection + "/"});
         this.setState({show: show});
       } else {
-        this.setState({amazon: amazon});
+        if (marker[0].type === 'footpath') {
+          if (marker[0].asset.toLowerCase() === 'kerb & channel') {
+            this.setState({amazon: `${amazon}kerbs/${marker[0].inspection}/`});
+          } else {
+            this.setState({amazon: `${amazon}footpaths/${marker[0].inspection}/`});
+          }
+        } else {
+          this.setState({amazon: amazon});
+        }
+        
         this.setState({show: show});
       }
     }
