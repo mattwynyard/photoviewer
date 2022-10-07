@@ -33,7 +33,7 @@
     "morgan": "^1.9.1",
     "node-fetch": "^3.1.1",
     "node-schedule": "^2.0.0",
-    "openssl": "^1.1.0",
+    "openssl": "^2.0.0",
     "pg": "^8.7.1",
     "react-datepicker": "^3.1.3"
   },
