@@ -357,8 +357,7 @@ export default class GLEngine {
     let pointSet = new Set();
     for (let i = 0; i < points.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(points[i].st_asgeojson);
-      const asset = points[i].asset;
-      let index = this.getIndex(asset);
+      const indexType = this.getIndex(points[i].asset); //different symbols
       let colors = this.setColors(points[i], options.type, options.priorities);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
@@ -368,7 +367,7 @@ export default class GLEngine {
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};
-      buffer.push(pixelHigh.x, pixelHigh.y, index, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
+      buffer.push(pixelHigh.x, pixelHigh.y, indexType, pixelLow.x, pixelLow.y, colors.r, colors.g, colors.b, colors.a, ++count);  
       let fault = this.createFaultObject(points[i], options.type, latlng, position)
       faults.push(fault);         
     }
@@ -381,6 +380,7 @@ export default class GLEngine {
 
 
   getIndex(asset) {
+    if (typeof asset === 'undefined') return -1;
     if (asset.toLowerCase() === 'footpath') {
       return -1;
     } else if (asset.toLowerCase() === 'kerb & channel') {

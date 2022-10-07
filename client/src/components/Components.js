@@ -118,7 +118,7 @@ const CustomPopup = (props) => {
       src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg`;
     } else if (props.data.type === 'footpath') {
       location = props.data.roadname;
-      if (props.data.asset.toLowerCase() == "kerb & channel") {
+      if (props.data.asset.toLowerCase() === "kerb & channel") {
         src = `${props.amazon}kerbs/${props.data.inspection}/${props.data.photo}.jpg`;
       } else {
         src = `${props.amazon}footpaths/${props.data.inspection}/${props.data.photo}.jpg`;
