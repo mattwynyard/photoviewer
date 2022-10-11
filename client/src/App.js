@@ -10,6 +10,7 @@ import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
+//import Photoviewer from './modals/Photoviewer';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
@@ -98,7 +99,8 @@ class App extends React.Component {
       notificationKey: null, 
       filtered: false ,
       dataActive: false,
-      mapBoxKey: null
+      mapBoxKey: null,
+      showPhotoViewer: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -557,7 +559,8 @@ class App extends React.Component {
    * Fired when user clciks photo on thumbnail
    * @param {event} e 
    */
-  clickImage(e) {   
+  clickImage = () => {
+    //this.setState({showPhotoViewer: true})   
     this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon);
   }
 
@@ -1414,7 +1417,7 @@ class App extends React.Component {
               position={obj.latlng}
               src={this.state.activeLayer ? this.state.activeLayer.amazon + obj.photo + ".jpg": null} 
               amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
-              onClick={(e) => this.clickImage(e)}>
+              onClick={this.clickImage}>
             </CustomPopup>
             )}
           </LayerGroup>
@@ -1436,6 +1439,10 @@ class App extends React.Component {
         ref={this.photoModal}
       >
       </PhotoModal>
+      {/* <Photoviewer
+        show={this.state.showPhotoViewer}
+      >
+      </Photoviewer> */}
       <ArchivePhotoModal
         ref={this.archivePhotoModal}
         show={this.state.show} 

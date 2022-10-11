@@ -139,7 +139,8 @@ const CustomPopup = (props) => {
             <Image className="thumbnail" 
               src={src}
               onClick={props.onClick} 
-              thumbnail={true}>
+              thumbnail={true}
+              >
             </Image >
           </div>          
         </div>
