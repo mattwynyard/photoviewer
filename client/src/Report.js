@@ -430,7 +430,7 @@ class Report extends React.Component {
     return (
         <div> 
             <Navbar bg="light" expand="lg">  
-                <Navbar.Brand href="#home">
+                <Navbar.Brand>
                     <img
                     src="logo.png"
                     width="122"

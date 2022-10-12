@@ -1,6 +1,15 @@
 const EARTH_RADIUS = 6378137.0; //metres
 const TILE_SIZE = 256;
 
+const incrementPhoto = (photo, increment) => {
+  const intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
+  const n = intSuffix + increment;
+  const newSuffix = pad(n, 5);
+  const prefix = photo.slice(0, photo.length - 5);
+  return prefix + newSuffix;
+}
+
+
 // The download function takes a CSV string, the filename and mimeType as parameters
 // Scroll/look down at the bottom of this snippet to see how download is called
 const downloadCSV = (content, fileName, mimeType) => {
@@ -192,5 +201,5 @@ const RDP = (l, eps) => {
     }
   }
 
-  export {RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
+  export {incrementPhoto, RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
     scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt}

@@ -1,11 +1,15 @@
 import React from 'react';
-import {Modal}  from 'react-bootstrap';
-import { Button} from 'antd';
-import {pad} from  '../util.js';
+import { Modal }  from 'react-bootstrap';
+import { Button } from 'antd';
+import { pad, incrementPhoto } from  '../util.js';
+import { FetchHead } from '../api/FetchHead'
+
 import './PhotoModal.css';
 
 export default class PhotoModal extends React.Component {
+  
     constructor(props) {
+        
         super(props);
         this.state = {
             marker: [],
@@ -13,13 +17,16 @@ export default class PhotoModal extends React.Component {
             show: false,
             photo: null,
             date: null,
-            time: null
+            time: null,
+            command: null,
+            enabled: true
         }
     }
 
-    showModal(show, login, marker, amazon) {
+
+    showModal(show, login, marker, amazon, photo) {
       this.setState({marker: marker});
-      this.setState({photo: marker[0].photo});
+      this.setState({photo: photo});
       this.setState({date: marker[0].datetime.split('T')[0]});
       this.setState({time: marker[0].datetime.split('T')[1].substr(0,8)});
       if (login === 'asu') {
@@ -34,8 +41,7 @@ export default class PhotoModal extends React.Component {
           }
         } else {
           this.setState({amazon: amazon});
-        }
-        
+        }       
         this.setState({show: show});
       }
     }
@@ -46,37 +52,60 @@ export default class PhotoModal extends React.Component {
       this.setState({photo: marker[0].photo});
       this.setState({show: show});
     }
-
-    getPhoto(direction) {
-      let photo = this.state.photo;
-      let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
-      let n = null;
-      if (direction === "prev") {
-        n = intSuffix - 1;
-      } else {
-        n = intSuffix + 1;
+    
+    clickPrev = async (photo, callback) => {
+      if (this.state.enabled) {
+        this.setState({enabled: false}, async () => {
+          const newPhoto = incrementPhoto(photo, -1);
+          let url = `${this.state.amazon}${newPhoto}.jpg`;
+          let status = await callback(url);
+          //console.log(status)
+          if (status !== 404) {
+            this.setState({
+              photo: newPhoto,
+              enabled: true
+            })  
+          } else {
+            this.setState({
+              enabled: true
+            }, () => {
+              this.clickPrev(newPhoto, callback);
+            })       
+          }
+        })  
       }
-      let newSuffix = pad(n, 5);
-      let prefix = photo.slice(0, photo.length - 5);
-      let newPhoto = prefix + newSuffix;
-      return newPhoto;
-    }
-
-    clickPrev = (e) => {
-      e.preventDefault();
-      const newPhoto = this.getPhoto("prev");
-      this.setState({photo: newPhoto});
     }
         
-    clickNext = (e) => {
-      e.preventDefault();
-      const newPhoto = this.getPhoto("next");
-      this.setState({photo: newPhoto});
-    };
+    clickNext = async (photo, callback) => {
+      if (this.state.enabled) {
+        this.setState({enabled: false}, async () => {
+          const newPhoto = incrementPhoto(photo, 1);
+          let url = `${this.state.amazon}${newPhoto}.jpg`;
+          let status = await callback(url);
+          //console.log(status)
+          if (status !== 404) {
+            this.setState({
+              photo: newPhoto,
+              enabled: true
+            }) 
+          } else {
+            this.setState({
+              enabled: true
+            }, () => {
+              this.clickNext(newPhoto, callback);
+            })
+            
+          }
+        })
+      }  
+    }
       
     closePhotoModal = () => {
-        this.setState({show: false});     
-    };
+        this.setState({
+          show: false, 
+        }); 
+           
+    }
 
       /**
      * Copies the lat lng from photo modal to users clipboard
@@ -130,7 +159,8 @@ export default class PhotoModal extends React.Component {
                   <b>{"Date: "}</b>{this.state.date}<br></br>
                   <b>{"Time: "}</b>{this.state.time}<br></br>
                   <b>{"Lat: "}</b>{this.state.marker[0].latlng.lat}<br></br>
-                    <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
+                  <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
+                 
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={this.copy} 
@@ -161,7 +191,8 @@ export default class PhotoModal extends React.Component {
                 <b>{"Date: "}</b>{this.state.date}<br></br>
                 <b>{"Time: "}</b>{this.state.time}<br></br>
                 <b>{"Lat: "}</b>{this.state.marker[0].latlng.lat}<br></br>
-                  <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
+                <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
+                <b>{"Photo: "}</b>{this.state.photo + "  "}<br></br>
                 <Button variant="outline-secondary" 
                   size="sm" 
                   onClick={this.copy} 
@@ -186,10 +217,10 @@ export default class PhotoModal extends React.Component {
       >
         <Modal.Body >	
           <div>
-            <img className="photo" 
-              
-              alt="fault"
+            <img className="photo"    
+              alt="photo"
               src={this.state.amazon + this.state.photo + ".jpg"} 
+              //onError={(e) => this.imageError(e)}
               />  
             <div className="dataTable">   
             <CustomTable 
@@ -201,12 +232,12 @@ export default class PhotoModal extends React.Component {
               className="leftArrow" 
               src={"leftArrow_128.png"} 
               alt="left arrow"
-              onClick={this.clickPrev}/> 
-            <img 
+              onClick={() => this.clickPrev(this.state.photo, FetchHead)}/> 
+            <img
               className="rightArrow" 
               src={"rightArrow_128.png"} 
               alt="right arrow"
-              onClick={this.clickNext}/>  
+              onClick={() => this.clickNext(this.state.photo, FetchHead)}/>  
           
         </div>
         </Modal.Body >
