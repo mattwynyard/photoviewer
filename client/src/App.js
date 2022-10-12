@@ -17,13 +17,14 @@ import {calcGCDistance} from  './util.js';
 import LayerCard from './components/LayerCard.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
-import {CustomPopup} from './components/Components.js'
 import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
 import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
+import { CustomPopup } from './components/CustomPopup'
+import { incrementPhoto } from  './util.js';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -100,7 +101,8 @@ class App extends React.Component {
       filtered: false ,
       dataActive: false,
       mapBoxKey: null,
-      showPhotoViewer: false
+      showPhotoViewer: false,
+      imageUrl: null
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -113,6 +115,7 @@ class App extends React.Component {
     this.applyRef = React.createRef();
     this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
+    this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
@@ -231,6 +234,8 @@ class App extends React.Component {
     if (index !== 0) {
       this.selectedIndex = index;
       this.setState({selectedGeometry: [this.state.objGLData[index - 1]]});
+      const selectedMarker = [this.state.objGLData[index - 1]];
+      this.setState({image: selectedMarker[0].photo})
       this.GLEngine.redraw(this.GLEngine.glData, false);
     } else {//user selected screen only - no marker
       this.selectedIndex = null;
@@ -559,9 +564,8 @@ class App extends React.Component {
    * Fired when user clciks photo on thumbnail
    * @param {event} e 
    */
-  clickImage = () => {
-    //this.setState({showPhotoViewer: true})   
-    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon);
+  clickImage = () => { 
+    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon, this.state.image);
   }
 
   /**
@@ -1295,6 +1299,10 @@ class App extends React.Component {
     
   }
 
+  onImageError = (photo) => {
+    this.setState({image: incrementPhoto(photo, -1)})
+  }
+
   render() {
     const centre = [this.state.location.lat, this.state.location.lng];
     return ( 
@@ -1415,9 +1423,11 @@ class App extends React.Component {
               data={obj}
               login={this.context.login.user}
               position={obj.latlng}
-              src={this.state.activeLayer ? this.state.activeLayer.amazon + obj.photo + ".jpg": null} 
+              photo={this.state.activeLayer ? this.state.image: null} 
               amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
-              onClick={this.clickImage}>
+              onClick={this.clickImage}
+              onError={() => this.onImageError(obj.photo)}
+              >
             </CustomPopup>
             )}
           </LayerGroup>

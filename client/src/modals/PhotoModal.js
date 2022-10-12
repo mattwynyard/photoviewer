@@ -1,7 +1,9 @@
 import React from 'react';
-import { Modal}  from 'react-bootstrap';
-import { Button} from 'antd';
-import {pad} from  '../util.js';
+import { Modal }  from 'react-bootstrap';
+import { Button } from 'antd';
+import { pad, incrementPhoto } from  '../util.js';
+import { FetchHead } from '../api/FetchHead'
+
 import './PhotoModal.css';
 
 export default class PhotoModal extends React.Component {
@@ -19,13 +21,12 @@ export default class PhotoModal extends React.Component {
             command: null,
             enabled: true
         }
-        this.fetchHead.bind(this);
     }
 
 
-    showModal(show, login, marker, amazon) {
+    showModal(show, login, marker, amazon, photo) {
       this.setState({marker: marker});
-      this.setState({photo: marker[0].photo});
+      this.setState({photo: photo});
       this.setState({date: marker[0].datetime.split('T')[0]});
       this.setState({time: marker[0].datetime.split('T')[1].substr(0,8)});
       if (login === 'asu') {
@@ -54,43 +55,17 @@ export default class PhotoModal extends React.Component {
 
     
 
-    getPhoto = (photo, direction, increment = 1) => {
-      
-      //let photo = this.state.photo;
-      let intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
-      let n = null;
-      if (direction === "prev") {
-        n = intSuffix - increment;
-      } else {
-        n = intSuffix + increment;
-      }
-      let newSuffix = pad(n, 5);
-      let prefix = photo.slice(0, photo.length - 5);
-      let newPhoto = prefix + newSuffix;
-      return newPhoto; 
-    }
 
-    fetchHead = async (url) => {
-      try {
-        let response = await fetch(url, {
-          method: 'HEAD', 
-          mode: 'cors',   
-        })
-        console.log(response)
-        return response.status;
-        } catch (err) {
-          return 500;
-        } 
-    }
+
 
     clickPrev = async (photo, callback) => {
       if (this.state.enabled) {
         this.setState({enabled: false}, async () => {
-          const newPhoto = this.getPhoto(photo, "prev");
+          const newPhoto = incrementPhoto(photo, -1);
           let url = `${this.state.amazon}${newPhoto}.jpg`;
           let status = await callback(url);
-          console.log(status)
-          if (status != 404) {
+          //console.log(status)
+          if (status !== 404) {
             this.setState({
               photo: newPhoto,
               enabled: true
@@ -109,11 +84,11 @@ export default class PhotoModal extends React.Component {
     clickNext = async (photo, callback) => {
       if (this.state.enabled) {
         this.setState({enabled: false}, async () => {
-          const newPhoto = this.getPhoto(photo, "next");
+          const newPhoto = incrementPhoto(photo, 1);
           let url = `${this.state.amazon}${newPhoto}.jpg`;
-          let status = await callback(url, this);
-          console.log(status)
-          if (status != 404) {
+          let status = await callback(url);
+          //console.log(status)
+          if (status !== 404) {
             this.setState({
               photo: newPhoto,
               enabled: true
@@ -262,12 +237,12 @@ export default class PhotoModal extends React.Component {
               className="leftArrow" 
               src={"leftArrow_128.png"} 
               alt="left arrow"
-              onClick={() => this.clickPrev(this.state.photo, this.fetchHead)}/> 
+              onClick={() => this.clickPrev(this.state.photo, FetchHead)}/> 
             <img
               className="rightArrow" 
               src={"rightArrow_128.png"} 
               alt="right arrow"
-              onClick={() => this.clickNext(this.state.photo, this.fetchHead)}/>  
+              onClick={() => this.clickNext(this.state.photo, FetchHead)}/>  
           
         </div>
         </Modal.Body >

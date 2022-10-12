@@ -1,7 +1,6 @@
-import React from 'react';
+import  { React } from 'react';
 import { Link } from "react-router-dom";
-import {Image, NavDropdown, Nav}  from 'react-bootstrap';
-import {Popup}  from 'react-leaflet';
+import { NavDropdown, Nav }  from 'react-bootstrap';
 
 const LayerNav = (props) => { 
   if (props.user === 'admin') {
@@ -110,47 +109,6 @@ const CustomMenu = (props) => {
     }
   }
 
-const CustomPopup = (props) => {
-  if (props.src) {
-    let src = null;
-    let location = props.data.location;
-    if (props.login === "asu" || props.login === "asm") {
-      src = `${props.amazon}${props.data.inspection}/${props.data.photo}.jpg`;
-    } else if (props.data.type === 'footpath') {
-      location = props.data.roadname;
-      if (props.data.asset.toLowerCase() === "kerb & channel") {
-        src = `${props.amazon}kerbs/${props.data.inspection}/${props.data.photo}.jpg`;
-      } else {
-        src = `${props.amazon}footpaths/${props.data.inspection}/${props.data.photo}.jpg`;
-      }
-    } else {
-      src = props.src;
-    }
-    return (
-      <Popup className="popup" position={props.position}>
-        <div>
-          <p className="faulttext">
-          <b>{"ID: "}</b>{props.data.id}<br></br>
-            <b>{"Type: "}</b>{props.data.fault}<br></br>
-            <b>{"Location: "}</b>{location}<br></br>
-            <b>{"Date: "}</b>{props.data.datetime} 
-          </p>
-          <div>
-            <Image className="thumbnail" 
-              src={src}
-              onClick={props.onClick} 
-              thumbnail={true}
-              >
-            </Image >
-          </div>          
-        </div>
-      </Popup>  
-    );      
-  } else {
-    return null;
-  }
-    
-  }
 
   const CustomLink = (props) => {
     if (props.endpoint === "/data") {
@@ -174,4 +132,4 @@ const CustomPopup = (props) => {
     }      
   }
 
-  export {CustomLink, CustomPopup, CustomMenu, LayerNav}
+  export {CustomLink, CustomMenu, LayerNav}
