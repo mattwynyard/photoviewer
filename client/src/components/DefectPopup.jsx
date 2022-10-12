@@ -1,9 +1,9 @@
 import  { React, useState } from 'react';
-import {Popup}  from 'react-leaflet';
+import { Popup }  from 'react-leaflet';
 import { Image }  from 'react-bootstrap';
 import { useEffect } from 'react';
 
-const CustomPopup = (props) => {
+const DefectPopup = (props) => {
 
     const [prefix, setPrefix] = useState(null);
     
@@ -28,7 +28,7 @@ const CustomPopup = (props) => {
             <p className="faulttext">
             <b>{"ID: "}</b>{props.data.id}<br></br>
               <b>{"Type: "}</b>{props.data.fault}<br></br>
-              <b>{"Location: "}</b>c{props.data.type === 'footpath' ? props.data.roadname: props.data.location}<br></br>
+              <b>{"Location: "}</b>{props.data.type === 'footpath' ? props.data.location: props.data.roadname}<br></br>
               <b>{"Date: "}</b>{props.data.datetime} 
             </p>
             <div>
@@ -48,5 +48,5 @@ const CustomPopup = (props) => {
       }    
     }
 
-    export { CustomPopup }
+    export { DefectPopup }
   

@@ -23,7 +23,7 @@ import {Fetcher} from './components/Fetcher';
 import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
-import { CustomPopup } from './components/CustomPopup'
+import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -1418,7 +1418,7 @@ class App extends React.Component {
           </VideoCard>
           <LayerGroup >
             {this.state.selectedGeometry.map((obj, index) =>   
-            <CustomPopup 
+            <DefectPopup 
               key={`${index}`} 
               data={obj}
               login={this.context.login.user}
@@ -1428,7 +1428,7 @@ class App extends React.Component {
               onClick={this.clickImage}
               onError={() => this.onImageError(obj.photo)}
               >
-            </CustomPopup>
+            </DefectPopup>
             )}
           </LayerGroup>
           <Image 

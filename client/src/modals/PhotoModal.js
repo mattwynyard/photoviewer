@@ -52,12 +52,7 @@ export default class PhotoModal extends React.Component {
       this.setState({photo: marker[0].photo});
       this.setState({show: show});
     }
-
     
-
-
-
-
     clickPrev = async (photo, callback) => {
       if (this.state.enabled) {
         this.setState({enabled: false}, async () => {
