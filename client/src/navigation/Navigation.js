@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
-import { loginContext} from '../login/loginContext.js';
+import { loginContext } from '../login/loginContext.js';
 import LoginNav from '../login/LoginNav.js';
 import LoginModal from '../login/LoginModal.js'
 import {LoginFetch, apiRequest} from '../api/Api.js';

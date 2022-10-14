@@ -17,14 +17,20 @@ const Main = (props) => {
   const hideLoader = props.hideLoader
   const showLoader = props.showLoader
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
+  const [gl, _setGL] = useState(null);
+  
   const updateLogin = (user, token) => {
     setLogin({user: user, token: token, host: host});
+  }
+
+  const setGL = (gl) => {
+    _setGL({gl: gl});
   }
   return (
       <Router>
         <Switch> {/* The Switch decides which component to show based on the current URL.*/}
         
-          <loginContext.Provider value={{login, updateLogin, hideLoader, showLoader}}>
+          <loginContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, gl}}>
             <Route 
               exact path='/'
               component={App}>

@@ -284,7 +284,7 @@ export default class GLEngine {
     }   
   }
 
-  loadLines(buffer, data, options) {
+ loadLines(buffer, data, options) {
     if (!data) return;
     let faults = [];
     let centre = [];

@@ -24,6 +24,8 @@ import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
+import { glContext } from './login/loginContext';
+import { glProvider } from './login/loginContext'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -39,6 +41,7 @@ const DefaultIcon = L.icon({
 
 class App extends React.Component {
   static contextType = loginContext;
+  //static contextType = glContext;
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
@@ -178,6 +181,11 @@ class App extends React.Component {
   initializeGL() {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
+    this.context.setGL(this.GLEngine)
+  }
+
+  getGl() {;
+    return this.GLEngine;
   }
 
       /**
@@ -1306,6 +1314,7 @@ class App extends React.Component {
     const centre = [this.state.location.lat, this.state.location.lng];
     return ( 
       <> 
+       <glContext.Provider value={{gl: this.GLEngine}}>
         <Navigation 
           layers={this.state.activeLayers}
           remove={this.removeLayer}
@@ -1326,32 +1335,36 @@ class App extends React.Component {
               <div className="layerstitle">
                 <p>Layers</p>
               </div>
-              <LayerCard
-                layer={this.state.activeLayer}
-                prioritytitle={this.state.priorityMode}
-                priorityitems={this.state.priorities}
-                prioritylogin={this.context.login.user}
-                priorityreverse={this.state.reverse}
-                priorityfilter={this.state.filterPriorities} 
-                priorityonClick={this.updatePriority}
-                classtitle={'RM Class'}
-                classitems={this.state.rmclass ? this.state.rmclass: []}
-                classlogin={this.context.login.user}
-                classfilter={this.state.filterRMClass} 
-                classonClick={this.updateRMClass}
-                setDataActive={this.setDataActive} //-> data table
-                setMapMode={this.setMapMode}
-                mapMode={this.state.mapMode}
-                dataChecked={this.state.dataActive} //-> data table
-                spin={this.context.showLoader}
-                stopSpin={this.context.hideLoader}
-              >               
-              </LayerCard>
+            
+                  <LayerCard
+                    gl={this.GLEngine}
+                    layer={this.state.activeLayer}
+                    prioritytitle={this.state.priorityMode}
+                    priorityitems={this.state.priorities}
+                    prioritylogin={this.context.login.user}
+                    priorityreverse={this.state.reverse}
+                    priorityfilter={this.state.filterPriorities} 
+                    priorityonClick={this.updatePriority}
+                    classtitle={'RM Class'}
+                    classitems={this.state.rmclass ? this.state.rmclass: []}
+                    classlogin={this.context.login.user}
+                    classfilter={this.state.filterRMClass} 
+                    classonClick={this.updateRMClass}
+                    setDataActive={this.setDataActive} //-> data table
+                    setMapMode={this.setMapMode}
+                    mapMode={this.state.mapMode}
+                    dataChecked={this.state.dataActive} //-> data table
+                    spin={this.context.showLoader}
+                    stopSpin={this.context.hideLoader}
+                  >           
+                  </LayerCard>
+                
               <Roadlines
-                className={"rating"}
-                ref={this.roadLinesRef} 
-                >
-              </Roadlines> 
+                  className={"rating"}
+                  ref={this.roadLinesRef} 
+                  >
+              </Roadlines>
+              
             </div>
             <hr className='sidebar-line'>
             </hr>
@@ -1373,94 +1386,95 @@ class App extends React.Component {
                 </FilterButton>
             </div>
           </div>   
-   
-        <LMap        
-          ref={(ref) => {this.map = ref;}}
-          className={this.state.dataActive ? "map-reduced": "map"}
-          worldCopyJump={true}
-          boxZoom={true}
-          center={centre}
-          zoom={this.state.zoom}
-          doubleClickZoom={false}
-          onPopupClose={this.closePopup}>
-          <TileLayer className="mapLayer"
-            attribution={this.state.attribution}
-            url={this.state.url}
-            zIndex={998}
-            maxNativeZoom={19}
-            maxZoom={22}
-          />
-          <ScaleControl className="scale"/>
-          {this.state.archiveMarker.map((position, idx) =>
-            <Marker 
-              key={`marker-${idx}`} 
-              position={position}>
-            </Marker>
-          )}
-          {this.state.carMarker.map((position, idx) =>
-            <Marker 
-              key={`marker-${idx}`} 
-              position={position}>
-            </Marker>
-          )}
-          {this.state.selectedCarriage.map((position, idx) =>
-            <Polyline
-              key={`marker-${idx}`} 
-              position={position}>
-            </Polyline>
-          )}
-          <VideoCard
-            ref={this.videoCard}
-            show={this.state.showVideo} 
-            parent={this}
-          >
-          </VideoCard>
-          <LayerGroup >
-            {this.state.selectedGeometry.map((obj, index) =>   
-            <DefectPopup 
-              key={`${index}`} 
-              data={obj}
-              login={this.context.login.user}
-              position={obj.latlng}
-              photo={this.state.activeLayer ? this.state.image: null} 
-              amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
-              onClick={this.clickImage}
-              onError={() => this.onImageError(obj.photo)}
-              >
-            </DefectPopup>
+  
+          <LMap        
+            ref={(ref) => {this.map = ref;}}
+            className={this.state.dataActive ? "map-reduced": "map"}
+            worldCopyJump={true}
+            boxZoom={true}
+            center={centre}
+            zoom={this.state.zoom}
+            doubleClickZoom={false}
+            onPopupClose={this.closePopup}>
+            <TileLayer className="mapLayer"
+              attribution={this.state.attribution}
+              url={this.state.url}
+              zIndex={998}
+              maxNativeZoom={19}
+              maxZoom={22}
+            />
+            <ScaleControl className="scale"/>
+            {this.state.archiveMarker.map((position, idx) =>
+              <Marker 
+                key={`marker-${idx}`} 
+                position={position}>
+              </Marker>
             )}
-          </LayerGroup>
-          <Image 
-            className="satellite" 
-            src={this.state.osmThumbnail} 
-            onClick={(e) => this.toogleMap(e)} 
-            thumbnail={true}
-          />
-      </LMap >
-      <DataTable 
-        className={this.state.dataActive ? "data-active": "data-inactive"}
-        data={this.state.objGLData}
-        simulate={this.simulateClick}
-        centre={this.centreMap}
-        surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
-      />  
-      <PhotoModal
-        ref={this.photoModal}
-      >
-      </PhotoModal>
+            {this.state.carMarker.map((position, idx) =>
+              <Marker 
+                key={`marker-${idx}`} 
+                position={position}>
+              </Marker>
+            )}
+            {this.state.selectedCarriage.map((position, idx) =>
+              <Polyline
+                key={`marker-${idx}`} 
+                position={position}>
+              </Polyline>
+            )}
+            <VideoCard
+              ref={this.videoCard}
+              show={this.state.showVideo} 
+              parent={this}
+            >
+            </VideoCard>
+            <LayerGroup >
+              {this.state.selectedGeometry.map((obj, index) =>   
+              <DefectPopup 
+                key={`${index}`} 
+                data={obj}
+                login={this.context.login.user}
+                position={obj.latlng}
+                photo={this.state.activeLayer ? this.state.image: null} 
+                amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
+                onClick={this.clickImage}
+                onError={() => this.onImageError(obj.photo)}
+                >
+              </DefectPopup>
+              )}
+            </LayerGroup>
+            <Image 
+              className="satellite" 
+              src={this.state.osmThumbnail} 
+              onClick={(e) => this.toogleMap(e)} 
+              thumbnail={true}
+            />
+        </LMap >
+        <DataTable 
+          className={this.state.dataActive ? "data-active": "data-inactive"}
+          data={this.state.objGLData}
+          simulate={this.simulateClick}
+          centre={this.centreMap}
+          surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
+        />  
+        <PhotoModal
+          ref={this.photoModal}
+        >
+        </PhotoModal>
       {/* <Photoviewer
         show={this.state.showPhotoViewer}
       >
       </Photoviewer> */}
-      <ArchivePhotoModal
-        ref={this.archivePhotoModal}
-        show={this.state.show} 
-        amazon={!this.state.activeLayer ? null: this.state.activeLayer}
-        currentPhoto={this.state.currentPhoto}
-        project={this.state.activeLayer}
-      >
-      </ArchivePhotoModal>
+        <ArchivePhotoModal
+          ref={this.archivePhotoModal}
+          show={this.state.show} 
+          amazon={!this.state.activeLayer ? null: this.state.activeLayer}
+          currentPhoto={this.state.currentPhoto}
+          project={this.state.activeLayer}
+        >
+        </ArchivePhotoModal>
       </div> 
+      </glContext.Provider>
       </>
     );
   }
