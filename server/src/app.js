@@ -744,6 +744,7 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
+    const user = req.body.user;
     let project = req.body.project;
     let filter = req.body.filter; //fix for zero length filter
     let priority = req.body.priority;
@@ -772,7 +773,7 @@ app.post('/layer', async (req, res) => {
     let completedLines = [];
     if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (options.priority.length !== 0) {
-        let geometry = await db.footpath(project, options, filter);
+        let geometry = await db.footpath(user, project, options, filter);
         activePoints = geometry.rows;
         activeLines = [];
       } 

@@ -362,21 +362,11 @@ module.exports = {
         data[25] = parseInteger(data[25]); //seq
         data[26] = parseString(data[26]); //photoid
         data[27] = parseString(data[27]); //status
-        //data[28] = parseString(data[28]); //wkt
-        //const wkt = parseString(data[28]);
-        let sql = null;
-        //if (wkt == null) {     
+        let sql = null; 
             sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
                     "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
                     + "status, geom) "
              + "VALUES (" + data + ", ST_MakePoint(" + data[22] + "," + data[21] + "));"
-        // } else {
-        //     data.splice(-1);
-        //     sql = "INSERT INTO footpaths(id, project, footpathid, roadname, roadid, area, displacement, position, erp, side, asset, zone, type, " +
-        //     "fault, cause, size, length, width, grade, comment, inspection, latitude, longitude, faulttime, inspector, seq, photoid, "
-        //     + "status, geom) "
-        //     + "VALUES (" + data + ", ST_GeomFromText(" + wkt + "));" 
-        // }
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
@@ -948,21 +938,7 @@ module.exports = {
         });
     },
 
-    // client: (project) => {
-    //     return new Promise((resolve, reject) => {
-    //         connection.query("SELECT client FROM projects WHERE code = '" + project + "'", (err, result) => {
-    //         if (err) {
-    //             console.error('Error executing query', err.stack)
-    //             return reject(err);
-    //         }
-    //         let surface = resolve(result);          
-    //         return surface;
-    //         }); 
-    //     });
-
-    // },
-
-    footpath: (project, options, filter) => {
+    footpath: (user, project, options, filter) => {
         let assets = filter.find(object => object.code === "Asset");
         let faults = filter.find(object => object.code === "Fault")
         let types = filter.find(object => object.code === "Type")
@@ -972,10 +948,16 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
+        let sql = null;
+        if (user === 'swdc') {
+            sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
+            + "FROM vw_swdc_fp WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
+            + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
+        } else {
+            sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
                 + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
                 + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
-            
+        } 
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {
                 if (err) {

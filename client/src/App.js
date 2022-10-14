@@ -10,7 +10,6 @@ import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
-//import Photoviewer from './modals/Photoviewer';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
