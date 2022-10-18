@@ -286,20 +286,21 @@ export default class GLEngine {
 
  loadLines(buffer, data, options) {
     if (!data) return;
+    let count = 0;
     let faults = [];
     let centre = [];
     let lengths = [];
-    let count = options.count;
+    count = options.count ? options.count : count;
     for (let i = 0; i < data.length; i++) {
       const linestring = JSON.parse(data[i].st_asgeojson);
-      if (data[i].id) {
+      if (data[i].id || data[i].fpid) {
         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
         if (linestring) {
           let colors = null;  
           let line = linestring.coordinates;
           if (options.type !== "centreline") {
             if (options.type === "footpath_rating") {
-              colors = this.setFootpathRatingColours(data[i], options.type, options.priorities);
+              colors = this.setFootpathRatingColours(data[i], options.value);
             } else {
               colors = this.setColors(data[i], options.type, options.priorities);
             }
@@ -337,14 +338,14 @@ export default class GLEngine {
             }
           }
         }
-        if (options.type === "centreline") {
+        if (options.type === "centreline" || options.type === "footpath_rating") {
 
         } else {
           let fault = this.createFaultObject(data[i], options.type, latlng, linestring)
           faults.push(fault); 
         }
         
-      }    
+     }    
     }
     if (options.type === "centreline") {
       return {vertices: buffer, lengths: lengths, centre: centre, count: count};
@@ -558,22 +559,49 @@ export default class GLEngine {
     return obj;
   }
 
-  setCentreColors(data, value) {
+  setFootpathRatingColours(data, value) {
     let colors = {r: null, g: null, b: null, a: null};
-    let _alpha = 0.75;
-    let index = null;
-    let rgb = null;
-    let hex = null;
-    switch(value) {
-      case 'Grade':
-        index = data.structural * 10;
-        break;
+    let _alpha = 1;
+    if (value === "Grade") {
+      switch(data.grade) {
+        case 1:
+          colors.r = 0.0; //green
+          colors.g = 0.8;
+          colors.b = 0.0;
+          colors.a = _alpha;
+          break;
+        case 2:
+          colors.r = 0.0; //blue
+          colors.g = 0.0;
+          colors.b = 0.8;
+          colors.a = _alpha;
+          break;
+        case 3:
+          colors.r = 1.0; //yellow
+          colors.g = 0.6;
+          colors.b = 0.0;
+          colors.a = _alpha;
+          break;
+        case 4:
+          colors.r = 1.0; //orange
+          colors.g = 0.65;
+          colors.b = 0.0;
+          colors.a = _alpha;
+          break;
+        case 5:
+          colors.r = 0.8; //red
+          colors.g = 0.0;
+          colors.b = 0.0;
+          colors.a = _alpha;  
+          break;
+      
+      default:
+        colors.r = 0.25;
+        colors.g = 0.25;
+        colors.b = 0.25;
+        colors.a = _alpha;
+    }
     
-    default:
-      colors.r = 0.25;
-      colors.g = 0.25;
-      colors.b = 0.25;
-      colors.a = _alpha;
   }
     return colors;
   }

@@ -23,41 +23,29 @@ export default function RatingDropdown(props) {
     }, [PostFetch])
 
     useEffect(() => {
-        console.log(data)
+        //console.log(data)
     }, [data])
 
     useEffect(() => {
         if (show) {
-            const options = {type: "footpath_rating", value: filter}
+            const options = {type: "footpath_rating", value: "Grade"}
             let ratings = gl.gl.loadLines([], data, options);
-        } else {
-            
-            gl.gl.glData.layers[0].geometry = [];
+            gl.gl.glData.layers[0].geometry = ratings.vertices;
             gl.gl.redraw(gl.gl.glData, false);
-            
+            console.log(ratings)
+        } else {
+            if (data.length !== 0) {
+                gl.gl.glData.layers[0].geometry = [];
+                gl.gl.redraw(gl.gl.glData, false);
+            }     
         }
     }, [show])
     
     
    const changeCheck = (e, value) => {
-        
         setShow(e.target.checked)
-    }
-         //this.delegate.glData.layers[0].geometry = [];
-         //let glData = this.delegate.glData;
-         //this.setState({active: false});
-         //this.delegate.redraw(glData, false);
-         //this.setState({active: true})
-        //  this.setState(
-        //    {filter: [value]},
-        //    () => {
-        //      let options = {type: "centreline", value: value}
-        //      let centrelines = this.delegate.loadLines([], this.state.data, options);
-        //      let glData = this.delegate.glData;
-        //      glData.layers[0].geometry = centrelines.vertices;
-        //      this.delegate.redraw(glData, false);
-        //    });
-        //}     
+        setFilter(value)
+    }    
 
     if (props.layer) {
         return (

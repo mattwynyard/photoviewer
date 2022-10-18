@@ -391,7 +391,7 @@ app.post('/centrelines', async(req, res) => {
 app.post('/rating', async(req, res) => {
   let security = false;
   if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project);
+    security = await db.isPublic(req.body.project.code);
   } else {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
