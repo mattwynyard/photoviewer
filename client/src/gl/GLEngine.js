@@ -294,12 +294,15 @@ export default class GLEngine {
       const linestring = JSON.parse(data[i].st_asgeojson);
       if (data[i].id) {
         const latlng = L.latLng(linestring.coordinates[0][1], linestring.coordinates[0][0]);
-        //this.latlngs.push(latlng);
         if (linestring) {
           let colors = null;  
           let line = linestring.coordinates;
           if (options.type !== "centreline") {
-            colors = this.setColors(data[i], options.type, options.priorities);
+            if (options.type === "footpath_rating") {
+              colors = this.setFootpathRatingColours(data[i], options.type, options.priorities);
+            } else {
+              colors = this.setColors(data[i], options.type, options.priorities);
+            }
             ++count;
           } else {
             colors = this.setCentreColors(data[i], options.value);
@@ -553,6 +556,26 @@ export default class GLEngine {
       };
     }
     return obj;
+  }
+
+  setCentreColors(data, value) {
+    let colors = {r: null, g: null, b: null, a: null};
+    let _alpha = 0.75;
+    let index = null;
+    let rgb = null;
+    let hex = null;
+    switch(value) {
+      case 'Grade':
+        index = data.structural * 10;
+        break;
+    
+    default:
+      colors.r = 0.25;
+      colors.g = 0.25;
+      colors.b = 0.25;
+      colors.a = _alpha;
+  }
+    return colors;
   }
 
   setCentreColors(data, value) {

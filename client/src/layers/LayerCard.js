@@ -3,11 +3,11 @@ import { Card }  from 'react-bootstrap';
 import ClassDropdown from '../components/ClassDropdown.js';
 import PriorityDropdown from '../components/PriorityDropdown.js';
 import RatingDropdown from '../components/RatingDropdown';
-import { loginContext } from '../login/loginContext'
+
 import './LayerCard.css';
 
 function LayerCard(props) {
-    const { gl } = useContext(loginContext);
+
     const box = document.querySelector('.layercard-datainput');
 
     const handleFocus = (e) => {
@@ -34,12 +34,8 @@ function LayerCard(props) {
         }
     }
 
-    const handleRatingChange = (e) => {
-        if (e.target.checked) {
-            
-        } else {
-
-        }
+    const handleRatingChange = (isChecked) => {
+        
     }
        
     return (
@@ -49,24 +45,25 @@ function LayerCard(props) {
             </Card.Header>
             <Card.Body className='layercard-body'>
                 <PriorityDropdown
-                className="layercard-priorityDropdown"
-                title={props.prioritytitle}
-                items={props.priorityitems}
-                reverse={props.priorityreverse}
-                filter={props.priorityfilter} 
-                onClick={props.priorityonClick}
+                    className="layercard-priorityDropdown"
+                    title={props.prioritytitle}
+                    items={props.priorityitems}
+                    reverse={props.priorityreverse}
+                    filter={props.priorityfilter} 
+                    onClick={props.priorityonClick}
                 />
                 <ClassDropdown 
-                className="layercard-classDropdown"
-                title={props.classtitle}
-                items={props.classitems}
-                login={props.classlogin}
-                filter={props.classfilter} 
-                onClick={props.classonClick}
+                    className="layercard-classDropdown"
+                    title={props.classtitle}
+                    items={props.classitems}
+                    login={props.classlogin}
+                    filter={props.classfilter} 
+                    onClick={props.classonClick}
                 />
                 <RatingDropdown 
                     className="layercard-ratingDropdown"
-                    project={"test"}
+                    layer={props.layer}
+                    changeCheck={handleRatingChange}
                 />
                 <div >
                     <input 

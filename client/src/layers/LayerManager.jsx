@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { React, useContext  } from 'react';
 import { loginContext } from '../login/loginContext'
 import { LayerCard } from './LayerCard';
 
 
 const LayerManager = (props) => {
-    const { login, showLoader, hideLoader } = useContext(loginContext);
+    const { login, showLoader, hideLoader, gl } = useContext(loginContext);
+
+    const { query, setQuery } = useState([])
+
 
     if (props.layer) {
         return (
@@ -13,19 +17,19 @@ const LayerManager = (props) => {
                 layer={props.layer}
                 prioritytitle={props.prioritytitle}
                 priorityitems={props.priorityitems}
-                prioritylogin={login.user}
-                priorityreverse={props.reverse}
+                
+                priorityreverse={props.priorityreverse}
                 priorityfilter={props.priorityfilter} 
-                //priorityonClick={updatePriority}
+                priorityonClick={props.updatePriority}
                 
                 classitems={props.rmclass ? props.rmclass: []}
-                classlogin={login.user}
                 classfilter={props.filterRMClass} 
-                //classonClick={updateRMClass}
+                classonClick={props.classonClick}
                 setDataActive={props.setDataActive} //-> data table
                 setMapMode={props.setMapMode}
                 mapMode={props.mapMode}
                 dataChecked={props.dataActive} //-> data table
+                login={login.user}
                 spin={showLoader}
                 stopSpin={hideLoader}
             >           

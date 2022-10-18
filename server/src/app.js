@@ -342,6 +342,7 @@ app.post('/carriage', async(req, res) => {
       let result = null;
       let data = null;
       try {
+        
         if (req.body.project.surface === 'footpath') {
           result = await db.closestFootpath(req.body.lat, req.body.lng);
           data = result.rows[0];
@@ -380,6 +381,27 @@ app.post('/centrelines', async(req, res) => {
       res.send({success: true, data: result.rows});
     } else {
       res.send({success: false, data: []});
+    }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/rating', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    console.log(req.body)
+    if (req.body.project.surface === 'footpath') {
+      let result = await db.footpathRating(req.body.project.code);
+      res.send({success: true, data: result.rows});
+    } else {
+      res.send({success: true, data: []});
     }
   } else {
     res.set('Content-Type', 'application/json');

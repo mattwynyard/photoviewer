@@ -860,6 +860,20 @@ module.exports = {
         });
     },
 
+    footpathRating: (project) => {
+        let sql = `SELECT * FROM public.vw_swdc_fpcl WHERE project = '${project}'`
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let priority = resolve(result);
+                return priority;
+            });
+        });
+    },
+
     updateLayerCount: (layer) => {
         return new Promise((resolve, reject) => { 
             try {

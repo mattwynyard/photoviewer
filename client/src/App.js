@@ -13,18 +13,16 @@ import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
-import LayerCard from './layers/LayerCard.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
 import {FilterButton} from './components/FilterButton.js';
 import Roadlines from './components/Roadlines';
-import {Fetcher} from './components/Fetcher';
+import {Fetcher} from './api/Fetcher';
 import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
-import { glContext } from './login/loginContext';
 import { LayerManager } from './layers/LayerManager';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -971,9 +969,9 @@ class App extends React.Component {
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
-      // if (project.centreline) {
-      //   this.roadLinesRef.current.loadCentrelines(projectCode); 
-      // }
+      if (project.centreline) {
+        this.roadLinesRef.current.loadCentrelines(projectCode); 
+      }
      
       
     });
@@ -1291,8 +1289,7 @@ class App extends React.Component {
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.state.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
-    });
-    
+    });   
   }
   /**
    * callback for classdropdown to update class filter
@@ -1314,7 +1311,6 @@ class App extends React.Component {
     const centre = [this.state.location.lat, this.state.location.lng];
     return ( 
       <> 
-       <glContext.Provider value={{gl: this.GLEngine}}>
         <Navigation 
           layers={this.state.activeLayers}
           remove={this.removeLayer}
@@ -1342,14 +1338,15 @@ class App extends React.Component {
                   priorityfilter={this.state.filterPriorities} 
                   classitems={this.state.rmclass ? this.state.rmclass: []}
                   classfilter={this.state.filterRMClass} 
-                  setDataActive={this.state.setDataActive} //-> data table
+                  setDataActive={this.setDataActive} //-> data table
                   setMapMode={this.state.setMapMode}
                   mapMode={this.state.mapMode}
                   dataChecked={this.state.dataActive} //-> data table
+                  updatePriority={this.updatePriority}
+                  classonClick={this.updateRMClass}
+                  priorityreverse={this.state.reverse}
                   >
-                </LayerManager>       
-                  
-                
+                </LayerManager>        
               <Roadlines
                   className={"rating"}
                   ref={this.roadLinesRef} 
@@ -1465,7 +1462,6 @@ class App extends React.Component {
         >
         </ArchivePhotoModal>
       </div> 
-      </glContext.Provider>
       </>
     );
   }
