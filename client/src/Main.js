@@ -23,8 +23,8 @@ const Main = (props) => {
     setLogin({user: user, token: token, host: host});
   }
 
-  const setGL = (gl) => {
-    _setGL({gl: gl});
+  const setGL = (_gl) => {
+    _setGL({gl: _gl});
   }
   return (
       <Router>
