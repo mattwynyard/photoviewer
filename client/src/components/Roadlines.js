@@ -45,7 +45,7 @@ export default class Roadlines extends Component {
     
     redraw = (value) => {
         let options = {type: "centreline", value: value}
-        let centrelines = this.delegate.loadLines([], this.state.data, options);
+        let centrelines = this.context.gl.loadLines([], this.state.data, options);
         let glData = this.delegate.glData;
         glData.centre = centrelines.vertices;
         this.delegate.redraw(glData, false);   

@@ -13,7 +13,7 @@ import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
-import LayerCard from './components/LayerCard.js';
+import LayerCard from './layers/LayerCard.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
 import {FilterButton} from './components/FilterButton.js';
@@ -25,7 +25,7 @@ import { loginContext} from './login/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
 import { glContext } from './login/loginContext';
-import { glProvider } from './login/loginContext'
+import { LayerManager } from './layers/LayerManager';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -41,7 +41,7 @@ const DefaultIcon = L.icon({
 
 class App extends React.Component {
   static contextType = loginContext;
-  //static contextType = glContext;
+
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
@@ -181,7 +181,7 @@ class App extends React.Component {
   initializeGL() {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
-    this.context.setGL(this.GLEngine)
+    this.context.setGL(this.GLEngine);
   }
 
   getGl() {;
@@ -971,9 +971,9 @@ class App extends React.Component {
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
-      if (project.centreline) {
-        this.roadLinesRef.current.loadCentrelines(projectCode); 
-      }
+      // if (project.centreline) {
+      //   this.roadLinesRef.current.loadCentrelines(projectCode); 
+      // }
      
       
     });
@@ -1334,30 +1334,21 @@ class App extends React.Component {
             <div className="layers">
               <div className="layerstitle">
                 <p>Layers</p>
-              </div>
-            
-                  <LayerCard
-                    gl={this.GLEngine}
-                    layer={this.state.activeLayer}
-                    prioritytitle={this.state.priorityMode}
-                    priorityitems={this.state.priorities}
-                    prioritylogin={this.context.login.user}
-                    priorityreverse={this.state.reverse}
-                    priorityfilter={this.state.filterPriorities} 
-                    priorityonClick={this.updatePriority}
-                    classtitle={'RM Class'}
-                    classitems={this.state.rmclass ? this.state.rmclass: []}
-                    classlogin={this.context.login.user}
-                    classfilter={this.state.filterRMClass} 
-                    classonClick={this.updateRMClass}
-                    setDataActive={this.setDataActive} //-> data table
-                    setMapMode={this.setMapMode}
-                    mapMode={this.state.mapMode}
-                    dataChecked={this.state.dataActive} //-> data table
-                    spin={this.context.showLoader}
-                    stopSpin={this.context.hideLoader}
-                  >           
-                  </LayerCard>
+              </div> 
+                <LayerManager
+                  layer={this.state.activeLayer}
+                  prioritytitle={this.state.priorityMode}
+                  priorityitems={this.state.priorities}
+                  priorityfilter={this.state.filterPriorities} 
+                  classitems={this.state.rmclass ? this.state.rmclass: []}
+                  classfilter={this.state.filterRMClass} 
+                  setDataActive={this.state.setDataActive} //-> data table
+                  setMapMode={this.state.setMapMode}
+                  mapMode={this.state.mapMode}
+                  dataChecked={this.state.dataActive} //-> data table
+                  >
+                </LayerManager>       
+                  
                 
               <Roadlines
                   className={"rating"}

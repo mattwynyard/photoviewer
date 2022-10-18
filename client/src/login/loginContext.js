@@ -3,7 +3,7 @@ const loginContext = React.createContext({user: "Login", token: null});
 
 const glContext = React.createContext();
 
-const glProvider = glContext.Provider
-const glConsumer = glContext.Consumer
+//const GLProvider = glContext.Provider
+//const GLConsumer = glContext.Consumer
 
-export { loginContext, glContext, glProvider, glConsumer };
+export { loginContext, glContext };
