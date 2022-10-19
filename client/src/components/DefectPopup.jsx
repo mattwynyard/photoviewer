@@ -17,7 +17,7 @@ const DefectPopup = (props) => {
                 setPrefix(`${props.amazon}footpaths/${props.data.inspection}/`);
             }
           } else {
-            setPrefix(`${props.amazon}${props.data.inspection}/`);
+            setPrefix(`${props.amazon}`);
           }
     }, [])
 
