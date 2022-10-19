@@ -7,7 +7,9 @@ import RatingDropdown from '../components/RatingDropdown';
 import './LayerCard.css';
 
 function LayerCard(props) {
-    const [ratingMenu, setRatingMenu] = useState(null)
+    console.log(props)
+    const [ratingMenu, setRatingMenu] = useState([])
+    const [gradeMenu, setGradeMenu] = useState([])
 
     useEffect(() => {
         if (props.layer.surface === 'road') {

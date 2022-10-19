@@ -12,7 +12,6 @@ export default function RatingDropdown(props) {
     const [data, setData] = useState([]);
     const [active, setActive] = useState(false);
     const defaultTitle = "Rating"
-    console.log(props)
     useEffect(() => {
         const body = {user: login.user, project: props.layer, filter: filter}
         showLoader();
@@ -79,7 +78,7 @@ export default function RatingDropdown(props) {
     }    
     }
 
-    if (menu) {
+    if (menu && props.layer.centreline) {
         return (
             <div className={props.className}>
                 <Dropdown className="centreline"  drop={'end'}>
