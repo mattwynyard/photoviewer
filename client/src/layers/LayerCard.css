@@ -2,10 +2,9 @@
 .layercard-body {
     font-family: "Century Gothic", sans-serif;
     font-size: 16px !important;
-    display: grid;
-    gap: 5px;
-    grid-template-columns: repeat(2, auto);
-    grid-auto-rows: minmax(5px, auto);
+    display: flex;
+    flex-wrap: wrap;
+    flex: 1 1 100px;
     padding: 5px;   
   }
 
@@ -25,37 +24,55 @@
     padding: 3px;
   }
 
-  /* .layercard-priorityDropdown {
-    grid-column: 1 / 2;
-    grid-row: 1;
+.layercard-priorityDropdown {
     padding: 1px;
+    margin: 5px;
+    width: 40%;
   }
 
-  .layercard-ratingDropdown {
-    grid-column: 2 / 2;
-    grid-row: 1;
+
+.layercard-ratingDropdown {
     padding: 1px;
-  }
+    margin: 5px;
+    width: 40%;
+  } 
+
+.layercard-priorityDropdown span {
+    padding: 1px;
+    margin: 5px;
+  } 
+
+  .layercard-ratingDropdown span {
+    padding: 1px;
+    margin: 5px;
+  } 
 
 
 .layercard-classDropdown {
-    grid-column: 2 / 2;
-    grid-row: 1;
     padding: 1px;
+    margin: 5px;
+    width: 40%;
 }
-
-
-
 .layercard-datainput {
-  grid-column: 1 / 2;
-  grid-row: 2;
-  padding: 1px;
+    padding: 1px;
+    margin: 5px;
+    width: 40%;
 }
 
-.layercard-videoinput {
-  
-  grid-column: 1 / 2;
-  grid-row: 2;
+.layercard-datainput span {
   padding: 1px;
-} */
+  margin: 5px;
+  width: 40%;
+}
+  
+.layercard-videoinput {
+  padding: 1px;
+  margin: 5px;
+}
+
+.layercard-videoinput span {
+  text-align: bottom;
+  padding: 1px;
+  margin: 5px;
+}
 

@@ -562,23 +562,23 @@ export default class GLEngine {
   setFootpathRatingColours(data, value) {
     let colors = {r: null, g: null, b: null, a: null};
     let _alpha = 1;
-    if (value === "Grade") {
+    if (value === "Rating") {
       switch(data.grade) {
         case 1:
+          colors.r = 0.0; //blue
+          colors.g = 0.8;
+          colors.b = 0.8;
+          colors.a = _alpha;
+          break;
+        case 2:
           colors.r = 0.0; //green
           colors.g = 0.8;
           colors.b = 0.0;
           colors.a = _alpha;
           break;
-        case 2:
-          colors.r = 0.0; //blue
-          colors.g = 0.0;
-          colors.b = 0.8;
-          colors.a = _alpha;
-          break;
         case 3:
           colors.r = 1.0; //yellow
-          colors.g = 0.6;
+          colors.g = 0.8;
           colors.b = 0.0;
           colors.a = _alpha;
           break;
@@ -589,9 +589,9 @@ export default class GLEngine {
           colors.a = _alpha;
           break;
         case 5:
-          colors.r = 0.8; //red
+          colors.r = 1.0; //red
           colors.g = 0.0;
-          colors.b = 0.0;
+          colors.b = 1.0;
           colors.a = _alpha;  
           break;
       

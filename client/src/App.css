@@ -15,8 +15,8 @@ body {
 .map {
   position: absolute;
   height: 90%;
-  width: 85%;
-  left: 15%;
+  width: 80%;
+  left: 20%;
   z-index: 1;
 }
 
@@ -28,10 +28,22 @@ body {
   z-index: 1;
 }
 
-.panel {
+.panel-reduced {
+  font-family: "Century Gothic", sans-serif;
   position: absolute;
   height: 90%;
   width: 15%;
+  /* border-style: solid; */
+  border: 2px solid rgb(199, 199, 199);
+}
+
+.panel {
+  font-family: "Century Gothic", sans-serif;
+  position: absolute;
+  height: 90%;
+  width: 20%;
+  border-top: none;
+  border: 2px solid rgb(199, 199, 199);
 }
 
 .appcontainer {
@@ -68,10 +80,10 @@ body {
   width: 90%;
   font-family: "Century Gothic", sans-serif;
   font-size: 18px;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   color: light;
   text-align: left;
-  margin: 5px;
+  padding: 5px;
 }
 
 .filterstitle {
@@ -79,15 +91,17 @@ body {
   background-color: transparent;
   height: 10%;
   width: 100%;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   font-size: 18px;
   color: gray;
   text-align: left;
+  padding: 5px;
 }
 
 .layers {
-  font-family: "Century Gothic", sans-serif;
+  
   position: relative;
+  top: 0%;
   height: 50%;
   width: 100%;
   background-color: white;
@@ -95,12 +109,11 @@ body {
 }
 
 .filters {
-  font-family: "Century Gothic", sans-serif;
   position: relative;
   top: 50%;
   height: 50%;
   width: 100%;
-  /* border-style: solid; */
+  border-top: 2px solid rgb(199, 199, 199);
   background-color: white;
   padding: 5px;
 }

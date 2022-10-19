@@ -1,4 +1,4 @@
-import { React, useState, useEffect, useCallback  } from 'react';
+import { React, useState, useEffect } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from '../components/ClassDropdown.js';
 import PriorityDropdown from '../components/PriorityDropdown.js';
@@ -16,10 +16,6 @@ function LayerCard(props) {
             setRatingMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
         }
     }, [])
-
-    useEffect(() => {
-        console.log(ratingMenu)
-    }, [ratingMenu])
 
     const box = document.querySelector('.layercard-datainput');
 
@@ -79,19 +75,18 @@ function LayerCard(props) {
                     changeCheck={handleRatingChange}
                     menu={ratingMenu}
                 />
-                <div >
+                <div className="layercard-datainput">
                     <input 
-                        className="layercard-datainput"
                         type="checkbox" 
                         checked={props.dataChecked}
                         onChange={(e) => handleDataChange(e)}
                         onFocus={(e) => handleFocus(e)}
                     />
                     <label className="layercard-label">
-                        Data
+                        <span>{"Data"}</span>
                     </label>
                 </div>
-                <div >
+                <div>
                     <input 
                         className="layercard-videoinput"
                         type="checkbox" 
@@ -100,7 +95,7 @@ function LayerCard(props) {
                         disabled={!props.layer.hasvideo}
                     />
                     <label className="layercard-label">
-                        Video Mode
+                        <span>{"Video"}</span>
                     </label>
                 </div>
             </Card.Body>

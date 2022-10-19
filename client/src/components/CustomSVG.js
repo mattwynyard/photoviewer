@@ -68,19 +68,26 @@ const CustomSVG = (props) => {
       }
 
     } else {
-      if (props.value === "Grade 5" || props.value === "Priority 5") {
+      if (props.value === "Grade 5" || props.value === "Priority 5" || props.value === "Rating 5") {
         return ( 
           <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
             <circle cx="5" cy="5" r="3" />
           </svg>
           );
-      } else if (props.value === "Grade 4" || props.value === "Priority 4") {
+      } else if (props.value === "Grade 4" || props.value === "Priority 4" || props.value === "Rating 4") {
         return ( 
           <svg viewBox="1 1 10 10" x="16" width="16" stroke="darkorange" fill="darkorange">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
-      } else if (props.value === "Grade 3" || props.value === "Priority 3") {
+      } else if (props.value === "Grade 3" || props.value === "Priority 3" || props.value === "Rating 3") {
+        if (props.value === "Rating 3") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="gold" fill="gold">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        }
         if (props.login === "chbdc") {
           return ( 
             <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
@@ -95,13 +102,20 @@ const CustomSVG = (props) => {
           );
         }
         
-      } else if (props.value === "Grade 2" || props.value === "Priority 2") {
+      } else if (props.value === "Grade 2" || props.value === "Priority 2" || props.value === "Rating 2") {
+        if (props.value === "Rating 2") {
+          return ( 
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+              <circle cx="5" cy="5" r="3" />
+            </svg>
+          );
+        }
         return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
-      } else if (props.value === "Grade 1" || props.value === "Priority 1") {
+      } else if (props.value === "Grade 1" || props.value === "Priority 1" || props.value === "Rating 1") {
         return ( 
           <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
             <circle cx="5" cy="5" r="3" />

@@ -13,6 +13,19 @@ function buildQuery(arr) {
     return query;
 }
 
+function buildIntQuery(arr) {
+    if (arr.length == 0) return 'NULL'
+    let query = ""; 
+    for (var i = 0; i < arr.length; i += 1) {
+        if (i < arr.length - 1) {
+            query += (arr[i] + ",");
+        } else {
+            query += arr[i]
+        }
+    }
+    return query;
+}
+
 function monthToNumeric(month) {
     switch (month) {
         case 'jan':
@@ -860,8 +873,9 @@ module.exports = {
         });
     },
 
-    footpathRating: (project) => {
-        let sql = `SELECT * FROM public.vw_swdc_fpcl WHERE project = '${project}'`
+    footpathRating: (project, filter) => {
+        const _filter  = buildIntQuery(filter)
+        let sql = `SELECT * FROM public.vw_swdc_fpcl WHERE project = '${project}' AND grade IN (${_filter})`
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {

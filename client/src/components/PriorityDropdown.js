@@ -37,6 +37,10 @@ export default function PriorityDropdown(props) {
         }  
       }
 
+    const onRootClick = (e) => {
+
+    }
+
     /**
    * Adds or removes priorities to array for db query
    * @param {the button clicked} e 
@@ -68,9 +72,15 @@ export default function PriorityDropdown(props) {
     }
     
     return (
-        <Dropdown className="priority" drop='end'>
+      <div className={props.className}>
+        <Dropdown drop='end'>
             <Dropdown.Toggle variant="light" size="sm" >
-                {props.title}
+              <input
+                type="checkbox" 
+                onClick={(e) => onRootClick(e)}
+              >
+              </input>
+              <span>{props.title}</span> 
             </Dropdown.Toggle>
             <Dropdown.Menu className="custommenu" style={{ margin: 0 }}>
                 {props.items.map((value, index) =>
@@ -78,9 +88,9 @@ export default function PriorityDropdown(props) {
                     key={`${index}`}
                     >
                     <CustomSVG 
-                    login={props.login}
-                    value={value}
-                    reverse={props.reverse}
+                      login={props.login}
+                      value={value}
+                      reverse={props.reverse}
                     >
                     </CustomSVG>
                     <input
@@ -96,5 +106,6 @@ export default function PriorityDropdown(props) {
                 )}
             </Dropdown.Menu>
         </Dropdown>
+      </div>
     );
 }

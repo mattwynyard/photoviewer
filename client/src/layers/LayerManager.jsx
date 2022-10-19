@@ -16,11 +16,9 @@ const LayerManager = (props) => {
                 layer={props.layer}
                 prioritytitle={props.prioritytitle}
                 priorityitems={props.priorityitems}
-                
                 priorityreverse={props.priorityreverse}
                 priorityfilter={props.priorityfilter} 
                 priorityonClick={props.updatePriority}
-                
                 classitems={props.rmclass ? props.rmclass: []}
                 classfilter={props.filterRMClass} 
                 classonClick={props.classonClick}

@@ -1,83 +1,118 @@
-import { useEffect, useContext, useMemo} from 'react';
+import { useEffect, useContext} from 'react';
 import { React, useState } from 'react';
 import {Dropdown}  from 'react-bootstrap';
-import { loginContext } from '../login/loginContext'
-import { PostFetch } from '../api/Fetcher'
+import { loginContext } from '../login/loginContext';
+import { PostFetch } from '../api/Fetcher';
+import {CustomSVG} from './CustomSVG.js';
 
 export default function RatingDropdown(props) {
-    const { gl, login } = useContext(loginContext);
+    const { gl, login, hideLoader, showLoader } = useContext(loginContext);
     const [menu, setMenu] = useState(null);
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
-    const [show, setShow] = useState(false);
-    const [body, setBody] = useState(false);
-
-    // const memoizedPostFetch = useMemo((body) => {
-    //     PostFetch(login.host + "/rating", login.token, body)
-    // }, [login])
-
+    const [active, setActive] = useState(false);
+    const defaultTitle = "Rating"
+    console.log(props)
     useEffect(() => {
-        const body = {user: login.user, project: props.layer}
+        const body = {user: login.user, project: props.layer, filter: filter}
+        showLoader();
         const response = PostFetch(login.host + "/rating", login.token, body);
         response.then((res) => {
             if (res.success) {
                 setData(res.data);
+                console.log(data)
             }
+            hideLoader();
         })
-        setMenu(props.menu)
-    }, [PostFetch])
-
-    useEffect(() => {
-        setMenu(props.menu)
-    }, [data])
+    }, [filter, PostFetch])
+    
 
     useEffect(() => {
         console.log(filter)
-    }, [filter])
+    }, [])
 
     useEffect(() => {
-        if (show) {
-            const options = {type: "footpath_rating", value: "Grade"}
+        if (props.menu) setMenu(props.menu)
+        if (active) {
+            const options = {type: props.layer.surface === "road" ? "road_rating" : "footpath_rating", value: defaultTitle}
             let ratings = gl.gl.loadLines([], data, options);
             gl.gl.glData.layers[0].geometry = ratings.vertices;
             gl.gl.redraw(gl.gl.glData, false);
-            console.log(ratings)
         } else {
             if (data.length !== 0) {
                 gl.gl.glData.layers[0].geometry = [];
                 gl.gl.redraw(gl.gl.glData, false);
             }     
         }
-    }, [show])
+    }, [data])
     
     
    const changeCheck = (e, value) => {
-        setShow(e.target.checked)
-        setFilter(value)
+    if (value === defaultTitle) {
+        if (e.target.checked) {
+            const filter = []
+            menu.map(item => {
+                const s = item.replace(defaultTitle, '').replace(/\s/g, '');
+                filter.push(s)
+            })
+            setFilter(filter)
+            setActive(true)
+        } else {
+            setFilter([])
+            setActive(false)
+        }
+        setActive(e.target.checked)
+    } else {
+        if (!active) return;
+            const copy = [...filter]
+        if (!e.target.checked) {
+            if (filter.length <= 1) return;
+            const index = copy.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
+            if (index > -1) { 
+                copy.splice(index, 1);
+                setFilter([...copy])
+            }
+        } else {
+           copy.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
+           setFilter(copy)
+        }    
     }    
+    }
 
     if (menu) {
         return (
-            <Dropdown className="centreline"  drop={'end'}>
-            <Dropdown.Toggle variant="light" size="sm" >
-                Rating
-            </Dropdown.Toggle>
-                <Dropdown.Menu className="centrelinemenu">
-                    {menu.map((value, index) =>
-                    <div key={`${index}`}>
+            <div className={props.className}>
+                <Dropdown className="centreline"  drop={'end'}>
+                    <Dropdown.Toggle variant="light" size="sm" >
                         <input
-                        key={`${index}`} 
-                        id={value} 
-                        type="checkbox" 
-                        //   checked={this.isChecked(value)}
-                        //onClick={(e) => handleClick(e, value)}
-                        onChange={(e) => changeCheck(e, value)}
+                            type="checkbox" 
+                            onChange={(e) => changeCheck(e, defaultTitle)}
                         >
-                        </input>{" " + value}<br></br>
-                    </div> 
-                )}
-                </Dropdown.Menu>
-            </Dropdown>           
+                        </input>
+                        <span>{"Rating"}</span>          
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="centrelinemenu">
+                        {menu.map((value, index) =>
+                        <div key={`${index}`}>
+                            <input
+                            key={`${index}`} 
+                            id={value}
+                            checked={filter.includes(value.replace(defaultTitle, '').replace(/\s/g, ''))} 
+                            type="checkbox" 
+                            onChange={(e) => changeCheck(e, value)}
+                            >
+                            </input>
+                            <span>{" " + value}</span>
+                            <CustomSVG 
+                                value={value}
+                                reverse={props.layer.reverse}
+                                >
+                                </CustomSVG>
+                        </div> 
+                    )}
+                    </Dropdown.Menu>
+                </Dropdown>   
+            </div>              
         );
     } else {
         return null

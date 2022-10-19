@@ -299,7 +299,6 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
-    console.log(this.state.activeLayer.reverse)
     if (this.state.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
@@ -1327,52 +1326,44 @@ class App extends React.Component {
           >  
         </Navigation>   
         <div className="appcontainer">     
-          <div className="panel">
+          <div className={this.state.dataActive ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
                 <p>Layers</p>
               </div> 
-                <LayerManager
-                  layer={this.state.activeLayer}
-                  prioritytitle={this.state.priorityMode}
-                  priorityitems={this.state.priorities}
-                  priorityfilter={this.state.filterPriorities} 
-                  classitems={this.state.rmclass ? this.state.rmclass: []}
-                  classfilter={this.state.filterRMClass} 
-                  setDataActive={this.setDataActive} //-> data table
-                  setMapMode={this.state.setMapMode}
-                  mapMode={this.state.mapMode}
-                  dataChecked={this.state.dataActive} //-> data table
-                  updatePriority={this.updatePriority}
-                  classonClick={this.updateRMClass}
-                  priorityreverse={this.state.reverse}
-                  >
-                </LayerManager>        
-              {/* <Roadlines
-                  className={"rating"}
-                  ref={this.roadLinesRef} 
-                  >
-              </Roadlines> */}
-              
+              <LayerManager
+                layer={this.state.activeLayer}
+                prioritytitle={this.state.priorityMode}
+                priorityitems={this.state.priorities}
+                priorityfilter={this.state.filterPriorities} 
+                classitems={this.state.rmclass ? this.state.rmclass: []}
+                classfilter={this.state.filterRMClass} 
+                setDataActive={this.setDataActive} //-> data table
+                setMapMode={this.state.setMapMode}
+                mapMode={this.state.mapMode}
+                dataChecked={this.state.dataActive} //-> data table
+                updatePriority={this.updatePriority}
+                classonClick={this.updateRMClass}
+                priorityreverse={this.state.reverse}
+                >
+              </LayerManager>       
             </div>
-            <hr className='sidebar-line'>
-            </hr>
             <div className="filters">
               <div className="filterstitle">
                 <p>Filters</p>
               </div>
-                <Filter
-                  filter={this.state.filters}
-                  store={this.state.filterStore}
-                  mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
-                  update={this.updateFilter}
-                />
-                <FilterButton
-                  className="apply-btn" 
-                  ref={this.applyRef} 
-                  layer={this.state.activeLayer} 
-                  onClick={(e) => this.clickApply(e)}>  
-                </FilterButton>
+              <Filter
+                filter={this.state.filters}
+                store={this.state.filterStore}
+                mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
+                update={this.updateFilter}
+              />
+              <FilterButton
+                className="apply-btn" 
+                ref={this.applyRef} 
+                layer={this.state.activeLayer} 
+                onClick={(e) => this.clickApply(e)}>  
+              </FilterButton>
             </div>
           </div>   
   
