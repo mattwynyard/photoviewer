@@ -28,7 +28,7 @@ const Fetcher = async (login, project, query) => {
  * @param {josn body} _body 
  * @returns 
  */
-export default async function PostFetch(address, token, _body) {
+const PostFetch = async (address, token, _body) => {
     const response = await fetch("https://" + address, {
         method: 'POST',
         credentials: 'same-origin',

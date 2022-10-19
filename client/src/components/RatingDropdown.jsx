@@ -6,11 +6,15 @@ import { PostFetch } from '../api/Fetcher'
 
 export default function RatingDropdown(props) {
     const { gl, login } = useContext(loginContext);
-    const [menu, setMenu] = useState(["Grade"]);
+    const [menu, setMenu] = useState(null);
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
     const [show, setShow] = useState(false);
+    const [body, setBody] = useState(false);
 
+    // const memoizedPostFetch = useMemo((body) => {
+    //     PostFetch(login.host + "/rating", login.token, body)
+    // }, [login])
 
     useEffect(() => {
         const body = {user: login.user, project: props.layer}
@@ -20,11 +24,16 @@ export default function RatingDropdown(props) {
                 setData(res.data);
             }
         })
+        setMenu(props.menu)
     }, [PostFetch])
 
     useEffect(() => {
-        //console.log(data)
+        setMenu(props.menu)
     }, [data])
+
+    useEffect(() => {
+        console.log(filter)
+    }, [filter])
 
     useEffect(() => {
         if (show) {
@@ -47,7 +56,7 @@ export default function RatingDropdown(props) {
         setFilter(value)
     }    
 
-    if (props.layer) {
+    if (menu) {
         return (
             <Dropdown className="centreline"  drop={'end'}>
             <Dropdown.Toggle variant="light" size="sm" >

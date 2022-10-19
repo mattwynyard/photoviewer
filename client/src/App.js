@@ -16,8 +16,6 @@ import {calcGCDistance} from  './util.js';
 import DataTable from "./DataTable.js"
 import Filter from './components/Filter.js';
 import {FilterButton} from './components/FilterButton.js';
-import Roadlines from './components/Roadlines';
-import {Fetcher} from './api/Fetcher';
 import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
@@ -128,7 +126,7 @@ class App extends React.Component {
       this.setDataActive(false)
     }
     this.archivePhotoModal.current.delegate(this);
-    this.roadLinesRef.current.setDelegate(this.GLEngine);
+    //this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -301,7 +299,8 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
-    if (this.state.reverse) {
+    console.log(this.state.activeLayer.reverse)
+    if (this.state.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
@@ -359,51 +358,51 @@ class App extends React.Component {
     switch(this.state.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
-        if (this.roadLinesRef.current.isActive()) {
-          let query = {
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          }
-          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
-          let geometry = JSON.parse(response.data.geojson);
-          let erp = {
-            start: response.data.starterp,
-            end: response.data.enderp
-          }
-          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
-            let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
-            if (this.state.notificationKey) {
-              if (response.data.carriageid !== this.state.notificationKey.carriage) 
-              notification.close(this.state.notificationKey.id);
-            }
-            let distance = dist.toFixed(); //string
-            notification.open({
-              className: "notification",
-              key: response.data.id,
-              message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
-              description: 
-                <div><b>Road ID: {response.data.roadid}<br></br></b>
-                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
-                  <b>Start: {`${response.data.starterp} m\t`}</b>
-                  <b>End: {`${response.data.enderp}`}<br></br></b>
-                  <b>Width: {`${response.data.width}`}<br></br></b>
-                  <b><br></br></b>
-                </div>,
-              placement: 'bottomRight',
-              duration: 10,
-              onClose: () => {this.setState({notificationKey: null})},
-            });
-            let key = {id: response.data.id, carriage: response.data.carriageid}
-            this.setState({notificationKey: key});
-          }     
-        }
+        // if (this.roadLinesRef.current.isActive()) {
+        //   let query = {
+        //     lat: e.latlng.lat,
+        //     lng: e.latlng.lng
+        //   }
+        //   let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
+        //   let geometry = JSON.parse(response.data.geojson);
+        //   let erp = {
+        //     start: response.data.starterp,
+        //     end: response.data.enderp
+        //   }
+        //   if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
+        //     let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+        //     if (this.state.notificationKey) {
+        //       if (response.data.carriageid !== this.state.notificationKey.carriage) 
+        //       notification.close(this.state.notificationKey.id);
+        //     }
+        //     let distance = dist.toFixed(); //string
+        //     notification.open({
+        //       className: "notification",
+        //       key: response.data.id,
+        //       message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+        //       description: 
+        //         <div><b>Road ID: {response.data.roadid}<br></br></b>
+        //           <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+        //           <b>Start: {`${response.data.starterp} m\t`}</b>
+        //           <b>End: {`${response.data.enderp}`}<br></br></b>
+        //           <b>Width: {`${response.data.width}`}<br></br></b>
+        //           <b><br></br></b>
+        //         </div>,
+        //       placement: 'bottomRight',
+        //       duration: 10,
+        //       onClose: () => {this.setState({notificationKey: null})},
+        //     });
+        //     let key = {id: response.data.id, carriage: response.data.carriageid}
+        //     this.setState({notificationKey: key});
+        //   }     
+        // }
         if (this.state.objGLData.length !== 0) {
-          if (this.roadLinesRef.current.isActive()) {
-            this.GLEngine.mouseClick = null;
-          } else {
-            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
-            this.GLEngine.mouseClick = {...click};
-          }
+          // if (this.roadLinesRef.current.isActive()) {
+          //   this.GLEngine.mouseClick = null;
+          // } else {
+          const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+          this.GLEngine.mouseClick = {...click};
+          // }
           this.GLEngine.redraw(this.GLEngine.glData, false);     
         }
         break;
@@ -582,7 +581,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    this.roadLinesRef.current.reset();
+    //this.roadLinesRef.current.reset();
     this.setState({
       activeProject: null,
       projects: [],
@@ -970,7 +969,7 @@ class App extends React.Component {
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
       if (project.centreline) {
-        this.roadLinesRef.current.loadCentrelines(projectCode); 
+        //this.roadLinesRef.current.loadCentrelines(projectCode); 
       }
      
       
@@ -985,12 +984,14 @@ class App extends React.Component {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
-      this.roadLinesRef.current.reset();
+      //this.roadLinesRef.current.reset();
       let layers = this.state.activeLayers;
-      for(var i = 0; i < layers.length; i += 1) {     
-        if (project.code === layers[i].code) {
-          layers.splice(i, 1);
-          break;
+      if (project) {
+        for(var i = 0; i < layers.length; i += 1) {     
+          if (project.code === layers[i].code) {
+            layers.splice(i, 1);
+            break;
+          }
         }
       }
       this.setState(
@@ -1347,11 +1348,11 @@ class App extends React.Component {
                   priorityreverse={this.state.reverse}
                   >
                 </LayerManager>        
-              <Roadlines
+              {/* <Roadlines
                   className={"rating"}
                   ref={this.roadLinesRef} 
                   >
-              </Roadlines>
+              </Roadlines> */}
               
             </div>
             <hr className='sidebar-line'>
@@ -1449,10 +1450,6 @@ class App extends React.Component {
           ref={this.photoModal}
         >
         </PhotoModal>
-      {/* <Photoviewer
-        show={this.state.showPhotoViewer}
-      >
-      </Photoviewer> */}
         <ArchivePhotoModal
           ref={this.archivePhotoModal}
           show={this.state.show} 

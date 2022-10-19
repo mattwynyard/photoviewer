@@ -1,15 +1,14 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { React, useContext  } from 'react';
 import { loginContext } from '../login/loginContext'
 import { LayerCard } from './LayerCard';
 
 
 const LayerManager = (props) => {
-    const { login, showLoader, hideLoader, gl } = useContext(loginContext);
-
-    const { query, setQuery } = useState([])
-
-
+    const { login, showLoader, hideLoader} = useContext(loginContext);
+   
+    
     if (props.layer) {
         return (
             <LayerCard

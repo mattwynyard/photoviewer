@@ -1,4 +1,4 @@
-import { React, useContext  } from 'react';
+import { React, useState, useEffect, useCallback  } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from '../components/ClassDropdown.js';
 import PriorityDropdown from '../components/PriorityDropdown.js';
@@ -7,6 +7,19 @@ import RatingDropdown from '../components/RatingDropdown';
 import './LayerCard.css';
 
 function LayerCard(props) {
+    const [ratingMenu, setRatingMenu] = useState(null)
+
+    useEffect(() => {
+        if (props.layer.surface === 'road') {
+            setRatingMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
+        } else if (props.layer.surface === 'footpath') {
+            setRatingMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
+        }
+    }, [])
+
+    useEffect(() => {
+        console.log(ratingMenu)
+    }, [ratingMenu])
 
     const box = document.querySelector('.layercard-datainput');
 
@@ -64,6 +77,7 @@ function LayerCard(props) {
                     className="layercard-ratingDropdown"
                     layer={props.layer}
                     changeCheck={handleRatingChange}
+                    menu={ratingMenu}
                 />
                 <div >
                     <input 
