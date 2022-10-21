@@ -160,7 +160,7 @@ export default class PhotoModal extends React.Component {
                   <b>{"Time: "}</b>{this.state.time}<br></br>
                   <b>{"Lat: "}</b>{this.state.marker[0].latlng.lat}<br></br>
                   <b>{"Lng: "}</b>{this.state.marker[0].latlng.lng + "  "}<br></br>
-                 
+                  <b>{"Photo: "}</b>{this.state.photo + "  "}<br></br>
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={this.copy} 
