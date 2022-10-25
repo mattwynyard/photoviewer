@@ -69,24 +69,23 @@ function parseDateTime(dateTime) {
     if(dateTime.match(dateformat)) //yyyy-mm-dd HH:mm:ss
     {   
         return "'" + dateTime + "'";
-    } else {
-        let dateformat = /^(((0[1-9]|[12]\d|3[01])[\/](0[13578]|1[02])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|[12]\d|30)[\/](0[13456789]|1[012])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|1\d|2[0-8])[\/](02)[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((29)[\/](02)[\/]((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm)))$/;
-        if (dateTime.match(dateformat)) { //dd/mm/yyyy hh:mm:ss AM|PM
-            return "'" + dateTime + "'"; //d/mm/yyyy not working
-        } else 
-            dateformat = /^(0?[1-9]|[12][0-9]|3[01])-(jan|Jan|JAN|feb|Feb|FEB|mar|Mar|MAR|apr|Apr|APR|may|May|MAY|jun|Jun|JUN|jul|Jul|JUL|aug|Aug|AUG|sep|Sep|SEP|oct|Oct|OCT|nov|Nov|NOV|dec|Dec|DEC)-(19|20)\d\d\s([0-1][0-9]|[2][0-3]):([0-5][0-9]):([0-5][0-9])$/;
-            if (dateTime.match(dateformat)) { //dd-MMM-yyyy HH:mm:ss
-                let dt = dateTime.split(" ");
-                let date = dt[0];
-                let time = dt[1];
-                let [day, month, year] = date.split('-');
-                let monthNumeric = monthToNumeric(month.toLowerCase());
-                let timestamp =  `${year}-${monthNumeric}-${day} ${time}`;
-                return "'" + timestamp + "'"; 
-            } else {
-                return "Invalid";
-            }
-        }
+    }
+    dateformat = /^(((0[1-9]|[12]\d|3[01])[\/](0[13578]|1[02])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|[12]\d|30)[\/](0[13456789]|1[012])[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((0[1-9]|1\d|2[0-8])[\/](02)[\/]((19|[2-9]\d)\d{2})\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm))|((29)[\/](02)[\/]((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))\s(0[0-9]|1[0-2]):(0[0-9]|[1-59]\d):(0[0-9]|[1-59]\d)\s(AM|am|PM|pm)))$/;
+    if (dateTime.match(dateformat)) { //dd/mm/yyyy hh:mm:ss AM|PM
+        return "'" + dateTime + "'"; //d/mm/yyyy not working
+    } 
+    dateformat = /^(0?[1-9]|[12][0-9]|3[01])-(jan|Jan|JAN|feb|Feb|FEB|mar|Mar|MAR|apr|Apr|APR|may|May|MAY|jun|Jun|JUN|jul|Jul|JUL|aug|Aug|AUG|sep|Sep|SEP|oct|Oct|OCT|nov|Nov|NOV|dec|Dec|DEC)-(19|20)\d\d\s([0-1][0-9]|[2][0-3]):([0-5][0-9]):([0-5][0-9])$/;
+    if (dateTime.match(dateformat)) { //dd-MMM-yyyy HH:mm:ss
+        let dt = dateTime.split(" ");
+        let date = dt[0];
+        let time = dt[1];
+        let [day, month, year] = date.split('-');
+        let monthNumeric = monthToNumeric(month.toLowerCase());
+        let timestamp =  `${year}-${monthNumeric}-${day} ${time}`;
+    return "'" + timestamp + "'"; 
+    }
+    
+    return "'NULL'";
     }
     
 function pad(n, width, z) {
