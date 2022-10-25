@@ -76,15 +76,23 @@ function parseDateTime(dateTime) {
     } 
     dateformat = /^(0?[1-9]|[12][0-9]|3[01])-(jan|Jan|JAN|feb|Feb|FEB|mar|Mar|MAR|apr|Apr|APR|may|May|MAY|jun|Jun|JUN|jul|Jul|JUL|aug|Aug|AUG|sep|Sep|SEP|oct|Oct|OCT|nov|Nov|NOV|dec|Dec|DEC)-(19|20)\d\d\s([0-1][0-9]|[2][0-3]):([0-5][0-9]):([0-5][0-9])$/;
     if (dateTime.match(dateformat)) { //dd-MMM-yyyy HH:mm:ss
-        let dt = dateTime.split(" ");
-        let date = dt[0];
-        let time = dt[1];
-        let [day, month, year] = date.split('-');
-        let monthNumeric = monthToNumeric(month.toLowerCase());
-        let timestamp =  `${year}-${monthNumeric}-${day} ${time}`;
-    return "'" + timestamp + "'"; 
+        const dt = dateTime.split(" ");
+        const date = dt[0];
+        const time = dt[1];
+        const [day, month, year] = date.split('-');
+        const monthNumeric = monthToNumeric(month.toLowerCase());
+        const timestamp =  `${year}-${monthNumeric}-${day} ${time}`;
+        return "'" + timestamp + "'"; 
     }
-    
+    dateformat = /^([1-9]|([012][0-9])|(3[01]))\/([0]{0,1}[1-9]|1[012])\/\d\d\d\d\s([0-1]?[0-9]|2?[0-3]):([0-5]\d)$/;
+    if (dateTime.match(dateformat)) {
+        const dt = dateTime.split(" ");
+        const date = dt[0];
+        const time = dt[1];
+        const [day, month, year] = date.split('/');
+        const timestamp =  `${year}-${month}-${day} ${time}:00`;
+        return "'" + timestamp + "'";
+    }
     return "'NULL'";
     }
     
