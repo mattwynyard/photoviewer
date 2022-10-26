@@ -1191,8 +1191,7 @@ class App extends React.Component {
       }    
     } catch (error) {
       console.error(error);
-    }
-                
+    }              
   }
 
   async loadCentreline(e) {

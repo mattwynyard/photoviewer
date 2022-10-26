@@ -1,6 +1,6 @@
 import { React, useContext, useEffect, useState } from 'react';
 import { Dropdown }  from 'react-bootstrap';
-import { CustomSVG } from './CustomSVG.js';
+import { CustomSVG } from '../components/CustomSVG.js';
 import { loginContext } from '../login/loginContext'
 import { PostFetch } from '../api/Fetcher';
 /**

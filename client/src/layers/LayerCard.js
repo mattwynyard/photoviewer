@@ -1,8 +1,8 @@
 import { React, useState, useEffect } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from '../components/ClassDropdown.js';
-import PriorityDropdown from '../components/PriorityDropdown.js';
-import RatingDropdown from '../components/RatingDropdown';
+import PriorityDropdown from './PriorityDropdown.js';
+import RatingDropdown from './RatingDropdown';
 
 import './LayerCard.css';
 
