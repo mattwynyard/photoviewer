@@ -11,40 +11,45 @@ export default function RatingDropdown(props) {
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
     const [active, setActive] = useState(false);
+    const [layer, setLayer] = useState(null);
     const defaultTitle = "Rating";
     
     useEffect(() => {
-        const body = {user: login.user, project: props.layer, filter: filter}
+        console.log(filter)
+        if (!layer) return;
+        const body = {user: login.user, project: layer, filter: filter}
         showLoader();
         const response = PostFetch(login.host + "/rating", login.token, body);
         response.then((res) => {
             if (res.success) {
+                console.log(res.data)
                 setData(res.data);
-                console.log(data)
             }
             hideLoader();
         })
-    }, [filter, PostFetch])
+    }, [filter, PostFetch, login, layer, showLoader, hideLoader])
     
 
     useEffect(() => {
-        console.log(filter)
+        setLayer(props.layer)
     }, [])
 
     useEffect(() => {
+        if (!layer) return;
         if (props.menu) setMenu(props.menu)
         if (active) {
             const options = {type: props.layer.surface === "road" ? "road_rating" : "footpath_rating", value: defaultTitle}
             let ratings = gl.gl.loadLines([], data, options);
             gl.gl.glData.layers[0].geometry = ratings.vertices;
             gl.gl.redraw(gl.gl.glData, false);
-        } else {
+        } 
+        else {
             if (data.length !== 0) {
                 gl.gl.glData.layers[0].geometry = [];
                 gl.gl.redraw(gl.gl.glData, false);
             }     
         }
-    }, [data])
+    }, [data, active, layer, gl])
     
     
    const changeCheck = (e, value) => {
@@ -61,7 +66,6 @@ export default function RatingDropdown(props) {
             setFilter([])
             setActive(false)
         }
-        setActive(e.target.checked)
     } else {
         if (!active) return;
             const copy = [...filter]
@@ -87,6 +91,7 @@ export default function RatingDropdown(props) {
                         <input
                             type="checkbox" 
                             onChange={(e) => changeCheck(e, defaultTitle)}
+                            checked={active}
                         >
                         </input>
                         <span>{"Rating"}</span>          

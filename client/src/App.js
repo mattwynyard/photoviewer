@@ -49,7 +49,7 @@ class App extends React.Component {
       rulerDistance: 0,
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
-      reverse: false,
+      //reverse: false,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -133,24 +133,24 @@ class App extends React.Component {
     this.leafletMap.addControl(this.position);
     this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
-    let user = window.sessionStorage.getItem("user") 
-    if (user) {
-      if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
-        this.removeLayer(this.state.activeLayer)
-      } else {
-        if(this.state.objGLData.length !== 0) {
-          if (this.state.activeLayer.centreline) {
-            this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
-          }
-          let body = this.filterLayer(this.state.activeLayer, true);
-          if (body) {
-            body.then((body) => {
-              this.addGLGeometry(body.points, body.lines, body.type, true);
-            });
-          }
-        }
-      }
-    } 
+    // let user = window.sessionStorage.getItem("user") 
+    // if (user) {
+    //   if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
+    //     this.removeLayer(this.state.activeLayer)
+    //   } else {
+    //     if(this.state.objGLData.length !== 0) {
+    //       // if (this.state.activeLayer.centreline) {
+    //       //   this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+    //       // }
+    //       let body = this.filterLayer(this.state.activeLayer, true);
+    //       if (body) {
+    //         body.then((body) => {
+    //           this.addGLGeometry(body.points, body.lines, body.type, true);
+    //         });
+    //       }
+    //     }
+    //   }
+    // } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -217,7 +217,6 @@ class App extends React.Component {
     this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
     });
-    //this.context.hideLoader();
   }
   
   /**
@@ -263,22 +262,22 @@ class App extends React.Component {
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    let centreData = []
-    let value = null
-    if (this.roadLinesRef.current) {
-      centreData = this.roadLinesRef.current.state.data;
-      value = this.roadLinesRef.current.state.filter[0]
-    }
-    let vertCentre = []
-    if (value) {
-      let options = {type: "centreline", value: value}
-      let data = this.GLEngine.loadLines([], centreData, options);
-      vertCentre = data.vertices
-    } 
+    // let centreData = []
+    // let value = null
+    // if (this.roadLinesRef.current) {
+    //   centreData = this.roadLinesRef.current.state.data;
+    //   value = this.roadLinesRef.current.state.filter[0]
+    // }
+    // let vertCentre = []
+    // if (value) {
+    //   let options = {type: "centreline", value: value}
+    //   let data = this.GLEngine.loadLines([], centreData, options);
+    //   vertCentre = data.vertices
+    // } 
     let glData = {
       layers: [{
         type: "line",
-        geometry: vertCentre,
+        geometry: [],
         z: 1
       }],
       faults: {
@@ -286,7 +285,6 @@ class App extends React.Component {
         lines: glLines.vertices
       }
     }
-
     if (zoom) {
       this.GLEngine.redraw(glData, true);
     } else {
@@ -909,18 +907,11 @@ class App extends React.Component {
     this.reset();
   }
 
-  /**
-   * checks if layer loaded if not adds layer to active layers
-   * calls fetch layer
-   * @param {event} e 
-   * @param {string} type - the type of layer to load i.e. road or footpath
-   */
   loadLayer = async (mode, project) => {  
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
-    //if (mode === "road") {
       let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
       if(!body) return;
       if (!body.error) {
@@ -928,9 +919,6 @@ class App extends React.Component {
       } else {
         return;
       } 
-    // } else {
-    //   inspections = [];
-    // }
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return; 
     request = {project: project, query: null}
@@ -958,7 +946,6 @@ class App extends React.Component {
       activeLayer: project,
       activeLayers: layers,
       district: district,
-      reverse: project.reverse,
       inspections: inspections,
       activeProject: projectCode,
       projectMode: mode,
@@ -967,11 +954,6 @@ class App extends React.Component {
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
-      if (project.centreline) {
-        //this.roadLinesRef.current.loadCentrelines(projectCode); 
-      }
-     
-      
     });
   }
 
@@ -1338,12 +1320,12 @@ class App extends React.Component {
                 classitems={this.state.rmclass ? this.state.rmclass: []}
                 classfilter={this.state.filterRMClass} 
                 setDataActive={this.setDataActive} //-> data table
+                dataChecked={this.state.dataActive} //-> data table
                 setMapMode={this.state.setMapMode}
                 mapMode={this.state.mapMode}
-                dataChecked={this.state.dataActive} //-> data table
                 updatePriority={this.updatePriority}
                 classonClick={this.updateRMClass}
-                priorityreverse={this.state.reverse}
+                
                 >
               </LayerManager>       
             </div>
@@ -1365,7 +1347,7 @@ class App extends React.Component {
               </FilterButton>
             </div>
           </div>   
-  
+          
           <LMap        
             ref={(ref) => {this.map = ref;}}
             className={this.state.dataActive ? "map-reduced": "map"}

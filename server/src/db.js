@@ -857,7 +857,7 @@ module.exports = {
         });
     },
 
-    roadLines: (project) => {
+    roadLines: (project, filter) => {
         return new Promise((resolve, reject) => {
             connection.query("SELECT l.id, l.project, l.roadid, l.carriageid, l.roadname, l.starterp, l.enderp, l.startname, l.endname, "
             + "l.lanes, l.pavement, l.owner, l.heirarchy, l.zone, l.direction, CAST (l.width AS DOUBLE PRECISION), CAST (r.structural AS DOUBLE PRECISION), "

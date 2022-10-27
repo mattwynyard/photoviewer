@@ -1,13 +1,12 @@
 import { React, useState, useEffect } from 'react';
 import { Card }  from 'react-bootstrap';
-import ClassDropdown from '../components/ClassDropdown.js';
-import PriorityDropdown from './PriorityDropdown.js';
+import ClassDropdown from './ClassDropdown';
+import PriorityDropdown from './PriorityDropdown';
 import RatingDropdown from './RatingDropdown';
 
 import './LayerCard.css';
 
 function LayerCard(props) {
-    console.log(props)
     const [ratingMenu, setRatingMenu] = useState([])
     const [gradeMenu, setGradeMenu] = useState([])
 
@@ -59,9 +58,9 @@ function LayerCard(props) {
                     className="layercard-priorityDropdown"
                     title={props.prioritytitle}
                     items={props.priorityitems}
-                    reverse={props.priorityreverse}
                     filter={props.priorityfilter} 
                     onClick={props.priorityonClick}
+                    layer={props.layer}
                 />
                 <ClassDropdown 
                     className="layercard-classDropdown"

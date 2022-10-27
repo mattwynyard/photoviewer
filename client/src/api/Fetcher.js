@@ -41,7 +41,7 @@ const PostFetch = async (address, token, _body) => {
     })
     if (!response.ok) {
         alert(`An error has occured: ${response.status}`);
-        throw Error(`An error has occured: ${response.status}`);
+        return {};
     } else {
         const body = await response.json();
         return body;

@@ -298,7 +298,7 @@ export default class GLEngine {
         if (linestring) {
           let colors = null;  
           let line = linestring.coordinates;
-          if (options.type !== "centreline") {
+          if (options.type !== "road_rating") {
             if (options.type === "footpath_rating") {
               colors = this.setFootpathRatingColours(data[i], options.value);
             } else {
@@ -338,7 +338,7 @@ export default class GLEngine {
             }
           }
         }
-        if (options.type === "centreline" || options.type === "footpath_rating") {
+        if (options.type === "road_rating" || options.type === "footpath_rating") {
 
         } else {
           let fault = this.createFaultObject(data[i], options.type, latlng, linestring)
@@ -347,7 +347,7 @@ export default class GLEngine {
         
      }    
     }
-    if (options.type === "centreline") {
+    if (options.type === "road_rating"  || options.type === "footpath_rating") {
       return {vertices: buffer, lengths: lengths, centre: centre, count: count};
     } else {
       return {vertices: buffer, lengths: lengths, faults: faults, count: count};

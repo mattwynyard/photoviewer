@@ -396,12 +396,12 @@ app.post('/rating', async(req, res) => {
     security = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-    console.log(req.body)
     if (req.body.project.surface === 'footpath') {
       let result = await db.footpathRating(req.body.project.code, req.body.filter);
       res.send({success: true, data: result.rows});
     } else {
-      res.send({success: true, data: []});
+      let result = await db.roadLines(req.body.project.code, req.body.filter);
+      res.send({success: true, data: result.rows});
     }
   } else {
     res.set('Content-Type', 'application/json');
