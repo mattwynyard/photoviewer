@@ -3,7 +3,7 @@ import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  fr
 import {Image}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
-import './ToolsMenu.css';
+import './components/ToolsMenu.css';
 import Navigation from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
@@ -13,10 +13,10 @@ import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
-import DataTable from "./DataTable.js"
+import DataTable from "./data/DataTable.js"
 import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
-import { notification } from 'antd';
+//import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
 import { DefectPopup } from './components/DefectPopup'

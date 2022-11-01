@@ -15,7 +15,7 @@ export default function RatingDropdown(props) {
     const defaultTitle = "Rating";
     
     useEffect(() => {
-        console.log(filter)
+        //console.log(filter)
         if (!layer) return;
         const body = {user: login.user, project: layer, filter: filter}
         showLoader();

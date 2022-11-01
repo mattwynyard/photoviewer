@@ -48,7 +48,7 @@ export default function PriorityDropdown(props) {
           filter.push(parsePriority(item));
           
         });
-        props.onClick(filter)
+      props.onClick(filter)
       }    
       setRootChecked(!rootChecked)
     }
