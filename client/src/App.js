@@ -14,8 +14,8 @@ import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
 import DataTable from "./DataTable.js"
-import Filter from './components/Filter.js';
-import {FilterButton} from './components/FilterButton.js';
+import Filter from './filters/Filter.js';
+import {FilterButton} from './filters/FilterButton.js';
 import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';

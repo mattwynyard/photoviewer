@@ -40,7 +40,6 @@ export default function PriorityDropdown(props) {
       }
 
     const onRootChange = (e) => {
-      //console.log(e.target.checked)
       if (!e.target.checked) {
         props.onClick([])
       } else {
@@ -50,8 +49,7 @@ export default function PriorityDropdown(props) {
           
         });
         props.onClick(filter)
-      }
-      
+      }    
       setRootChecked(!rootChecked)
     }
 
@@ -97,7 +95,9 @@ export default function PriorityDropdown(props) {
               </input>
               <span>{props.title}</span> 
             </Dropdown.Toggle>
-            <Dropdown.Menu className="custommenu" style={{ margin: 0 }}>
+            <Dropdown.Menu 
+              className="custommenu" 
+              >
                 {props.items.map((value, index) =>
                 <div 
                     key={`${index}`}
