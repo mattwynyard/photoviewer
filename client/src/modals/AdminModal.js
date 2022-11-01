@@ -449,6 +449,7 @@ export default function AdminModal(props) {
                         AddProject={AddProject}
                         handleTextChange={handleTextChange}
                         handleCheckboxChange={handleCheckboxChange}
+                        updateProject={updateProject}
                         buttonDisabled={buttonDisabled}
                         updateProject={updateProject}
                     />

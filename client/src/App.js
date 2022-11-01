@@ -3,28 +3,25 @@ import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  fr
 import {Image}  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
-import './ToolsMenu.css';
+import './components/ToolsMenu.css';
 import Navigation from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
-//import Photoviewer from './modals/Photoviewer';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import {calcGCDistance} from  './util.js';
-import LayerCard from './components/LayerCard.js';
-import DataTable from "./DataTable.js"
-import Filter from './components/Filter.js';
-import {FilterButton} from './components/FilterButton.js';
-import Roadlines from './components/Roadlines';
-import {Fetcher} from './components/Fetcher';
-import { notification } from 'antd';
+import DataTable from "./data/DataTable.js"
+import Filter from './filters/Filter.js';
+import {FilterButton} from './filters/FilterButton.js';
+//import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './login/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
+import { LayerManager } from './layers/LayerManager';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -40,6 +37,7 @@ const DefaultIcon = L.icon({
 
 class App extends React.Component {
   static contextType = loginContext;
+
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
@@ -51,7 +49,6 @@ class App extends React.Component {
       rulerDistance: 0,
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
-      reverse: false,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -128,31 +125,31 @@ class App extends React.Component {
       this.setDataActive(false)
     }
     this.archivePhotoModal.current.delegate(this);
-    this.roadLinesRef.current.setDelegate(this.GLEngine);
+    //this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
     this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
-    let user = window.sessionStorage.getItem("user") 
-    if (user) {
-      if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
-        this.removeLayer(this.state.activeLayer)
-      } else {
-        if(this.state.objGLData.length !== 0) {
-          if (this.state.activeLayer.centreline) {
-            this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
-          }
-          let body = this.filterLayer(this.state.activeLayer, true);
-          if (body) {
-            body.then((body) => {
-              this.addGLGeometry(body.points, body.lines, body.type, true);
-            });
-          }
-        }
-      }
-    } 
+    // let user = window.sessionStorage.getItem("user") 
+    // if (user) {
+    //   if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
+    //     this.removeLayer(this.state.activeLayer)
+    //   } else {
+    //     if(this.state.objGLData.length !== 0) {
+    //       // if (this.state.activeLayer.centreline) {
+    //       //   this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
+    //       // }
+    //       let body = this.filterLayer(this.state.activeLayer, true);
+    //       if (body) {
+    //         body.then((body) => {
+    //           this.addGLGeometry(body.points, body.lines, body.type, true);
+    //         });
+    //       }
+    //     }
+    //   }
+    // } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -179,6 +176,11 @@ class App extends React.Component {
   initializeGL() {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
+    this.context.setGL(this.GLEngine);
+  }
+
+  getGl() {;
+    return this.GLEngine;
   }
 
       /**
@@ -214,7 +216,6 @@ class App extends React.Component {
     this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
     });
-    //this.context.hideLoader();
   }
   
   /**
@@ -254,28 +255,17 @@ class App extends React.Component {
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
     let options = {type: type, priorities: priorities, count: 0};
-    let buffer = [];
-    let glLines = this.GLEngine.loadLines(buffer, lines, options);
+    let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
     options = {type: type, priorities: priorities, count: glLines.count};
-    buffer = [];
-    let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    let centreData = []
-    let value = null
-    if (this.roadLinesRef.current) {
-      centreData = this.roadLinesRef.current.state.data;
-      value = this.roadLinesRef.current.state.filter[0]
-    }
-    let vertCentre = []
-    if (value) {
-      let options = {type: "centreline", value: value}
-      let data = this.GLEngine.loadLines([], centreData, options);
-      vertCentre = data.vertices
-    } 
+    let glPoints = this.GLEngine.loadPoints([], points, options); 
+    const geom =  this.getLayerData();
+    
+    
     let glData = {
       layers: [{
         type: "line",
-        geometry: vertCentre,
+        geometry: geom,
         z: 1
       }],
       faults: {
@@ -283,7 +273,6 @@ class App extends React.Component {
         lines: glLines.vertices
       }
     }
-
     if (zoom) {
       this.GLEngine.redraw(glData, true);
     } else {
@@ -294,9 +283,18 @@ class App extends React.Component {
     this.context.hideLoader();
   }
 
+  getLayerData() {
+    if (!this.GLEngine.glData) return [];
+    if (this.GLEngine.glData.length != 0) {
+      return this.GLEngine.glData.layers[0].geometry;
+    } else {
+      return [];
+    }
+  }
+
   setPriorityObject() {
     let obj = {}
-    if (this.state.reverse) {
+    if (this.state.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
@@ -354,51 +352,51 @@ class App extends React.Component {
     switch(this.state.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
-        if (this.roadLinesRef.current.isActive()) {
-          let query = {
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          }
-          let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
-          let geometry = JSON.parse(response.data.geojson);
-          let erp = {
-            start: response.data.starterp,
-            end: response.data.enderp
-          }
-          if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
-            let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
-            if (this.state.notificationKey) {
-              if (response.data.carriageid !== this.state.notificationKey.carriage) 
-              notification.close(this.state.notificationKey.id);
-            }
-            let distance = dist.toFixed(); //string
-            notification.open({
-              className: "notification",
-              key: response.data.id,
-              message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
-              description: 
-                <div><b>Road ID: {response.data.roadid}<br></br></b>
-                  <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
-                  <b>Start: {`${response.data.starterp} m\t`}</b>
-                  <b>End: {`${response.data.enderp}`}<br></br></b>
-                  <b>Width: {`${response.data.width}`}<br></br></b>
-                  <b><br></br></b>
-                </div>,
-              placement: 'bottomRight',
-              duration: 10,
-              onClose: () => {this.setState({notificationKey: null})},
-            });
-            let key = {id: response.data.id, carriage: response.data.carriageid}
-            this.setState({notificationKey: key});
-          }     
-        }
+        // if (this.roadLinesRef.current.isActive()) {
+        //   let query = {
+        //     lat: e.latlng.lat,
+        //     lng: e.latlng.lng
+        //   }
+        //   let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
+        //   let geometry = JSON.parse(response.data.geojson);
+        //   let erp = {
+        //     start: response.data.starterp,
+        //     end: response.data.enderp
+        //   }
+        //   if (response.data.dist < ERP_DIST_TOLERANCE) { //distance tolerance
+        //     let dist = this.roadLinesRef.current.erp(geometry, erp, e.latlng);
+        //     if (this.state.notificationKey) {
+        //       if (response.data.carriageid !== this.state.notificationKey.carriage) 
+        //       notification.close(this.state.notificationKey.id);
+        //     }
+        //     let distance = dist.toFixed(); //string
+        //     notification.open({
+        //       className: "notification",
+        //       key: response.data.id,
+        //       message: <div><b>{response.data.roadname}</b><br></br><b>{"ERP " + distance + " m"}</b></div>,
+        //       description: 
+        //         <div><b>Road ID: {response.data.roadid}<br></br></b>
+        //           <b>Carriage ID: {`${response.data.carriageid}\n`}<br></br></b>
+        //           <b>Start: {`${response.data.starterp} m\t`}</b>
+        //           <b>End: {`${response.data.enderp}`}<br></br></b>
+        //           <b>Width: {`${response.data.width}`}<br></br></b>
+        //           <b><br></br></b>
+        //         </div>,
+        //       placement: 'bottomRight',
+        //       duration: 10,
+        //       onClose: () => {this.setState({notificationKey: null})},
+        //     });
+        //     let key = {id: response.data.id, carriage: response.data.carriageid}
+        //     this.setState({notificationKey: key});
+        //   }     
+        // }
         if (this.state.objGLData.length !== 0) {
-          if (this.roadLinesRef.current.isActive()) {
-            this.GLEngine.mouseClick = null;
-          } else {
-            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
-            this.GLEngine.mouseClick = {...click};
-          }
+          // if (this.roadLinesRef.current.isActive()) {
+          //   this.GLEngine.mouseClick = null;
+          // } else {
+          const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+          this.GLEngine.mouseClick = {...click};
+          // }
           this.GLEngine.redraw(this.GLEngine.glData, false);     
         }
         break;
@@ -577,7 +575,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    this.roadLinesRef.current.reset();
+    //this.roadLinesRef.current.reset();
     this.setState({
       activeProject: null,
       projects: [],
@@ -906,18 +904,11 @@ class App extends React.Component {
     this.reset();
   }
 
-  /**
-   * checks if layer loaded if not adds layer to active layers
-   * calls fetch layer
-   * @param {event} e 
-   * @param {string} type - the type of layer to load i.e. road or footpath
-   */
   loadLayer = async (mode, project) => {  
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
-    //if (mode === "road") {
       let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
       if(!body) return;
       if (!body.error) {
@@ -925,9 +916,6 @@ class App extends React.Component {
       } else {
         return;
       } 
-    // } else {
-    //   inspections = [];
-    // }
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return; 
     request = {project: project, query: null}
@@ -955,7 +943,6 @@ class App extends React.Component {
       activeLayer: project,
       activeLayers: layers,
       district: district,
-      reverse: project.reverse,
       inspections: inspections,
       activeProject: projectCode,
       projectMode: mode,
@@ -964,11 +951,6 @@ class App extends React.Component {
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
-      if (project.centreline) {
-        this.roadLinesRef.current.loadCentrelines(projectCode); 
-      }
-     
-      
     });
   }
 
@@ -980,12 +962,14 @@ class App extends React.Component {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
-      this.roadLinesRef.current.reset();
+      //this.roadLinesRef.current.reset();
       let layers = this.state.activeLayers;
-      for(var i = 0; i < layers.length; i += 1) {     
-        if (project.code === layers[i].code) {
-          layers.splice(i, 1);
-          break;
+      if (project) {
+        for(var i = 0; i < layers.length; i += 1) {     
+          if (project.code === layers[i].code) {
+            layers.splice(i, 1);
+            break;
+          }
         }
       }
       this.setState(
@@ -1186,8 +1170,7 @@ class App extends React.Component {
       }    
     } catch (error) {
       console.error(error);
-    }
-                
+    }              
   }
 
   async loadCentreline(e) {
@@ -1284,8 +1267,7 @@ class App extends React.Component {
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.state.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
-    });
-    
+    });   
   }
   /**
    * callback for classdropdown to update class filter
@@ -1322,145 +1304,129 @@ class App extends React.Component {
           >  
         </Navigation>   
         <div className="appcontainer">     
-          <div className="panel">
+          <div className={this.state.dataActive ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
                 <p>Layers</p>
-              </div>
-              <LayerCard
+              </div> 
+              <LayerManager
                 layer={this.state.activeLayer}
                 prioritytitle={this.state.priorityMode}
                 priorityitems={this.state.priorities}
-                prioritylogin={this.context.login.user}
-                priorityreverse={this.state.reverse}
                 priorityfilter={this.state.filterPriorities} 
-                priorityonClick={this.updatePriority}
-                classtitle={'RM Class'}
                 classitems={this.state.rmclass ? this.state.rmclass: []}
-                classlogin={this.context.login.user}
                 classfilter={this.state.filterRMClass} 
-                classonClick={this.updateRMClass}
                 setDataActive={this.setDataActive} //-> data table
-                setMapMode={this.setMapMode}
-                mapMode={this.state.mapMode}
                 dataChecked={this.state.dataActive} //-> data table
-                spin={this.context.showLoader}
-                stopSpin={this.context.hideLoader}
-              >               
-              </LayerCard>
-              <Roadlines
-                className={"rating"}
-                ref={this.roadLinesRef} 
+                setMapMode={this.state.setMapMode}
+                mapMode={this.state.mapMode}
+                updatePriority={this.updatePriority}
+                classonClick={this.updateRMClass}
+                
                 >
-              </Roadlines> 
+              </LayerManager>       
             </div>
-            <hr className='sidebar-line'>
-            </hr>
             <div className="filters">
               <div className="filterstitle">
                 <p>Filters</p>
               </div>
-                <Filter
-                  filter={this.state.filters}
-                  store={this.state.filterStore}
-                  mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
-                  update={this.updateFilter}
-                />
-                <FilterButton
-                  className="apply-btn" 
-                  ref={this.applyRef} 
-                  layer={this.state.activeLayer} 
-                  onClick={(e) => this.clickApply(e)}>  
-                </FilterButton>
+              <Filter
+                filter={this.state.filters}
+                store={this.state.filterStore}
+                mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
+                update={this.updateFilter}
+              />
+              <FilterButton
+                className="apply-btn" 
+                ref={this.applyRef} 
+                layer={this.state.activeLayer} 
+                onClick={(e) => this.clickApply(e)}>  
+              </FilterButton>
             </div>
           </div>   
-   
-        <LMap        
-          ref={(ref) => {this.map = ref;}}
-          className={this.state.dataActive ? "map-reduced": "map"}
-          worldCopyJump={true}
-          boxZoom={true}
-          center={centre}
-          zoom={this.state.zoom}
-          doubleClickZoom={false}
-          onPopupClose={this.closePopup}>
-          <TileLayer className="mapLayer"
-            attribution={this.state.attribution}
-            url={this.state.url}
-            zIndex={998}
-            maxNativeZoom={19}
-            maxZoom={22}
-          />
-          <ScaleControl className="scale"/>
-          {this.state.archiveMarker.map((position, idx) =>
-            <Marker 
-              key={`marker-${idx}`} 
-              position={position}>
-            </Marker>
-          )}
-          {this.state.carMarker.map((position, idx) =>
-            <Marker 
-              key={`marker-${idx}`} 
-              position={position}>
-            </Marker>
-          )}
-          {this.state.selectedCarriage.map((position, idx) =>
-            <Polyline
-              key={`marker-${idx}`} 
-              position={position}>
-            </Polyline>
-          )}
-          <VideoCard
-            ref={this.videoCard}
-            show={this.state.showVideo} 
-            parent={this}
-          >
-          </VideoCard>
-          <LayerGroup >
-            {this.state.selectedGeometry.map((obj, index) =>   
-            <DefectPopup 
-              key={`${index}`} 
-              data={obj}
-              login={this.context.login.user}
-              position={obj.latlng}
-              photo={this.state.activeLayer ? this.state.image: null} 
-              amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
-              onClick={this.clickImage}
-              onError={() => this.onImageError(obj.photo)}
-              >
-            </DefectPopup>
+          
+          <LMap        
+            ref={(ref) => {this.map = ref;}}
+            className={this.state.dataActive ? "map-reduced": "map"}
+            worldCopyJump={true}
+            boxZoom={true}
+            center={centre}
+            zoom={this.state.zoom}
+            doubleClickZoom={false}
+            onPopupClose={this.closePopup}>
+            <TileLayer className="mapLayer"
+              attribution={this.state.attribution}
+              url={this.state.url}
+              zIndex={998}
+              maxNativeZoom={19}
+              maxZoom={22}
+            />
+            <ScaleControl className="scale"/>
+            {this.state.archiveMarker.map((position, idx) =>
+              <Marker 
+                key={`marker-${idx}`} 
+                position={position}>
+              </Marker>
             )}
-          </LayerGroup>
-          <Image 
-            className="satellite" 
-            src={this.state.osmThumbnail} 
-            onClick={(e) => this.toogleMap(e)} 
-            thumbnail={true}
-          />
-      </LMap >
-      <DataTable 
-        className={this.state.dataActive ? "data-active": "data-inactive"}
-        data={this.state.objGLData}
-        simulate={this.simulateClick}
-        centre={this.centreMap}
-        surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
-      />  
-      <PhotoModal
-        ref={this.photoModal}
-      >
-      </PhotoModal>
-      {/* <Photoviewer
-        show={this.state.showPhotoViewer}
-      >
-      </Photoviewer> */}
-      <ArchivePhotoModal
-        ref={this.archivePhotoModal}
-        show={this.state.show} 
-        amazon={!this.state.activeLayer ? null: this.state.activeLayer}
-        currentPhoto={this.state.currentPhoto}
-        project={this.state.activeLayer}
-      >
-      </ArchivePhotoModal>
+            {this.state.carMarker.map((position, idx) =>
+              <Marker 
+                key={`marker-${idx}`} 
+                position={position}>
+              </Marker>
+            )}
+            {this.state.selectedCarriage.map((position, idx) =>
+              <Polyline
+                key={`marker-${idx}`} 
+                position={position}>
+              </Polyline>
+            )}
+            <VideoCard
+              ref={this.videoCard}
+              show={this.state.showVideo} 
+              parent={this}
+            >
+            </VideoCard>
+            <LayerGroup >
+              {this.state.selectedGeometry.map((obj, index) =>   
+              <DefectPopup 
+                key={`${index}`} 
+                data={obj}
+                login={this.context.login.user}
+                position={obj.latlng}
+                photo={this.state.activeLayer ? this.state.image: null} 
+                amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
+                onClick={this.clickImage}
+                onError={() => this.onImageError(obj.photo)}
+                >
+              </DefectPopup>
+              )}
+            </LayerGroup>
+            <Image 
+              className="satellite" 
+              src={this.state.osmThumbnail} 
+              onClick={(e) => this.toogleMap(e)} 
+              thumbnail={true}
+            />
+        </LMap >
+        <DataTable 
+          className={this.state.dataActive ? "data-active": "data-inactive"}
+          data={this.state.objGLData}
+          simulate={this.simulateClick}
+          centre={this.centreMap}
+          surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
+        />  
+        <PhotoModal
+          ref={this.photoModal}
+        >
+        </PhotoModal>
+        <ArchivePhotoModal
+          ref={this.archivePhotoModal}
+          show={this.state.show} 
+          amazon={!this.state.activeLayer ? null: this.state.activeLayer}
+          currentPhoto={this.state.currentPhoto}
+          project={this.state.activeLayer}
+        >
+        </ArchivePhotoModal>
       </div> 
       </>
     );

@@ -45,7 +45,7 @@ export default class Roadlines extends Component {
     
     redraw = (value) => {
         let options = {type: "centreline", value: value}
-        let centrelines = this.delegate.loadLines([], this.state.data, options);
+        let centrelines = this.context.gl.loadLines([], this.state.data, options);
         let glData = this.delegate.glData;
         glData.centre = centrelines.vertices;
         this.delegate.redraw(glData, false);   
@@ -85,9 +85,8 @@ export default class Roadlines extends Component {
      if (this.isChecked(value)) {
       this.setState({filter: []});
       this.delegate.glData.layers[0].geometry = [];
-      let glData = this.delegate.glData;
       this.setState({active: false});
-      this.delegate.redraw(glData, false);
+      this.delegate.redraw(this.delegate.glData, false);
      } else {
       this.setState({active: true})
       this.setState(
@@ -199,3 +198,5 @@ export default class Roadlines extends Component {
       }
     }
   }
+
+

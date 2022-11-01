@@ -1,5 +1,5 @@
 import React from 'react';
-import {Dropdown}  from 'react-bootstrap';
+import { Dropdown }  from 'react-bootstrap';
 
 export default function ClassDropdown(props) {
 

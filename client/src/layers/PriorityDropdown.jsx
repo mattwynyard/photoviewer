@@ -1,6 +1,6 @@
-import { React} from 'react';
-import {Dropdown}  from 'react-bootstrap';
-import {CustomSVG} from './CustomSVG.js';
+import { React, useState } from 'react';
+import { Dropdown }  from 'react-bootstrap';
+import { CustomSVG } from '../components/CustomSVG.js';
 
 function parsePriority(id) {
     let priority = null
@@ -22,6 +22,8 @@ function parsePriority(id) {
   }
 
 export default function PriorityDropdown(props) {
+    //console.log(props)
+    const [rootChecked, setRootChecked] = useState(true)
 
     const isChecked = (value, parse) => {
         let priority = null;
@@ -36,6 +38,20 @@ export default function PriorityDropdown(props) {
           return false;
         }  
       }
+
+    const onRootChange = (e) => {
+      if (!e.target.checked) {
+        props.onClick([])
+      } else {
+        const filter = []
+        props.items.map((item) => {
+          filter.push(parsePriority(item));
+          
+        });
+      props.onClick(filter)
+      }    
+      setRootChecked(!rootChecked)
+    }
 
     /**
    * Adds or removes priorities to array for db query
@@ -68,19 +84,29 @@ export default function PriorityDropdown(props) {
     }
     
     return (
-        <Dropdown className="priority" drop='end'>
+      <div className={props.className}>
+        <Dropdown drop='end'>
             <Dropdown.Toggle variant="light" size="sm" >
-                {props.title}
+              <input
+                type="checkbox" 
+                checked={rootChecked}
+                onChange={onRootChange}
+              >
+              </input>
+              <span>{props.title}</span> 
             </Dropdown.Toggle>
-            <Dropdown.Menu className="custommenu" style={{ margin: 0 }}>
+            <Dropdown.Menu 
+              className="custommenu" 
+              style={{ margin: 0 }}
+              >
                 {props.items.map((value, index) =>
                 <div 
                     key={`${index}`}
                     >
                     <CustomSVG 
-                    login={props.login}
-                    value={value}
-                    reverse={props.reverse}
+                      login={props.login}
+                      value={value}
+                      reverse={props.layer.reverse}
                     >
                     </CustomSVG>
                     <input
@@ -96,5 +122,6 @@ export default function PriorityDropdown(props) {
                 )}
             </Dropdown.Menu>
         </Dropdown>
+      </div>
     );
 }

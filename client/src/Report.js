@@ -2,7 +2,7 @@ import React from 'react';
 import './Report.css';
 import { Link } from "react-router-dom";
 import {Navbar, Nav}  from 'react-bootstrap';
-import CustomNav from './CustomNav.js';
+import CustomNav from './components/CustomNav.js';
 import Chart from 'chart.js';
 import { loginContext } from './login/loginContext';
 

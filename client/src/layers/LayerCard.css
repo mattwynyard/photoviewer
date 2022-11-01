@@ -1,0 +1,78 @@
+
+.layercard-body {
+    font-family: "Century Gothic", sans-serif;
+    font-size: 16px !important;
+    display: flex;
+    flex-wrap: wrap;
+    flex: 1 1 100px;
+    padding: 5px;   
+  }
+
+  .layercard-label {
+    font-family: "Century Gothic", sans-serif;
+    margin-right: 5px;
+    font-size: 14px !important;
+    white-space: nowrap; 
+    grid-column: 1 / 2;
+    grid-row: 2;
+    padding: 5px;   
+ }
+  
+  .layercard-title {
+    font-family: "Century Gothic", sans-serif;
+    font-size: 14px !important;
+    padding: 3px;
+  }
+
+.layercard-priorityDropdown {
+    padding: 1px;
+    margin: 5px;
+    width: 40%;
+  }
+
+
+.layercard-ratingDropdown {
+    padding: 1px;
+    margin: 5px;
+    width: 40%;
+  } 
+
+.layercard-priorityDropdown span {
+    padding: 1px;
+    margin: 5px;
+  } 
+
+  .layercard-ratingDropdown span {
+    padding: 1px;
+    margin: 5px;
+  } 
+
+
+.layercard-classDropdown {
+    padding: 1px;
+    margin: 5px;
+    width: 40%;
+}
+.layercard-datainput {
+    padding: 1px;
+    margin: 5px;
+    width: 40%;
+}
+
+.layercard-datainput span {
+  padding: 1px;
+  margin: 5px;
+  width: 40%;
+}
+  
+.layercard-videoinput {
+  padding: 1px;
+  margin: 5px;
+}
+
+.layercard-videoinput span {
+  text-align: bottom;
+  padding: 1px;
+  margin: 5px;
+}
+

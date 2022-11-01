@@ -342,6 +342,7 @@ app.post('/carriage', async(req, res) => {
       let result = null;
       let data = null;
       try {
+        
         if (req.body.project.surface === 'footpath') {
           result = await db.closestFootpath(req.body.lat, req.body.lng);
           data = result.rows[0];
@@ -380,6 +381,27 @@ app.post('/centrelines', async(req, res) => {
       res.send({success: true, data: result.rows});
     } else {
       res.send({success: false, data: []});
+    }
+  } else {
+    res.set('Content-Type', 'application/json');
+    res.send({error: "Invalid token"});
+  }
+});
+
+app.post('/rating', async(req, res) => {
+  let security = false;
+  if (req.body.user === 'Login') {
+    security = await db.isPublic(req.body.project.code);
+  } else {
+    security = users.findUserToken(req.headers.authorization, req.body.user);
+  }
+  if (security) {
+    if (req.body.project.surface === 'footpath') {
+      let result = await db.footpathRating(req.body.project.code, req.body.filter);
+      res.send({success: true, data: result.rows});
+    } else {
+      let result = await db.roadLines(req.body.project.code, req.body.filter);
+      res.send({success: true, data: result.rows});
     }
   } else {
     res.set('Content-Type', 'application/json');
@@ -744,6 +766,7 @@ app.post('/layer', async (req, res) => {
     result = users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (result) {
+    const user = req.body.user;
     let project = req.body.project;
     let filter = req.body.filter; //fix for zero length filter
     let priority = req.body.priority;
@@ -772,7 +795,7 @@ app.post('/layer', async (req, res) => {
     let completedLines = [];
     if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
       if (options.priority.length !== 0) {
-        let geometry = await db.footpath(project, options, filter);
+        let geometry = await db.footpath(user, project, options, filter);
         activePoints = geometry.rows;
         activeLines = [];
       } 
