@@ -49,7 +49,6 @@ class App extends React.Component {
       rulerDistance: 0,
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
-      //reverse: false,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -256,17 +255,17 @@ class App extends React.Component {
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
     let options = {type: type, priorities: priorities, count: 0};
-    let buffer = [];
-    let glLines = this.GLEngine.loadLines(buffer, lines, options);
+    let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
     options = {type: type, priorities: priorities, count: glLines.count};
-    buffer = [];
-    let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    const lineData =  this.GLEngine.glData;
+    let glPoints = this.GLEngine.loadPoints([], points, options); 
+    const geom =  this.getLayerData();
+    
+    
     let glData = {
       layers: [{
         type: "line",
-        geometry: [],
+        geometry: geom,
         z: 1
       }],
       faults: {
@@ -282,6 +281,14 @@ class App extends React.Component {
     let faults = glLines.faults.concat(glPoints.faults);
     this.setState({objGLData: faults});
     this.context.hideLoader();
+  }
+
+  getLayerData() {
+    if (this.GLEngine.glData.length != 0) {
+      return this.GLEngine.glData.layers[0].geometry;
+    } else {
+      return [];
+    }
   }
 
   setPriorityObject() {

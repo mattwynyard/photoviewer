@@ -97,6 +97,7 @@ export default function PriorityDropdown(props) {
             </Dropdown.Toggle>
             <Dropdown.Menu 
               className="custommenu" 
+              style={{ margin: 0 }}
               >
                 {props.items.map((value, index) =>
                 <div 

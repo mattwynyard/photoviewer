@@ -22,7 +22,7 @@ export default function RatingDropdown(props) {
         const response = PostFetch(login.host + "/rating", login.token, body);
         response.then((res) => {
             if (res.success) {
-                console.log(res.data)
+                //console.log(res.data)
                 setData(res.data);
             }
             hideLoader();
@@ -96,7 +96,10 @@ export default function RatingDropdown(props) {
                         </input>
                         <span>{"Rating"}</span>          
                     </Dropdown.Toggle>
-                    <Dropdown.Menu className="centrelinemenu">
+                    <Dropdown.Menu 
+                        className="centrelinemenu"
+                        style={{ margin: 0 }}
+                        >
                         {menu.map((value, index) =>
                         <div key={`${index}`}>
                             <input

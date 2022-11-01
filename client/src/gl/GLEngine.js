@@ -176,7 +176,12 @@ export default class GLEngine {
       if (data.faults.points.length !== 0) {
         fverts = data.faults.lines.concat(data.faults.points);
       } else {
-        fverts = [...data.lines];
+        if (data.faults.lines.length != 0) {
+          fverts = [...data.faults.lines];
+        } else {
+          fverts = [];
+        }
+        
       }
       fverts = this.reColorFaults(fverts);
       if (zIndex === 0) {
@@ -361,6 +366,9 @@ export default class GLEngine {
   }
 
   loadPoints(buffer, points, options) {
+    if (points.length === 0) {
+      return { faults: [], vertices: [], count: 0}
+    }
     let faults = []; 
     let count = options.count;
     let pointSet = new Set();
