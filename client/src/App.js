@@ -284,6 +284,7 @@ class App extends React.Component {
   }
 
   getLayerData() {
+    if (!this.GLEngine.glData) return [];
     if (this.GLEngine.glData.length != 0) {
       return this.GLEngine.glData.layers[0].geometry;
     } else {
