@@ -262,18 +262,7 @@ class App extends React.Component {
     options = {type: type, priorities: priorities, count: glLines.count};
     buffer = [];
     let glPoints = this.GLEngine.loadPoints(buffer, points, options); 
-    // let centreData = []
-    // let value = null
-    // if (this.roadLinesRef.current) {
-    //   centreData = this.roadLinesRef.current.state.data;
-    //   value = this.roadLinesRef.current.state.filter[0]
-    // }
-    // let vertCentre = []
-    // if (value) {
-    //   let options = {type: "centreline", value: value}
-    //   let data = this.GLEngine.loadLines([], centreData, options);
-    //   vertCentre = data.vertices
-    // } 
+    const lineData =  this.GLEngine.glData;
     let glData = {
       layers: [{
         type: "line",

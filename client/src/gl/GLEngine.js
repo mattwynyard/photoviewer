@@ -14,6 +14,7 @@ export default class GLEngine {
         this.leafletMap = leaflet;
         this.mouseClick = null;
         this.gl = null;
+        this.glData = [];
         this.glPoints = [];
         this.glLines = [];
         this.latlngs = [];
@@ -27,6 +28,10 @@ export default class GLEngine {
   blendColors(color1, color2) {
     this.colorGradient.setGradient(color1, color2);
     this.colorGradient.setMidpoint(50);  
+  }
+
+  getGLData() {
+    //return this.gl
   }
 
   intializeGL() {
