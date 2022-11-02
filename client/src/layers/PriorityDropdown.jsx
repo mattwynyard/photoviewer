@@ -62,25 +62,21 @@ export default function PriorityDropdown(props) {
    * @param {the button clicked} e 
    */
     const onClick = (e, value) => {
-        e.preventDefault();
+        //e.preventDefault();
         let query = [...props.filter]
         let parsedValue = parsePriority(value);
-        if (query.length === 1) {
-            if (query.includes(parsedValue)) {
-                return;
-            } else {
-                query.push(parsedValue);
-                props.onClick(query)
+        if (query.includes(parsedValue)) {
+            const index = query.indexOf(parsedValue);
+            query.splice(index, 1);
+            if (query.length === 0) {
+              setRootChecked(false)
             }
         } else {
-            if (query.includes(parsedValue)) {
-                const index = query.indexOf(parsedValue);
-                query.splice(index, 1);
-            } else {
-                query.push(parsedValue)
-            }
-            props.onClick(query)
-        }   
+          query.push(parsedValue)
+          if (!rootChecked) setRootChecked(true)
+        }
+        props.onClick(query)
+  
     }
     
     return (
