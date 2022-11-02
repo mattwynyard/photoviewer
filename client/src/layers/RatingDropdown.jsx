@@ -11,8 +11,16 @@ export default function RatingDropdown(props) {
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
     const [active, setActive] = useState(false);
-    const [layer, setLayer] = useState(null);
+    const [layer, setLayer] = useState(props.layer);
     const defaultTitle = "Rating";
+
+    useEffect(() => {
+        if (props.layer.surface === 'road') {
+            setMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
+        } else if (props.layer.surface === 'footpath') {
+            setMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
+        }
+    }, [])
     
     useEffect(() => {
         if (!layer) return;
@@ -35,15 +43,24 @@ export default function RatingDropdown(props) {
 
     useEffect(() => {
         if (!layer) return;
-        if (props.menu) setMenu(props.menu)
+        
         if (active) {
-            const options = {type: props.layer.surface === "road" ? "road" : "footpath", render: defaultTitle}
-            let ratings = gl.gl.loadLines([], data, options);
-            gl.gl.glData.layers[0].geometry = ratings.vertices;
-            gl.gl.redraw(gl.gl.glData, false);
+            if (layer.surface === "road") {
+                const options = {type: filter[0], render: defaultTitle}
+                let ratings = gl.gl.loadLines([], data, options);
+                gl.gl.glData.layers[0].geometry = ratings.vertices;
+                gl.gl.redraw(gl.gl.glData, false);
+            } else {
+                const options = {type: "footpath", render: defaultTitle}
+                let ratings = gl.gl.loadLines([], data, options);
+                gl.gl.glData.layers[0].geometry = ratings.vertices;
+                gl.gl.redraw(gl.gl.glData, false);
+            }
+            
         } 
         else {
             if (data.length !== 0) {
+                if (!gl.gl.glData || gl.gl.glData.length == 0) return;
                 gl.gl.glData.layers[0].geometry = [];
                 gl.gl.redraw(gl.gl.glData, false);
             }     
@@ -52,20 +69,26 @@ export default function RatingDropdown(props) {
     
     
    const changeCheck = (e, value) => {
-    if (value === defaultTitle) {
+    if (value === defaultTitle) { //root
         if (e.target.checked) {
             const filter = []
-            menu.map(item => {
-                const s = item.replace(defaultTitle, '').replace(/\s/g, '');
-                filter.push(s)
-            })
+            if (layer.surface === "footpath") {
+                menu.map(item => {
+                    const s = item.replace(defaultTitle, '').replace(/\s/g, '');
+                    filter.push(s)
+                })
+            } else {
+                const s = menu[0].replace(defaultTitle, '').replace(/\s/g, '');
+                filter.push(s) 
+            }
+           
             setFilter(filter)
             setActive(true)
         } else {
             setFilter([])
             setActive(false)
         }
-    } else {
+    } else { //child
         if (!active) return;
             const copy = [...filter]
         if (!e.target.checked) {
@@ -93,7 +116,7 @@ export default function RatingDropdown(props) {
                             checked={active}
                         >
                         </input>
-                        <span>{"Rating"}</span>          
+                        <span>{defaultTitle}</span>          
                     </Dropdown.Toggle>
                     <Dropdown.Menu 
                         className="centrelinemenu"

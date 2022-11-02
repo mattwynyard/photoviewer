@@ -7,16 +7,6 @@ import RatingDropdown from './RatingDropdown';
 import './LayerCard.css';
 
 function LayerCard(props) {
-    const [ratingMenu, setRatingMenu] = useState([])
-    const [gradeMenu, setGradeMenu] = useState([])
-
-    useEffect(() => {
-        if (props.layer.surface === 'road') {
-            setRatingMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
-        } else if (props.layer.surface === 'footpath') {
-            setRatingMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
-        }
-    }, [])
 
     const box = document.querySelector('.layercard-datainput');
 
@@ -75,7 +65,7 @@ function LayerCard(props) {
                     className="layercard-ratingDropdown"
                     layer={props.layer}
                     changeCheck={handleRatingChange}
-                    menu={ratingMenu}
+                    //menu={ratingMenu}
                 />
                 <div className="layercard-datainput">
                     <input 
