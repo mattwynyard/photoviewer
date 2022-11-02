@@ -29,7 +29,6 @@ export default function RatingDropdown(props) {
         const response = PostFetch(login.host + "/rating", login.token, body);
         response.then((res) => {
             if (res.success) {
-                //console.log(res.data)
                 setData(res.data);
             }
             hideLoader();
@@ -89,16 +88,21 @@ export default function RatingDropdown(props) {
             setActive(false)
         }
     } else { //child
-        if (!active) return;
-            const copy = [...filter]
+        //if (!active && layer.surface === "road") return;
+        const copy = [...filter]
         if (!e.target.checked) {
-            if (filter.length <= 1) return;
+            if (filter.length <= 1) {
+                setActive(false) 
+            }
             const index = copy.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
             if (index > -1) { 
                 copy.splice(index, 1);
                 setFilter([...copy])
             }
         } else {
+            if (filter.length < 1) {
+                setActive(true) 
+            }
            copy.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
            setFilter(copy)
         }    
