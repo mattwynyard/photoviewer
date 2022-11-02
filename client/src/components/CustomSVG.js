@@ -1,4 +1,5 @@
 const CustomSVG = (props) => {
+    if (props.value === "Structural Rating" || props.value === "Surface Rating" || props.value === "Drainage Rating") return null;
     if (!props.reverse) {
       if (props.value === "Grade 1" || props.value === "Priority 1") {
         return ( 

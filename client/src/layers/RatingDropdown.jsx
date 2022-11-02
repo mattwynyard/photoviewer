@@ -158,7 +158,7 @@ export default function RatingDropdown(props) {
                                 value={value}
                                 reverse={props.layer.reverse}
                                 >
-                                </CustomSVG>
+                            </CustomSVG>
                         </div> 
                     )}
                     </Dropdown.Menu>
