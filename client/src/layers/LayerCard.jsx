@@ -21,17 +21,18 @@ function LayerCard(props) {
     const box = document.querySelector('.layercard-datainput');
 
     const handleFocus = (e) => {
-        if (!e.target.checked) {
-            props.spin();       
-       }
-       box.blur();
+        box.blur();
+        props.spin();      
     }
 
     const handleDataChange = (e) => { 
+
         if (e.target.checked) {
+            props.spin();   
             props.setDataActive(true);
-            props.stopSpin();     
+            //props.stopSpin();     
         } else {
+            // 
             props.setDataActive(false);
         }  
     }

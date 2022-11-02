@@ -308,17 +308,18 @@ export default class GLEngine {
         if (linestring) {
           let colors = null;  
           let line = linestring.coordinates;
-          if (options.type !== "road_rating") {
-            if (options.type === "footpath_rating") {
-              colors = this.setFootpathRatingColours(data[i], options.value);
+          if (options.render === "Rating") {
+            if (options.type === "footpath") {
+              colors = this.setFootpathRatingColours(data[i], options.render);
+              ++count;
             } else {
-              colors = this.setColors(data[i], options.type, options.priorities);
+              colors = this.setCentreColors(data[i], options.render);
+              count = 0;
             }
-            ++count;
-          } else {
-            colors = this.setCentreColors(data[i], options.value);
-            count = 0;
             
+          } else {
+            colors = this.setColors(data[i], options.type, options.priorities);
+            ++count;
           }   
           lengths.push(line.length);
           for (let j = 0; j < line.length; j++) {
@@ -348,16 +349,13 @@ export default class GLEngine {
             }
           }
         }
-        if (options.type === "road_rating" || options.type === "footpath_rating") {
-
-        } else {
+        if (options.render === "Fault") {
           let fault = this.createFaultObject(data[i], options.type, latlng, linestring)
-          faults.push(fault); 
-        }
-        
+          faults.push(fault);   
+        }   
      }    
     }
-    if (options.type === "road_rating"  || options.type === "footpath_rating") {
+    if (options.type === "Rating") {
       return {vertices: buffer, lengths: lengths, centre: centre, count: count};
     } else {
       return {vertices: buffer, lengths: lengths, faults: faults, count: count};

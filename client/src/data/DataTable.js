@@ -8,6 +8,7 @@ export default class DataTable extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+          selectedIndex: null
         }
         this.rdheader = ["#", "Id", "Inspection", "Location", "RoadId", "CarriageId", "Start", "End", "Side", "Fault", "Repair", "Priority",
         "Length", "Width", "Count", "DateTime"];  

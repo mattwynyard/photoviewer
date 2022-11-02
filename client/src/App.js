@@ -215,6 +215,7 @@ class App extends React.Component {
   setDataActive = (isActive) => {
     this.setState({dataActive: isActive}, () => {
       this.leafletMap.invalidateSize(true);
+      this.context.hideLoader();
     });
   }
   
@@ -254,15 +255,13 @@ class App extends React.Component {
  */
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
-    let options = {type: type, priorities: priorities, count: 0};
+    let options = {type: type, render: "Fault", priorities: priorities, count: 0};
     let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
     options = {type: type, priorities: priorities, count: glLines.count};
     let glPoints = this.GLEngine.loadPoints([], points, options); 
     const geom =  this.getLayerData();
-    
-    
-    let glData = {
+    const glData = {
       layers: [{
         type: "line",
         geometry: geom,

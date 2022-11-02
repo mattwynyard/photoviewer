@@ -15,7 +15,6 @@ export default function RatingDropdown(props) {
     const defaultTitle = "Rating";
     
     useEffect(() => {
-        //console.log(filter)
         if (!layer) return;
         const body = {user: login.user, project: layer, filter: filter}
         showLoader();
@@ -38,7 +37,7 @@ export default function RatingDropdown(props) {
         if (!layer) return;
         if (props.menu) setMenu(props.menu)
         if (active) {
-            const options = {type: props.layer.surface === "road" ? "road_rating" : "footpath_rating", value: defaultTitle}
+            const options = {type: props.layer.surface === "road" ? "road" : "footpath", render: defaultTitle}
             let ratings = gl.gl.loadLines([], data, options);
             gl.gl.glData.layers[0].geometry = ratings.vertices;
             gl.gl.redraw(gl.gl.glData, false);
