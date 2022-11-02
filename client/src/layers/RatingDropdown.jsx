@@ -40,6 +40,15 @@ export default function RatingDropdown(props) {
         setLayer(props.layer)
     }, [])
 
+    const getLayerData = () => {
+        if (!gl.gl.GLEngine.glData) return [];
+        if (gl.gl.GLEngine.glData.length != 0) {
+          return gl.gl.GLEngine.glData.layers[0].geometry;
+        } else {
+          return [];
+        }
+      }
+
     useEffect(() => {
         if (!layer) return;
         
@@ -47,6 +56,7 @@ export default function RatingDropdown(props) {
             if (layer.surface === "road") {
                 const options = {type: filter[0], render: defaultTitle}
                 let ratings = gl.gl.loadLines([], data, options);
+                //const geom =  getLayerData();
                 gl.gl.glData.layers[0].geometry = ratings.vertices;
                 gl.gl.redraw(gl.gl.glData, false);
             } else {
@@ -89,22 +99,29 @@ export default function RatingDropdown(props) {
         }
     } else { //child
         //if (!active && layer.surface === "road") return;
-        const copy = [...filter]
+        const _filter = [...filter]
         if (!e.target.checked) {
             if (filter.length <= 1) {
                 setActive(false) 
             }
-            const index = copy.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
+            const index = _filter.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
             if (index > -1) { 
-                copy.splice(index, 1);
-                setFilter([...copy])
+                _filter.splice(index, 1);
+                setFilter([..._filter])
             }
         } else {
             if (filter.length < 1) {
                 setActive(true) 
             }
-           copy.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
-           setFilter(copy)
+            if (layer.surface === "road") {
+                const f = []
+                f.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
+                setFilter(f)
+            } else {
+                _filter.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
+                setFilter(_filter)
+            }
+            
         }    
     }    
     }

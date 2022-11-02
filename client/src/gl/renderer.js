@@ -97,8 +97,8 @@ const setFootpathRatingColours = (data, value) => {
         break;
       case 'Drainage':
         index = data.drainage * 10;
-        hex = this.colorGradient.getColor(index + 1)
-        rgb = this.hexToRgb(hex)
+        hex = colorGradient.getColor(index + 1)
+        rgb = hexToRgb(hex)
         colors.r = rgb.r / 255;
         colors.g = rgb.g / 255;
         colors.b = rgb.b / 255;
