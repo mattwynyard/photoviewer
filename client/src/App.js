@@ -349,7 +349,6 @@ class App extends React.Component {
     switch(this.state.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
-        console.log(this.context.ratingActive)
         // if (this.roadLinesRef.current.isActive()) {
         //   let query = {
         //     lat: e.latlng.lat,
@@ -389,13 +388,13 @@ class App extends React.Component {
         //   }     
         // }
         if (this.state.objGLData.length !== 0) {
-          // if (this.roadLinesRef.current.isActive()) {
-          //   this.GLEngine.mouseClick = null;
-          // } else {
+          if (this.context.ratingActive) {
+            this.GLEngine.mouseClick = null;
+          } else {
           const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
           this.GLEngine.mouseClick = {...click};
-          // }
           this.GLEngine.redraw(this.GLEngine.glData, false);     
+          }
         }
         break;
       case 'Street':
