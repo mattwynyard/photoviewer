@@ -397,7 +397,7 @@ app.post('/rating', async(req, res) => {
   }
   if (security) {
     if (req.body.project.surface === 'footpath') {
-      let result = await db.footpathRating(req.body.project.code, req.body.filter);
+      let result = await db.footpathRating(req.body.user, req.body.project.code, req.body.filter);
       res.send({success: true, data: result.rows});
     } else {
       let result = await db.roadLines(req.body.project.code, req.body.filter);

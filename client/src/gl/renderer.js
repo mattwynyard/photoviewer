@@ -44,7 +44,7 @@ const setFootpathRatingColours = (data, value) => {
 
   const setCentreColors = (data, value, colorGradient) => {
     let colors = {r: null, g: null, b: null, a: null};
-    let _alpha = 0.75;
+    let ALPHA = 0.75;
     let index = null;
     let rgb = null;
     let hex = null;
@@ -54,27 +54,27 @@ const setFootpathRatingColours = (data, value) => {
           colors.r = 1.0;
           colors.g = 0.5;
           colors.b = 0.0;
-          colors.a = _alpha;
+          colors.a = ALPHA;
         } else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'THINSURFACEFLEXIBLE') {
           colors.r = 0.0;
           colors.g = 0.5;
           colors.b = 0.5;
-          colors.a = _alpha;
+          colors.a = ALPHA;
         }  else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'BRIDGE') {
           colors.r = 0.0;
           colors.g = 0.0;
           colors.b = 0.8;
-          colors.a = _alpha;
+          colors.a = ALPHA;
         } else if (data.pavement.toUpperCase().replace(/\s/g, "") === 'CONCRETE') {
           colors.r = 0.75;
           colors.g = 0.75;
           colors.b = 0.75;
-          colors.a = _alpha;
+          colors.a = ALPHA;
         } else {
           colors.r = 0.0;
           colors.g = 0.0;
           colors.b = 0.8;
-          colors.a = _alpha;
+          colors.a = ALPHA;
         }
       break;
       case 'Structural':
@@ -84,7 +84,7 @@ const setFootpathRatingColours = (data, value) => {
         colors.r = rgb.r / 255;
         colors.g = rgb.g / 255;
         colors.b = rgb.b / 255;
-        colors.a = 1.0;
+        colors.a = ALPHA;
         break;
       case 'Surface':
         index = data.surface * 10;
@@ -93,7 +93,7 @@ const setFootpathRatingColours = (data, value) => {
         colors.r = rgb.r / 255;
         colors.g = rgb.g / 255;
         colors.b = rgb.b / 255;
-        colors.a = 1.0;
+        colors.a = ALPHA;
         break;
       case 'Drainage':
         index = data.drainage * 10;
@@ -102,14 +102,14 @@ const setFootpathRatingColours = (data, value) => {
         colors.r = rgb.r / 255;
         colors.g = rgb.g / 255;
         colors.b = rgb.b / 255;
-        colors.a = 1.0;
+        colors.a = ALPHA;
       break;
     
     default:
       colors.r = 0.25;
       colors.g = 0.25;
       colors.b = 0.25;
-      colors.a = _alpha;
+      colors.a = ALPHA;
   }
     return colors;
   }

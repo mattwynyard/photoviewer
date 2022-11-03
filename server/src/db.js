@@ -880,9 +880,10 @@ module.exports = {
         });
     },
 
-    footpathRating: (project, filter) => {
+    footpathRating: (user, project, filter) => {
         const _filter  = buildIntQuery(filter)
-        let sql = `SELECT * FROM public.vw_swdc_fpcl WHERE project = '${project}' AND grade IN (${_filter})`
+        const sql = `SELECT * FROM public.vw_${user}_fpcl WHERE project = '${project}' AND grade IN (${_filter})`
+        
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
                 if (err) {
