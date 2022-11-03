@@ -11,16 +11,21 @@ export default function RatingDropdown(props) {
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
     const [active, setActive] = useState(false);
-    const [layer, setLayer] = useState(props.layer);
+    const [layer, setLayer] = useState(null);
     const defaultTitle = "Rating";
 
     useEffect(() => {
+        setLayer(props.layer)
         if (props.layer.surface === 'road') {
             setMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
         } else if (props.layer.surface === 'footpath') {
             setMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
         }
     }, [])
+
+    useEffect(() => {
+        
+    }, [active])
     
     useEffect(() => {
         if (!layer) return;
@@ -34,11 +39,7 @@ export default function RatingDropdown(props) {
             hideLoader();
         })
     }, [filter, PostFetch, login, layer, showLoader, hideLoader])
-    
 
-    useEffect(() => {
-        setLayer(props.layer)
-    }, [])
 
     const getLayerData = () => {
         if (!gl.gl.GLEngine.glData) return [];
@@ -56,7 +57,6 @@ export default function RatingDropdown(props) {
             if (layer.surface === "road") {
                 const options = {type: filter[0], render: defaultTitle}
                 let ratings = gl.gl.loadLines([], data, options);
-                //const geom =  getLayerData();
                 gl.gl.glData.layers[0].geometry = ratings.vertices;
                 gl.gl.redraw(gl.gl.glData, false);
             } else {
@@ -98,7 +98,6 @@ export default function RatingDropdown(props) {
             setActive(false)
         }
     } else { //child
-        //if (!active && layer.surface === "road") return;
         const _filter = [...filter]
         if (!e.target.checked) {
             if (filter.length <= 1) {

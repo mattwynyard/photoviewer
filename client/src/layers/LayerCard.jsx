@@ -65,7 +65,6 @@ function LayerCard(props) {
                     className="layercard-ratingDropdown"
                     layer={props.layer}
                     changeCheck={handleRatingChange}
-                    //menu={ratingMenu}
                 />
                 <div className="layercard-datainput">
                     <input 

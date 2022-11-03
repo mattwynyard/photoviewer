@@ -15,7 +15,17 @@ export default class GLEngine {
         this.leafletMap = leaflet;
         this.mouseClick = null;
         this.gl = null;
-        this.glData = [];
+        this.glData = {
+          layers: [{
+            type: "line",
+            geometry: [],
+            z: 1
+          }],
+          faults: {
+            points: [],
+            lines: []
+          }
+        };
         this.glPoints = [];
         this.glLines = [];
         this.latlngs = [];

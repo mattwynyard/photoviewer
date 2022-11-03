@@ -110,7 +110,6 @@ class App extends React.Component {
     this.toolsRef = React.createRef();
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
-    this.roadLinesRef = React.createRef();
     this.notificationRef = React.createRef();
     this.popupRef = React.createRef();
     this.vidPolyline = null;  
@@ -125,7 +124,6 @@ class App extends React.Component {
       this.setDataActive(false)
     }
     this.archivePhotoModal.current.delegate(this);
-    //this.roadLinesRef.current.setDelegate(this.GLEngine);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -1391,7 +1389,7 @@ class App extends React.Component {
                 key={`${index}`} 
                 data={obj}
                 login={this.context.login.user}
-                position={obj.latlng}
+                position={obj ? obj.latlng : null}
                 photo={this.state.activeLayer ? this.state.image: null} 
                 amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
                 onClick={this.clickImage}
