@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
-import { loginContext } from './login/loginContext';
+import { loginContext } from './context/loginContext';
 
 const Main = (props) => {
   let host = null 
@@ -18,6 +18,7 @@ const Main = (props) => {
   const showLoader = props.showLoader
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
   const [gl, _setGL] = useState(null);
+  const [ratingActive, setRatingActive] = useState(false);
   
   const updateLogin = (user, token) => {
     setLogin({user: user, token: token, host: host});
@@ -26,11 +27,17 @@ const Main = (props) => {
   const setGL = (_gl) => {
     _setGL({gl: _gl});
   }
+
+  // const setRatingActive = (active) => {
+  //   _setRatingActive({ratingActive: active});
+  // }
+
+
   return (
       <Router>
         <Switch> {/* The Switch decides which component to show based on the current URL.*/}
         
-          <loginContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, gl}}>
+          <loginContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, ratingActive, setRatingActive, gl}}>
             <Route 
               exact path='/'
               component={App}>

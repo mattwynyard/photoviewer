@@ -1,5 +1,5 @@
 import { React, useContext  } from 'react';
-import { loginContext } from '../login/loginContext'
+import { loginContext } from '../context/loginContext'
 import { LayerCard } from './LayerCard';
 
 const LayerManager = (props) => {
