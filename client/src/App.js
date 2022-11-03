@@ -18,7 +18,7 @@ import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
 //import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
-import { loginContext} from './login/loginContext';
+import { loginContext} from './context/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
@@ -349,6 +349,7 @@ class App extends React.Component {
     switch(this.state.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
+        console.log(this.context.ratingActive)
         // if (this.roadLinesRef.current.isActive()) {
         //   let query = {
         //     lat: e.latlng.lat,
@@ -1341,70 +1342,69 @@ class App extends React.Component {
               </FilterButton>
             </div>
           </div>   
-          
-          <LMap        
-            ref={(ref) => {this.map = ref;}}
-            className={this.state.dataActive ? "map-reduced": "map"}
-            worldCopyJump={true}
-            boxZoom={true}
-            center={centre}
-            zoom={this.state.zoom}
-            doubleClickZoom={false}
-            onPopupClose={this.closePopup}>
-            <TileLayer className="mapLayer"
-              attribution={this.state.attribution}
-              url={this.state.url}
-              zIndex={998}
-              maxNativeZoom={19}
-              maxZoom={22}
-            />
-            <ScaleControl className="scale"/>
-            {this.state.archiveMarker.map((position, idx) =>
-              <Marker 
-                key={`marker-${idx}`} 
-                position={position}>
-              </Marker>
-            )}
-            {this.state.carMarker.map((position, idx) =>
-              <Marker 
-                key={`marker-${idx}`} 
-                position={position}>
-              </Marker>
-            )}
-            {this.state.selectedCarriage.map((position, idx) =>
-              <Polyline
-                key={`marker-${idx}`} 
-                position={position}>
-              </Polyline>
-            )}
-            <VideoCard
-              ref={this.videoCard}
-              show={this.state.showVideo} 
-              parent={this}
-            >
-            </VideoCard>
-            <LayerGroup >
-              {this.state.selectedGeometry.map((obj, index) =>   
-              <DefectPopup 
-                key={`${index}`} 
-                data={obj}
-                login={this.context.login.user}
-                position={obj ? obj.latlng : null}
-                photo={this.state.activeLayer ? this.state.image: null} 
-                amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
-                onClick={this.clickImage}
-                onError={() => this.onImageError(obj.photo)}
-                >
-              </DefectPopup>
+            <LMap        
+              ref={(ref) => {this.map = ref;}}
+              className={this.state.dataActive ? "map-reduced": "map"}
+              worldCopyJump={true}
+              boxZoom={true}
+              center={centre}
+              zoom={this.state.zoom}
+              doubleClickZoom={false}
+              onPopupClose={this.closePopup}>
+              <TileLayer className="mapLayer"
+                attribution={this.state.attribution}
+                url={this.state.url}
+                zIndex={998}
+                maxNativeZoom={19}
+                maxZoom={22}
+              />
+              <ScaleControl className="scale"/>
+              {this.state.archiveMarker.map((position, idx) =>
+                <Marker 
+                  key={`marker-${idx}`} 
+                  position={position}>
+                </Marker>
               )}
-            </LayerGroup>
-            <Image 
-              className="satellite" 
-              src={this.state.osmThumbnail} 
-              onClick={(e) => this.toogleMap(e)} 
-              thumbnail={true}
-            />
-        </LMap >
+              {this.state.carMarker.map((position, idx) =>
+                <Marker 
+                  key={`marker-${idx}`} 
+                  position={position}>
+                </Marker>
+              )}
+              {this.state.selectedCarriage.map((position, idx) =>
+                <Polyline
+                  key={`marker-${idx}`} 
+                  position={position}>
+                </Polyline>
+              )}
+              <VideoCard
+                ref={this.videoCard}
+                show={this.state.showVideo} 
+                parent={this}
+              >
+              </VideoCard>
+              <LayerGroup >
+                {this.state.selectedGeometry.map((obj, index) =>   
+                <DefectPopup 
+                  key={`${index}`} 
+                  data={obj}
+                  login={this.context.login.user}
+                  position={obj ? obj.latlng : null}
+                  photo={this.state.activeLayer ? this.state.image: null} 
+                  amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
+                  onClick={this.clickImage}
+                  onError={() => this.onImageError(obj.photo)}
+                  >
+                </DefectPopup>
+                )}
+              </LayerGroup>
+              <Image 
+                className="satellite" 
+                src={this.state.osmThumbnail} 
+                onClick={(e) => this.toogleMap(e)} 
+                thumbnail={true}
+              />
+          </LMap >
         <DataTable 
           className={this.state.dataActive ? "data-active": "data-inactive"}
           data={this.state.objGLData}

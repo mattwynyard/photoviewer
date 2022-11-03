@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import {Navbar, Nav}  from 'react-bootstrap';
 import CustomNav from './components/CustomNav.js';
 import Chart from 'chart.js';
-import { loginContext } from './login/loginContext';
+import { loginContext } from './context/loginContext';
 
 const NO_COLORS = 9;
 
