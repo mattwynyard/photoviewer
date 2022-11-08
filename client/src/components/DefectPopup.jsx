@@ -5,54 +5,54 @@ import { useEffect } from 'react';
 
 
 //not working yet
-const Thumbnail = ({amazon, data, login, photo, onError, onClick}) => {
-  if (login === "asu" || login === "asm") {
-    return (<Image 
-              className="thumbnail" 
-              src={`${amazon}${data.inspection}/${photo}.jpg`}
-              onClick={onClick} 
-              thumbnail={true}
-              onError={onError}
-                >
-              </Image >
-            );
-      }
-  if ((data.type === 'footpath')) {
-    if (data.asset.toLowerCase() === "kerb & channel") {
-      return (
-        <Image 
-          className="thumbnail" 
-          src={`${amazon}kerbs/${data.inspection}/${photo}.jpg`}
-          onClick={onClick} 
-          thumbnail={true}
-          onError={onError}
-          >
-        </Image >
-      );
-    } else {
-      return (
-        <Image 
-          className="thumbnail" 
-          src={`${amazon}footpaths/${data.inspection}/${photo}.jpg`}
-          onClick={onClick} 
-          thumbnail={true}
-          onError={onError}
-          >
-        </Image >
-      );
-    }
-  }
-  return (
-    <Image 
-      className="thumbnail" 
-      src={`${amazon}/${photo}.jpg`}
-      onClick={onClick} 
-      thumbnail={true}
-      onError={onError}
-      >
-    </Image >
-  );
-}
+// const Thumbnail = ({amazon, data, login, photo, onError, onClick}) => {
+//   if (login === "asu" || login === "asm") {
+//     return (<Image 
+//               className="thumbnail" 
+//               src={`${amazon}${data.inspection}/${photo}.jpg`}
+//               onClick={onClick} 
+//               thumbnail={true}
+//               onError={onError}
+//                 >
+//               </Image >
+//             );
+//       }
+//   if ((data.type === 'footpath')) {
+//     if (data.asset.toLowerCase() === "kerb & channel") {
+//       return (
+//         <Image 
+//           className="thumbnail" 
+//           src={`${amazon}kerbs/${data.inspection}/${photo}.jpg`}
+//           onClick={onClick} 
+//           thumbnail={true}
+//           onError={onError}
+//           >
+//         </Image >
+//       );
+//     } else {
+//       return (
+//         <Image 
+//           className="thumbnail" 
+//           src={`${amazon}footpaths/${data.inspection}/${photo}.jpg`}
+//           onClick={onClick} 
+//           thumbnail={true}
+//           onError={onError}
+//           >
+//         </Image >
+//       );
+//     }
+//   }
+//   return (
+//     <Image 
+//       className="thumbnail" 
+//       src={`${amazon}/${photo}.jpg`}
+//       onClick={onClick} 
+//       thumbnail={true}
+//       onError={onError}
+//       >
+//     </Image >
+//   );
+// }
 
 const DefectPopup = (props) => {
 

@@ -44,7 +44,7 @@ export default function PriorityDropdown(props) {
         props.onClick([])
       } else {
         const filter = []
-        props.items.map((item) => {
+        props.items.forEach((item) => {
           filter.push(parsePriority(item));
           
         });

@@ -2,14 +2,14 @@ import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { loginContext } from '../context/loginContext.js';
-import LoginNav from '../login/LoginNav.js';
-import LoginModal from '../login/LoginModal.js'
+import LoginNav from '../login/LoginNav.jsx';
+import LoginModal from '../login/LoginModal.jsx'
 import {LoginFetch, apiRequest} from '../api/Api.js';
 import ProjectNav from './ProjectNav.js';
 import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
-import AdminModal from '../modals/AdminModal.js';
-import {CustomLink} from "../components/Components.js";
+import AdminModal from '../modals/AdminModal.jsx';
+import {CustomLink} from "../components/Components.jsx";
 import SearchBar from './SearchBar.js'
 
 export default function Navigation(props) {
@@ -57,7 +57,7 @@ export default function Navigation(props) {
 
   useEffect(() => {
     updateLogin(localLogin.user, localLogin.token);
-  }, [localLogin]);
+  }, [localLogin, updateLogin]);
 
   /**
    * Gets the development or production host 

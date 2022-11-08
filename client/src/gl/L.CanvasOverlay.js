@@ -111,12 +111,12 @@ L.CanvasOverlay = L.Layer.extend({
     _redraw: function () {
         if (this._userDrawFunc) {
             this._userDrawFunc(
-                                {
-                                    canvas: this._canvas,
-                                    map: this._map,
-                                    gl: this._gl,
-                                    options: this.options
-                               });
+            {
+                canvas: this._canvas,
+                map: this._map,
+                gl: this._gl,
+                options: this.options
+            });
         }
         this._frame = null;
     },

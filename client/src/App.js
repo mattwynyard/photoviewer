@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
-import {Image}  from 'react-bootstrap';
+import { Image }  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './components/ToolsMenu.css';
@@ -12,7 +12,7 @@ import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
-import {calcGCDistance} from  './util.js';
+import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
 import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
@@ -388,7 +388,7 @@ class App extends React.Component {
         //   }     
         // }
         if (this.state.objGLData.length !== 0) {
-          if (this.context.ratingActive) {
+          if (this.context.ratingActive === true) {
             this.GLEngine.mouseClick = null;
           } else {
           const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}

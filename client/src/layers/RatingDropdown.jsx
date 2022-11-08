@@ -1,6 +1,6 @@
 import { useEffect, useContext} from 'react';
 import { React, useState } from 'react';
-import {Dropdown}  from 'react-bootstrap';
+import { Dropdown }  from 'react-bootstrap';
 import { loginContext } from '../context/loginContext';
 import { PostFetch } from '../api/Fetcher';
 import {CustomSVG} from '../components/CustomSVG.js';
@@ -21,11 +21,11 @@ export default function RatingDropdown(props) {
         } else if (props.layer.surface === 'footpath') {
             setMenu(["Rating 1", "Rating 2", "Rating 3", "Rating 4", "Rating 5"]);
         }
-    }, [])
+    }, [props.layer])
 
     useEffect(() => {
         setRatingActive(active)
-    }, [active])
+    }, [active, setRatingActive])
     
     useEffect(() => {
         if (!layer) return;
@@ -38,17 +38,17 @@ export default function RatingDropdown(props) {
             }
             hideLoader();
         })
-    }, [filter, PostFetch, login, layer, showLoader, hideLoader])
+    }, [filter, login, layer, showLoader, hideLoader])
 
 
-    const getLayerData = () => {
-        if (!gl.gl.GLEngine.glData) return [];
-        if (gl.gl.GLEngine.glData.length != 0) {
-          return gl.gl.GLEngine.glData.layers[0].geometry;
-        } else {
-          return [];
-        }
-      }
+    // const getLayerData = () => {
+    //     if (!gl.gl.GLEngine.glData) return [];
+    //     if (gl.gl.GLEngine.glData.length != 0) {
+    //       return gl.gl.GLEngine.glData.layers[0].geometry;
+    //     } else {
+    //       return [];
+    //     }
+    //   }
 
     useEffect(() => {
         if (!layer) return;
@@ -69,12 +69,12 @@ export default function RatingDropdown(props) {
         } 
         else {
             if (data.length !== 0) {
-                if (!gl.gl.glData || gl.gl.glData.length == 0) return;
+                if (!gl.gl.glData || gl.gl.glData.length === 0) return;
                 gl.gl.glData.layers[0].geometry = [];
                 gl.gl.redraw(gl.gl.glData, false);
             }     
         }
-    }, [data, active, layer, gl])
+    }, [data, active, layer, gl, filter])
     
     
    const changeCheck = (e, value) => {
@@ -82,7 +82,7 @@ export default function RatingDropdown(props) {
         if (e.target.checked) {
             const filter = []
             if (layer.surface === "footpath") {
-                menu.map(item => {
+                menu.forEach(item => {
                     const s = item.replace(defaultTitle, '').replace(/\s/g, '');
                     filter.push(s)
                 })

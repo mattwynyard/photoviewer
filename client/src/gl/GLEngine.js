@@ -187,7 +187,7 @@ export default class GLEngine {
       if (data.faults.points.length !== 0) {
         fverts = data.faults.lines.concat(data.faults.points);
       } else {
-        if (data.faults.lines.length != 0) {
+        if (data.faults.lines.length !== 0) {
           fverts = [...data.faults.lines];
         } else {
           fverts = [];

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
@@ -18,19 +18,19 @@ const Main = (props) => {
   const showLoader = props.showLoader
   const [login, setLogin] = useState({user: "Login", token: null, host: host});
   const [gl, _setGL] = useState(null);
-  const [ratingActive, setRatingActive] = useState(false);
+  const [ratingActive, _setRatingActive] = useState(false);
   
-  const updateLogin = (user, token) => {
+  const updateLogin = useCallback((user, token) => {
     setLogin({user: user, token: token, host: host});
-  }
+  }, [])
 
   const setGL = (_gl) => {
     _setGL({gl: _gl});
   }
 
-  // const setRatingActive = (active) => {
-  //   _setRatingActive({ratingActive: active});
-  // }
+  const setRatingActive = useCallback((active) => {
+    _setRatingActive({ratingActive: active});
+  }, [])
 
 
   return (
