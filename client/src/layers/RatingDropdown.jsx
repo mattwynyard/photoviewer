@@ -15,6 +15,7 @@ export default function RatingDropdown(props) {
     const defaultTitle = "Rating";
 
     useEffect(() => {
+        if (!props.layer.centreline) return;
         setLayer(props.layer)
         if (props.layer.surface === 'road') {
             setMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
