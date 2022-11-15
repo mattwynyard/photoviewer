@@ -20,7 +20,7 @@ import {FilterButton} from './filters/FilterButton.js';
 import { apiRequest } from "./api/Api.js"
 import { loginContext} from './context/loginContext';
 import { DefectPopup } from './components/DefectPopup'
-import { incrementPhoto } from  './util.js';
+import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
 
 const DIST_TOLERANCE = 20; //metres 
@@ -130,24 +130,21 @@ class App extends React.Component {
     this.leafletMap.addControl(this.position);
     this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
-    // let user = window.sessionStorage.getItem("user") 
-    // if (user) {
-    //   if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
-    //     this.removeLayer(this.state.activeLayer)
-    //   } else {
-    //     if(this.state.objGLData.length !== 0) {
-    //       // if (this.state.activeLayer.centreline) {
-    //       //   this.roadLinesRef.current.loadCentrelines(this.state.activeLayer.code); 
-    //       // }
-    //       let body = this.filterLayer(this.state.activeLayer, true);
-    //       if (body) {
-    //         body.then((body) => {
-    //           this.addGLGeometry(body.points, body.lines, body.type, true);
-    //         });
-    //       }
-    //     }
-    //   }
-    // } 
+    let user = window.sessionStorage.getItem("user") 
+    if (user) {
+      if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
+        this.removeLayer(this.state.activeLayer)
+      } else {
+        if(this.state.objGLData.length !== 0) {
+          let body = this.filterLayer(this.state.activeLayer, true);
+          if (body) {
+            body.then((body) => {
+              this.addGLGeometry(body.points, body.lines, body.type, true);
+            });
+          }
+        }
+      }
+    } 
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -456,16 +453,18 @@ class App extends React.Component {
       let polyline = this.state.rulerPolyline
       if (polyline !== null) {
         let points = polyline.getLatLngs();
-        
+        let distance = 0;
         if (points.length === 1) {
           points.push(e.latlng);
           polyline.setLatLngs(points);
-          this.calculateDistance(points);
+          distance = calculateDistance(points);
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
-          this.calculateDistance(points);
+          distance = calculateDistance(points);
+          
         }
+        this.setState({rulerDistance: distance});
       }   
     }
   }
@@ -478,7 +477,8 @@ class App extends React.Component {
         let points = polyline.getLatLngs();
         points.pop();
         polyline.setLatLngs(points);
-        this.calculateDistance(points);
+        const distance = calculateDistance(points);
+        this.setState({rulerDistance: distance});
       }
     } else if (e.key === "Delete") {
       let polyline = this.state.rulerPolyline;
@@ -499,27 +499,6 @@ class App extends React.Component {
     } else {
       return;
     }
-  }
-
-  calculateDistance(points) {
-    const R = 6371 * 1000; // metres
-    let metres = 0;
-    for (let i = 0; i < points.length - 1; i++) {
-      let lat1 = points[i].lat * Math.PI/180; //in radians
-      let lat2 = points[i + 1].lat * Math.PI/180;
-      let lng1 = points[i].lng * Math.PI/180; //in radians
-      let lng2 = points[i + 1].lng * Math.PI/180;
-      let deltaLat = (lat2-lat1);
-      let deltaLng = (lng2-lng1);
-      let a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-              Math.cos(lat1) * Math.cos(lat2) *
-              Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
-      let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      let d = R * c; // in metres
-      metres += d;
-    }
-    let total = Number((metres).toFixed(0));
-    this.setState({rulerDistance: total});
   }
 
   /**
@@ -572,7 +551,6 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
-    //this.roadLinesRef.current.reset();
     this.setState({
       activeProject: null,
       projects: [],
@@ -959,7 +937,6 @@ class App extends React.Component {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
-      //this.roadLinesRef.current.reset();
       let layers = this.state.activeLayers;
       if (project) {
         for(var i = 0; i < layers.length; i += 1) {     

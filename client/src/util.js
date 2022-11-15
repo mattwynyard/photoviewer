@@ -9,6 +9,27 @@ const incrementPhoto = (photo, increment) => {
   return prefix + newSuffix;
 }
 
+const calculateDistance = (points) => {
+  const R = 6371 * 1000; // metres
+  let metres = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    let lat1 = points[i].lat * Math.PI/180; //in radians
+    let lat2 = points[i + 1].lat * Math.PI/180;
+    let lng1 = points[i].lng * Math.PI/180; //in radians
+    let lng2 = points[i + 1].lng * Math.PI/180;
+    let deltaLat = (lat2-lat1);
+    let deltaLng = (lng2-lng1);
+    let a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    let d = R * c; // in metres
+    metres += d;
+  }
+  return Number((metres).toFixed(0)); //total metres
+
+}
+
 
 // The download function takes a CSV string, the filename and mimeType as parameters
 // Scroll/look down at the bottom of this snippet to see how download is called
@@ -202,4 +223,5 @@ const RDP = (l, eps) => {
   }
 
   export {incrementPhoto, RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
-    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt}
+    scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt,
+    calculateDistance}
