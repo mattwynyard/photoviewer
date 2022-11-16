@@ -4,7 +4,7 @@ import { Image }  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './components/ToolsMenu.css';
-import Navigation from './navigation/Navigation.js'
+import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
@@ -22,7 +22,6 @@ import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
-import { PostFetch } from './api/Fetcher';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -91,14 +90,11 @@ class App extends React.Component {
       photoArray: null,
       projectMode: null, //the type of project being displayed footpath or road     
       search: null,
-      district: null,
-      spinner: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null, 
       filtered: false ,
       dataActive: false,
-      mapBoxKey: null,
       showPhotoViewer: false,
       imageUrl: null
     }; 
@@ -159,10 +155,6 @@ class App extends React.Component {
   
       } 
     this.removeEventListeners(); 
-  }
-
-  setMapBox = (token) => {
-    this.setState({mapBoxKey: token})
   }
 
   setMapMode = (mode) => {
@@ -518,7 +510,7 @@ class App extends React.Component {
       this.setState({mode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
-      + this.state.mapBoxKey});
+      + this.context.mapBoxKey.mapBoxKey});
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
@@ -573,11 +565,9 @@ class App extends React.Component {
       faultData: [],
       inspections: [],
       bucket: null,
-      district: null,
       priorityMode: null,
       projectMode: null,
       token: null,
-      mapBoxKey: null,
       dataActive: false,
       mapMode: "map"
     }, () => {
@@ -896,8 +886,9 @@ class App extends React.Component {
         return;
       } 
     let district = await apiRequest(this.context.login, request, "/district");
-    if (district.error) return; 
-    request = {project: project, query: null}
+    if (district.error) return;
+    this.context.setDistrict(district); 
+    request = {project: project, query: null};
     let filter = await apiRequest(this.context.login, request, "/filterData");
     if (filter.error) return; 
     let storeFilter = await apiRequest(this.context.login, request, "/filterData");
@@ -921,7 +912,6 @@ class App extends React.Component {
       filters: filters,
       activeLayer: project,
       activeLayers: layers,
-      district: district,
       inspections: inspections,
       activeProject: projectCode,
       projectMode: mode,
@@ -968,7 +958,7 @@ class App extends React.Component {
           activeLayer: null,
           ages: layers,
           mapMode: "map",
-          district: null }, () => {
+          }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
           }
@@ -1276,9 +1266,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
-          district={this.state.district}
           setDataActive={this.setDataActive} //-> data table
-          mapbox={this.setMapBox}
           >  
         </Navigation>   
         <div className="appcontainer">     

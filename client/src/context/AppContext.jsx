@@ -17,7 +17,9 @@ export const AppContextProvider = ({children}) => {
 
     const [login, setLogin] = useState({user: "Login", token: null, host: host});
     const [gl, _setGL] = useState(null);
+    const [mapBoxKey, _setMapBoxKey] = useState(null);
     const [ratingActive, _setRatingActive] = useState(false);
+    const [district, _setDistrict] = useState(null)
     const loader = document.querySelector('.loader');
     const loading = document.querySelector('.loading');
 
@@ -30,6 +32,10 @@ export const AppContextProvider = ({children}) => {
         loader.classList.add('loader--hide');
         loading.classList.add('loading--hide');
     }
+
+    const setMapBoxKey = useCallback((token) => {
+        _setMapBoxKey({mapBoxKey: token})
+      }, [])
     
     const updateLogin = useCallback((user, token) => {
       setLogin({user: user, token: token, host: host});
@@ -43,6 +49,10 @@ export const AppContextProvider = ({children}) => {
       _setRatingActive(active);
     }, [])
 
+    const setDistrict = useCallback((district) => {
+      _setDistrict(district);
+    }, [])
+
     const values = {
         login,
         updateLogin,
@@ -51,8 +61,11 @@ export const AppContextProvider = ({children}) => {
         ratingActive,
         setRatingActive,
         hideLoader,
-        showLoader
-
+        showLoader,
+        mapBoxKey,
+        setMapBoxKey,
+        district,
+        setDistrict
     }
 
     return (
