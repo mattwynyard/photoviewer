@@ -18,7 +18,7 @@ import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
 //import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
-import { appContext} from './context/appContext';
+import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
@@ -37,7 +37,7 @@ const DefaultIcon = L.icon({
 }); 
 
 class App extends React.Component {
-  static contextType = appContext;
+  static contextType = AppContext;
 
   constructor(props) {
     super(props);

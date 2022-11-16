@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 import {Navbar, Nav}  from 'react-bootstrap';
 import CustomNav from './components/CustomNav.js';
 import Chart from 'chart.js';
-import { appContext } from './context/appContext';
+import { AppContext } from './context/AppContext';
 
 const NO_COLORS = 9;
 
 class Report extends React.Component {
-    static contextType = appContext;
+    static contextType = AppContext;
     constructor(props) {
         super(props);    
     }

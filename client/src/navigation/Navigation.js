@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
-import { appContext } from '../context/appContext.js';
+import { AppContext } from '../context/AppContext.js';
 import LoginNav from '../login/LoginNav.jsx';
 import LoginModal from '../login/LoginModal.jsx'
 import {LoginFetch, apiRequest} from '../api/Api.js';
@@ -23,7 +23,7 @@ export default function Navigation(props) {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin} = useContext(appContext);
+  const {login, updateLogin} = useContext(AppContext);
 
   const showModal = () => {
     setShow(true)

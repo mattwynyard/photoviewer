@@ -1,12 +1,12 @@
 import { useEffect, useContext} from 'react';
 import { React, useState } from 'react';
 import { Dropdown }  from 'react-bootstrap';
-import { appContext } from '../context/appContext';
+import { AppContext } from '../context/AppContext';
 import { PostFetch } from '../api/Fetcher';
 import {CustomSVG} from '../components/CustomSVG.js';
 
 export default function RatingDropdown(props) {
-    const { gl, login, hideLoader, showLoader, setRatingActive } = useContext(appContext);
+    const { gl, login, hideLoader, showLoader, setRatingActive } = useContext(AppContext);
     const [menu, setMenu] = useState(null);
     const [filter, setFilter] = useState([]);
     const [data, setData] = useState([]);
