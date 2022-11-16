@@ -29,7 +29,7 @@ const Main = (props) => {
   }
 
   const setRatingActive = useCallback((active) => {
-    _setRatingActive({ratingActive: active});
+    _setRatingActive(active);
   }, [])
 
 

@@ -22,6 +22,7 @@ import { loginContext} from './context/loginContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
+import { PostFetch } from './api/Fetcher';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -346,12 +347,14 @@ class App extends React.Component {
     switch(this.state.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
-        // if (this.roadLinesRef.current.isActive()) {
-        //   let query = {
-        //     lat: e.latlng.lat,
-        //     lng: e.latlng.lng
-        //   }
-        //   let response = await Fetcher(this.context.login, this.state.activeLayer.code, query);
+        if (this.context.ratingActive) {
+           let body = {
+            user: this.context.login.user,
+            lat: e.latlng.lat,
+            lng: e.latlng.lng,
+            layer: this.state.activeLayer
+          }
+        //let response = await PostFetch(this.context.login.host + "/carriageway", this.context.login.token, body);
         //   let geometry = JSON.parse(response.data.geojson);
         //   let erp = {
         //     start: response.data.starterp,
@@ -383,15 +386,16 @@ class App extends React.Component {
         //     let key = {id: response.data.id, carriage: response.data.carriageid}
         //     this.setState({notificationKey: key});
         //   }     
-        // }
-        if (this.state.objGLData.length !== 0) {
-          if (this.context.ratingActive === true) {
-            this.GLEngine.mouseClick = null;
-          } else {
-          const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
-          this.GLEngine.mouseClick = {...click};
-          this.GLEngine.redraw(this.GLEngine.glData, false);     
-          }
+        } else {
+          if (this.state.objGLData.length !== 0) {
+            if (this.context.ratingActive === true) {
+              this.GLEngine.mouseClick = null;
+            } else {
+            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+            this.GLEngine.mouseClick = {...click};
+            this.GLEngine.redraw(this.GLEngine.glData, false);     
+            }
+          }       
         }
         break;
       case 'Street':
