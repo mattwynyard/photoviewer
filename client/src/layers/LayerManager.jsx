@@ -1,9 +1,9 @@
 import { React, useContext  } from 'react';
-import { loginContext } from '../context/loginContext'
+import { appContext } from '../context/appContext'
 import { LayerCard } from './LayerCard';
 
 const LayerManager = (props) => {
-    const { login, showLoader, hideLoader} = useContext(loginContext);
+    const { login, showLoader, hideLoader} = useContext(appContext);
 
     if (props.layer) {
         return (

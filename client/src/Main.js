@@ -2,7 +2,7 @@ import React, {useCallback, useState} from 'react';
 import { Switch, Route, BrowserRouter as Router} from 'react-router-dom';
 import App from './App.js';
 import Report from './Report.js';
-import { loginContext } from './context/loginContext';
+import { appContext } from './context/appContext';
 
 const Main = (props) => {
   let host = null 
@@ -37,7 +37,7 @@ const Main = (props) => {
       <Router>
         <Switch> {/* The Switch decides which component to show based on the current URL.*/}
         
-          <loginContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, ratingActive, setRatingActive, gl}}>
+          <appContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, ratingActive, setRatingActive, gl}}>
             <Route 
               exact path='/'
               component={App}>
@@ -46,7 +46,7 @@ const Main = (props) => {
             <Route exact path='/statistics' 
               component={Report}>
             </Route>
-          </loginContext.Provider>
+          </appContext.Provider>
         </Switch>
     </Router>
   );
