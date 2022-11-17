@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import {Dropdown}  from 'react-bootstrap';
 import {haversineDistance} from  '../util.js';
-import { loginContext} from '../login/loginContext';
+import { AppContext} from '../login/AppContext';
 
 export default class Roadlines extends Component {
-  static contextType = loginContext;
+  static contextType = AppContext;
     constructor(props) {
         super(props);
         this.state = {

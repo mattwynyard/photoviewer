@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
-import { loginContext } from '../context/loginContext.js';
+import { AppContext } from '../context/AppContext';
 import LoginNav from '../login/LoginNav.jsx';
 import LoginModal from '../login/LoginModal.jsx'
 import {LoginFetch, apiRequest} from '../api/Api.js';
@@ -12,7 +12,8 @@ import AdminModal from '../modals/AdminModal.jsx';
 import {CustomLink} from "../components/Components.jsx";
 import SearchBar from './SearchBar.js'
 
-export default function Navigation(props) {
+export const Navigation = (props) => {
+
   const [show, setShow] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminTable, setAdminTable] = useState('user');
@@ -23,7 +24,11 @@ export default function Navigation(props) {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin} = useContext(loginContext);
+  const {login, updateLogin, setMapBoxKey, district } = useContext(AppContext);
+
+  useEffect(() => {
+
+  }, [])
 
   const showModal = () => {
     setShow(true)
@@ -31,10 +36,10 @@ export default function Navigation(props) {
 
   const clickLogin = async (user, password) => {
     setLoginError("")
-    let body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
+    const body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
     if (body.result) {
-      let mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
-      props.mapbox(mapbox);
+      const mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
+      setMapBoxKey(mapbox);
       window.sessionStorage.setItem('token', body.token);
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);
@@ -219,7 +224,7 @@ export default function Navigation(props) {
               >About</NavDropdown.Item>             
             </NavDropdown>         
           </Nav>
-          <SearchBar centre={props.centre} district={props.district}></SearchBar> 
+          <SearchBar centre={props.centre} district={district}></SearchBar> 
           <LoginNav 
             user={login.user} 
             onClick={isLoggedIn ? clickLogout: showModal}

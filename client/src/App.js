@@ -4,7 +4,7 @@ import { Image }  from 'react-bootstrap';
 import L from 'leaflet';
 import './App.css';
 import './components/ToolsMenu.css';
-import Navigation from './navigation/Navigation.js'
+import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
@@ -18,18 +18,14 @@ import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
 //import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
-import { loginContext} from './context/loginContext';
+import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
-import { PostFetch } from './api/Fetcher';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
-const MAP_CENTRE = {
-  lat: -41.2728,
-  lng: 173.2995,
-}
+
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -37,17 +33,16 @@ const DefaultIcon = L.icon({
 }); 
 
 class App extends React.Component {
-  static contextType = loginContext;
+  static contextType = AppContext;
 
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
-      location: MAP_CENTRE,
-      admin : false,
       ruler: false,
       rulerOrigin: null,
       rulerPolyline: null,
       rulerDistance: 0,
+      showRuler: false,
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
       priorities: [], 
@@ -55,11 +50,9 @@ class App extends React.Component {
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
       inspections: [],
-      zIndex: 900,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
-      mode: "map", //for satellite thumbnail
       mapMode: "map",
       zoom: 8,
       centreData: [],
@@ -69,8 +62,7 @@ class App extends React.Component {
       carMarker: [], //position of current image in video
       layers: [],
       show: false,
-      showVideo: false,
-      showRuler: false,
+      showVideo: false,  
       showAdmin: false,
       modalPhoto: null,
       popover: false,
@@ -91,14 +83,11 @@ class App extends React.Component {
       photoArray: null,
       projectMode: null, //the type of project being displayed footpath or road     
       search: null,
-      district: null,
-      spinner: false,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
       notificationKey: null, 
       filtered: false ,
       dataActive: false,
-      mapBoxKey: null,
       showPhotoViewer: false,
       imageUrl: null
     }; 
@@ -117,6 +106,20 @@ class App extends React.Component {
     this.selectedIndex = null;
   }
 
+  /**
+   * Retores mapbox token when browser refreshes as lost from context
+   * @param {logged in user} user 
+   * @returns {mapBox token}|
+   */
+  async restore (user) {
+      if (!user) return
+      const token = window.sessionStorage.getItem("token") 
+      const host = window.sessionStorage.getItem("osmiumhost") 
+      const mapbox = await apiRequest({user: user, token: token, host: host}, 
+        {project: null, query: null}, "/mapbox");
+      return mapbox
+  }
+
   componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
@@ -129,9 +132,13 @@ class App extends React.Component {
     this.distance = 0;
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
-    this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
+    this.position.updateHTML(this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
-    let user = window.sessionStorage.getItem("user") 
+    const user = window.sessionStorage.getItem("user") 
+    const mapbox = this.restore(user)
+    if (mapbox) {
+      this.context.setMapBoxKey(mapbox)
+    }
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.state.activeLayer)
@@ -145,7 +152,8 @@ class App extends React.Component {
           }
         }
       }
-    } 
+    }
+     
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -159,10 +167,6 @@ class App extends React.Component {
   
       } 
     this.removeEventListeners(); 
-  }
-
-  setMapBox = (token) => {
-    this.setState({mapBoxKey: token})
   }
 
   setMapMode = (mode) => {
@@ -513,17 +517,17 @@ class App extends React.Component {
     if (this.context.login.user === "Login") {
       return;
     }
-    if (this.state.mode === "map") {
-      this.setState({zIndex: 1000});
-      this.setState({mode: "sat"});
+    if (this.state.mapMode === "map") {
+      if (!this.context.mapBoxKey.mapBoxKey) return;
+      this.setState({mapMode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
+
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
-      + this.state.mapBoxKey});
+      + this.context.mapBoxKey.mapBoxKey});
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
-      this.setState({zIndex: 900});
-      this.setState({mode: "map"});
+      this.setState({mapMode: "map"});
       this.setState({osmThumbnail: "satellite64.png"});
       this.setState({url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"});
       this.setState({attribution: '&copy; <a href="https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors'})
@@ -543,7 +547,8 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage = () => { 
-    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon, this.state.image);
+    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, 
+      this.state.activeLayer.amazon, this.state.image);
   }
 
   /**
@@ -555,10 +560,10 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
+    window.sessionStorage.removeItem("mapbox");
     this.setState({
       activeProject: null,
       projects: [],
-      login: "Login",
       priorities: [],
       objGLData: [],
       activeLayers: [],
@@ -573,11 +578,7 @@ class App extends React.Component {
       faultData: [],
       inspections: [],
       bucket: null,
-      district: null,
-      priorityMode: null,
       projectMode: null,
-      token: null,
-      mapBoxKey: null,
       dataActive: false,
       mapMode: "map"
     }, () => {
@@ -800,11 +801,11 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArhivePhoto(e) {
-    const response = await fetch("https://" + this.state.host + '/archive', {
+    const response = await fetch("https://" + this.context.login.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -844,11 +845,11 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArchiveData(photo) {
-    const response = await fetch("https://" + this.state.host + '/archiveData', {
+    const response = await fetch("https://" + this.context.login.host + '/archiveData', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -883,7 +884,7 @@ class App extends React.Component {
     this.reset();
   }
 
-  loadLayer = async (mode, project) => {  
+  loadLayer = async (projectMode, project) => {  
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
@@ -896,8 +897,9 @@ class App extends React.Component {
         return;
       } 
     let district = await apiRequest(this.context.login, request, "/district");
-    if (district.error) return; 
-    request = {project: project, query: null}
+    if (district.error) return;
+    this.context.setDistrict(district); 
+    request = {project: project, query: null};
     let filter = await apiRequest(this.context.login, request, "/filterData");
     if (filter.error) return; 
     let storeFilter = await apiRequest(this.context.login, request, "/filterData");
@@ -921,11 +923,10 @@ class App extends React.Component {
       filters: filters,
       activeLayer: project,
       activeLayers: layers,
-      district: district,
       inspections: inspections,
       activeProject: projectCode,
-      projectMode: mode,
-      priorityMode: mode === "road" ? "Priority": "Grade",
+      projectMode: projectMode,
+      priorityMode: projectMode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
@@ -968,7 +969,7 @@ class App extends React.Component {
           activeLayer: null,
           ages: layers,
           mapMode: "map",
-          district: null }, () => {
+          }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
           }
@@ -1079,10 +1080,10 @@ class App extends React.Component {
 
   async sendData(project, data, endpoint) {
     if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + endpoint, {
+      await fetch('https://' + this.context.login.host + endpoint, {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
@@ -1156,7 +1157,7 @@ class App extends React.Component {
         await fetch('https://' + this.state.host + '/roads', {
         method: 'POST',
         headers: {
-          "authorization": this.state.token,
+          "authorization": this.context.login.token,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
@@ -1264,7 +1265,7 @@ class App extends React.Component {
   }
 
   render() {
-    const centre = [this.state.location.lat, this.state.location.lng];
+    const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
     return ( 
       <> 
         <Navigation 
@@ -1276,9 +1277,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
-          district={this.state.district}
           setDataActive={this.setDataActive} //-> data table
-          mapbox={this.setMapBox}
           >  
         </Navigation>   
         <div className="appcontainer">     
@@ -1334,7 +1333,6 @@ class App extends React.Component {
               <TileLayer className="mapLayer"
                 attribution={this.state.attribution}
                 url={this.state.url}
-                zIndex={998}
                 maxNativeZoom={19}
                 maxZoom={22}
               />

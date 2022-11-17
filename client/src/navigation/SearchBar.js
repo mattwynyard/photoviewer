@@ -4,9 +4,10 @@ import './Navigation.css'
 import L from 'leaflet';
 
 export default class SearchBar extends Component {
-
+    
     constructor(props) {
         super(props);
+        console.log(props.district)
         this.state = {
             serach: null,
         }
