@@ -109,7 +109,7 @@ class App extends React.Component {
   /**
    * Retores mapbox token when browser refreshes as lost from context
    * @param {logged in user} user 
-   * @returns mapBox token
+   * @returns {mapBox token}|
    */
   async restore (user) {
       if (!user) return
@@ -547,7 +547,8 @@ class App extends React.Component {
    * @param {event} e 
    */
   clickImage = () => { 
-    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, this.state.activeLayer.amazon, this.state.image);
+    this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, 
+      this.state.activeLayer.amazon, this.state.image);
   }
 
   /**
@@ -559,10 +560,10 @@ class App extends React.Component {
     window.sessionStorage.removeItem("projects");
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
+    window.sessionStorage.removeItem("mapbox");
     this.setState({
       activeProject: null,
       projects: [],
-      login: "Login",
       priorities: [],
       objGLData: [],
       activeLayers: [],
@@ -578,7 +579,6 @@ class App extends React.Component {
       inspections: [],
       bucket: null,
       projectMode: null,
-      token: null,
       dataActive: false,
       mapMode: "map"
     }, () => {
@@ -801,11 +801,11 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArhivePhoto(e) {
-    const response = await fetch("https://" + this.state.host + '/archive', {
+    const response = await fetch("https://" + this.context.login.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -845,11 +845,11 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArchiveData(photo) {
-    const response = await fetch("https://" + this.state.host + '/archiveData', {
+    const response = await fetch("https://" + this.context.login.host + '/archiveData', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
       },
@@ -1080,10 +1080,10 @@ class App extends React.Component {
 
   async sendData(project, data, endpoint) {
     if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.state.host + endpoint, {
+      await fetch('https://' + this.context.login.host + endpoint, {
       method: 'POST',
       headers: {
-        "authorization": this.state.token,
+        "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
@@ -1157,7 +1157,7 @@ class App extends React.Component {
         await fetch('https://' + this.state.host + '/roads', {
         method: 'POST',
         headers: {
-          "authorization": this.state.token,
+          "authorization": this.context.login.token,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },

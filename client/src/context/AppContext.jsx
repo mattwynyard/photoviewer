@@ -25,6 +25,7 @@ export const AppContextProvider = ({children}) => {
     const [mapBoxKey, _setMapBoxKey] = useState(null);
     const [ratingActive, _setRatingActive] = useState(false);
     const [district, _setDistrict] = useState(null)
+    const [priorityMode, _setpriorityMode] = useState(null)
     const loader = document.querySelector('.loader');
     const loading = document.querySelector('.loading');
 
