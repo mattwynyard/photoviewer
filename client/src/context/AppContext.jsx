@@ -3,6 +3,11 @@ export const AppContext = createContext(null);
 
 export const AppContextProvider = ({children}) => {
 
+    const MAP_CENTRE = {
+      lat: -41.2728,
+      lng: 173.2995,
+    }
+
     const host = useMemo(() => {
         if (process.env.NODE_ENV === "development") {
             return "localhost:8443";
@@ -65,7 +70,8 @@ export const AppContextProvider = ({children}) => {
         mapBoxKey,
         setMapBoxKey,
         district,
-        setDistrict
+        setDistrict,
+        MAP_CENTRE
     }
 
     return (

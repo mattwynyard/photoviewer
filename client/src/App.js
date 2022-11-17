@@ -25,10 +25,7 @@ import { LayerManager } from './layers/LayerManager';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
-const MAP_CENTRE = {
-  lat: -41.2728,
-  lng: 173.2995,
-}
+
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
   iconSize: [16, 16],
@@ -41,12 +38,11 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
-      location: MAP_CENTRE,
-      admin : false,
       ruler: false,
       rulerOrigin: null,
       rulerPolyline: null,
       rulerDistance: 0,
+      showRuler: false,
       priorityDropdown: null,
       priorityMode: "Priority", //whether we use priority or grade
       priorities: [], 
@@ -54,11 +50,9 @@ class App extends React.Component {
       filterRMClass: [],
       rmclass: [], //immutable array for different rmclasses used for dropdown items
       inspections: [],
-      zIndex: 900,
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
-      mode: "map", //for satellite thumbnail
       mapMode: "map",
       zoom: 8,
       centreData: [],
@@ -68,8 +62,7 @@ class App extends React.Component {
       carMarker: [], //position of current image in video
       layers: [],
       show: false,
-      showVideo: false,
-      showRuler: false,
+      showVideo: false,  
       showAdmin: false,
       modalPhoto: null,
       popover: false,
@@ -113,6 +106,20 @@ class App extends React.Component {
     this.selectedIndex = null;
   }
 
+  /**
+   * Retores mapbox token when browser refreshes as lost from context
+   * @param {logged in user} user 
+   * @returns mapBox token
+   */
+  async restore (user) {
+      if (!user) return
+      const token = window.sessionStorage.getItem("token") 
+      const host = window.sessionStorage.getItem("osmiumhost") 
+      const mapbox = await apiRequest({user: user, token: token, host: host}, 
+        {project: null, query: null}, "/mapbox");
+      return mapbox
+  }
+
   componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.initializeGL();
@@ -125,9 +132,13 @@ class App extends React.Component {
     this.distance = 0;
     this.position = L.positionControl();
     this.leafletMap.addControl(this.position);
-    this.position.updateHTML(MAP_CENTRE.lat, MAP_CENTRE.lng)
+    this.position.updateHTML(this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
-    let user = window.sessionStorage.getItem("user") 
+    const user = window.sessionStorage.getItem("user") 
+    const mapbox = this.restore(user)
+    if (mapbox) {
+      this.context.setMapBoxKey(mapbox)
+    }
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.state.activeLayer)
@@ -141,7 +152,8 @@ class App extends React.Component {
           }
         }
       }
-    } 
+    }
+     
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -505,17 +517,17 @@ class App extends React.Component {
     if (this.context.login.user === "Login") {
       return;
     }
-    if (this.state.mode === "map") {
-      this.setState({zIndex: 1000});
-      this.setState({mode: "sat"});
+    if (this.state.mapMode === "map") {
+      if (!this.context.mapBoxKey.mapBoxKey) return;
+      this.setState({mapMode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
+
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
       + this.context.mapBoxKey.mapBoxKey});
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
-      this.setState({zIndex: 900});
-      this.setState({mode: "map"});
+      this.setState({mapMode: "map"});
       this.setState({osmThumbnail: "satellite64.png"});
       this.setState({url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"});
       this.setState({attribution: '&copy; <a href="https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors'})
@@ -565,7 +577,6 @@ class App extends React.Component {
       faultData: [],
       inspections: [],
       bucket: null,
-      priorityMode: null,
       projectMode: null,
       token: null,
       dataActive: false,
@@ -873,7 +884,7 @@ class App extends React.Component {
     this.reset();
   }
 
-  loadLayer = async (mode, project) => {  
+  loadLayer = async (projectMode, project) => {  
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
@@ -914,8 +925,8 @@ class App extends React.Component {
       activeLayers: layers,
       inspections: inspections,
       activeProject: projectCode,
-      projectMode: mode,
-      priorityMode: mode === "road" ? "Priority": "Grade",
+      projectMode: projectMode,
+      priorityMode: projectMode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
@@ -1254,7 +1265,7 @@ class App extends React.Component {
   }
 
   render() {
-    const centre = [this.state.location.lat, this.state.location.lng];
+    const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
     return ( 
       <> 
         <Navigation 
@@ -1322,7 +1333,6 @@ class App extends React.Component {
               <TileLayer className="mapLayer"
                 attribution={this.state.attribution}
                 url={this.state.url}
-                zIndex={998}
                 maxNativeZoom={19}
                 maxZoom={22}
               />
