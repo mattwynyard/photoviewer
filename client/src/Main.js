@@ -4,13 +4,13 @@ import App from './App.js';
 import Report from './Report.js';
 import { AppContextProvider } from './context/AppContext';
 
+
 const Main = () => {
 
   return (
       <Router>
-        <Switch> {/* The Switch decides which component to show based on the current URL.*/}
+        <Switch> 
           <AppContextProvider>
-          {/* <AppContext.Provider value={{login, updateLogin, hideLoader, showLoader, setGL, ratingActive, setRatingActive, gl}}> */}
             <Route 
               exact path='/'
               component={App}>
@@ -19,9 +19,8 @@ const Main = () => {
               component={Report}>
             </Route>
           </AppContextProvider>
-          {/* </AppContext.Provider> */}
         </Switch>
-    </Router>
+      </Router>
   );
 }
 export default Main;

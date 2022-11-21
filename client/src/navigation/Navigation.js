@@ -26,10 +26,6 @@ export const Navigation = (props) => {
   const [showTerms, setShowTerms] = useState(false);
   const {login, updateLogin, setMapBoxKey, district } = useContext(AppContext);
 
-  useEffect(() => {
-
-  }, [])
-
   const showModal = () => {
     setShow(true)
   }

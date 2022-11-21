@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal }  from 'react-bootstrap';
-import { Button } from 'antd';
+import { Modal, Button }  from 'react-bootstrap';
+//import { Button } from 'antd';
 import { pad, incrementPhoto } from  '../util.js';
 import { FetchHead } from '../api/FetchHead'
 
@@ -164,7 +164,7 @@ export default class PhotoModal extends React.Component {
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={this.copy} 
-                    >Copy
+                    >{"Copy"}
                   </Button> 
                   </div>     
               </div>

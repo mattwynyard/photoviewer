@@ -16,12 +16,14 @@ import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
 import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
-//import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
+import { setLayer } from './state/reducers/activeLayerSlice'
+import { store } from './state/store'
+import { connect } from 'react-redux'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -31,12 +33,14 @@ const DefaultIcon = L.icon({
   iconSize: [16, 16],
   iconAnchor: [8, 8]
 }); 
+const dispatch = store.dispatch
 
 class App extends React.Component {
   static contextType = AppContext;
-
+  
   constructor(props) {
     super(props);
+    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       ruler: false,
       rulerOrigin: null,
@@ -144,7 +148,7 @@ class App extends React.Component {
         this.removeLayer(this.state.activeLayer)
       } else {
         if(this.state.objGLData.length !== 0) {
-          let body = this.filterLayer(this.state.activeLayer, true);
+          const body = this.filterLayer(this.state.activeLayer, true);
           if (body) {
             body.then((body) => {
               this.addGLGeometry(body.points, body.lines, body.type, true);
@@ -293,6 +297,9 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
+    const mapStateToProps = state => ({
+      activelayer: state.activeLayer
+  });
     if (this.state.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
@@ -1197,8 +1204,8 @@ class App extends React.Component {
   }
 
   selectLayer(e, index) {
-    console.log(this.state.activeLayers[index]);
     this.setState({activeLayer: this.state.activeLayers[index]});
+    dispatch(setLayer(this.state.activeLayers[index]))
   }
 
   updateFilter = (filter) => {
@@ -1408,7 +1415,19 @@ class App extends React.Component {
   }
   
 }
-export default App;
+
+const mapStateToProps = state => ({
+  activeLayer: state.activeLayer
+})
+
+const mapDispatchToProps = {
+  setLayer,
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(App);
 
 
   // async reverseLookup(data) {
