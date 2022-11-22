@@ -95,6 +95,7 @@ class App extends React.Component {
       showPhotoViewer: false,
       imageUrl: null
     }; 
+    this.selectLayer= this.selectLayer.bind(this)
     this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -297,9 +298,6 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
-    const mapStateToProps = state => ({
-      activelayer: state.activeLayer
-  });
     if (this.state.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
@@ -1203,9 +1201,12 @@ class App extends React.Component {
     navigator.clipboard.writeText(position);
   }
 
-  selectLayer(e, index) {
-    this.setState({activeLayer: this.state.activeLayers[index]});
-    dispatch(setLayer(this.state.activeLayers[index]))
+  selectLayer(projectCode) {
+    const index = this.state.activeLayers.findIndex((layer) => {
+      return layer.code === projectCode.code
+    });
+    //this.setState({activeLayer: this.state.activeLayers[index]});
+    //dispatch(setLayer(this.state.activeLayers[index]))
   }
 
   updateFilter = (filter) => {
@@ -1278,7 +1279,8 @@ class App extends React.Component {
         <Navigation 
           layers={this.state.activeLayers}
           remove={this.removeLayer}
-          add={this.loadLayer}
+          //add={this.loadLayer}
+          add={this.selectLayer}
           logout={this.logout}
           project={this.state.activeLayer}
           updateLogin={this.context.updateLogin}

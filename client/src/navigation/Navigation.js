@@ -1,4 +1,6 @@
 import React, { useState, useContext, useEffect, Fragment } from 'react';
+import { useDispatch, useSelector } from 'react-redux'
+import { addLayer } from '../state/reducers/layersSlice'
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { AppContext } from '../context/AppContext';
@@ -13,6 +15,8 @@ import {CustomLink} from "../components/Components.jsx";
 import SearchBar from './SearchBar.js'
 
 export const Navigation = (props) => {
+
+  const dispatch = useDispatch()
 
   const [show, setShow] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -29,6 +33,8 @@ export const Navigation = (props) => {
   const showModal = () => {
     setShow(true)
   }
+  //const layers = useSelector((state) => state.layers)
+  //console.log(layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
@@ -40,6 +46,9 @@ export const Navigation = (props) => {
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);
       setLocalLogin({user: body.user, token: body.token})
+      body.projects.forEach(element => {
+        dispatch(addLayer(element))
+      });
       buildProjects(body.projects)
       setIsLoggedIn(true)
       setShow(false); 
@@ -60,15 +69,7 @@ export const Navigation = (props) => {
     updateLogin(localLogin.user, localLogin.token);
   }, [localLogin, updateLogin]);
 
-  /**
-   * Gets the development or production host 
-   * @return {string} the host name
-   */
   useEffect(() => {
-    /**
-     * calls to server to get public projects onload
-     */
-    
      let host =  window.sessionStorage.getItem("osmiumhost");
      let user =  window.sessionStorage.getItem("user");
      const callBackendAPI = async () => {
@@ -135,7 +136,7 @@ export const Navigation = (props) => {
     if (projectMode === 'remove') { 
       props.remove(project);      
     } else {
-      props.add(projectMode, project)
+      props.add(project)
     } 
   }
 

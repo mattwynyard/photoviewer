@@ -49,7 +49,6 @@ const CustomMenu = (props) => {
 }
 
 export default function ProjectNav(props) { 
-  //console.log(props)
   if (props.projects) {
     if (props.login.user === "admin") {
       return (
