@@ -19,7 +19,6 @@ const LayerManager = (props) => {
                 classonClick={props.classonClick}
                 setDataActive={props.setDataActive} //-> data table
                 setMapMode={props.setMapMode}
-                mapMode={props.mapMode}
                 dataChecked={props.dataActive} //-> data table
                 login={login.user}
                 spin={showLoader}

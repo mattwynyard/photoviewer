@@ -25,6 +25,7 @@ export const AppContextProvider = ({children}) => {
     const [mapBoxKey, _setMapBoxKey] = useState(null);
     const [ratingActive, _setRatingActive] = useState(false);
     const [district, _setDistrict] = useState(null)
+    const [mapMode, _setMapMode] = useState("map")
     const [priorityMode, _setpriorityMode] = useState(null)
     const loader = document.querySelector('.loader');
     const loading = document.querySelector('.loading');
@@ -59,6 +60,10 @@ export const AppContextProvider = ({children}) => {
       _setDistrict(district);
     }, [])
 
+    const setMapMode = useCallback((mode) => {
+      _setMapMode(mode);
+    }, [])
+
     const values = {
         login,
         updateLogin,
@@ -72,6 +77,8 @@ export const AppContextProvider = ({children}) => {
         setMapBoxKey,
         district,
         setDistrict,
+        mapMode,
+        setMapMode,
         MAP_CENTRE
     }
 
