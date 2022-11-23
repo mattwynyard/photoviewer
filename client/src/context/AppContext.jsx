@@ -22,11 +22,13 @@ export const AppContextProvider = ({children}) => {
 
     const [login, setLogin] = useState({user: "Login", token: null, host: host});
     const [gl, _setGL] = useState(null);
+    const [leafletMap, _setLeafletMap] = useState(null);
     const [mapBoxKey, _setMapBoxKey] = useState(null);
     const [ratingActive, _setRatingActive] = useState(false);
+    const [dataActive, _setDataActive] = useState(false);
     const [district, _setDistrict] = useState(null)
     const [mapMode, _setMapMode] = useState("map")
-    const [priorityMode, _setpriorityMode] = useState(null)
+    const [projectMode, _setProjectMode] = useState(null)
     const loader = document.querySelector('.loader');
     const loading = document.querySelector('.loading');
 
@@ -52,8 +54,12 @@ export const AppContextProvider = ({children}) => {
       _setGL({gl: _gl});
     }, [])
   
-    const setRatingActive = useCallback((active) => {
-      _setRatingActive(active);
+    const setRatingActive = useCallback((isActive) => {
+      _setRatingActive(isActive);
+    }, [])
+
+    const setDataActive = useCallback((isActive) => {
+      _setDataActive(isActive);
     }, [])
 
     const setDistrict = useCallback((district) => {
@@ -64,13 +70,25 @@ export const AppContextProvider = ({children}) => {
       _setMapMode(mode);
     }, [])
 
+    const setLeafletMap = useCallback((map) => {
+      _setLeafletMap(map);
+    }, [])
+
+    const setProjectMode = useCallback((map) => {
+      _setProjectMode(map);
+    }, [])
+
     const values = {
         login,
         updateLogin,
         gl,
         setGL,
+        leafletMap,
+        setLeafletMap,
         ratingActive,
         setRatingActive,
+        dataActive,
+        setDataActive,
         hideLoader,
         showLoader,
         mapBoxKey,
@@ -79,7 +97,9 @@ export const AppContextProvider = ({children}) => {
         setDistrict,
         mapMode,
         setMapMode,
-        MAP_CENTRE
+        projectMode,
+        setProjectMode,
+        MAP_CENTRE,
     }
 
     return (

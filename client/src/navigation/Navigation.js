@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, Fragment } from 'react';
+import React, { useState, useContext, useEffect, useCallback, Fragment } from 'react';
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { AppContext } from '../context/AppContext';
@@ -24,7 +24,7 @@ export const Navigation = (props) => {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin, setMapBoxKey, district } = useContext(AppContext);
+  const {login, updateLogin, setMapBoxKey, district, setProjectMode, projectMode } = useContext(AppContext);
 
   useEffect(() => {
 
@@ -133,15 +133,16 @@ export const Navigation = (props) => {
     setProjects(obj);
   }
 
-  const handleClick = (e) => {
-    let projectMode = e.target.type;
+  const handleClick = useCallback((e) => { 
     let project = JSON.parse(e.target.title);
-    if (projectMode === 'remove') { 
+    if (e.target.type === 'remove') { 
+      setProjectMode(null);
       props.remove(project);      
     } else {
-      props.add(projectMode, project)
+      setProjectMode(e.target.type);
+      props.add(project)
     } 
-  }
+  }, [])
 
   // Admin
   const handleAdminClick = (e) => {

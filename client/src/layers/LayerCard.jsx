@@ -1,4 +1,4 @@
-import { React, useContext, useCallback } from 'react';
+import { React, useContext, useCallback, useMemo } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown';
 import PriorityDropdown from './PriorityDropdown';
@@ -9,23 +9,24 @@ import './LayerCard.css';
 
 function LayerCard(props) {
 
-    const box = document.querySelector('.layercard-datainput');
-    const { mapMode, setMapMode } = useContext(AppContext);
+    const box = useMemo(() => {
+        document.querySelector('.layercard-datainput');
+    }, [])
+    const { mapMode, setMapMode, showLoader } = useContext(AppContext);
 
-    const handleFocus = (e) => {
+    const handleFocus = useCallback(() => {
         box.blur();
-        props.spin();      
-    }
+        showLoader();      
+    }, [showLoader, box])
 
-    const handleDataChange = (e) => { 
-
+    const handleDataChange = useCallback((e) => { 
         if (e.target.checked) {
-            props.spin();   
+            showLoader();   
             props.setDataActive(true);    
         } else {
             props.setDataActive(false);
         }  
-    }
+    }, [props, showLoader])
 
     const handleVideoChange = useCallback((e) => {
         if (e.target.checked) {
@@ -33,7 +34,7 @@ function LayerCard(props) {
         } else {
             setMapMode("map");
         }
-    }, [])
+    }, [setMapMode])
 
     const handleRatingChange = (isChecked) => {
         

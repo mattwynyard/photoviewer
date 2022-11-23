@@ -16,7 +16,6 @@ import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
 import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
-//import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
@@ -44,7 +43,7 @@ class App extends React.Component {
       rulerDistance: 0,
       showRuler: false,
       priorityDropdown: null,
-      priorityMode: "Priority", //whether we use priority or grade
+      //priorityMode: "Priority", //whether we use priority or grade
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -81,7 +80,7 @@ class App extends React.Component {
       selectedGeometry: [],
       selectedCarriage: [],
       photoArray: null,
-      projectMode: null, //the type of project being displayed footpath or road     
+      //projectMode: null, //the type of project being displayed footpath or road     
       search: null,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
@@ -122,10 +121,11 @@ class App extends React.Component {
 
   componentDidMount () {
     this.leafletMap = this.map.leafletElement;
+    this.context.setLeafletMap(this.map.leafletElement);
     this.initializeGL();
     this.addEventListeners();
     if (this.state.dataActive) {
-      this.setDataActive(false)
+      this.state.setDataActive(false)
     }
     this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
@@ -173,10 +173,6 @@ class App extends React.Component {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
     this.context.setGL(this.GLEngine);
-  }
-
-  getGl() {;
-    return this.GLEngine;
   }
 
       /**
@@ -557,6 +553,7 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     window.sessionStorage.removeItem("mapbox");
+    this.context.setProjectMode(null)
     this.setState({
       activeProject: null,
       projects: [],
@@ -574,7 +571,6 @@ class App extends React.Component {
       faultData: [],
       inspections: [],
       bucket: null,
-      projectMode: null,
       dataActive: false,
     }, () => {
       this.leafletMap.invalidateSize(true);
@@ -670,7 +666,7 @@ class App extends React.Component {
                   for (let i = 0; i < data.data.length; i++) {
                     if(initialPhoto.data.photo === data.data[i].photo) {
                       parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.state.projectMode, 
+                      parent.videoCard.current.initialise(true, parent.context.projectMode, 
                         initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
                       found = true;
                       break;
@@ -879,7 +875,7 @@ class App extends React.Component {
     this.reset();
   }
 
-  loadLayer = async (projectMode, project) => {  
+  loadLayer = async (project) => {  
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
@@ -908,7 +904,7 @@ class App extends React.Component {
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
       this.setState({filterRMClass: layerBody.rmclass})  
-    }     
+    }   
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
@@ -920,8 +916,7 @@ class App extends React.Component {
       activeLayers: layers,
       inspections: inspections,
       activeProject: projectCode,
-      projectMode: projectMode,
-      priorityMode: projectMode === "road" ? "Priority": "Grade",
+      priorityMode: this.context.projectMode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
@@ -936,7 +931,7 @@ class App extends React.Component {
      removeLayer = (project) => {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
-      this.setDataActive(false)
+      this.context.setDataActive(false)
       let layers = this.state.activeLayers;
       if (project) {
         for(var i = 0; i < layers.length; i += 1) {     
@@ -952,7 +947,6 @@ class App extends React.Component {
           priorities: [],
           filterPriorities: [],
           filterRMClass: [],
-          projectMode: null,
           filterStore: [],
           filter: [],
           rmclass: [],
@@ -1191,7 +1185,6 @@ class App extends React.Component {
   }
 
   selectLayer(e, index) {
-    console.log(this.state.activeLayers[index]);
     this.setState({activeLayer: this.state.activeLayers[index]});
   }
 
@@ -1271,7 +1264,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
-          setDataActive={this.setDataActive} //-> data table
+          //setDataActive={this.setDataActive} //-> data table
           >  
         </Navigation>   
         <div className="appcontainer">     
