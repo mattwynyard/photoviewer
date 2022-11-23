@@ -665,7 +665,6 @@ module.exports = {
 
     closestCarriage: (lat, lng, isArchive) => {
         return new Promise((resolve, reject) => {
-            //console.log("lat: " + lat + " lng: " + lng);
             let sql = null;
             if (isArchive) {
                 sql = "SELECT r.id, r.roadid, r.direction, r.label, ST_AsGeoJSON(geom) as geojson, ST_Distance(geom, " 

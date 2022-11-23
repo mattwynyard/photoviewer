@@ -421,8 +421,7 @@ class App extends React.Component {
         this.vidPolyline.then((line) => {
           if (line) {
             this.setState({activeCarriage: line})
-          }
-          
+          }         
         });
       } else {
         this.vidPolyline.then((line) => {
@@ -439,7 +438,7 @@ class App extends React.Component {
           }           
         });
       }      
-      break;
+        break;
       default:
         break;
     }
@@ -461,8 +460,7 @@ class App extends React.Component {
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
-          distance = calculateDistance(points);
-          
+          distance = calculateDistance(points);       
         }
         this.setState({rulerDistance: distance});
       }   

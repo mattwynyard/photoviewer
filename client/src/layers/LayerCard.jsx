@@ -12,6 +12,7 @@ function LayerCard(props) {
     const box = useMemo(() => {
         document.querySelector('.layercard-datainput');
     }, [])
+    
     const { mapMode, setMapMode, showLoader } = useContext(AppContext);
 
     const handleFocus = useCallback(() => {
