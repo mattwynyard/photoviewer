@@ -53,7 +53,7 @@ class App extends React.Component {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
-      mapMode: "map",
+      thumbnailMode: "map",
       zoom: 8,
       centreData: [],
       priority: [],
@@ -167,10 +167,6 @@ class App extends React.Component {
   
       } 
     this.removeEventListeners(); 
-  }
-
-  setMapMode = (mode) => {
-    this.setState({mapMode: mode})
   }
 
   initializeGL() {
@@ -348,7 +344,7 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap = async (e) => {
-    switch(this.state.mapMode) {
+    switch(this.context.mapMode) {
       case 'map':
         if (!this.state.activeLayer) return;
         if (this.context.ratingActive) {
@@ -517,9 +513,9 @@ class App extends React.Component {
     if (this.context.login.user === "Login") {
       return;
     }
-    if (this.state.mapMode === "map") {
+    if (this.state.thumbnailMode === "map") {
       if (!this.context.mapBoxKey.mapBoxKey) return;
-      this.setState({mapMode: "sat"});
+      this.setState({thumbnailMode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
 
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
@@ -527,7 +523,7 @@ class App extends React.Component {
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
-      this.setState({mapMode: "map"});
+      this.setState({thumbnailMode: "map"});
       this.setState({osmThumbnail: "satellite64.png"});
       this.setState({url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"});
       this.setState({attribution: '&copy; <a href="https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors'})
@@ -580,7 +576,6 @@ class App extends React.Component {
       bucket: null,
       projectMode: null,
       dataActive: false,
-      mapMode: "map"
     }, () => {
       this.leafletMap.invalidateSize(true);
       let glData = null
@@ -968,7 +963,6 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
-          mapMode: "map",
           }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1295,8 +1289,6 @@ class App extends React.Component {
                 classfilter={this.state.filterRMClass} 
                 setDataActive={this.setDataActive} //-> data table
                 dataChecked={this.state.dataActive} //-> data table
-                setMapMode={this.state.setMapMode}
-                mapMode={this.state.mapMode}
                 updatePriority={this.updatePriority}
                 classonClick={this.updateRMClass}
                 

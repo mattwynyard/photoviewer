@@ -1,6 +1,5 @@
 import React from 'react';
-import { Modal }  from 'react-bootstrap';
-import { Button } from 'antd';
+import { Modal, Button }  from 'react-bootstrap';
 import { pad, incrementPhoto } from  '../util.js';
 import { FetchHead } from '../api/FetchHead'
 
