@@ -9,16 +9,13 @@ import './LayerCard.css';
 
 function LayerCard(props) {
 
-    const box = useMemo(() => {
-        document.querySelector('.layercard-datainput');
-    }, [])
-    
+    const box = document.querySelector('.layercard-datainput');
     const { mapMode, setMapMode, showLoader } = useContext(AppContext);
 
-    const handleFocus = useCallback(() => {
+    const handleFocus = () => {
         box.blur();
         showLoader();      
-    }, [showLoader, box])
+    }
 
     const handleDataChange = useCallback((e) => { 
         if (e.target.checked) {
@@ -27,7 +24,7 @@ function LayerCard(props) {
         } else {
             props.setDataActive(false);
         }  
-    }, [props, showLoader])
+    }, [showLoader, props])
 
     const handleVideoChange = useCallback((e) => {
         if (e.target.checked) {

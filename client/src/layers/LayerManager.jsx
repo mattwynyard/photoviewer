@@ -16,6 +16,7 @@ const LayerManager = (props) => {
                 classfilter={props.filterRMClass} 
                 classonClick={props.classonClick}
                 setDataActive={props.setDataActive} //-> data table
+                dataChecked={props.dataActive} //-> data table
             >           
             </LayerCard>
         );

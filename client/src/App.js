@@ -125,7 +125,7 @@ class App extends React.Component {
     this.initializeGL();
     this.addEventListeners();
     if (this.state.dataActive) {
-      this.state.setDataActive(false)
+      this.setState({dataActive: false})
     }
     this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
@@ -929,7 +929,7 @@ class App extends React.Component {
      removeLayer = (project) => {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
-      this.context.setDataActive(false)
+      this.setDataActive(false)
       let layers = this.state.activeLayers;
       if (project) {
         for(var i = 0; i < layers.length; i += 1) {     
@@ -1262,7 +1262,7 @@ class App extends React.Component {
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
-          //setDataActive={this.setDataActive} //-> data table
+          setDataActive={this.setDataActive} //-> data table
           >  
         </Navigation>   
         <div className="appcontainer">     
@@ -1282,7 +1282,6 @@ class App extends React.Component {
                 dataChecked={this.state.dataActive} //-> data table
                 updatePriority={this.updatePriority}
                 classonClick={this.updateRMClass}
-                
                 >
               </LayerManager>       
             </div>
