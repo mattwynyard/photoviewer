@@ -2,8 +2,8 @@
 
 let users = [];
 
-let findUserToken = (token, name) => {
-    const result = users.find(user => user.token === token);
+let findUserToken = async (token, name) => {
+    const result = await users.find(user => user.token === token);
     if (result === undefined) {
         //console.log("token not found");
         return false;

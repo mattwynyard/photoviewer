@@ -39,9 +39,9 @@ export default class VideoCard extends React.Component {
             this.setState({erp: this.state.photoArray[index].erp});
             this.setState({roadid: this.state.photoArray[index].roadid});
             if (mode === 'road') {
-                let id = this.state.photoArray[index].carriageway.split('_');
-                this.setState({carriageway: this.state.photoArray[index].carriageway});
-                this.setState({id: id[3]});
+                const id = this.state.photoArray[index].cwid;
+                this.setState({carriageway: this.state.photoArray[index].cwid});
+                this.setState({id: id});
             } else {
                 let id = this.state.photoArray[index].footpathid.split('_');
                 this.setState({id: id[3]});
@@ -77,8 +77,8 @@ export default class VideoCard extends React.Component {
         this.setState({erp: this.state.photoArray[index].erp});
         this.setState({roadid: this.state.photoArray[index].roadid});
         if (this.state.mode === 'road') {
-            let id = this.state.photoArray[index].carriageway.split('_');
-            this.setState({id: id[3]});
+            const id = this.state.photoArray[index].cwid;
+            this.setState({id: id});
         } else {
             let id = this.state.photoArray[index].footpathid.split('_');
             this.setState({id: id[3]});
@@ -139,9 +139,10 @@ export default class VideoCard extends React.Component {
         }   
     }
 
-    getLatLng(counter) {
-        let lat = this.state.photoArray[counter].latitude;
-        let lng = this.state.photoArray[counter].longitude;
+    getLatLng(index) {
+        const geojson = JSON.parse(this.state.photoArray[index].st_asgeojson);
+        const lat = geojson.coordinates[1];
+        const lng = geojson.coordinates[0];;
         return new L.LatLng(lat, lng);
     }
 

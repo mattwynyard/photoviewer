@@ -15,7 +15,7 @@ export default function RatingDropdown(props) {
     const defaultTitle = "Rating";
 
     useEffect(() => {
-        if (!props.layer.centreline) return;
+        if (!props.layer.rating) return;
         setLayer(props.layer)
         if (props.layer.surface === 'road') {
             setMenu(["Structural Rating", "Surface Rating", "Drainage Rating"]);
@@ -78,55 +78,54 @@ export default function RatingDropdown(props) {
     }, [data, active, layer, gl, filter])
     
     
-   const changeCheck = (e, value) => {
-    if (value === defaultTitle) { //root
-        if (e.target.checked) {
-            const filter = []
-            if (layer.surface === "footpath") {
-                menu.forEach(item => {
-                    const s = item.replace(defaultTitle, '').replace(/\s/g, '');
-                    filter.push(s)
-                })
+    const changeCheck = (e, value) => {
+        if (value === defaultTitle) { //root
+            if (e.target.checked) {
+                const filter = []
+                if (layer.surface === "footpath") {
+                    menu.forEach(item => {
+                        const s = item.replace(defaultTitle, '').replace(/\s/g, '');
+                        filter.push(s)
+                    })
+                } else {
+                    const s = menu[0].replace(defaultTitle, '').replace(/\s/g, '');
+                    filter.push(s) 
+                }
+                setFilter(filter)
+                setActive(true)
             } else {
-                const s = menu[0].replace(defaultTitle, '').replace(/\s/g, '');
-                filter.push(s) 
+                setFilter([])
+                setActive(false)
             }
-           
-            setFilter(filter)
-            setActive(true)
-        } else {
-            setFilter([])
-            setActive(false)
-        }
-    } else { //child
-        const _filter = [...filter]
-        if (!e.target.checked) {
-            if (filter.length <= 1) {
-                setActive(false) 
-            }
-            const index = _filter.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
-            if (index > -1) { 
-                _filter.splice(index, 1);
-                setFilter([..._filter])
-            }
-        } else {
-            if (filter.length < 1) {
-                setActive(true) 
-            }
-            if (layer.surface === "road") {
-                const f = []
-                f.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
-                setFilter(f)
+        } else { //child
+            const _filter = [...filter]
+            if (!e.target.checked) {
+                if (filter.length <= 1) {
+                    setActive(false) 
+                }
+                const index = _filter.indexOf(value.replace(defaultTitle, '').replace(/\s/g, ''));
+                if (index > -1) { 
+                    _filter.splice(index, 1);
+                    setFilter([..._filter])
+                }
             } else {
-                _filter.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
-                setFilter(_filter)
-            }
-            
+                if (filter.length < 1) {
+                    setActive(true) 
+                }
+                if (layer.surface === "road") {
+                    const f = []
+                    f.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
+                    setFilter(f)
+                } else {
+                    _filter.push(value.replace(defaultTitle, '').replace(/\s/g, ''))
+                    setFilter(_filter)
+                }
+                
+            }    
         }    
-    }    
     }
 
-    if (menu && props.layer.centreline) {
+    if (menu && props.layer.rating) {
         return (
             <div className={props.className}>
                 <Dropdown className="centreline"  drop={'end'}>

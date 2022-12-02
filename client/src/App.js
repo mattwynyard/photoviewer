@@ -88,7 +88,8 @@ class App extends React.Component {
       filtered: false ,
       dataActive: false,
       showPhotoViewer: false,
-      imageUrl: null
+      imageUrl: null,
+      video : false,
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -614,10 +615,22 @@ class App extends React.Component {
         });
       
         vidPolyline = L.polyline(coords, {
-          roadid: body.data.roadid,
-          carriageid: body.data.id,
+          class: body.data.class,
+          controller: body.data.controller,
+          cwid: body.data.cwid,
           direction: body.data.direction,
+          endm: body.data.endm,
+          hierarchy: body.data.hierarchy,
           label: body.data.label,
+          owner: body.data.owner,
+          pavement: body.data.pavement,
+          roadid: body.data.roadid,
+          roadtype: body.data.roadtype,
+          startm: body.data.startm,
+          tacode: body.data.tacode,
+          town: body.data.town,
+          width: body.data.width,
+          zone: body.data.zone,
           color: 'blue',
           weight: 4,
           opacity: 0.5,
@@ -626,7 +639,7 @@ class App extends React.Component {
         }).addTo(this.leafletMap);
         let parent = this;
         vidPolyline.on('click', function (e) {
-          if (parent.state.video) {
+          if (parent.state.video) { //todo
             let login = vidPolyline.options.login;
             let project = vidPolyline.options.project;
             let side = parent.videoCard.current.getSide();
@@ -639,25 +652,41 @@ class App extends React.Component {
               color: 'red',
               weight: 4
             });
-            let carriage = vidPolyline.options.carriageid;
-            let project = vidPolyline.options.project;
-            let login = vidPolyline.options.login;
-            let direction = vidPolyline.options.direction;
+            const login = vidPolyline.options.login;
+            const direction = vidPolyline.options.direction;
             let body = null;
-            if (direction === 'B') {
-              body = photoFunc(carriage, 'L', project, login);
+            if (direction === 'Both') {
+              const request = {
+                cwid: vidPolyline.options.cwid,
+                side: 'L', 
+                project: vidPolyline.options.project.code,
+                surface: vidPolyline.options.project.surface,
+                tacode: vidPolyline.options.tacode
+              }
+              body = photoFunc(request, login);
             } else {
-              body = photoFunc(carriage, null, project, login);
+              const request = {
+                cwid: vidPolyline.options.cwid,
+                side: null, 
+                project: vidPolyline.options.project.code,
+                surface: vidPolyline.options.project.surface,
+                tacode: vidPolyline.options.tacode
+              }
+              body = photoFunc(request, login);
             }
             parent.setState({video: true});
             body.then((data) => {
-              let photo = null;
-              if (data.side === null) {
-                photo = parent.getVideoPhoto(e.latlng, project, login, null);
-              } else {
-                photo = parent.getVideoPhoto(e.latlng, project, login, 'L');
+              if (!data) return
+              const request = {
+                cwid: vidPolyline.options.cwid,
+                latlng: e.latlng,
+                project: vidPolyline.options.project.code,
+                surface: vidPolyline.options.project.surface,
+                login: login,
+                side: data.side,
+                tacode: vidPolyline.options.tacode
               }
-                        
+              const photo = parent.getVideoPhoto(request);               
               photo.then((initialPhoto) => {
                 let found = false;
                 if (data.data != null) {
@@ -708,21 +737,24 @@ class App extends React.Component {
    * @param {server} host 
    * @param {user login} login 
    */
-  async getVideoPhoto(latlng, project, login, side) {
-    const response = await fetch('https://' + login.host + '/archive', {
+  async getVideoPhoto(request) {
+    const response = await fetch('https://' + request.login.host + '/closestVideoPhoto', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
-        "authorization": login.token,       
+        "authorization": request.login.token,       
       },
       body: JSON.stringify({
-        user: login.user,
-        project: project,
-        lat: latlng.lat,
-        lng: latlng.lng,
-        side: side
+        user: request.login.user,
+        project: request.project,
+        surface: request.surface,
+        lat: request.latlng.lat,
+        lng: request.latlng.lng,
+        side: request.side,
+        cwid: request.cwid,
+        tacode: request.tacode
       })
     });
     const body = await response.json();
@@ -734,7 +766,7 @@ class App extends React.Component {
     }   
   }
 
-  async getPhotos(carriageid, side, project, login) {
+  async getPhotos(request, login) {
     const response = await fetch('https://' + login.host + '/photos', {
       method: 'POST',
       credentials: 'same-origin',
@@ -745,9 +777,11 @@ class App extends React.Component {
       },
       body: JSON.stringify({
         user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side
+        project: request.project,
+        cwid: request.cwid,
+        side: request.side,
+        tacode: request.tacode,
+        surface: request.surface
       })
     });
     const body = await response.json();
