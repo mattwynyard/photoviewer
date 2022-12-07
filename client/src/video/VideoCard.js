@@ -28,26 +28,25 @@ export default class VideoCard extends React.Component {
         this.delegate(props.parent);
     }
 
-    initialise(show, mode, side, direction, amazon, photoArray, index) {
+    initialise(mode, side, direction, amazon, photoArray, index) {
         if(photoArray !== null) {
-            this.setState({show: show});
+            this.setState({show: true});
             this.setState({mode: mode});
             this.setState({photoArray: photoArray});
             this.setState({amazon: amazon});
             this.setState({counter: index});
-            this.setState({currentPhoto: photoArray[index].photo});
-            this.setState({erp: this.state.photoArray[index].erp});
-            this.setState({roadid: this.state.photoArray[index].roadid});
-            if (mode === 'road') {
-                const id = this.state.photoArray[index].cwid;
-                this.setState({carriageway: this.state.photoArray[index].cwid});
-                this.setState({id: id});
-            } else {
-                let id = this.state.photoArray[index].footpathid.split('_');
-                this.setState({id: id[3]});
-            }  
+            this.setState({currentPhoto: photoArray[index]});
+            // if (mode === 'road') {
+            //     //const id = this.state.photoArray[index].cwid;
+            //     this.setState({carriageway: this.state.photoArray[index].cwid});
+                
+            //     //this.setState({id: id});
+            // } else {
+            //     let id = this.state.photoArray[index].footpathid.split('_'); //todo
+            //     this.setState({id: id[3]});
+            // }  
             this.setState({side: side});
-            if (direction === 'B') {
+            if (direction === 'Both') {
                 this.setState({disabled: false});
             } else {
                 this.setState({disabled: true});
@@ -98,12 +97,12 @@ export default class VideoCard extends React.Component {
     }
 
     clickStop(e) {
-        //e.preventDefault();
+        e.preventDefault();
         this.setState({currentPhoto: this.state.photoArray[this.state.centeredcounter].photo});
     }
         
     clickPlay(e) {
-        //e.preventDefault();
+        e.preventDefault();
         if (this.state.play) {
             this.setState({play: false});
             this.setState({playicon: "play_128.png"});
@@ -175,12 +174,10 @@ export default class VideoCard extends React.Component {
       this.delegate = parent;
     }
 
-    changeRadio(value) {
-        this.setState({side: value});
-        this.delegate.changeSide(this.state.carriageway, this.state.erp, value);
+    changeRadio(side) {
+        this.delegate.changeSide(this.state.photoArray[this.state.counter], side);
+        this.setState({side: side});
     }
-
-    
 
     render() {
 
@@ -207,7 +204,6 @@ export default class VideoCard extends React.Component {
                 { name: 'Left', value: 'L' },
                 { name: 'Right', value: 'R' },
               ];
-            
             return (
                 <Card 
                   className="videoModal"
@@ -217,7 +213,7 @@ export default class VideoCard extends React.Component {
                     <img
                       className="video" 
                       alt="fault"
-                      src={this.state.amazon + this.state.currentPhoto + ".jpg"} 
+                      src={this.state.amazon + this.state.currentPhoto.photo + ".jpg"} 
                         >
                     </img>     
                   </div>

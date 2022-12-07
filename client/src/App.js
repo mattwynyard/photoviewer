@@ -578,32 +578,60 @@ class App extends React.Component {
     })
   }
 
-  /**
-   * Get closest polyline to click and plots on map 
-   * Starts movie of carriagway
-   * @param {event} e 
-   * @param {callback to calculate distance} distFunc 
-   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc 
-   */
-  async getCarriage(e, distFunc, photoFunc) {
-    const response = await fetch("https://" + this.context.login.host + '/carriage', {
-      method: 'POST',
+  // requestCarriage = async (latlng) => {
+  //   const response = await fetch("https://" + this.context.login.host + '/carriage', {
+  //     method: 'POST',
+  //     credentials: 'same-origin',
+  //     headers: {
+  //       "authorization": this.context.login.token,
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',        
+  //     },
+  //     body: JSON.stringify({
+  //       user: this.context.login.user,
+  //       project: this.state.activeLayer,
+  //       lat: latlng.lat,
+  //       lng: latlng.lng
+  //     })
+  //   });
+  //   return await response.json();
+  // }
+
+  requestCarriage = async (query) => {
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: this.state.activeLayer,
-        lat: e.latlng.lat,
-        lng: e.latlng.lng
-      })
+      }  
     });
+    return await response.json();
+  }
+
+  /**
+   * Get closest polyline to click and plots on map 
+   * Starts movie of carriagway
+   * @param {event} e 
+   * @param {callback to calculate distance} distFunc 
+   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
+   */
+  async getCarriage(e, distFunc, photoFunc) {
+    const query = {
+      user: this.context.login.user,
+      project: this.state.activeLayer.code,
+      surface: this.state.activeLayer.surface,
+      lat: e.latlng.lat,
+      lng: e.latlng.lng
+    }
+    const body = await this.requestCarriage(query)
+    if (body.error)  {
+      alert(body.error);
+      return
+    }
     let vidPolyline = null;
-    const body = await response.json();
-    if (body.error == null) {
       let geojson = JSON.parse(body.data.geojson);
       let dist = distFunc(body.data.dist);
       if (dist < 40) {
@@ -612,8 +640,7 @@ class App extends React.Component {
         latlngs.forEach( (coord) => {
           let latlng = [coord[1], coord[0]];
           coords.push(latlng);
-        });
-      
+        });  
         vidPolyline = L.polyline(coords, {
           class: body.data.class,
           controller: body.data.controller,
@@ -638,15 +665,21 @@ class App extends React.Component {
           login: this.context.login
         }).addTo(this.leafletMap);
         let parent = this;
-        vidPolyline.on('click', function (e) {
+        vidPolyline.on('click', async function (event) {
           if (parent.state.video) { //todo
             let login = vidPolyline.options.login;
-            let project = vidPolyline.options.project;
             let side = parent.videoCard.current.getSide();
-            let photo = parent.getVideoPhoto(e.latlng, project, login, side);
-            photo.then((data) => {
-              parent.videoCard.current.search(data.data.photo);
-            });
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              latlng: event.latlng,
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              login: login,
+              side: side,
+              tacode: vidPolyline.options.tacode
+            }
+            let photo = await parent.getVideoPhoto(request);
+            parent.videoCard.current.search(photo.data.photo);
           } else {
             this.setStyle({
               color: 'red',
@@ -654,8 +687,10 @@ class App extends React.Component {
             });
             const login = vidPolyline.options.login;
             const direction = vidPolyline.options.direction;
-            let body = null;
+            let photoArray = null;
+            let initialSide = null;
             if (direction === 'Both') {
+              initialSide = 'L'
               const request = {
                 cwid: vidPolyline.options.cwid,
                 side: 'L', 
@@ -663,7 +698,7 @@ class App extends React.Component {
                 surface: vidPolyline.options.project.surface,
                 tacode: vidPolyline.options.tacode
               }
-              body = photoFunc(request, login);
+              photoArray = await photoFunc(request, login);
             } else {
               const request = {
                 cwid: vidPolyline.options.cwid,
@@ -672,59 +707,49 @@ class App extends React.Component {
                 surface: vidPolyline.options.project.surface,
                 tacode: vidPolyline.options.tacode
               }
-              body = photoFunc(request, login);
+              photoArray = await photoFunc(request, login);
             }
             parent.setState({video: true});
-            body.then((data) => {
-              if (!data) return
-              const request = {
-                cwid: vidPolyline.options.cwid,
-                latlng: e.latlng,
-                project: vidPolyline.options.project.code,
-                surface: vidPolyline.options.project.surface,
-                login: login,
-                side: data.side,
-                tacode: vidPolyline.options.tacode
-              }
-              const photo = parent.getVideoPhoto(request);               
-              photo.then((initialPhoto) => {
-                let found = false;
-                if (data.data != null) {
-                  for (let i = 0; i < data.data.length; i++) {
-                    if(initialPhoto.data.photo === data.data[i].photo) {
-                      parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.context.projectMode, 
-                        initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
-                      found = true;
-                      break;
-                    }   
-                  }
-                }         
-                if (!found) {
-                  alert("error loading video - Not found")
-                }
-              });
-              
-            });
+            if (photoArray.error) return
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              latlng: event.latlng,
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              login: login,
+              side: initialSide,
+              tacode: vidPolyline.options.tacode
+            }
+            const photo = await parent.getVideoPhoto(request);               
+            let found = false;
+            for (let i = 0; i < photoArray.data.length; i++) {
+              if(photo.data.photo === photoArray.data[i].photo) { 
+                parent.videoCard.current.initialise(parent.context.projectMode, 
+                  initialSide, direction, parent.state.activeLayer.amazon, photoArray, i);
+                found = true;
+                
+                break;
+              }   
+            }
+            parent.setState({photoArray: photoArray.data});     
+            if (!found) {
+              alert("error loading video - Not found")
+            }
           }         
         });
         return vidPolyline;  
       } else {
         return null;
-      }
-    } else {
-      alert(response.status + " " + body.error); 
-    }   
+      } 
   }
 
   /**
    * Delegate function for fetching new photos if user changes side 
    * Updates video cards data array
-   * @param {the id of the carriagway} carriageid 
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(carriageid, erp, side) {
-    let body = this.updatePhoto(carriageid, erp, side, this.state.activeLayer, this.state.activeCarriage.options.login);
+  async changeSide(currentPhoto, side) {
+    let body = this.updatePhoto(currentPhoto, side, this.state.activeLayer.code, this.context.login);
     body.then((data) => {
       this.setState({photoArray: data.data});
       this.videoCard.current.refresh(data.data, data.newPhoto, side);
@@ -738,51 +763,54 @@ class App extends React.Component {
    * @param {user login} login 
    */
   async getVideoPhoto(request) {
-    const response = await fetch('https://' + request.login.host + '/closestVideoPhoto', {
-      method: 'POST',
+
+    const query = {
+      user: request.login.user,
+      project: request.project,
+      lat: request.latlng.lat,
+      lng: request.latlng.lng,
+      side: request.side,
+      surface: request.surface,
+      cwid: request.cwid,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${request.login.host}/closestVideoPhoto?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
         "authorization": request.login.token,       
       },
-      body: JSON.stringify({
-        user: request.login.user,
-        project: request.project,
-        surface: request.surface,
-        lat: request.latlng.lat,
-        lng: request.latlng.lng,
-        side: request.side,
-        cwid: request.cwid,
-        tacode: request.tacode
-      })
+
     });
     const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
+    if (body.error) {
+      alert(body.error);   
     } else {
       return body;
     }   
   }
 
   async getPhotos(request, login) {
-    const response = await fetch('https://' + login.host + '/photos', {
-      method: 'POST',
+    const query = {
+      user: login.user,
+      cwid: request.cwid,
+      project: request.project,
+      surface: request.surface,
+      side: request.side,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${login.host}/photos?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
         "authorization": login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: request.project,
-        cwid: request.cwid,
-        side: request.side,
-        tacode: request.tacode,
-        surface: request.surface
-      })
     });
     const body = await response.json();
     if (response.status !== 200) {
@@ -793,27 +821,26 @@ class App extends React.Component {
     }   
   }
 
-  async updatePhoto(carriageid, erp, side, project, login) {
-    const response = await fetch('https://' + login.host + '/changeSide', {
-      method: 'POST',
+  async updatePhoto(currentPhoto, side, project) {
+    const query = {
+      user: this.context.login.user,
+      project: project,
+    }
+    const queryParams = new URLSearchParams(query)
+      const response = await fetch(`https://${this.context.login.host}/changeSide?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
-        "authorization": login.token,       
+        "authorization": this.context.login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side,
-        erp: erp
-      })
+
     });
     const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
+    if (body.error) {
+      alert(response.status + " " + response.statusText);
+      return   
     } else {
       return body;
     }   
