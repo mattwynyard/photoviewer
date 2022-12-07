@@ -30,13 +30,21 @@ const login = async (user, password) => {
                     name: user,
                     token: token,         
                     }
-                );
+                ); 
             return { login: true, user: user, token: token, projects: arr};   
         } else {
             return { login: false, error: "incorrect password" };
         }
     }
 };
+
+const isAuthorized = async (user, project, token) => {
+    if (user === 'Login') {
+        return await db.isPublic(project);
+    } else {
+        return users.findUserToken(token, user);
+    }
+}
 
 const logout = async (user, token) => {
 
@@ -58,6 +66,7 @@ const mapbox = async (user, token) => {
 module.exports = {
     login,
     logout,
+    isAuthorized,
     mapbox
 }
 

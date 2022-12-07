@@ -35,7 +35,7 @@ const login = async (req, res) => {
   const mapbox = async (req, res) => {
     res.set('Content-Type', 'application/json');
     try {
-        const security = await securityServices.mapbox(req.body.user, req.body.key);
+        const security = await securityServices.mapbox(req.body.user, req.headers.authorization);
         if (security) {
             res.send({ result: process.env.MAPBOX });
         } else {
