@@ -3,28 +3,37 @@ const util = require('../util');
 
 const changeSide = async (query) => {
     try {
-        const view = util.getPhotoView(query.project);    
-        let result = null;
-        let data = null;
-        let newPhoto = null;
+        const view = util.getPhotoView(query.project);
+        const photo = JSON.parse(query.photo)
+        const geojson = JSON.parse(photo.st_asgeojson)
+        const side = util.changeSide(photo.side)
+        const body = {
+            cwid: photo.cwid,
+            lat: geojson.coordinates[1],
+            lng: geojson.coordinates[0],
+            side: side,
+            tacode: photo.tacode
+        }  
         try {
-            const opposite = await db.oppositePhoto(view, query);
-            newPhoto = opposite.rows[0];
-            result = await db.getPhotos(req.body.carriageid, req.body.side);
-            data = result.rows;
+            const opposite = await db.closestVideoPhoto(view, body);
+            if (opposite.rows === 0) return {error: "no photo found"}
+            const newPhoto = opposite.rows[0];
+            const arrayBody = {
+                cwid: photo.cwid,
+                side: side,
+                tacode: photo.tacode
+            }
+            const result = await db.getPhotos(arrayBody, view);
+            if (result.rows === 0) return {error: "no photo array empty"}
+            return {photo: newPhoto, data: result.rows};
         } catch (err) {
             console.log(err);
-            res.send({error: err});
-        }
-        if (result.rowCount != 0) {
-            res.send({success: true, data: data, newPhoto: newPhoto});
-        } else {
-            res.send({success: false, data: null});
+            return {error: err};
         }
         
     } catch (err) {
         console.log(err)
-        return {error: "database error"}
+        return {error: "parsing/unknown error"}
     }   
 };
 

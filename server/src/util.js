@@ -22,7 +22,18 @@ const getPhotoView = (project) => {
     return view;
 }
 
+const changeSide = (side) => {
+    if (side === 'L') {
+        return 'R'
+    } else if (side === 'R') {
+        return 'L'
+    } else {
+        return null
+    }
+}
+
 module.exports = {
     getCentrelineView,
-    getPhotoView
+    getPhotoView,
+    changeSide
 }

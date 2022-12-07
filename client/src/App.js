@@ -79,7 +79,7 @@ class App extends React.Component {
       glData: null,
       selectedGeometry: [],
       selectedCarriage: [],
-      photoArray: null,
+      //photoArray: null,
       //projectMode: null, //the type of project being displayed footpath or road     
       search: null,
       toolsRadio: null,
@@ -90,6 +90,7 @@ class App extends React.Component {
       showPhotoViewer: false,
       imageUrl: null,
       video : false,
+      videoViewer: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -651,6 +652,7 @@ class App extends React.Component {
           label: body.data.label,
           owner: body.data.owner,
           pavement: body.data.pavement,
+          photos: null,
           roadid: body.data.roadid,
           roadtype: body.data.roadtype,
           startm: body.data.startm,
@@ -687,7 +689,6 @@ class App extends React.Component {
             });
             const login = vidPolyline.options.login;
             const direction = vidPolyline.options.direction;
-            let photoArray = null;
             let initialSide = null;
             if (direction === 'Both') {
               initialSide = 'L'
@@ -698,7 +699,10 @@ class App extends React.Component {
                 surface: vidPolyline.options.project.surface,
                 tacode: vidPolyline.options.tacode
               }
-              photoArray = await photoFunc(request, login);
+              if (!this.photos) {
+                const photos = await photoFunc(request, login);
+                this.photos = photos.data;
+              }
             } else {
               const request = {
                 cwid: vidPolyline.options.cwid,
@@ -707,10 +711,12 @@ class App extends React.Component {
                 surface: vidPolyline.options.project.surface,
                 tacode: vidPolyline.options.tacode
               }
-              photoArray = await photoFunc(request, login);
+              if (!this.photos) {
+                const photos = await photoFunc(request, login);
+                this.photos = photos.data;
+              }
             }
-            parent.setState({video: true});
-            if (photoArray.error) return
+            if (this.photos.error) return
             const request = {
               cwid: vidPolyline.options.cwid,
               latlng: event.latlng,
@@ -721,19 +727,13 @@ class App extends React.Component {
               tacode: vidPolyline.options.tacode
             }
             const photo = await parent.getVideoPhoto(request);               
-            let found = false;
-            for (let i = 0; i < photoArray.data.length; i++) {
-              if(photo.data.photo === photoArray.data[i].photo) { 
-                parent.videoCard.current.initialise(parent.context.projectMode, 
-                  initialSide, direction, parent.state.activeLayer.amazon, photoArray, i);
-                found = true;
-                
-                break;
-              }   
-            }
-            parent.setState({photoArray: photoArray.data});     
-            if (!found) {
+            const index = this.photos.findIndex((element) => element.photo === photo.data.photo) 
+            if (index === -1) {
               alert("error loading video - Not found")
+            } else {
+              parent.videoCard.current.initialise(parent.context.projectMode, 
+                initialSide, direction, parent.state.activeLayer.amazon, this.photos, index);
+              parent.setState({videoViewer: true});     
             }
           }         
         });
@@ -748,11 +748,10 @@ class App extends React.Component {
    * Updates video cards data array
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(currentPhoto, side) {
-    let body = this.updatePhoto(currentPhoto, side, this.state.activeLayer.code, this.context.login);
+  async changeSide(currentPhoto) {
+    const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
-      this.setState({photoArray: data.data});
-      this.videoCard.current.refresh(data.data, data.newPhoto, side);
+      this.videoCard.current.refresh(data.photo, data.data);
     });
   }
 
@@ -821,10 +820,11 @@ class App extends React.Component {
     }   
   }
 
-  async updatePhoto(currentPhoto, side, project) {
+  async requestChangeSide(currentPhoto) {
     const query = {
       user: this.context.login.user,
-      project: project,
+      project: this.state.activeLayer.code,
+      photo: JSON.stringify(currentPhoto)
     }
     const queryParams = new URLSearchParams(query)
       const response = await fetch(`https://${this.context.login.host}/changeSide?${queryParams.toString()}`, {
@@ -1401,7 +1401,7 @@ class App extends React.Component {
               )}
               <VideoCard
                 ref={this.videoCard}
-                show={this.state.showVideo} 
+                show={this.state.videoViewer} 
                 parent={this}
               >
               </VideoCard>

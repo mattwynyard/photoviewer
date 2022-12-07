@@ -10,8 +10,8 @@ const changeSide = async (req, res) => {
             if (!req.query.project) {
                 res.send({error: "No project selected"});
             } else {
-                const photo =  await videoServices.changeSide(req.query);
-                res.send(carriage);
+                const data =  await videoServices.changeSide(req.query);
+                res.send(data);
             }     
         } else {
             res.send({error: 'incorrect security credentials'});

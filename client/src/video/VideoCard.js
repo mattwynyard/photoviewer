@@ -7,15 +7,9 @@ export default class VideoCard extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            amazon: props.amazon,
-            currentPhoto: null,
-            show: props.show,
-            counter: 0,
-            photoArray: [],
-            erp: null,
-            roadid: null,
-            id: null,
-            carriageway: null,
+            amazon: null,
+            show: false,
+            index: 0,
             side: null,
             disabled: false,
             play: false,
@@ -26,25 +20,17 @@ export default class VideoCard extends React.Component {
 
         }
         this.delegate(props.parent);
+        this.photoArray = null;
     }
 
     initialise(mode, side, direction, amazon, photoArray, index) {
         if(photoArray !== null) {
+            console.log(index)
             this.setState({show: true});
             this.setState({mode: mode});
-            this.setState({photoArray: photoArray});
+            this.photoArray = photoArray;
             this.setState({amazon: amazon});
-            this.setState({counter: index});
-            this.setState({currentPhoto: photoArray[index]});
-            // if (mode === 'road') {
-            //     //const id = this.state.photoArray[index].cwid;
-            //     this.setState({carriageway: this.state.photoArray[index].cwid});
-                
-            //     //this.setState({id: id});
-            // } else {
-            //     let id = this.state.photoArray[index].footpathid.split('_'); //todo
-            //     this.setState({id: id[3]});
-            // }  
+            this.setState({index: index});
             this.setState({side: side});
             if (direction === 'Both') {
                 this.setState({disabled: false});
@@ -59,31 +45,15 @@ export default class VideoCard extends React.Component {
         }       
     }
 
-    refresh(photoArray, photo, side) {
-        let index = null;
-        for (let i = 0; i < photoArray.length; i++) {
-            if(photoArray[i].photo === photo.photo) {
-                index = i;
-                break;
-            } 
-        }
-        if (index === null) {
+    refresh(photo, photoArray) {
+        const index = photoArray.findIndex((element) => element.photo === photo.photo) 
+        if (index === -1) {
             alert("error - photo not found");
-            index = 0;
+            return;
         }
-        this.setState({currentPhoto: photoArray[index].photo});
-        this.setState({photoArray: photoArray});
-        this.setState({erp: this.state.photoArray[index].erp});
-        this.setState({roadid: this.state.photoArray[index].roadid});
-        if (this.state.mode === 'road') {
-            const id = this.state.photoArray[index].cwid;
-            this.setState({id: id});
-        } else {
-            let id = this.state.photoArray[index].footpathid.split('_');
-            this.setState({id: id[3]});
-        }   
-        this.setState({side: side});
-        this.setState({counter: index});
+        this.photoArray = photoArray;  
+        this.setState({side: photo.side});
+        this.setState({index: index});
         let latlng = this.getLatLng(index);
         this.delegate.setState({carMarker: [latlng]});
     }
@@ -111,8 +81,8 @@ export default class VideoCard extends React.Component {
             this.setState({play: true}); 
             this.setState({playicon: "pause_128.png"});
             this.interval = setInterval(() => {
-                this.update(this.state.counter);
-                this.setState({counter: this.state.counter + 1});           
+                this.update(this.state.index + 1);
+                           
             }, this.state.interval);  
         }
            
@@ -127,11 +97,10 @@ export default class VideoCard extends React.Component {
         }
     }
 
-    update(counter) {
-        if (this.state.counter < this.state.photoArray.length) {
-            this.setState({currentPhoto: this.state.photoArray[counter].photo});
-            this.setState({erp: this.state.photoArray[counter].erp});
-            let latlng = this.getLatLng(counter);
+    update(index) {
+        if (this.state.index < this.photoArray.length) {
+            this.setState({index: index});
+            let latlng = this.getLatLng(index);
             this.delegate.setState({carMarker: [latlng]});
         } else {
             clearInterval(this.interval)
@@ -139,7 +108,7 @@ export default class VideoCard extends React.Component {
     }
 
     getLatLng(index) {
-        const geojson = JSON.parse(this.state.photoArray[index].st_asgeojson);
+        const geojson = JSON.parse(this.photoArray[index].st_asgeojson);
         const lat = geojson.coordinates[1];
         const lng = geojson.coordinates[0];;
         return new L.LatLng(lat, lng);
@@ -174,11 +143,10 @@ export default class VideoCard extends React.Component {
       this.delegate = parent;
     }
 
-    changeRadio(side) {
-        this.delegate.changeSide(this.state.photoArray[this.state.counter], side);
-        this.setState({side: side});
+    changeRadio(e) {
+        this.delegate.changeSide(this.photoArray[this.state.index], 'L');
+        this.setState({side: e});
     }
-
     render() {
 
         const IdText = function(props) {
@@ -200,6 +168,7 @@ export default class VideoCard extends React.Component {
         }
 
         if (this.state.show) {
+            if (!this.photoArray) return null;
             const radios = [
                 { name: 'Left', value: 'L' },
                 { name: 'Right', value: 'R' },
@@ -213,14 +182,14 @@ export default class VideoCard extends React.Component {
                     <img
                       className="video" 
                       alt="fault"
-                      src={this.state.amazon + this.state.currentPhoto.photo + ".jpg"} 
+                      src={this.state.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
                         >
                     </img>     
                   </div>
                   <ProgressBar 
                     className="videoProgress" 
                     min={0} 
-                    max={this.state.photoArray.length} 
+                    max={this.photoArray.length} 
                     now={this.state.counter} 
                     />
                     <div className="controls">

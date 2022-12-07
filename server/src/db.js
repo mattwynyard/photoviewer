@@ -730,10 +730,10 @@ module.exports = {
         let sql = null
         if (body.side === null) {
             sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
-                    WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY erp`;
+                    WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY photo ASC`;
         } else {
             sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
-            WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY erp`;
+            WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY photo ASC`;
         }
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {
@@ -822,9 +822,8 @@ module.exports = {
     },
 
     closestVideoPhoto: (view, body) => {
-
         const sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom),
-        geom <-> ST_SetSRID(ST_MakePoint(${body.lat}, ${body.lng}),4326) AS dist 
+        geom <-> ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}),4326) AS dist 
         FROM ${view} 
         WHERE side = '${body.side}' and tacode= '${body.tacode}' and cwid=${body.cwid}
         ORDER BY dist LIMIT 1`;
