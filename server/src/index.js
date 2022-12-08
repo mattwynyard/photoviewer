@@ -8,3 +8,7 @@ const host = process.env.PROXY;
 app.listen(port, () => {
   console.log(`Listening: http://${host}:${port}`);
 });
+
+module.exports = {
+  app
+}

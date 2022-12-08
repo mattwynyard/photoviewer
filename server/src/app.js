@@ -7,7 +7,6 @@ const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
-//const axios = require('axios');
 const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
@@ -29,7 +28,10 @@ const options = {
 }
 console.log("mode: " + environment);
 if(environment === 'production') {
-  let hostname = "localhost";
+  // const host = "localhost";
+  // app.listen(port, () => {
+  //   console.log(`Listening: http://${host}:${port}`);
+  // });
  http.createServer(function() {
   }).listen(port, hostname, () => {
       console.log(`Listening: http://${hostname}:${port}`);
