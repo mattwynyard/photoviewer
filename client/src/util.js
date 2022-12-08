@@ -9,6 +9,61 @@ const incrementPhoto = (photo, increment) => {
   return prefix + newSuffix;
 }
 
+const erp = (geometry, erp, latlng) => {
+  let distance = erp.start;
+  for (let i= 0; i < geometry.coordinates.length - 1; i++) { //check if on line
+    let dxl = geometry.coordinates[i + 1][0] - geometry.coordinates[i][0];
+    let dyl = geometry.coordinates[i + 1][1] - geometry.coordinates[i][1];
+    let box = {
+      point1: geometry.coordinates[i],
+      point2: geometry.coordinates[i + 1]
+    }
+    let result = inBoundingBox(dxl, dyl, box, latlng);
+    if (result) {
+      let d = haversineDistance(geometry.coordinates[i][1], geometry.coordinates[i][0], latlng.lat, latlng.lng)
+      distance += d;
+      break;
+    } else {
+      let d = haversineDistance(geometry.coordinates[i][1], geometry.coordinates[i][0], geometry.coordinates[i + 1][1], geometry.coordinates[i + 1][0])
+      distance += d;
+    }
+  }
+  return distance;
+}
+
+/**
+ * 
+ * @param {line start point} a 
+ * @param {line end point} b 
+ * @param {point to check} c 
+ * @returns 
+ */
+const inBetween = (a, b , c) => {
+  let crossproduct = (c.lat - a[1]) * (b[0] - a[0]) - (c.lng - a[0]) * (b[1] - a[1]);
+  let epsilon = 0.000001;
+  if (Math.abs(crossproduct) > epsilon)
+      return false
+  let dotproduct = (c.lng - a[0]) * (b[0] - a[0]) + (c.lat - a[1]) * (b[1] - a[1])
+  if (dotproduct < 0)
+      return false;
+  let squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
+  if (dotproduct > squaredlengthba)
+      return false;
+  return true;
+}
+
+const inBoundingBox = (dxl, dyl, box, point) => {
+  if (Math.abs(dxl) >= Math.abs(dyl)) {
+    return dxl > 0 ? 
+    box.point1[0] <= point.lng && point.lng <= box.point2[0] :
+    box.point2[0] <= point.lng && point.lng <= box.point1[0];        
+  } else {
+    return dyl > 0 ? 
+    box.point1[1] <= point.lat && point.lat <= box.point2[1] :
+    box.point2[1] <= point.lat && point.lat <= box.point1[1];
+  }
+}
+
 const calculateDistance = (points) => {
   const R = 6371 * 1000; // metres
   let metres = 0;
@@ -224,4 +279,4 @@ const RDP = (l, eps) => {
 
   export {incrementPhoto, RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
     scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt,
-    calculateDistance}
+    calculateDistance, erp}

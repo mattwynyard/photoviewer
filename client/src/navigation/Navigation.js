@@ -37,7 +37,7 @@ export const Navigation = (props) => {
   const clickLogin = async (user, password) => {
     setLoginError("")
     const body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
-    if (body.result) {
+    if (body.login) {
       const mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
       setMapBoxKey(mapbox);
       window.sessionStorage.setItem('token', body.token);

@@ -79,7 +79,7 @@ class App extends React.Component {
       glData: null,
       selectedGeometry: [],
       selectedCarriage: [],
-      photoArray: null,
+      //photoArray: null,
       //projectMode: null, //the type of project being displayed footpath or road     
       search: null,
       toolsRadio: null,
@@ -88,7 +88,9 @@ class App extends React.Component {
       filtered: false ,
       dataActive: false,
       showPhotoViewer: false,
-      imageUrl: null
+      imageUrl: null,
+      video : false,
+      isVideoOpen: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -399,49 +401,59 @@ class App extends React.Component {
         break;
       case 'Ruler':
         let polyline = this.state.rulerPolyline;
-      if (polyline === null) {
-        let points = [];
-        points.push(e.latlng);
-        polyline = new L.polyline(points, {
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5 
-          });
-        polyline.addTo(this.leafletMap);
-        this.setState({rulerPolyline: polyline});
-      } else {
-        let points = polyline.getLatLngs();
-        points.push(e.latlng);
-        polyline.setLatLngs(points);
-      }
+        if (polyline === null) {
+          let points = [];
+          points.push(e.latlng);
+          polyline = new L.polyline(points, {
+            color: 'blue',
+            weight: 4,
+            opacity: 0.5 
+            });
+          polyline.addTo(this.leafletMap);
+          this.setState({rulerPolyline: polyline});
+        } else {
+          let points = polyline.getLatLngs();
+          points.push(e.latlng);
+          polyline.setLatLngs(points);
+        }
         break;
       case 'video':
-      if(this.vidPolyline === null) {  
-        this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-        this.vidPolyline.then((line) => {
-          if (line) {
-            this.setState({activeCarriage: line})
-          }         
-        });
-      } else {
-        this.vidPolyline.then((line) => {
-          if (line === null) {
+        if(this.vidPolyline === null) { 
+          const geometry = await this.getVideoGeometry(e)
+          if (geometry.error)  {
+            alert(geometry.error);
+            return
+          } 
+          this.vidPolyline = await this.playVideo(calcGCDistance, this.getPhotos, geometry); 
+        } else {
+          if (this.vidPolyline.options.color === "blue") {
+            this.vidPolyline.remove();
             this.vidPolyline = null;
-            this.setState({activeCarriage: null});
+            this.setState({carMarker: []});
           } else {
-            if(line.options.color === "blue") {
-              line.remove();
-              this.vidPolyline = null;
-              this.setState({activeCarriage: null})
-              this.setState({carMarker: []});
-            }
-          }           
-        });
-      }      
+            
+          } 
+        }      
         break;
       default:
         break;
     }
+  }
+
+  getVideoGeometry = async (e) => {
+    const query = {
+      user: this.context.login.user,
+      project: this.state.activeLayer.code,
+      surface: this.state.activeLayer.surface,
+      lat: e.latlng.lat,
+      lng: e.latlng.lng
+    }
+    const body = await this.requestCarriage(query)
+    if (body.error)  {
+      alert(body.error);
+      return null
+    }
+    return body
   }
 
   onMouseMove(e) {
@@ -577,128 +589,155 @@ class App extends React.Component {
     })
   }
 
-  /**
-   * Get closest polyline to click and plots on map 
-   * Starts movie of carriagway
-   * @param {event} e 
-   * @param {callback to calculate distance} distFunc 
-   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc 
-   */
-  async getCarriage(e, distFunc, photoFunc) {
-    const response = await fetch("https://" + this.context.login.host + '/carriage', {
-      method: 'POST',
+  requestCarriage = async (query) => {
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: this.state.activeLayer,
-        lat: e.latlng.lat,
-        lng: e.latlng.lng
-      })
+      }  
     });
-    let vidPolyline = null;
-    const body = await response.json();
-    if (body.error == null) {
-      let geojson = JSON.parse(body.data.geojson);
-      let dist = distFunc(body.data.dist);
-      if (dist < 40) {
-        let latlngs = geojson.coordinates;
-        let coords = [];
-        latlngs.forEach( (coord) => {
-          let latlng = [coord[1], coord[0]];
-          coords.push(latlng);
-        });
-      
-        vidPolyline = L.polyline(coords, {
-          roadid: body.data.roadid,
-          carriageid: body.data.id,
-          direction: body.data.direction,
-          label: body.data.label,
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5,
-          project: this.state.activeLayer,
-          login: this.context.login
-        }).addTo(this.leafletMap);
-        let parent = this;
-        vidPolyline.on('click', function (e) {
-          if (parent.state.video) {
-            let login = vidPolyline.options.login;
-            let project = vidPolyline.options.project;
-            let side = parent.videoCard.current.getSide();
-            let photo = parent.getVideoPhoto(e.latlng, project, login, side);
-            photo.then((data) => {
-              parent.videoCard.current.search(data.data.photo);
-            });
-          } else {
-            this.setStyle({
-              color: 'red',
-              weight: 4
-            });
-            let carriage = vidPolyline.options.carriageid;
-            let project = vidPolyline.options.project;
-            let login = vidPolyline.options.login;
-            let direction = vidPolyline.options.direction;
-            let body = null;
-            if (direction === 'B') {
-              body = photoFunc(carriage, 'L', project, login);
-            } else {
-              body = photoFunc(carriage, null, project, login);
+    return await response.json();
+  }
+
+  changeVideoPlayerOpen(isOpen) {
+    this.setState({isVideoOpen: isOpen});
+  }
+
+  /**
+   * Get closest polyline to click and plots on map 
+   * Starts movie of carriagway
+   * @param {event} e 
+   * @param {callback to calculate distance} distFunc 
+   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
+   */
+  async playVideo(distFunc, photoFunc, geometry) {
+    
+    const geojson = JSON.parse(geometry.data.geojson);
+    let distance = distFunc(geometry.data.dist);
+    if (distance > 40) return
+    const latlngs = geojson.coordinates;
+    const coordinates = [];
+    latlngs.forEach( (coordinate) => {
+      coordinates.push([coordinate[1], coordinate[0]]);
+    });  
+    const vidPolyline = L.polyline(coordinates, {
+      class: geometry.data.class,
+      controller: geometry.data.controller,
+      cwid: geometry.data.cwid,
+      direction: geometry.data.direction,
+      endm: geometry.data.endm,
+      hierarchy: geometry.data.hierarchy,
+      label: geometry.data.label,
+      owner: geometry.data.owner,
+      pavement: geometry.data.pavement,
+      photos: null,
+      roadid: geometry.data.roadid,
+      roadtype: geometry.data.roadtype,
+      startm: geometry.data.startm,
+      tacode: geometry.data.tacode,
+      town: geometry.data.town,
+      width: geometry.data.width,
+      zone: geometry.data.zone,
+      color: 'blue',
+      weight: 4,
+      opacity: 0.5,
+      project: this.state.activeLayer,
+      login: this.context.login,
+    }).addTo(this.leafletMap);
+      const parent = this;
+      vidPolyline.on('click', async function (event) {
+        
+        if (parent.state.isVideoOpen) { 
+          const login = vidPolyline.options.login;
+          const side = parent.videoCard.current.getSide();
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: side,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);
+          parent.videoCard.current.refresh(photo.data);
+        } else {
+          this.setStyle({
+            color: 'red',
+            weight: 4
+          });
+          const login = vidPolyline.options.login;
+          const direction = vidPolyline.options.direction;
+          let initialSide = null;
+          if (direction === 'Both') {
+            initialSide = 'L'
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              side: 'L', 
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              tacode: vidPolyline.options.tacode
             }
-            parent.setState({video: true});
-            body.then((data) => {
-              let photo = null;
-              if (data.side === null) {
-                photo = parent.getVideoPhoto(e.latlng, project, login, null);
-              } else {
-                photo = parent.getVideoPhoto(e.latlng, project, login, 'L');
-              }
-                        
-              photo.then((initialPhoto) => {
-                let found = false;
-                if (data.data != null) {
-                  for (let i = 0; i < data.data.length; i++) {
-                    if(initialPhoto.data.photo === data.data[i].photo) {
-                      parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.context.projectMode, 
-                        initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
-                      found = true;
-                      break;
-                    }   
-                  }
-                }         
-                if (!found) {
-                  alert("error loading video - Not found")
-                }
-              });
-              
-            });
-          }         
-        });
-        return vidPolyline;  
-      } else {
-        return null;
-      }
-    } else {
-      alert(response.status + " " + body.error); 
-    }   
+            if (!this.options.photos) {
+              const photos = await photoFunc(request, login);
+              this.options.photos = photos.data;
+            }
+          } else {
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              side: null, 
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              tacode: vidPolyline.options.tacode
+            }
+            if (!this.photos) {
+              const photos = await photoFunc(request, login);
+              this.photos = photos.data;
+            }
+          }
+          if (this.options.photos.error) return
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: initialSide,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);               
+          const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
+          if (index === -1) {
+            alert("error loading video - Not found")
+          } else {
+            const videoParameters = {
+              mode: parent.context.projectMode,
+              direction: direction,
+              amazon: parent.state.activeLayer.amazon,
+              photos: this.photos,
+              startingIndex: index,
+            }
+            parent.videoCard.current.initialise(videoParameters, vidPolyline);
+            parent.changeVideoPlayerOpen(true);     
+          }
+        }         
+      });
+      return vidPolyline;  
   }
 
   /**
    * Delegate function for fetching new photos if user changes side 
    * Updates video cards data array
-   * @param {the id of the carriagway} carriageid 
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(carriageid, erp, side) {
-    let body = this.updatePhoto(carriageid, erp, side, this.state.activeLayer, this.state.activeCarriage.options.login);
+  async changeSide(currentPhoto) {
+    const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
-      this.setState({photoArray: data.data});
-      this.videoCard.current.refresh(data.data, data.newPhoto, side);
+      this.videoCard.current.refresh(data.photo, data.data);
     });
   }
 
@@ -708,22 +747,55 @@ class App extends React.Component {
    * @param {server} host 
    * @param {user login} login 
    */
-  async getVideoPhoto(latlng, project, login, side) {
-    const response = await fetch('https://' + login.host + '/archive', {
-      method: 'POST',
+  async getVideoPhoto(request) {
+
+    const query = {
+      user: request.login.user,
+      project: request.project,
+      lat: request.latlng.lat,
+      lng: request.latlng.lng,
+      side: request.side,
+      surface: request.surface,
+      cwid: request.cwid,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${request.login.host}/closestVideoPhoto?${queryParams.toString()}`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json', 
+        "authorization": request.login.token,       
+      },
+
+    });
+    const body = await response.json();
+    if (body.error) {
+      alert(body.error);   
+    } else {
+      return body;
+    }   
+  }
+
+  async getPhotos(request, login) {
+    const query = {
+      user: login.user,
+      cwid: request.cwid,
+      project: request.project,
+      surface: request.surface,
+      side: request.side,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${login.host}/photos?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
         "authorization": login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        lat: latlng.lat,
-        lng: latlng.lng,
-        side: side
-      })
     });
     const body = await response.json();
     if (response.status !== 200) {
@@ -734,52 +806,27 @@ class App extends React.Component {
     }   
   }
 
-  async getPhotos(carriageid, side, project, login) {
-    const response = await fetch('https://' + login.host + '/photos', {
-      method: 'POST',
+  async requestChangeSide(currentPhoto) {
+    const query = {
+      user: this.context.login.user,
+      project: this.state.activeLayer.code,
+      photo: JSON.stringify(currentPhoto)
+    }
+    const queryParams = new URLSearchParams(query)
+      const response = await fetch(`https://${this.context.login.host}/changeSide?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
-        "authorization": login.token,       
+        "authorization": this.context.login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side
-      })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
-    } else {
-      return body;
-    }   
-  }
 
-  async updatePhoto(carriageid, erp, side, project, login) {
-    const response = await fetch('https://' + login.host + '/changeSide', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json', 
-        "authorization": login.token,       
-      },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side,
-        erp: erp
-      })
     });
     const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
+    if (body.error) {
+      alert(response.status + " " + response.statusText);
+      return   
     } else {
       return body;
     }   
@@ -1339,7 +1386,7 @@ class App extends React.Component {
               )}
               <VideoCard
                 ref={this.videoCard}
-                show={this.state.showVideo} 
+                show={this.state.videoViewer} 
                 parent={this}
               >
               </VideoCard>

@@ -2,17 +2,14 @@
 
 let users = [];
 
-let findUserToken = (token, name) => {
-    const result = users.find(user => user.token === token);
-    if (result === undefined) {
-        //console.log("token not found");
+let findUserToken = async (token, name) => {
+    const result = await users.find(user => user.token === token);
+    if (!result) {
         return false;
     }
     if (result.name === name) {
-        //console.log("found token");
         return true;
     } else {
-       //console.log("user not found");
         return false;
     }
 };
@@ -29,7 +26,9 @@ let printUsers = () => {
     console.log(users);
 }
 
-exports.printUsers = printUsers;
-exports.addUser = addUser;
-exports.deleteToken = deleteToken;
-exports.findUserToken = findUserToken;
+module.exports = {
+    printUsers,
+    addUser,
+    deleteToken,
+    findUserToken
+}
