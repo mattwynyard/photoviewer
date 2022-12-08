@@ -153,6 +153,9 @@ export default class VideoCard extends React.Component {
     }
 
     changeRadio(e) {
+        if (!this.state.play) { 
+            this.setState({playicon: "play_128.png"});
+        }
         this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
         this.setState({side: e});
     }
