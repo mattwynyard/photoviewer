@@ -90,7 +90,7 @@ class App extends React.Component {
       showPhotoViewer: false,
       imageUrl: null,
       video : false,
-      videoViewer: false
+      isVideoOpen: false
     }; 
     this.customModal = React.createRef();
     this.search = React.createRef();
@@ -401,49 +401,59 @@ class App extends React.Component {
         break;
       case 'Ruler':
         let polyline = this.state.rulerPolyline;
-      if (polyline === null) {
-        let points = [];
-        points.push(e.latlng);
-        polyline = new L.polyline(points, {
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5 
-          });
-        polyline.addTo(this.leafletMap);
-        this.setState({rulerPolyline: polyline});
-      } else {
-        let points = polyline.getLatLngs();
-        points.push(e.latlng);
-        polyline.setLatLngs(points);
-      }
+        if (polyline === null) {
+          let points = [];
+          points.push(e.latlng);
+          polyline = new L.polyline(points, {
+            color: 'blue',
+            weight: 4,
+            opacity: 0.5 
+            });
+          polyline.addTo(this.leafletMap);
+          this.setState({rulerPolyline: polyline});
+        } else {
+          let points = polyline.getLatLngs();
+          points.push(e.latlng);
+          polyline.setLatLngs(points);
+        }
         break;
       case 'video':
-      if(this.vidPolyline === null) {  
-        this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-        this.vidPolyline.then((line) => {
-          if (line) {
-            this.setState({activeCarriage: line})
-          }         
-        });
-      } else {
-        this.vidPolyline.then((line) => {
-          if (line === null) {
+        if(this.vidPolyline === null) { 
+          const geometry = await this.getVideoGeometry(e)
+          if (geometry.error)  {
+            alert(geometry.error);
+            return
+          } 
+          this.vidPolyline = await this.playVideo(calcGCDistance, this.getPhotos, geometry); 
+        } else {
+          if (this.vidPolyline.options.color === "blue") {
+            this.vidPolyline.remove();
             this.vidPolyline = null;
-            this.setState({activeCarriage: null});
+            this.setState({carMarker: []});
           } else {
-            if(line.options.color === "blue") {
-              line.remove();
-              this.vidPolyline = null;
-              this.setState({activeCarriage: null})
-              this.setState({carMarker: []});
-            }
-          }           
-        });
-      }      
+            
+          } 
+        }      
         break;
       default:
         break;
     }
+  }
+
+  getVideoGeometry = async (e) => {
+    const query = {
+      user: this.context.login.user,
+      project: this.state.activeLayer.code,
+      surface: this.state.activeLayer.surface,
+      lat: e.latlng.lat,
+      lng: e.latlng.lng
+    }
+    const body = await this.requestCarriage(query)
+    if (body.error)  {
+      alert(body.error);
+      return null
+    }
+    return body
   }
 
   onMouseMove(e) {
@@ -579,25 +589,6 @@ class App extends React.Component {
     })
   }
 
-  // requestCarriage = async (latlng) => {
-  //   const response = await fetch("https://" + this.context.login.host + '/carriage', {
-  //     method: 'POST',
-  //     credentials: 'same-origin',
-  //     headers: {
-  //       "authorization": this.context.login.token,
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',        
-  //     },
-  //     body: JSON.stringify({
-  //       user: this.context.login.user,
-  //       project: this.state.activeLayer,
-  //       lat: latlng.lat,
-  //       lng: latlng.lng
-  //     })
-  //   });
-  //   return await response.json();
-  // }
-
   requestCarriage = async (query) => {
     const queryParams = new URLSearchParams(query)
     const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
@@ -612,6 +603,10 @@ class App extends React.Component {
     return await response.json();
   }
 
+  changeVideoPlayerOpen(isOpen) {
+    this.setState({isVideoOpen: isOpen});
+  }
+
   /**
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
@@ -619,128 +614,119 @@ class App extends React.Component {
    * @param {callback to calculate distance} distFunc 
    * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
    */
-  async getCarriage(e, distFunc, photoFunc) {
-    const query = {
-      user: this.context.login.user,
-      project: this.state.activeLayer.code,
-      surface: this.state.activeLayer.surface,
-      lat: e.latlng.lat,
-      lng: e.latlng.lng
-    }
-    const body = await this.requestCarriage(query)
-    if (body.error)  {
-      alert(body.error);
-      return
-    }
-    let vidPolyline = null;
-      let geojson = JSON.parse(body.data.geojson);
-      let dist = distFunc(body.data.dist);
-      if (dist < 40) {
-        let latlngs = geojson.coordinates;
-        let coords = [];
-        latlngs.forEach( (coord) => {
-          let latlng = [coord[1], coord[0]];
-          coords.push(latlng);
-        });  
-        vidPolyline = L.polyline(coords, {
-          class: body.data.class,
-          controller: body.data.controller,
-          cwid: body.data.cwid,
-          direction: body.data.direction,
-          endm: body.data.endm,
-          hierarchy: body.data.hierarchy,
-          label: body.data.label,
-          owner: body.data.owner,
-          pavement: body.data.pavement,
-          photos: null,
-          roadid: body.data.roadid,
-          roadtype: body.data.roadtype,
-          startm: body.data.startm,
-          tacode: body.data.tacode,
-          town: body.data.town,
-          width: body.data.width,
-          zone: body.data.zone,
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5,
-          project: this.state.activeLayer,
-          login: this.context.login
-        }).addTo(this.leafletMap);
-        let parent = this;
-        vidPolyline.on('click', async function (event) {
-          if (parent.state.video) { //todo
-            let login = vidPolyline.options.login;
-            let side = parent.videoCard.current.getSide();
+  async playVideo(distFunc, photoFunc, geometry) {
+    
+    const geojson = JSON.parse(geometry.data.geojson);
+    let distance = distFunc(geometry.data.dist);
+    if (distance > 40) return
+    const latlngs = geojson.coordinates;
+    const coordinates = [];
+    latlngs.forEach( (coordinate) => {
+      coordinates.push([coordinate[1], coordinate[0]]);
+    });  
+    const vidPolyline = L.polyline(coordinates, {
+      class: geometry.data.class,
+      controller: geometry.data.controller,
+      cwid: geometry.data.cwid,
+      direction: geometry.data.direction,
+      endm: geometry.data.endm,
+      hierarchy: geometry.data.hierarchy,
+      label: geometry.data.label,
+      owner: geometry.data.owner,
+      pavement: geometry.data.pavement,
+      photos: null,
+      roadid: geometry.data.roadid,
+      roadtype: geometry.data.roadtype,
+      startm: geometry.data.startm,
+      tacode: geometry.data.tacode,
+      town: geometry.data.town,
+      width: geometry.data.width,
+      zone: geometry.data.zone,
+      color: 'blue',
+      weight: 4,
+      opacity: 0.5,
+      project: this.state.activeLayer,
+      login: this.context.login,
+    }).addTo(this.leafletMap);
+      const parent = this;
+      vidPolyline.on('click', async function (event) {
+        
+        if (parent.state.isVideoOpen) { 
+          const login = vidPolyline.options.login;
+          const side = parent.videoCard.current.getSide();
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: side,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);
+          parent.videoCard.current.refresh(photo.data);
+        } else {
+          this.setStyle({
+            color: 'red',
+            weight: 4
+          });
+          const login = vidPolyline.options.login;
+          const direction = vidPolyline.options.direction;
+          let initialSide = null;
+          if (direction === 'Both') {
+            initialSide = 'L'
             const request = {
               cwid: vidPolyline.options.cwid,
-              latlng: event.latlng,
+              side: 'L', 
               project: vidPolyline.options.project.code,
               surface: vidPolyline.options.project.surface,
-              login: login,
-              side: side,
               tacode: vidPolyline.options.tacode
             }
-            let photo = await parent.getVideoPhoto(request);
-            parent.videoCard.current.search(photo.data.photo);
+            if (!this.options.photos) {
+              const photos = await photoFunc(request, login);
+              this.options.photos = photos.data;
+            }
           } else {
-            this.setStyle({
-              color: 'red',
-              weight: 4
-            });
-            const login = vidPolyline.options.login;
-            const direction = vidPolyline.options.direction;
-            let initialSide = null;
-            if (direction === 'Both') {
-              initialSide = 'L'
-              const request = {
-                cwid: vidPolyline.options.cwid,
-                side: 'L', 
-                project: vidPolyline.options.project.code,
-                surface: vidPolyline.options.project.surface,
-                tacode: vidPolyline.options.tacode
-              }
-              if (!this.photos) {
-                const photos = await photoFunc(request, login);
-                this.photos = photos.data;
-              }
-            } else {
-              const request = {
-                cwid: vidPolyline.options.cwid,
-                side: null, 
-                project: vidPolyline.options.project.code,
-                surface: vidPolyline.options.project.surface,
-                tacode: vidPolyline.options.tacode
-              }
-              if (!this.photos) {
-                const photos = await photoFunc(request, login);
-                this.photos = photos.data;
-              }
-            }
-            if (this.photos.error) return
             const request = {
               cwid: vidPolyline.options.cwid,
-              latlng: event.latlng,
+              side: null, 
               project: vidPolyline.options.project.code,
               surface: vidPolyline.options.project.surface,
-              login: login,
-              side: initialSide,
               tacode: vidPolyline.options.tacode
             }
-            const photo = await parent.getVideoPhoto(request);               
-            const index = this.photos.findIndex((element) => element.photo === photo.data.photo) 
-            if (index === -1) {
-              alert("error loading video - Not found")
-            } else {
-              parent.videoCard.current.initialise(parent.context.projectMode, 
-                initialSide, direction, parent.state.activeLayer.amazon, this.photos, index);
-              parent.setState({videoViewer: true});     
+            if (!this.photos) {
+              const photos = await photoFunc(request, login);
+              this.photos = photos.data;
             }
-          }         
-        });
-        return vidPolyline;  
-      } else {
-        return null;
-      } 
+          }
+          if (this.options.photos.error) return
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: initialSide,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);               
+          const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
+          if (index === -1) {
+            alert("error loading video - Not found")
+          } else {
+            const videoParameters = {
+              mode: parent.context.projectMode,
+              direction: direction,
+              amazon: parent.state.activeLayer.amazon,
+              photos: this.photos,
+              startingIndex: index,
+            }
+            parent.videoCard.current.initialise(videoParameters, vidPolyline);
+            parent.changeVideoPlayerOpen(true);     
+          }
+        }         
+      });
+      return vidPolyline;  
   }
 
   /**

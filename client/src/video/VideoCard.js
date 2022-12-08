@@ -3,67 +3,92 @@ import {Card, ProgressBar, Button, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
 
+const IdText = function(props) {
+    if (!props.mode) return null;
+    if (props.mode === "road") {
+        const geojson = JSON.parse(props.geojson)
+        const coordinates = geojson.coordinates
+        return (
+            <div className='sidetext'>
+                <div>
+                    <b>{props.geometry.options.label}</b><br></br>
+                    <b>{"Road ID: "}</b> {props.geometry.options.roadid} <br></br>
+                    <b>{"Carriage ID: "} </b> {props.cwid}<br></br>
+                    <b>{"ERP: "}</b>{props.erp}<br></br><br></br>
+                    <b>{"Datetime: "}</b>{`${props.datetime}`}<br></br>
+                    
+                </div>
+                <div>
+                    <b>{"LatLng: "}</b>{`${coordinates[1]} ${coordinates[0]}`}<br></br>
+                    <b>{"Photo: "}</b>{`${props.photo}.jpg`}<br></br>
+                    <b>{"Velocity: "}</b>{`${props.velocity} km/hr`}<br></br>
+                    <b>{"PDop: "}</b>{`${props.pdop}`}<br></br>
+                    <b>{"Satellites: "}</b>{`${props.satellites}`}<br></br>
+                </div>
+          </div>
+          );
+    } else {
+        return (<div className='sidetext'>
+        <b>{"Road ID: "}</b> {props.roadid} <br></br>
+          <b>{"Footpath ID: "} </b> {props.cwid}<br></br>
+          <b>{"ERP: "}</b>{props.erp}<br></br>
+          </div>);
+    }
+}
+
 export default class VideoCard extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            amazon: null,
             show: false,
+            mode: null,
             index: 0,
-            side: null,
+            side: 'L',
             disabled: false,
             play: false,
             playicon: "play_128.png",
             forwardicon: "seekForward64blue.png",
             interval: 500,
-            mode: null
-
         }
         this.delegate(props.parent);
         this.photoArray = null;
     }
 
-    initialise(mode, side, direction, amazon, photoArray, index) {
-        if(photoArray !== null) {
-            console.log(index)
-            this.setState({show: true});
-            this.setState({mode: mode});
-            this.photoArray = photoArray;
-            this.setState({amazon: amazon});
-            this.setState({index: index});
-            this.setState({side: side});
-            if (direction === 'Both') {
-                this.setState({disabled: false});
-            } else {
-                this.setState({disabled: true});
-            }
-            
-            let latlng = this.getLatLng(index);
-            this.delegate.setState({carMarker: [latlng]});
-        } else {
-            alert("photoarray null")
-        }       
-    }
-
-    refresh(photo, photoArray) {
-        const index = photoArray.findIndex((element) => element.photo === photo.photo) 
-        if (index === -1) {
-            alert("error - photo not found");
-            return;
-        }
-        this.photoArray = photoArray;  
-        this.setState({side: photo.side});
-        this.setState({index: index});
-        let latlng = this.getLatLng(index);
-        this.delegate.setState({carMarker: [latlng]});
+    delegate(parent) {
+        this.delegate = parent;
     }
 
     getSide() {
         return this.state.side;
     }
 
-    getERP() {
-        return this.state.erp;
+    initialise(videoParameters, geometry) {
+        this.setState({show: true});
+        this.setState({mode: videoParameters.mode});
+        this.photoArray = geometry.options.photos;
+        this.geometry = geometry;
+        this.amazon = videoParameters.amazon;
+        this.setState({index: videoParameters.startingIndex});
+        if (videoParameters.direction === 'Both') { //need to handle one way
+                this.setState({disabled: false});
+            } else {
+                this.setState({disabled: true});
+            }
+            
+        const latlng = this.getLatLng(videoParameters.startingIndex);
+        this.delegate.setState({carMarker: [latlng]});       
+    }
+
+    refresh(photo, photoArray) {
+        if (photoArray) this.photoArray = photoArray
+        const index = this.photoArray.findIndex((element) => element.photo === photo.photo) 
+        if (index === -1) {
+            alert("error - photo not found");
+            return;
+        }
+        this.setState({index: index});
+        let latlng = this.getLatLng(index);
+        this.delegate.setState({carMarker: [latlng]});
     }
 
     clickStop(e) {
@@ -81,20 +106,14 @@ export default class VideoCard extends React.Component {
             this.setState({play: true}); 
             this.setState({playicon: "pause_128.png"});
             this.interval = setInterval(() => {
-                this.update(this.state.index + 1);
-                           
+                if (this.state.index + 1 < this.photoArray.length) {
+                    this.update(this.state.index + 1);
+                } else {
+                    this.stopMovie()
+                }           
             }, this.state.interval);  
         }
            
-    }
-
-    search(photo) {
-        for(let i = 0; i < this.state.photoArray.length; i++) {
-            if (photo === this.state.photoArray[i].photo) {
-                this.setState({counter: i});
-                this.update(i);
-            }
-        }
     }
 
     update(index) {
@@ -121,58 +140,41 @@ export default class VideoCard extends React.Component {
       
     clickClose(e) {
         e.preventDefault();
+        this.photoArray = null;
         this.setState({show: false}); 
         clearInterval(this.interval); 
         this.setState({playicon: "play_128.png"}); 
-        this.setState({counter: 0});
-        this.setState({show: false}); 
-        this.setState({photoArray: []}); 
-        this.setState({erp: null}); 
-        this.setState({roadid: null}); 
-        this.setState({carriageid: null}); 
-        this.setState({side: null}); 
-        this.delegate.setState({video: false}); 
-        this.delegate.vidPolyline.then((line) => {
-            line.setStyle({
-                color: 'blue'
-              });
-        });
-    }
-
-    delegate(parent) {
-      this.delegate = parent;
+        this.setState({index: 0});
+        this.setState({side: 'L'}); 
+        this.delegate.changeVideoPlayerOpen(false); 
+        this.geometry.setStyle({
+            color: 'blue'
+        })
     }
 
     changeRadio(e) {
-        this.delegate.changeSide(this.photoArray[this.state.index], 'L');
+        this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
         this.setState({side: e});
     }
+
+    // changeSide(photo) {
+    //     const index = this.photoArray.findIndex((element) => element.photo === photo.photo) 
+    //     if (index === -1) {
+    //         alert("error - photo not found");
+    //         return;
+    //     }
+    //     this.setState({index: index});
+    //     let latlng = this.getLatLng(index);
+    //     this.delegate.setState({carMarker: [latlng]});
+    // }
+
     render() {
-
-        const IdText = function(props) {
-            if (props.mode === "road") {
-                return (<div className='sidetext'>
-                    <div>
-                    <b>{"Road ID: "}</b> {props.roadid} <br></br>
-                    <b>{"Carriage ID: "} </b> {props.id}<br></br>
-                    <b>{"ERP: "}</b>{props.erp}<br></br>
-                    </div>
-                  </div>);
-            } else {
-                return (<div className='sidetext'>
-                <b>{"Road ID: "}</b> {props.roadid} <br></br>
-                  <b>{"Footpath ID: "} </b> {props.id}<br></br>
-                  <b>{"ERP: "}</b>{props.erp}<br></br>
-                  </div>);
-            }
-        }
-
+        const radios = [
+            { name: 'Left', value: 'L' },
+            { name: 'Right', value: 'R' },
+          ];    
         if (this.state.show) {
             if (!this.photoArray) return null;
-            const radios = [
-                { name: 'Left', value: 'L' },
-                { name: 'Right', value: 'R' },
-              ];
             return (
                 <Card 
                   className="videoModal"
@@ -182,7 +184,7 @@ export default class VideoCard extends React.Component {
                     <img
                       className="video" 
                       alt="fault"
-                      src={this.state.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
+                      src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
                         >
                     </img>     
                   </div>
@@ -190,15 +192,24 @@ export default class VideoCard extends React.Component {
                     className="videoProgress" 
                     min={0} 
                     max={this.photoArray.length} 
-                    now={this.state.counter} 
+                    now={this.state.index} 
                     />
                     <div className="controls">
                         <IdText
                             className="controls-text"
+                            geometry={this.geometry}
                             mode={this.state.mode}
-                            roadid={this.state.roadid}
-                            id={this.state.id}
-                            erp={this.state.erp}
+                            roadid={this.geometry.options.roadid}
+                            label={this.geometry.options.label}
+                            cwid={this.photoArray[this.state.index].cwid}
+                            erp={this.photoArray[this.state.index].erp}
+                            velocity={this.photoArray[this.state.index].velocity}
+                            datetime={this.photoArray[this.state.index].datetime}
+                            inspector={this.photoArray[this.state.index].inspector}
+                            pdop={this.photoArray[this.state.index].pdop}
+                            photo={this.photoArray[this.state.index].photo}
+                            satellites={this.photoArray[this.state.index].satellites}
+                            geojson={this.photoArray[this.state.index].st_asgeojson}
                         ></IdText>
                         <div className="controls-play" >
                             <div>
