@@ -424,7 +424,8 @@ class App extends React.Component {
             alert(geometry.error);
             return
           } 
-          this.vidPolyline = await this.playVideo(calcGCDistance, this.getPhotos, geometry); 
+          if (calcGCDistance(geometry.data.dist) > 40) return
+          this.vidPolyline = await this.playVideo(this.getPhotos, geometry); 
         } else {
           if (this.vidPolyline.options.color === "blue") {
             this.vidPolyline.remove();
@@ -607,6 +608,14 @@ class App extends React.Component {
     this.setState({isVideoOpen: isOpen});
   }
 
+  latLngsFromGeojson(geojson) {
+    const coordinates = [];
+    geojson.forEach( (coordinate) => {
+      coordinates.push([coordinate[1], coordinate[0]]);
+    }); 
+    return coordinates
+  }
+
   /**
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
@@ -614,17 +623,11 @@ class App extends React.Component {
    * @param {callback to calculate distance} distFunc 
    * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
    */
-  async playVideo(distFunc, photoFunc, geometry) {
+  async playVideo(photoFunc, geometry) {
     
     const geojson = JSON.parse(geometry.data.geojson);
-    let distance = distFunc(geometry.data.dist);
-    if (distance > 40) return
-    const latlngs = geojson.coordinates;
-    const coordinates = [];
-    latlngs.forEach( (coordinate) => {
-      coordinates.push([coordinate[1], coordinate[0]]);
-    });  
-    const vidPolyline = L.polyline(coordinates, {
+    const latlngs = this.latLngsFromGeojson(geojson.coordinates);
+    const vidPolyline = L.polyline(latlngs, {
       class: geometry.data.class,
       controller: geometry.data.controller,
       cwid: geometry.data.cwid,
@@ -696,7 +699,7 @@ class App extends React.Component {
             }
             if (!this.photos) {
               const photos = await photoFunc(request, login);
-              this.photos = photos.data;
+              this.options.photos = photos.data;
             }
           }
           if (this.options.photos.error) return
@@ -718,7 +721,7 @@ class App extends React.Component {
               mode: parent.context.projectMode,
               direction: direction,
               amazon: parent.state.activeLayer.amazon,
-              photos: this.photos,
+              photos: this.options.photos,
               startingIndex: index,
             }
             parent.videoCard.current.initialise(videoParameters, vidPolyline);
@@ -760,7 +763,7 @@ class App extends React.Component {
       tacode: request.tacode
     }
     const queryParams = new URLSearchParams(query)
-    const response = await fetch(`https://${request.login.host}/closestVideoPhoto?${queryParams.toString()}`, {
+    const response = await fetch(`https://${request.login.host}/closestvideophoto?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -813,7 +816,7 @@ class App extends React.Component {
       photo: JSON.stringify(currentPhoto)
     }
     const queryParams = new URLSearchParams(query)
-      const response = await fetch(`https://${this.context.login.host}/changeSide?${queryParams.toString()}`, {
+      const response = await fetch(`https://${this.context.login.host}/changeside?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -881,7 +884,7 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArchiveData(photo) {
-    const response = await fetch("https://" + this.context.login.host + '/archiveData', {
+    const response = await fetch("https://" + this.context.login.host + '/archivedata', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -936,9 +939,9 @@ class App extends React.Component {
     if (district.error) return;
     this.context.setDistrict(district); 
     request = {project: project, query: null};
-    let filter = await apiRequest(this.context.login, request, "/filterData");
+    let filter = await apiRequest(this.context.login, request, "/filterdata");
     if (filter.error) return; 
-    let storeFilter = await apiRequest(this.context.login, request, "/filterData");
+    let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
     if (storeFilter.error) return; 
     let filters = await this.buildFilter(filter);
     let store = await this.buildFilter(storeFilter);

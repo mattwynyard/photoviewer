@@ -49,6 +49,7 @@ export default class VideoCard extends React.Component {
             playicon: "play_128.png",
             forwardicon: "seekForward64blue.png",
             interval: 500,
+            errors: 0,
         }
         this.delegate(props.parent);
         this.photoArray = null;
@@ -76,7 +77,7 @@ export default class VideoCard extends React.Component {
             }
             
         const latlng = this.getLatLng(videoParameters.startingIndex);
-        this.delegate.setState({carMarker: [latlng]});       
+        this.delegate.setState({carMarker: [latlng]});     
     }
 
     refresh(photo, photoArray) {
@@ -140,11 +141,17 @@ export default class VideoCard extends React.Component {
       
     clickClose(e) {
         e.preventDefault();
-        this.photoArray = null;
+        this.reset();
         this.setState({show: false}); 
+    }
+
+    reset() {
+        this.photoArray = null;
+        
         clearInterval(this.interval); 
         this.setState({playicon: "play_128.png"}); 
         this.setState({index: 0});
+        this.setState({errors: 0});
         this.setState({side: 'L'}); 
         this.delegate.changeVideoPlayerOpen(false); 
         this.geometry.setStyle({
@@ -160,16 +167,28 @@ export default class VideoCard extends React.Component {
         this.setState({side: e});
     }
 
-    // changeSide(photo) {
-    //     const index = this.photoArray.findIndex((element) => element.photo === photo.photo) 
-    //     if (index === -1) {
-    //         alert("error - photo not found");
-    //         return;
-    //     }
-    //     this.setState({index: index});
-    //     let latlng = this.getLatLng(index);
-    //     this.delegate.setState({carMarker: [latlng]});
-    // }
+    imageError(err) {
+        if (this.photoArray.length === 0 || this.state.errors >= 10) {
+            alert("Photos not Found")
+            this.reset();
+            this.setState({show: false})
+            return
+        }   
+        if (this.state.index >= this.photoArray.length) {alert("Photos not Found")
+
+            this.reset();
+            this.setState({show: false})
+            return
+        } 
+        if (this.state.index < this.photoArray.length / 2) {
+            this.setState({index: this.state.index + 1})
+            this.setState({errors: this.state.errors + 1})
+        } else {
+            this.setState({index: this.state.index - 1})
+            this.setState({errors: this.state.errors + 1})
+        }
+        
+    }
 
     render() {
         const radios = [
@@ -188,6 +207,7 @@ export default class VideoCard extends React.Component {
                       className="video" 
                       alt="fault"
                       src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
+                      onError={(e) => this.imageError(e)}
                         >
                     </img>     
                   </div>
