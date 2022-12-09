@@ -11,37 +11,31 @@ const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
 const util = require('./util.js');
-const jwt = require('jsonwebtoken');
-const jwtKey = process.env.KEY;
-const jwtExpirySeconds = 10000;
 const fs = require('fs');
 const https = require('https');
-const http = require('http');
-const port = process.env.PROXY_PORT;
+const proxy_port = process.env.PROXY_PORT;
+const port = process.env.PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 // comment out create server code below when deploying to server
 // server created in index.js
-const options = {
-  key: fs.readFileSync('./server.key', 'utf8'),
-  cert: fs.readFileSync('./server.cert', 'utf8')
-}
-console.log("mode: " + environment);
+
+
 if(environment === 'production') {
-  // const host = "localhost";
-  // app.listen(port, () => {
-  //   console.log(`Listening: http://${host}:${port}`);
-  // });
- http.createServer(function() {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
+  app.listen(proxy_port, () => {
+    console.log(`Listening: http://${host}:${proxy_port}`);
+  });
 } else {
+  const options = {
+    key: fs.readFileSync('./server.key', 'utf8'),
+    cert: fs.readFileSync('./server.cert', 'utf8')
+  }
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
 }
 
+console.log("mode: " + environment);
 app.use(cors());
 //app.use(morgan('dev'));
 app.use(helmet());
@@ -72,11 +66,11 @@ app.post('/mapbox', securityController.mapbox);
 
 app.get('/closestcarriage', geometryController.closestCarriage);
 
-app.get('/changeSide', videoController.changeSide);
+app.get('/changeside', videoController.changeSide);
 
 app.get('/photos', videoController.photos);
 
-app.get('/closestVideoPhoto', videoController.closestVideoPhoto);
+app.get('/closestvideophoto', videoController.closestVideoPhoto);
 
 app.post('/user', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
@@ -336,44 +330,6 @@ app.post('/rating', async(req, res) => {
   }
 });
 
-//app.post('/photos', async(req, res) => {
-//   let security = false;
-//   if (req.body.user === 'Login') {
-//     security = await db.isPublic(req.body.project.code);
-//   } else {
-//     security = users.findUserToken(req.headers.authorization, req.body.user);
-//   }
-//   if (security) {
-//     if (req.body.project === null) {
-//       res.send({error: "No project selected"});
-//     } else {
-//       res.set('Content-Type', 'application/json');
-//       let result = null;
-//       try {
-//         if (req.body.side === null) {
-//           if (req.body.surface === 'footpath') {
-//             result = await db.getFPPhotos(req.body.cwid, req.body.project);
-//           }  
-//         } else {
-//           const view = util.getPhotoView(req.body.project)
-//           result = await db.getPhotos(req.body, view);
-//         }
-//       } catch (err) {
-//         console.log(err);
-//         res.send({error: err});
-//       }
-//       if (result.rowCount != 0) {
-//         res.send({success: true, data: result.rows, side: req.body.side});
-//       } else {
-//         res.send({success: false, data: null});
-//       }
-//     } 
-//   } else {
-//     res.set('Content-Type', 'application/json');
-//     res.send({error: "Invalid token"});
-//   }
-// });
-
 app.post('/changeSide', async(req, res) => {
   let security = false;
   if (req.body.user === 'Login') {
@@ -411,51 +367,7 @@ app.post('/changeSide', async(req, res) => {
   }
 });
 
-
-// app.post('/closestVideoPhoto', async(req, res) => {
-//   let security = false;
-//   if (req.body.user === 'Login') {
-//     security = await db.isPublic(req.body.project);
-//   } else {
-//     security = users.findUserToken(req.headers.authorization, req.body.user);
-//   }
-//   if (security) {
-//     if (req.body.project.code === null) {
-//       res.send({error: "No project selected"});
-//     } else {
-//       res.set('Content-Type', 'application/json');
-//       try {
-//         if (req.body.surface === "road") {
-//           const view = util.getPhotoView(req.body.project)
-//           const result = await db.closestVideoPhoto(view, req.body);
-//           if (result.rowCount != 0) {
-//             res.send({success: true, data: result.rows[0]});
-//           } else {
-//             res.send({success: false, data: null});
-//           }          
-//         } else {
-//           const result = await db.archiveFPPhoto(req.body.project.code, req.body.lat, req.body.lng);
-//           data = result.rows[0];
-//           fdata = formatData(data);
-//           if (result.rowCount != 0) {
-//             res.send({success: true, data:  result.rows[0]});
-//           } else {
-//             res.send({success: false, data: null});
-//           }
-//         }   
-        
-//       } catch (err) {
-//         console.log(err);
-//         res.send({error: err});
-//       }
-//     } 
-//   } else {
-//     res.set('Content-Type', 'application/json');
-//     res.send({error: "Invalid token"});
-//   }
-// });
-
-app.post('/archiveData', async(req, res) => {
+app.post('/archivedata', async(req, res) => {
   let result = false;
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project.code);
@@ -544,7 +456,7 @@ app.post('/class', async (req, res) => {
  * i.e. user clicked filter from menu
  * const FOOTPATH_FILTERS = ["Asset", "Fault", "Type", "Cause"];
  */
- app.post('/filterData', async (req, res) => {
+ app.post('/filterdata', async (req, res) => {
   let result = false;
   let project = req.body.project.code;
   let user = req.body.user;

@@ -1,7 +1,6 @@
 'use strict'
 require('dotenv').config();
 
-
 function buildQuery(arr) {
     let query = ""; 
     for (var i = 0; i < arr.length; i += 1) {
@@ -166,7 +165,7 @@ const connection = new Pool({
     host: process.env.HOST,
     database: process.env.DB,
     password: process.env.PASSWORD,
-    port: process.env.PORT,
+    port: process.env.DBPORT,
     max: 20,
     connectionTimeoutMillis: 2000,
 })
@@ -177,7 +176,7 @@ connection.connect(function(err) {
     }
 });
 connection.on('connect', () => {
-    console.log("connected to database on port: " + process.env.PORT);
+    console.log("connected to database on port: " + process.env.DBPORT);
 });
 
 connection.on('error', error => {
