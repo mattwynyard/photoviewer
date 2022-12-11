@@ -1,9 +1,7 @@
-import { React, useContext  } from 'react';
-import { AppContext } from '../context/AppContext'
+import { React } from 'react';
 import { LayerCard } from './LayerCard';
 
 const LayerManager = (props) => {
-    const { login, showLoader, hideLoader} = useContext(AppContext);
 
     if (props.layer) {
         return (
@@ -18,12 +16,7 @@ const LayerManager = (props) => {
                 classfilter={props.filterRMClass} 
                 classonClick={props.classonClick}
                 setDataActive={props.setDataActive} //-> data table
-                setMapMode={props.setMapMode}
-                mapMode={props.mapMode}
                 dataChecked={props.dataActive} //-> data table
-                login={login.user}
-                spin={showLoader}
-                stopSpin={hideLoader}
             >           
             </LayerCard>
         );

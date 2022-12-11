@@ -1,39 +1,38 @@
-import { React } from 'react';
+import { React, useContext, useCallback, useMemo } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown';
 import PriorityDropdown from './PriorityDropdown';
 import RatingDropdown from './RatingDropdown';
+import { AppContext } from '../context/AppContext';
 
 import './LayerCard.css';
 
 function LayerCard(props) {
 
     const box = document.querySelector('.layercard-datainput');
+    const { mapMode, setMapMode, showLoader } = useContext(AppContext);
 
-    const handleFocus = (e) => {
+    const handleFocus = () => {
         box.blur();
-        props.spin();      
+        showLoader();      
     }
 
-    const handleDataChange = (e) => { 
-
+    const handleDataChange = useCallback((e) => { 
         if (e.target.checked) {
-            props.spin();   
-            props.setDataActive(true);
-            //props.stopSpin();     
+            showLoader();   
+            props.setDataActive(true);    
         } else {
-            // 
             props.setDataActive(false);
         }  
-    }
+    }, [showLoader, props])
 
-    const handleVideoChange = (e) => {
+    const handleVideoChange = useCallback((e) => {
         if (e.target.checked) {
-            props.setMapMode("video");
+            setMapMode("video");
         } else {
-            props.setMapMode("map");
+            setMapMode("map");
         }
-    }
+    }, [setMapMode])
 
     const handleRatingChange = (isChecked) => {
         
@@ -81,7 +80,7 @@ function LayerCard(props) {
                     <input 
                         className="layercard-videoinput"
                         type="checkbox" 
-                        checked={props.mapMode === "video"}
+                        checked={mapMode === "video"}
                         onChange={(e) => handleVideoChange(e)}
                         disabled={!props.layer.hasvideo}
                     />

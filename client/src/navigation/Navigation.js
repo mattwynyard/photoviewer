@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, Fragment } from 'react';
+import React, { useState, useContext, useEffect, useCallback, Fragment } from 'react';
 import { useDispatch, useSelector } from 'react-redux'
 import { addLayer } from '../state/reducers/layersSlice'
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
@@ -28,7 +28,7 @@ export const Navigation = (props) => {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin, setMapBoxKey, district } = useContext(AppContext);
+  const {login, updateLogin, setMapBoxKey, district, setProjectMode, projectMode } = useContext(AppContext);
 
   const showModal = () => {
     setShow(true)
@@ -39,7 +39,7 @@ export const Navigation = (props) => {
   const clickLogin = async (user, password) => {
     setLoginError("")
     const body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
-    if (body.result) {
+    if (body.login) {
       const mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
       setMapBoxKey(mapbox);
       window.sessionStorage.setItem('token', body.token);
@@ -130,15 +130,15 @@ export const Navigation = (props) => {
     setProjects(obj);
   }
 
-  const handleClick = (e) => {
-    let projectMode = e.target.type;
+  const handleClick = useCallback((e) => { 
     let project = JSON.parse(e.target.title);
-    if (projectMode === 'remove') { 
+    if (e.target.type === 'remove') { 
+      setProjectMode(null);
       props.remove(project);      
     } else {
-      props.add(project)
+      props.add(projectMode, project)
     } 
-  }
+  }, [])
 
   // Admin
   const handleAdminClick = (e) => {

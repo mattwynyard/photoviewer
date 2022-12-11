@@ -18,16 +18,16 @@ export default function Photoviewer(props) {
     }
 
     const imageError = (e) => {
-        if (this.state.command === "next") {
-          const photo = this.getPhoto("next");
-          this.setState({photo: photo});
-          this.setState({command: "next"});
-        } else {
-          const photo = this.getPhoto("prev");
-          this.setState({photo: photo});
-          this.setState({command: "prev"});
-        }
+      if (this.state.command === "next") {
+        const photo = this.getPhoto("next");
+        this.setState({photo: photo});
+        this.setState({command: "next"});
+      } else {
+        const photo = this.getPhoto("prev");
+        this.setState({photo: photo});
+        this.setState({command: "prev"});
       }
+    }
 
     const clickPrev = (e) => {
         e.preventDefault();

@@ -22,10 +22,13 @@ export const AppContextProvider = ({children}) => {
 
     const [login, setLogin] = useState({user: "Login", token: null, host: host});
     const [gl, _setGL] = useState(null);
+    const [leafletMap, _setLeafletMap] = useState(null);
     const [mapBoxKey, _setMapBoxKey] = useState(null);
     const [ratingActive, _setRatingActive] = useState(false);
+    const [dataActive, _setDataActive] = useState(false);
     const [district, _setDistrict] = useState(null)
-    const [priorityMode, _setpriorityMode] = useState(null)
+    const [mapMode, _setMapMode] = useState("map")
+    const [projectMode, _setProjectMode] = useState(null)
     const loader = document.querySelector('.loader');
     const loading = document.querySelector('.loading');
 
@@ -51,12 +54,28 @@ export const AppContextProvider = ({children}) => {
       _setGL({gl: _gl});
     }, [])
   
-    const setRatingActive = useCallback((active) => {
-      _setRatingActive(active);
+    const setRatingActive = useCallback((isActive) => {
+      _setRatingActive(isActive);
+    }, [])
+
+    const setDataActive = useCallback((isActive) => {
+      _setDataActive(isActive);
     }, [])
 
     const setDistrict = useCallback((district) => {
       _setDistrict(district);
+    }, [])
+
+    const setMapMode = useCallback((mode) => {
+      _setMapMode(mode);
+    }, [])
+
+    const setLeafletMap = useCallback((map) => {
+      _setLeafletMap(map);
+    }, [])
+
+    const setProjectMode = useCallback((map) => {
+      _setProjectMode(map);
     }, [])
 
     const values = {
@@ -64,15 +83,23 @@ export const AppContextProvider = ({children}) => {
         updateLogin,
         gl,
         setGL,
+        leafletMap,
+        setLeafletMap,
         ratingActive,
         setRatingActive,
+        dataActive,
+        setDataActive,
         hideLoader,
         showLoader,
         mapBoxKey,
         setMapBoxKey,
         district,
         setDistrict,
-        MAP_CENTRE
+        mapMode,
+        setMapMode,
+        projectMode,
+        setProjectMode,
+        MAP_CENTRE,
     }
 
     return (

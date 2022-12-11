@@ -1,41 +1,41 @@
 'use strict';
+const securityController = require('./controllers/securityController');
+const geometryController = require('./controllers/geometryController');
+const videoController = require('./controllers/videoController');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
-//const axios = require('axios');
 const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
-const jwt = require('jsonwebtoken');
-const jwtKey = process.env.KEY;
-const jwtExpirySeconds = 10000;
+const util = require('./util.js');
 const fs = require('fs');
 const https = require('https');
-const http = require('http');
-const port = process.env.PROXY_PORT;
+const proxy_port = process.env.PROXY_PORT;
+const port = process.env.PORT;
 const host = process.env.PROXY;
 const environment = process.env.ENVIRONMENT;
 // comment out create server code below when deploying to server
 // server created in index.js
-const options = {
-  key: fs.readFileSync('./server.key', 'utf8'),
-  cert: fs.readFileSync('./server.cert', 'utf8')
-}
-console.log("mode: " + environment);
+
+
 if(environment === 'production') {
-  let hostname = "localhost";
- http.createServer(function() {
-  }).listen(port, hostname, () => {
-      console.log(`Listening: http://${hostname}:${port}`);
-   });
+  app.listen(proxy_port, () => {
+    console.log(`Listening: http://${host}:${proxy_port}`);
+  });
 } else {
+  const options = {
+    key: fs.readFileSync('./server.key', 'utf8'),
+    cert: fs.readFileSync('./server.cert', 'utf8')
+  }
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
 }
 
+console.log("mode: " + environment);
 app.use(cors());
 //app.use(morgan('dev'));
 app.use(helmet());
@@ -57,73 +57,20 @@ app.get('/api', async (req, res) => {
   res.send({ projects: result });
 });
 
-app.post('/mapbox', async (req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = false;
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-      res.send({ result: process.env.MAPBOX });
-  } else {
-    res.send({ result: "public" });
-  }
-  
-});
 
-app.post('/login', async (request, response) => {
-  let password = request.body.key;
-  let user = request.body.user;
-  let p = await db.password(user);
-  if (p.rows.length == 0) { //user doesn't exist
-    response.send({ result: false, error: "user doesnt exist" });
-  } else {
-    let count = await db.users(user);
-    bcrypt.compare(password, p.rows[0].password.toString(), async (err, res) => {
-      count = count.rows[0].count;
-      const seed  = user + count;
-      if (err) throw err;     
-      if (res) {
-          const token = jwt.sign({ seed }, jwtKey, {
-          algorithm: 'HS256',
-          expiresIn: jwtExpirySeconds
-      });
-        count = count += 1;
-        await db.updateCount(count, user);
-        this.token = token;
-        let projects = await db.projects(user);
-        let arr = []; //project arr
-        for (var i = 0; i < projects.rows.length; i += 1) {
-          arr.push(projects.rows[i]);
-        }
-        response.set('Content-Type', 'application/json');
-        response.cookie('token', token, { maxAge: jwtExpirySeconds * 1000 });
-        response.json({ result: true, user: user, token: token, projects: arr});
-        users.addUser({
-          name: user,
-          token: token,         
-          }
-        );
-      } else {      
-        response.send({ result: false, error: "incorrect password" });
-      }
-    }); 
-  }  
-});
+app.post('/login', securityController.login);
 
-app.post('/logout', (req, res) => {
-  const result = users.findUserToken(req.headers.authorization, req.body.user);
-  if (result) {
-    users.deleteToken(req.body.token);
-    res.send({success: true});
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({success: false});
-    
-    //res.send({error: "Invalid token"});
-  }
-});
+app.post('/logout', securityController.logout);
+
+app.post('/mapbox', securityController.mapbox);
+
+app.get('/closestcarriage', geometryController.closestCarriage);
+
+app.get('/changeside', videoController.changeSide);
+
+app.get('/photos', videoController.photos);
+
+app.get('/closestvideophoto', videoController.closestVideoPhoto);
 
 app.post('/user', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
@@ -290,39 +237,6 @@ app.post('/project', async (req, res) => {
     }    
 });
 
-app.post('/carriageway', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project.code);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    if (req.body.project.code === null) {
-      res.send({error: "No project selected"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      let result = null;
-      let data = null;
-      try {      
-          result = await db.closestCarriage(req.body.query.lat, req.body.query.lng, false);
-          data = result.rows[0];      
-      } catch (err) {
-        console.log(err);
-        res.send({error: err});
-      }
-      if (result.rowCount != 0) {
-        res.send({success: true, data: data});
-      } else {
-        res.send({success: false, data: null});
-      }
-    } 
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
 /**
  * Finds closest carraigeway or footpath to mouse click
  * 
@@ -344,10 +258,17 @@ app.post('/carriage', async(req, res) => {
       try {
         
         if (req.body.project.surface === 'footpath') {
+
           result = await db.closestFootpath(req.body.lat, req.body.lng);
           data = result.rows[0];
         } else {
-          result = await db.closestCarriage(req.body.lat, req.body.lng, true); //<--true if using archive table
+          const view = util.getCentrelineView(req.body.user)
+          if (view) {
+            result = await db.closestCarriageFromView(view, req.body.project.code, req.body.lat, req.body.lng);
+          } else {
+            result = await db.closestCarriage(req.body.lat, req.body.lng, true);
+          }
+          
           data = result.rows[0];
         }
         
@@ -355,7 +276,7 @@ app.post('/carriage', async(req, res) => {
         console.log(err);
         res.send({error: err});
       }
-      if (result.rowCount != 0) {
+      if (result.rowCount !== 0) {
         res.send({success: true, data: data});
       } else {
         res.send({success: false, data: null});
@@ -409,67 +330,24 @@ app.post('/rating', async(req, res) => {
   }
 });
 
-app.post('/photos', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project.code);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    if (req.body.project.code === null) {
-      res.send({error: "No project selected"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      let result = null;
-      let data = null;
-      let side = null;
-      try {
-        if (req.body.side === null) {
-          if (req.body.project.surface === 'footpath') {
-            result = await db.getFPPhotos(req.body.carriageid, req.body.project.code);
-          } else {
-            result = await db.getPhotos(req.body.carriageid, null);
-          }
-          
-        } else {
-          side = req.body.side;
-          result = await db.getPhotos(req.body.carriageid, side);
-        }
-        data = result.rows;
-      } catch (err) {
-        console.log(err);
-        res.send({error: err});
-      }
-      if (result.rowCount != 0) {
-        res.send({success: true, data: data, side: side});
-      } else {
-        res.send({success: false, data: null});
-      }
-    } 
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
 app.post('/changeSide', async(req, res) => {
   let security = false;
   if (req.body.user === 'Login') {
     security = await db.isPublic(req.body.project.code);
   } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
+    security = await users.findUserToken(req.headers.authorization, req.body.user);
   }
   if (security) {
-    if (req.body.project.code === null) {
+    if (!req.body.project) {
       res.send({error: "No project selected"});
+      return;
     } else {
       res.set('Content-Type', 'application/json');
       let result = null;
       let data = null;
       let newPhoto = null;
       try {
-        let opposite = await db.oppositePhoto(req.body.carriageid, req.body.side, req.body.erp);
+        const opposite = await db.oppositePhoto(req.body.carriageid, req.body.side, req.body.erp);
         newPhoto = opposite.rows[0];
         result = await db.getPhotos(req.body.carriageid, req.body.side);
         data = result.rows;
@@ -489,57 +367,7 @@ app.post('/changeSide', async(req, res) => {
   }
 });
 
-
-app.post('/archive', async(req, res) => {
-  let security = false;
-  if (req.body.user === 'Login') {
-    security = await db.isPublic(req.body.project.code);
-  } else {
-    security = users.findUserToken(req.headers.authorization, req.body.user);
-  }
-  if (security) {
-    if (req.body.project.code === null) {
-      res.send({error: "No project selected"});
-    } else {
-      res.set('Content-Type', 'application/json');
-      try {
-        let surface = req.body.project.surface;
-        let result = null;
-        let data = null; 
-        let fdata = null;
-        
-        if (surface === "road") {
-          if (req.body.side !== null) {
-            result = await db.archiveVideoPhoto(req.body.project.code, req.body.lat, req.body.lng, req.body.side);
-          } else {
-            result = await db.archivePhoto(req.body.project.code, req.body.lat, req.body.lng);
-          }
-          data = result.rows[0];     
-          if (result.rowCount !== 0) {
-            fdata = formatData(data);
-          }       
-        } else {
-          result = await db.archiveFPPhoto(req.body.project.code, req.body.lat, req.body.lng);
-          data = result.rows[0];
-          fdata = formatData(data);
-        }   
-        if (result.rowCount != 0) {
-          res.send({success: true, data: fdata});
-        } else {
-          res.send({success: false, data: null});
-        }
-      } catch (err) {
-        console.log(err);
-        res.send({error: err});
-      }
-    } 
-  } else {
-    res.set('Content-Type', 'application/json');
-    res.send({error: "Invalid token"});
-  }
-});
-
-app.post('/archiveData', async(req, res) => {
+app.post('/archivedata', async(req, res) => {
   let result = false;
   if (req.body.user === 'Login') {
     result = await db.isPublic(req.body.project.code);
@@ -628,7 +456,7 @@ app.post('/class', async (req, res) => {
  * i.e. user clicked filter from menu
  * const FOOTPATH_FILTERS = ["Asset", "Fault", "Type", "Cause"];
  */
- app.post('/filterData', async (req, res) => {
+ app.post('/filterdata', async (req, res) => {
   let result = false;
   let project = req.body.project.code;
   let user = req.body.user;
