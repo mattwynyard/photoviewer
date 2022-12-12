@@ -423,6 +423,10 @@ class App extends React.Component {
       case 'video':
         if(this.vidPolyline === null) { 
           const geometry = await this.getVideoGeometry(e)
+          if (!geometry)  {
+            alert("no geometry");
+            return
+          }
           if (geometry.error)  {
             alert(geometry.error);
             return
