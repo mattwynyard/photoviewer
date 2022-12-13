@@ -624,7 +624,7 @@ class App extends React.Component {
    * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
    */
   async playVideo(photoFunc, geometry) {
-    
+    if (this.vidPolyline) return
     const geojson = JSON.parse(geometry.data.geojson);
     const latlngs = this.latLngsFromGeojson(geojson.coordinates);
     const vidPolyline = L.polyline(latlngs, {
@@ -653,8 +653,7 @@ class App extends React.Component {
     }).addTo(this.leafletMap);
       const parent = this;
       vidPolyline.on('click', async function (event) {
-        
-        if (parent.state.isVideoOpen) { 
+          if (this.options.color === 'red') { 
           const login = vidPolyline.options.login;
           const side = parent.videoCard.current.getSide();
           const request = {
@@ -697,7 +696,7 @@ class App extends React.Component {
               surface: vidPolyline.options.project.surface,
               tacode: vidPolyline.options.tacode
             }
-            if (!this.photos) {
+            if (!this.options.photos) {
               const photos = await photoFunc(request, login);
               this.options.photos = photos.data;
             }
@@ -1005,6 +1004,8 @@ class App extends React.Component {
           activeProject: null,
           activeLayer: null,
           ages: layers,
+          video : false,
+          isVideoOpen: false
           }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
