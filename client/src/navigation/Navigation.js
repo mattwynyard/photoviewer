@@ -1,13 +1,14 @@
 import React, { useState, useContext, useEffect, useCallback, Fragment } from 'react';
+import { store } from '../state/store'
 import { useDispatch, useSelector } from 'react-redux'
-import { addLayer } from '../state/reducers/layersSlice'
+import { addLayer, removeLayer } from '../state/reducers/layersSlice'
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { AppContext } from '../context/AppContext';
 import LoginNav from '../login/LoginNav.jsx';
 import LoginModal from '../login/LoginModal.jsx'
 import {LoginFetch, apiRequest} from '../api/Api.js';
-import ProjectNav from './ProjectNav.js';
+import { ProjectNav } from './ProjectNav.js';
 import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
 import AdminModal from '../modals/AdminModal.jsx';
@@ -15,9 +16,7 @@ import {CustomLink} from "../components/Components.jsx";
 import SearchBar from './SearchBar.js'
 
 export const Navigation = (props) => {
-
   const dispatch = useDispatch()
-
   const [show, setShow] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminTable, setAdminTable] = useState('user');
@@ -33,8 +32,8 @@ export const Navigation = (props) => {
   const showModal = () => {
     setShow(true)
   }
-  //const layers = useSelector((state) => state.layers)
-  //console.log(layers)
+  const layers = useSelector((state) => state.layers)
+  console.log(layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
@@ -47,7 +46,7 @@ export const Navigation = (props) => {
       updateLogin(body.user, body.token);
       setLocalLogin({user: body.user, token: body.token})
       body.projects.forEach(element => {
-        dispatch(addLayer(element))
+        //dispatch(addLayer(element))
       });
       buildProjects(body.projects)
       setIsLoggedIn(true)
@@ -119,7 +118,7 @@ export const Navigation = (props) => {
 
   const buildProjects = (projects) => {    
     let obj = {road : [], footpath: []}
-    for(var i = 0; i < projects.length; i += 1) {
+    for(let i = 0; i < projects.length; i += 1) {
       if (projects[i].surface === "road") {
         obj.road.push(projects[i]);
       } else {
@@ -130,13 +129,15 @@ export const Navigation = (props) => {
     setProjects(obj);
   }
 
-  const handleClick = useCallback((e) => { 
-    let project = JSON.parse(e.target.title);
-    if (e.target.type === 'remove') { 
-      setProjectMode(null);
+  const handleClick = useCallback((type, project) => { 
+    console.log(type, project)
+    // const project = JSON.parse(e.target.title);
+    if (type === 'remove') { 
+      dispatch(removeLayer(project))
       props.remove(project);      
     } else {
-      props.add(projectMode, project)
+      props.add(project)
+      dispatch(addLayer(project))
     } 
   }, [])
 
@@ -174,8 +175,7 @@ export const Navigation = (props) => {
           <Navbar.Collapse className={"navbar-collapse"} id="responsive-navbar-nav">
             <ProjectNav
               login={login}
-              projects={projects} 
-              layers={props.layers}
+              projects={projects ? projects : null} 
               onClick={login.user !== 'admin' ? handleClick : handleAdminClick}
               disabled = {projects === null ? true: false}
             />

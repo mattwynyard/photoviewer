@@ -21,9 +21,9 @@ import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
-import { setLayer } from './state/reducers/activeLayerSlice'
 import { store } from './state/store'
 import { connect } from 'react-redux'
+import { addLayer, removeLayer } from './state/reducers/layersSlice'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -40,7 +40,6 @@ class App extends React.Component {
   
   constructor(props) {
     super(props);
-    
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       ruler: false,
       rulerOrigin: null,
@@ -73,8 +72,9 @@ class App extends React.Component {
       filters: [],
       filterStore: [],
       activeProject: null,
-      activeLayers: [], //layers displayed on the
-      activeLayer: null, //the layer in focus
+      //s: [], //layers displayed on the
+      //activeLayer: null, //the layer in focus
+      activeIndex: -1,
       bucket: null,
       message: "",
       selectedIndex: null,
@@ -94,7 +94,7 @@ class App extends React.Component {
       video : false,
       isVideoOpen: false
     }; 
-    this.selectLayer= this.selectLayer.bind(this)
+    //this.selectLayer= this.selectLayer.bind(this)
     this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -157,6 +157,7 @@ class App extends React.Component {
           }
         }
       }
+      
     }
      
     if (this.state.filtered) {
@@ -290,7 +291,7 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
-    if (this.state.activeLayer.reverse) {
+    if (this.props.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
@@ -930,7 +931,7 @@ class App extends React.Component {
     this.reset();
   }
 
-  loadLayer = async (project) => {  
+  loadLayer = async (project) => { 
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
@@ -951,9 +952,7 @@ class App extends React.Component {
     let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
     if (storeFilter.error) return; 
     let filters = await this.buildFilter(filter);
-    let store = await this.buildFilter(storeFilter);
-    let layers = this.state.activeLayers;
-    layers.push(project);
+    let filterStore = await this.buildFilter(storeFilter);
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -965,10 +964,8 @@ class App extends React.Component {
       priorities: priorities.priorities,
       rmclass: layerBody.rmclass,
       filterRMClass: layerBody.rmclass,
-      filterStore: store,
+      filterStore: filterStore,
       filters: filters,
-      activeLayer: project,
-      activeLayers: layers,
       inspections: inspections,
       activeProject: projectCode,
       priorityMode: this.context.projectMode === "road" ? "Priority": "Grade",
@@ -987,15 +984,6 @@ class App extends React.Component {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
-      let layers = this.state.activeLayers;
-      if (project) {
-        for(var i = 0; i < layers.length; i += 1) {     
-          if (project.code === layers[i].code) {
-            layers.splice(i, 1);
-            break;
-          }
-        }
-      }
       this.setState(
         {
           objGLData: [],
@@ -1006,12 +994,10 @@ class App extends React.Component {
           filter: [],
           rmclass: [],
           faultData: [],
-          activeLayers: layers,
           inspections: [],
           bucket: null,
           activeProject: null,
-          activeLayer: null,
-          ages: layers,
+          ages: null,
           }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1239,14 +1225,6 @@ class App extends React.Component {
     navigator.clipboard.writeText(position);
   }
 
-  selectLayer(projectCode) {
-    const index = this.state.activeLayers.findIndex((layer) => {
-      return layer.code === projectCode.code
-    });
-    //this.setState({activeLayer: this.state.activeLayers[index]});
-    //dispatch(setLayer(this.state.activeLayers[index]))
-  }
-
   updateFilter = (filter) => {
     let html = this.applyRef.current.innerHTML
     if (this.state.filtered && html === "Clear Filter") {
@@ -1317,8 +1295,8 @@ class App extends React.Component {
         <Navigation 
           layers={this.state.activeLayers}
           remove={this.removeLayer}
-          //add={this.loadLayer}
-          add={this.selectLayer}
+          add={this.loadLayer}
+          //add={this.selectLayer}
           logout={this.logout}
           project={this.state.activeLayer}
           updateLogin={this.context.updateLogin}
@@ -1454,11 +1432,12 @@ class App extends React.Component {
 }
 
 const mapStateToProps = state => ({
-  activeLayer: state.activeLayer
+  activeLayer: state.layers.active,
+  activeLayers: state.layers.layers
 })
 
 const mapDispatchToProps = {
-  setLayer,
+  addLayer
 }
 
 export default connect(

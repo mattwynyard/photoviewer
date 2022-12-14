@@ -1,12 +1,16 @@
 
-import React, {Fragment} from 'react';
+import React, {Fragment, useCallback} from 'react';
 import {Nav, NavDropdown, Dropdown}  from 'react-bootstrap';
 import './Navigation.css';
+import { useSelector } from 'react-redux'
 
 const CustomMenu = (props) => {
 
+  const layers = useSelector((state) => state.layers.layers)
+  console.log(layers)
+  console.log(props.projects)
   const isDisabled = (type) => {
-    if (props.layers.length === 0) {
+    if (layers.length === 0) {
       if (type === "remove") {
         return true;
       } else {
@@ -19,6 +23,10 @@ const CustomMenu = (props) => {
         return true;
       }
     }
+  }
+
+  const handleClick = (type, value) => {
+    props.onClick(type, value)
   }
 
   return (
@@ -36,8 +44,7 @@ const CustomMenu = (props) => {
               index={index}
               type={props.type}
               disabled={isDisabled(props.type)}
-              title={JSON.stringify(value)}
-              onClick={props.layers.code !== value.code ? props.onClick : null}
+              onClick={() => handleClick(props.type, value)}
               >
               {value.description + " " + value.date}
           </Dropdown.Item>
@@ -48,7 +55,8 @@ const CustomMenu = (props) => {
   );     
 }
 
-export default function ProjectNav(props) { 
+export const ProjectNav = (props) => { 
+  const layers = useSelector((state) => state.layers.layers)
   if (props.projects) {
     if (props.login.user === "admin") {
       return (
@@ -97,7 +105,7 @@ export default function ProjectNav(props) {
               type={'road'}
               disabled ={props.projects.road.length === 0 ? true: false} 
               projects={props.projects.road} 
-              layers={props.layers} 
+
               onClick={props.onClick}
               />
               < NavDropdown.Divider /> 
@@ -106,7 +114,6 @@ export default function ProjectNav(props) {
               title="Add Footpath Layer" 
               type={'footpath'} 
               projects={props.projects.footpath}
-              layers={props.layers} 
               disabled ={props.projects.footpath.length === 0 ? true: false} 
               onClick={props.onClick}
               />
@@ -115,9 +122,8 @@ export default function ProjectNav(props) {
               key="3" 
               title="Remove Layer" 
               type={'remove'} 
-              projects={props.layers}
-              layers={{code: null}}
-              disabled ={props.layers.length === 0 ? true: false} 
+              disabled ={layers.length === 0}
+              projects={layers}
               onClick={props.onClick}
               />
           </NavDropdown>
