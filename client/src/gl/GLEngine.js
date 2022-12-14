@@ -41,10 +41,6 @@ export default class GLEngine {
     this.colorGradient.setMidpoint(50);  
   }
 
-  getGLData() {
-    //return this.gl
-  }
-
   intializeGL() {
     if (this.gl == null) {
       this.glLayer = L.canvasOverlay().addTo(this.leafletMap);
@@ -94,11 +90,9 @@ export default class GLEngine {
  */
      addEventListeners() {
       this.canvas.addEventListener("webglcontextlost", (event) => {
-      event.preventDefault();
       alert("CRASH--recovering webGL");
       }, false);
       this.canvas.addEventListener("webglcontextrestored", (event) => {
-        event.preventDefault();
         this.intializeGL();
       }, false);
     }
@@ -380,7 +374,7 @@ export default class GLEngine {
     }
     let faults = []; 
     let count = options.count;
-    let pointSet = new Set();
+    //let pointSet = new Set();
     for (let i = 0; i < points.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(points[i].st_asgeojson);
       const indexType = this.getIndex(points[i].asset); //different symbols
@@ -389,7 +383,7 @@ export default class GLEngine {
       const lat = position.coordinates[1];
       const latlng = L.latLng(lat, lng);
       this.latlngs.push(latlng);
-      this.addToSet(pointSet, L.latLng(lat, lng));
+      //this.addToSet(pointSet, L.latLng(lat, lng));
       const pixel = LatLongToPixelXY(lat, lng);
       const pixelLow = { x: pixel.x - Math.fround(pixel.x), y: pixel.y - Math.fround(pixel.y) };
       const pixelHigh = {x: pixel.x, y: pixel.y};

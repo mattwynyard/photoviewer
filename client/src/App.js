@@ -8,7 +8,7 @@ import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
-import './MediaPlayerControl';
+//import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
@@ -92,7 +92,7 @@ class App extends React.Component {
       video : false,
       isVideoOpen: false
     }; 
-    this.customModal = React.createRef();
+    //this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
@@ -102,7 +102,7 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.notificationRef = React.createRef();
-    this.popupRef = React.createRef();
+    //this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
@@ -278,7 +278,7 @@ class App extends React.Component {
 
   getLayerData() {
     if (!this.GLEngine.glData) return [];
-    if (this.GLEngine.glData.length != 0) {
+    if (this.GLEngine.glData.length !== 0) {
       return this.GLEngine.glData.layers[0].geometry;
     } else {
       return [];
@@ -1320,7 +1320,7 @@ class App extends React.Component {
           <div className={this.state.dataActive ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
-                <p>Layers</p>
+                <p>{'Layers'}</p>
               </div> 
               <LayerManager
                 layer={this.state.activeLayer}
@@ -1338,7 +1338,7 @@ class App extends React.Component {
             </div>
             <div className="filters">
               <div className="filterstitle">
-                <p>Filters</p>
+                <p>{'Filters'}</p>
               </div>
               <Filter
                 filter={this.state.filters}
