@@ -86,6 +86,7 @@ export const Navigation = (props) => {
       }
     }
     if (user) {
+
         let token = window.sessionStorage.getItem("token");
         let item = window.sessionStorage.getItem("projects");
         let _projects = JSON.parse(item);

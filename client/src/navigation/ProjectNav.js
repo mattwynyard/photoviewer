@@ -57,6 +57,7 @@ const CustomMenu = (props) => {
 
 export const ProjectNav = (props) => { 
   const layers = useSelector((state) => state.layers.layers)
+  console.log(props)
   if (props.projects) {
     if (props.login.user === "admin") {
       return (
