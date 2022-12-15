@@ -10,6 +10,24 @@ const getCentrelineView = (user) => {
     return view;
 }
 
+const getFaultView = (user) => {
+    let view = null;
+    switch (user) {
+        case 'tsd':
+            view = 'tsd_faults';
+            break;
+        case 'swdc':
+            view = 'vw_swdc_fp';
+        break;
+        case 'ncc':
+            view = 'vw_ncc_fp';
+        break;
+        default:
+            view = 'footpaths'      
+    }
+    return view;
+}
+
 const getPhotoView = (project) => {
     let view = null;
     switch (project) {
@@ -35,5 +53,6 @@ const changeSide = (side) => {
 module.exports = {
     getCentrelineView,
     getPhotoView,
-    changeSide
+    changeSide,
+    getFaultView
 }

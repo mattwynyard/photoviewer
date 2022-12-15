@@ -621,14 +621,15 @@ app.post('/layer', async (req, res) => {
     let activeLines = [];
     let completedPoints = [];
     let completedLines = [];
-    if (surface === "footpath") { ///**** FIX FOOTPATH QUERY */
+    if (surface === "footpath") { 
+      const view = util.getFaultView(req.body.user)
       if (options.priority.length !== 0) {
-        let geometry = await db.footpath(user, project, options, filter);
+        let geometry = await db.footpath(view, project, options, filter);
         activePoints = geometry.rows;
         activeLines = [];
       } 
       if (isCompleted) {
-        let points = await db.footpathCompleted(project, filter);
+        let points = await db.footpathCompleted(view, project, filter);
         completedPoints = points.rows;
         completedLines = [];
       }
