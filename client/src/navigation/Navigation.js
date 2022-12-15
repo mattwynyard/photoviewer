@@ -33,7 +33,6 @@ export const Navigation = (props) => {
     setShow(true)
   }
   const layers = useSelector((state) => state.layers)
-  console.log(layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
@@ -45,9 +44,6 @@ export const Navigation = (props) => {
       window.sessionStorage.setItem('user', body.user);
       updateLogin(body.user, body.token);
       setLocalLogin({user: body.user, token: body.token})
-      body.projects.forEach(element => {
-        //dispatch(addLayer(element))
-      });
       buildProjects(body.projects)
       setIsLoggedIn(true)
       setShow(false); 
@@ -131,8 +127,6 @@ export const Navigation = (props) => {
   }
 
   const handleClick = useCallback((type, project) => { 
-    console.log(type, project)
-    // const project = JSON.parse(e.target.title);
     if (type === 'remove') { 
       dispatch(removeLayer(project))
       props.remove(project);      

@@ -1,5 +1,6 @@
 'use strict'
 require('dotenv').config();
+const util = require('./util.js');
 
 function buildQuery(arr) {
     let query = ""; 
@@ -1004,7 +1005,7 @@ module.exports = {
         });
     },
 
-    footpath: (user, project, options, filter) => {
+    footpath: (table, project, options, filter) => {
         let assets = filter.find(object => object.code === "Asset");
         let faults = filter.find(object => object.code === "Fault")
         let types = filter.find(object => object.code === "Type")
@@ -1014,16 +1015,13 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = null;
-        if (user === 'swdc') {
-            sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
-            + "FROM vw_swdc_fp WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
-            + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
-        } else {
-            sql = "SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
-                + "FROM footpaths WHERE project = '" + project + "' AND grade IN (" + _priority + ") AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
-                + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'active'";
-        } 
+        let sql = `SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, type, 
+            fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) 
+            FROM ${table} 
+            WHERE project = '${project}' AND grade IN (${_priority}) AND asset 
+            IN (${_assets}) AND fault IN (${_faults})
+            AND type IN (${_types}) AND cause IN (${_causes}) AND  status = 'active'`
+         
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {
                 if (err) {
@@ -1036,7 +1034,7 @@ module.exports = {
         });
     },
 
-    footpathCompleted: (project, filter) => {
+    footpathCompleted: (table, project, filter) => {
         let assets = filter.find(object => object.code === "Asset");
         let faults = filter.find(object => object.code === "Fault")
         let types = filter.find(object => object.code === "Type")
@@ -1045,9 +1043,11 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = "SELECT id, footpathid, roadname, roadid, position, erp, side, asset, fault, cause, size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom) " 
-                + "FROM footpaths WHERE project = '" + project + "' AND asset IN (" + _assets + ") AND fault IN (" + _faults + ") "
-                + "AND type IN (" + _types + ") AND cause IN (" + _causes + ") AND  status = 'completed'";
+        let sql = `SELECT id, footpathid, roadname, roadid, position, erp, side, asset, fault, cause, 
+            size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom)
+            FROM ${table} 
+            WHERE project = '${project}' AND asset IN (${_assets}) AND fault IN (${_faults})
+            AND type IN (${_types}) AND cause IN (${_causes}) AND  status = 'completed'`
             
         return new Promise((resolve, reject) => {
                 connection.query(sql, (err, result) => {

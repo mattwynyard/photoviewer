@@ -7,8 +7,6 @@ import { useSelector } from 'react-redux'
 const CustomMenu = (props) => {
 
   const layers = useSelector((state) => state.layers.layers)
-  console.log(layers)
-  console.log(props.projects)
   const isDisabled = (type) => {
     if (layers.length === 0) {
       if (type === "remove") {
@@ -57,7 +55,6 @@ const CustomMenu = (props) => {
 
 export const ProjectNav = (props) => { 
   const layers = useSelector((state) => state.layers.layers)
-  console.log(props)
   if (props.projects) {
     if (props.login.user === "admin") {
       return (

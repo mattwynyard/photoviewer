@@ -8,7 +8,7 @@ import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
-import './MediaPlayerControl';
+//import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
@@ -39,6 +39,7 @@ class App extends React.Component {
   static contextType = AppContext;
   
   constructor(props) {
+
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       ruler: false,
@@ -72,8 +73,6 @@ class App extends React.Component {
       filters: [],
       filterStore: [],
       activeProject: null,
-      //s: [], //layers displayed on the
-      //activeLayer: null, //the layer in focus
       activeIndex: -1,
       bucket: null,
       message: "",
@@ -94,8 +93,7 @@ class App extends React.Component {
       video : false,
       isVideoOpen: false
     }; 
-    //this.selectLayer= this.selectLayer.bind(this)
-    this.customModal = React.createRef();
+    //this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
@@ -105,11 +103,10 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.notificationRef = React.createRef();
-    this.popupRef = React.createRef();
+    //this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
-
   /**
    * Retores mapbox token when browser refreshes as lost from context
    * @param {logged in user} user 
@@ -132,7 +129,7 @@ class App extends React.Component {
     if (this.state.dataActive) {
       this.setState({dataActive: false})
     }
-    this.archivePhotoModal.current.delegate(this);
+    //this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -146,10 +143,10 @@ class App extends React.Component {
     }
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
-        this.removeLayer(this.state.activeLayer)
+        this.removeLayer(this.props.activeLayer)
       } else {
         if(this.state.objGLData.length !== 0) {
-          const body = this.filterLayer(this.state.activeLayer, true);
+          const body = this.filterLayer(this.props.activeLayer, true);
           if (body) {
             body.then((body) => {
               this.addGLGeometry(body.points, body.lines, body.type, true);
@@ -282,7 +279,7 @@ class App extends React.Component {
 
   getLayerData() {
     if (!this.GLEngine.glData) return [];
-    if (this.GLEngine.glData.length != 0) {
+    if (this.GLEngine.glData.length !== 0) {
       return this.GLEngine.glData.layers[0].geometry;
     } else {
       return [];
@@ -348,13 +345,13 @@ class App extends React.Component {
   clickLeafletMap = async (e) => {
     switch(this.context.mapMode) {
       case 'map':
-        if (!this.state.activeLayer) return;
+        if (!this.props.activeLayer) return;
         if (this.context.ratingActive) {
            let body = {
             user: this.context.login.user,
             lat: e.latlng.lat,
             lng: e.latlng.lng,
-            layer: this.state.activeLayer
+            layer: this.props.activeLayer
           }
         //let response = await PostFetch(this.context.login.host + "/carriageway", this.context.login.token, body);
         //   let geometry = JSON.parse(response.data.geojson);
@@ -452,8 +449,8 @@ class App extends React.Component {
   getVideoGeometry = async (e) => {
     const query = {
       user: this.context.login.user,
-      project: this.state.activeLayer.code,
-      surface: this.state.activeLayer.surface,
+      project: this.props.activeLayer.code,
+      surface: this.props.activeLayer.surface,
       lat: e.latlng.lat,
       lng: e.latlng.lng
     }
@@ -559,7 +556,7 @@ class App extends React.Component {
    */
   clickImage = () => { 
     this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, 
-      this.state.activeLayer.amazon, this.state.image);
+      this.props.activeLayer.amazon, this.state.image);
   }
 
   /**
@@ -578,8 +575,6 @@ class App extends React.Component {
       projects: [],
       priorities: [],
       objGLData: [],
-      activeLayers: [],
-      activeLayer: null,
       filterStore: [],
       rulerPoints: [],
       filters: [], 
@@ -632,7 +627,7 @@ class App extends React.Component {
    * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
    */
   async playVideo(photoFunc, geometry) {
-    
+    if (this.vidPolyline) return
     const geojson = JSON.parse(geometry.data.geojson);
     const latlngs = this.latLngsFromGeojson(geojson.coordinates);
     const vidPolyline = L.polyline(latlngs, {
@@ -656,13 +651,12 @@ class App extends React.Component {
       color: 'blue',
       weight: 4,
       opacity: 0.5,
-      project: this.state.activeLayer,
+      project: this.props.activeLayer,
       login: this.context.login,
     }).addTo(this.leafletMap);
       const parent = this;
       vidPolyline.on('click', async function (event) {
-        
-        if (parent.state.isVideoOpen) { 
+          if (this.options.color === 'red') { 
           const login = vidPolyline.options.login;
           const side = parent.videoCard.current.getSide();
           const request = {
@@ -705,7 +699,7 @@ class App extends React.Component {
               surface: vidPolyline.options.project.surface,
               tacode: vidPolyline.options.tacode
             }
-            if (!this.photos) {
+            if (!this.options.photos) {
               const photos = await photoFunc(request, login);
               this.options.photos = photos.data;
             }
@@ -728,7 +722,7 @@ class App extends React.Component {
             const videoParameters = {
               mode: parent.context.projectMode,
               direction: direction,
-              amazon: parent.state.activeLayer.amazon,
+              amazon: parent.props.activeLayer.amazon,
               photos: this.options.photos,
               startingIndex: index,
             }
@@ -820,7 +814,7 @@ class App extends React.Component {
   async requestChangeSide(currentPhoto) {
     const query = {
       user: this.context.login.user,
-      project: this.state.activeLayer.code,
+      project: this.props.code,
       photo: JSON.stringify(currentPhoto)
     }
     const queryParams = new URLSearchParams(query)
@@ -858,7 +852,7 @@ class App extends React.Component {
       },
       body: JSON.stringify({
         user: this.context.login.user,
-        project: this.state.activeLayer,
+        project: this.props.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
       })
@@ -867,14 +861,14 @@ class App extends React.Component {
     if (body.error == null) {
       let distance = calcGCDistance(body.data.dist);
       let assetID = null;
-      if (this.state.activeLayer.surface === "footpath") {
+      if (this.props.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
       } else {
         assetID = body.data.carriageway;
       }
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
-          amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
+        let obj = {type: this.props.activeLayer.surface, address: body.data.address, 
+          amazon: this.props.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
         let arr = this.state.archiveMarker;
@@ -902,20 +896,20 @@ class App extends React.Component {
       },
       body: JSON.stringify({
         user: this.context.login.user,
-        project: this.state.activeLayer,
+        project: this.props.activeLayer,
         photo: photo
       })
     });
     const body = await response.json();
     let assetID = null;
     if (body.error == null) {
-      if (this.state.activeLayer.surface === "footpath") {
+      if (this.props.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
       } else {
         assetID = body.data.carriageway;
       }
-    let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
-      amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
+    let obj = {type: this.props.activeLayer.surface, address: body.data.address, 
+      amazon: this.props.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
     let arr = this.state.archiveMarker;
@@ -998,6 +992,8 @@ class App extends React.Component {
           bucket: null,
           activeProject: null,
           ages: null,
+          video : false,
+          isVideoOpen: false
           }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1242,7 +1238,7 @@ class App extends React.Component {
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
       this.setState({filtered: true})
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     } else {
       e.target.innerHTML = "Apply Filter";
@@ -1256,7 +1252,7 @@ class App extends React.Component {
         filtered: false,
         filters: newFilter
       }, async () => {
-        let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+        let body = await this.filterLayer(this.props.activeLayer); //fetch layer
         this.addGLGeometry(body.points, body.lines, body.type, false);
       });  
     }
@@ -1268,7 +1264,7 @@ class App extends React.Component {
    */
   updatePriority = (query) => {
     this.setState({filterPriorities: query}, async () => {
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     });   
   }
@@ -1278,7 +1274,7 @@ class App extends React.Component {
    */
   updateRMClass = async (query) => {
     this.setState({filterRMClass: query}, async () => {
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     });
     
@@ -1293,12 +1289,11 @@ class App extends React.Component {
     return ( 
       <> 
         <Navigation 
-          layers={this.state.activeLayers}
+          layers={this.props.activeLayers}
           remove={this.removeLayer}
           add={this.loadLayer}
-          //add={this.selectLayer}
           logout={this.logout}
-          project={this.state.activeLayer}
+          project={this.props.activeLayer}
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
@@ -1309,10 +1304,9 @@ class App extends React.Component {
           <div className={this.state.dataActive ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
-                <p>Layers</p>
+                <p>{'Layers'}</p>
               </div> 
               <LayerManager
-                layer={this.state.activeLayer}
                 prioritytitle={this.state.priorityMode}
                 priorityitems={this.state.priorities}
                 priorityfilter={this.state.filterPriorities} 
@@ -1327,18 +1321,18 @@ class App extends React.Component {
             </div>
             <div className="filters">
               <div className="filterstitle">
-                <p>Filters</p>
+                <p>{'Filters'}</p>
               </div>
               <Filter
                 filter={this.state.filters}
                 store={this.state.filterStore}
-                mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
+                mode={this.props.activeLayer ? this.props.activeLayer.surface: null}
                 update={this.updateFilter}
               />
               <FilterButton
                 className="apply-btn" 
                 ref={this.applyRef} 
-                layer={this.state.activeLayer} 
+                layer={this.props.activeLayer} 
                 onClick={(e) => this.clickApply(e)}>  
               </FilterButton>
             </div>
@@ -1390,8 +1384,8 @@ class App extends React.Component {
                   data={obj}
                   login={this.context.login.user}
                   position={obj ? obj.latlng : null}
-                  photo={this.state.activeLayer ? this.state.image: null} 
-                  amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
+                  photo={this.props.activeLayer ? this.state.image: null} 
+                  amazon={this.props.activeLayer ? this.props.activeLayer.amazon: null}
                   onClick={this.clickImage}
                   onError={() => this.onImageError(obj.photo)}
                   >
@@ -1410,7 +1404,7 @@ class App extends React.Component {
           data={this.state.objGLData}
           simulate={this.simulateClick}
           centre={this.centreMap}
-          surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
+          surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
         />  
         <PhotoModal
           ref={this.photoModal}
@@ -1419,9 +1413,9 @@ class App extends React.Component {
         <ArchivePhotoModal
           ref={this.archivePhotoModal}
           show={this.state.show} 
-          amazon={!this.state.activeLayer ? null: this.state.activeLayer}
+          amazon={!this.props.activeLayer ? null: this.props.activeLayer}
           currentPhoto={this.state.currentPhoto}
-          project={this.state.activeLayer}
+          project={this.props.activeLayer}
         >
         </ArchivePhotoModal>
       </div> 
