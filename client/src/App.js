@@ -8,7 +8,7 @@ import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
-import PhotoModal from './modals/PhotoModal.js';
+import PhotoModal from './photo/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import { calcGCDistance } from  './util.js';
