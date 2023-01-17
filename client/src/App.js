@@ -8,7 +8,6 @@ import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
-//import './MediaPlayerControl';
 import PhotoModal from './modals/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
@@ -23,7 +22,7 @@ import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
 import { store } from './state/store'
 import { connect } from 'react-redux'
-import { addLayer, removeLayer } from './state/reducers/layersSlice'
+import { addLayer } from './state/reducers/layersSlice'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;

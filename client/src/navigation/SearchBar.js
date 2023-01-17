@@ -7,7 +7,6 @@ export default class SearchBar extends Component {
     
     constructor(props) {
         super(props);
-        console.log(props.district)
         this.state = {
             serach: null,
         }
@@ -30,7 +29,6 @@ export default class SearchBar extends Component {
         if (this.props.district !== null) {
             searchString += "," + this.props.district
         }
-        console.log(searchString)
         const response = await fetch("https://nominatim.openstreetmap.org/search?q=" + searchString + "&countrycodes=nz&format=json&addressdetails=1", {
         method: 'GET',
         credentials: 'same-origin',
