@@ -120,7 +120,7 @@ class App extends React.Component {
       return mapbox
   }
 
-  componentDidMount () {
+  async componentDidMount () {
     this.leafletMap = this.map.leafletElement;
     this.context.setLeafletMap(this.map.leafletElement);
     this.initializeGL();
@@ -136,7 +136,7 @@ class App extends React.Component {
     this.position.updateHTML(this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
     const user = window.sessionStorage.getItem("user") 
-    const mapbox = this.restore(user)
+    const mapbox = await this.restore(user)
     if (mapbox) {
       this.context.setMapBoxKey(mapbox)
     }
