@@ -738,7 +738,7 @@ class App extends React.Component {
    * Updates video cards data array
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(currentPhoto) {
+  async changeSide(currentPhoto, side) {
     const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
       this.videoCard.current.refresh(data.photo, data.data);
@@ -813,7 +813,7 @@ class App extends React.Component {
   async requestChangeSide(currentPhoto) {
     const query = {
       user: this.context.login.user,
-      project: this.props.code,
+      project: this.props.activeLayer.code,
       photo: JSON.stringify(currentPhoto)
     }
     const queryParams = new URLSearchParams(query)

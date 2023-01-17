@@ -32,7 +32,7 @@ export const Navigation = (props) => {
   const showModal = () => {
     setShow(true)
   }
-  const layers = useSelector((state) => state.layers)
+  //const layers = useSelector((state) => state.layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
@@ -129,9 +129,11 @@ export const Navigation = (props) => {
   const handleClick = useCallback((type, project) => { 
     if (type === 'remove') { 
       dispatch(removeLayer(project))
+      setProjectMode(null)
       props.remove(project);      
     } else {
       props.add(project)
+      setProjectMode(type)
       dispatch(addLayer(project))
     } 
   }, [])
