@@ -607,4 +607,4 @@ export default class GLEngine {
       const [minPointSize, maxPointSize] = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
       return [minPointSize, maxPointSize];
     }
-};
+}

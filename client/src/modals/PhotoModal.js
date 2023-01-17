@@ -163,7 +163,7 @@ export default class PhotoModal extends React.Component {
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={this.copy} 
-                    >Copy
+                    >{"Copy"}
                   </Button> 
                   </div>     
               </div>

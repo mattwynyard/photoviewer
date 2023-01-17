@@ -1,13 +1,14 @@
 import { React } from 'react';
 import { LayerCard } from './LayerCard';
+import { useSelector } from 'react-redux'
 
 const LayerManager = (props) => {
-
-    if (props.layer) {
+    const active = useSelector((state) => state.layers.active)
+    if (active) {
         return (
             <LayerCard
                 classtitle={'layermanager'}
-                layer={props.layer}
+                layer={active}
                 prioritytitle={props.prioritytitle}
                 priorityitems={props.priorityitems}
                 priorityfilter={props.priorityfilter} 
