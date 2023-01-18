@@ -2,6 +2,20 @@ import React from 'react';
 import {Card, ProgressBar, Button, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
+import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_black_24dp.svg';
+import {ReactComponent as StopButton} from '../theme/svg/stop_black_24dp.svg';
+
+const VideoControl = (props) => {
+    if (props.play) {
+        return (
+            <StopButton className="controls-stop" onClick={(e) => props.handleClick(e)}/>
+        )
+    } else {
+        return (
+            <PlayButton className="controls-play" onClick={(e) => props.handleClick(e)}/>
+        )
+    }
+}
 
 const IdText = function(props) {
     if (!props.mode) return null;
@@ -46,18 +60,20 @@ export default class VideoCard extends React.Component {
             side: 'L',
             disabled: false,
             play: false,
-            playicon: "play_128.png",
-            forwardicon: "seekForward64blue.png",
+            // playicon: '../theme/svg/play_arrow_black_24dp.svg',
+            // forwardicon: "seekForward64blue.png",
             interval: 500,
             errors: 0,
         }
-        this.delegate(props.parent);
+        this.delegate = props.parent;
         this.photoArray = null;
+
+
     }
 
-    delegate(parent) {
-        this.delegate = parent;
-    }
+    // delegate(parent) {
+    //     this.delegate = parent;
+    // }
 
     getSide() {
         return this.state.side;
@@ -91,21 +107,15 @@ export default class VideoCard extends React.Component {
         let latlng = this.getLatLng(index);
         this.delegate.setState({carMarker: [latlng]});
     }
-
-    clickStop(e) {
-        e.preventDefault();
-        this.setState({currentPhoto: this.state.photoArray[this.state.centeredcounter].photo});
-    }
         
-    clickPlay(e) {
+    clickPlay = (e) => {
         e.preventDefault();
         if (this.state.play) {
             this.setState({play: false});
-            this.setState({playicon: "play_128.png"});
             this.stopMovie();
         } else {
             this.setState({play: true}); 
-            this.setState({playicon: "pause_128.png"});
+            //this.setState({playicon: "pause_128.png"});
             this.interval = setInterval(() => {
                 if (this.state.index + 1 < this.photoArray.length) {
                     this.update(this.state.index + 1);
@@ -115,6 +125,11 @@ export default class VideoCard extends React.Component {
             }, this.state.interval);  
         }
            
+    }
+
+    stopMovie() {
+        clearInterval(this.interval);  
+        this.setState({play: false});      
     }
 
     update(index) {
@@ -134,10 +149,7 @@ export default class VideoCard extends React.Component {
         return new L.LatLng(lat, lng);
     }
 
-    stopMovie() {
-        clearInterval(this.interval);  
-        this.setState({play: false});      
-    }
+
       
     clickClose(e) {
         e.preventDefault();
@@ -149,7 +161,8 @@ export default class VideoCard extends React.Component {
         this.photoArray = null;
         
         clearInterval(this.interval); 
-        this.setState({playicon: "play_128.png"}); 
+        //this.setState({playicon: "play_128.png"}); 
+        this.setState({playicon: '../theme/svg/play_arrow_black_24dp.svg'});
         this.setState({index: 0});
         this.setState({errors: 0});
         this.setState({side: 'L'}); 
@@ -161,7 +174,8 @@ export default class VideoCard extends React.Component {
 
     changeRadio(e) {
         if (!this.state.play) { 
-            this.setState({playicon: "play_128.png"});
+            // this.setState({playicon: "play_128.png"});
+            this.setState({playicon: '../theme/svg/play_arrow_black_24dp.svg'});
         }
         this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
         this.setState({side: e});
@@ -234,15 +248,16 @@ export default class VideoCard extends React.Component {
                             satellites={this.photoArray[this.state.index].satellites}
                             geojson={this.photoArray[this.state.index].st_asgeojson}
                         ></IdText>
-                        <div className="controls-play" >
+                        {/* <div className="controls-play" >
                             <div>
-                            <img   
-                                src={this.state.playicon} 
-                                alt="play button"
-                                onClick={(e) => this.clickPlay(e)}
-                            />  
+                                <img   
+                                    src={this.state.playicon} 
+                                    alt="play button"
+                                    onClick={(e) => this.clickPlay(e)}
+                                />  
                             </div>   
-                        </div>
+                        </div> */}
+                        <VideoControl play={this.state.play} handleClick={this.clickPlay}/>
                         <div className="controls-toggle">
                             {radios.map((radio, idx) => (
                             <ToggleButton

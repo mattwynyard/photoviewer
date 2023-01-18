@@ -41,6 +41,8 @@
 }
 
 .controls-play {
+  height: 50px;
+  width: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,14 +52,16 @@
   justify-content: center; 
 }
 
-.controls-play div {
-  width: 50%;
-  height: auto;
-}
-
-.controls-play img {
-  width: 50%;
-    height: auto;
+.controls-stop {
+  height: 50px;
+  width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 2 / 3;
+  grid-row: 1;
+  padding: 5px;  
+  justify-content: center; 
 }
 
 .controls-toggle {
