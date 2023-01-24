@@ -19,8 +19,10 @@
 server/log.txt
 server/server.key
 server/server.cert
+server/package-lock.json
 client/.eslintcache
 client/uploadBuild.bat
+client/package-lock.json
 
 # dependencies
 client/node_modules

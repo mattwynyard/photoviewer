@@ -24,7 +24,6 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
-    "test": "jest",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
