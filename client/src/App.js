@@ -23,6 +23,7 @@ import { LayerManager } from './layers/LayerManager';
 import { store } from './state/store'
 import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
+import { setClassName } from './state/reducers/mapSlice'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -144,14 +145,14 @@ class App extends React.Component {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.props.activeLayer)
       } else {
-        if(this.state.objGLData.length !== 0) {
-          const body = this.filterLayer(this.props.activeLayer, true);
-          if (body) {
-            body.then((body) => {
-              this.addGLGeometry(body.points, body.lines, body.type, true);
-            });
-          }
-        }
+        // if(this.state.objGLData.length !== 0) {
+        //   const body = this.filterLayer(this.props.activeLayer, true);
+        //   if (body) {
+        //     body.then((body) => {
+        //       this.addGLGeometry(body.points, body.lines, body.type, true);
+        //     });
+        //   }
+        // }
       }
       
     }
@@ -607,7 +608,9 @@ class App extends React.Component {
   }
 
   changeVideoPlayerOpen(isOpen) {
-    this.setState({isVideoOpen: isOpen});
+    this.setState({isVideoOpen: isOpen}, () => {
+      this.leafletMap.invalidateSize(true);
+    });
   }
 
   latLngsFromGeojson(geojson) {
@@ -1300,7 +1303,7 @@ class App extends React.Component {
           >  
         </Navigation>   
         <div className="appcontainer">     
-          <div className={this.state.dataActive ? "panel-reduced": "panel"}>
+          <div className={(this.state.dataActive ||  this.state.isVideoOpen) ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
                 <p>{'Layers'}</p>
@@ -1335,10 +1338,11 @@ class App extends React.Component {
                 onClick={(e) => this.clickApply(e)}>  
               </FilterButton>
             </div>
-          </div>   
-            <LMap        
+          </div> 
+          <div>
+          <LMap        
               ref={(ref) => {this.map = ref;}}
-              className={this.state.dataActive ? "map-reduced": "map"}
+              className={this.state.isVideoOpen ? "map-video": this.state.dataActive ? "map-reduced" : "map"}
               worldCopyJump={true}
               boxZoom={true}
               center={centre}
@@ -1370,12 +1374,7 @@ class App extends React.Component {
                   position={position}>
                 </Polyline>
               )}
-              <VideoCard
-                ref={this.videoCard}
-                show={this.state.videoViewer} 
-                parent={this}
-              >
-              </VideoCard>
+              
               <LayerGroup >
                 {this.state.selectedGeometry.map((obj, index) =>   
                 <DefectPopup 
@@ -1398,13 +1397,23 @@ class App extends React.Component {
                 thumbnail={true}
               />
           </LMap >
-        <DataTable 
-          className={this.state.dataActive ? "data-active": "data-inactive"}
-          data={this.state.objGLData}
-          simulate={this.simulateClick}
-          centre={this.centreMap}
-          surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
-        />  
+          <VideoCard
+            ref={this.videoCard}
+            show={this.state.videoViewer} 
+            parent={this}
+            centre={this.centreMap}
+          >
+          </VideoCard>
+            <DataTable 
+            className={this.state.dataActive ? "data-active": "data-inactive"}
+            data={this.state.objGLData}
+            simulate={this.simulateClick}
+            centre={this.centreMap}
+            surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
+          />  
+          </div>  
+            
+        
         <PhotoModal
           ref={this.photoModal}
         >
@@ -1426,11 +1435,13 @@ class App extends React.Component {
 
 const mapStateToProps = state => ({
   activeLayer: state.layers.active,
-  activeLayers: state.layers.layers
+  activeLayers: state.layers.layers,
+  className: state.map.class
 })
 
 const mapDispatchToProps = {
-  addLayer
+  addLayer,
+  setClassName
 }
 
 export default connect(
