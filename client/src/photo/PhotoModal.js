@@ -1,10 +1,10 @@
 import React from 'react';
-import { Modal }  from 'react-bootstrap';
-import { Button } from 'antd';
-import { pad, incrementPhoto } from  '../util.js';
+import { Modal, Button }  from 'react-bootstrap';
+import { incrementPhoto } from  '../util.js';
 import { FetchHead } from '../api/FetchHead'
 
 import './PhotoModal.css';
+import PhotoMagnifier from './PhotoMagnifier.jsx';
 
 export default class PhotoModal extends React.Component {
   
@@ -164,7 +164,7 @@ export default class PhotoModal extends React.Component {
                   <Button variant="outline-secondary" 
                     size="sm" 
                     onClick={this.copy} 
-                    >Copy
+                    >{"Copy"}
                   </Button> 
                   </div>     
               </div>
@@ -215,19 +215,12 @@ export default class PhotoModal extends React.Component {
           centered={true}
           onHide={this.closePhotoModal}
       >
+        <Modal.Header>
+        
+        </Modal.Header>
         <Modal.Body >	
           <div>
-            <img className="photo"    
-              alt="photo"
-              src={this.state.amazon + this.state.photo + ".jpg"} 
-              //onError={(e) => this.imageError(e)}
-              />  
-            <div className="dataTable">   
-            <CustomTable 
-              obj={this.state.marker[0]}
-              copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
-            </CustomTable>
-          </div > 
+            <PhotoMagnifier image={this.state.amazon + this.state.photo + ".jpg"}/>
             <img 
               className="leftArrow" 
               src={"leftArrow_128.png"} 
@@ -237,10 +230,16 @@ export default class PhotoModal extends React.Component {
               className="rightArrow" 
               src={"rightArrow_128.png"} 
               alt="right arrow"
-              onClick={() => this.clickNext(this.state.photo, FetchHead)}/>  
-          
-        </div>
+              onClick={() => this.clickNext(this.state.photo, FetchHead)}/>
+              </div>
+            <div className="dataTable">   
+            <CustomTable 
+              obj={this.state.marker[0]}
+              copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
+          </CustomTable>
+            </div >    
         </Modal.Body >
+        
     </Modal>
     );
   }

@@ -8,20 +8,21 @@ import { Navigation } from './navigation/Navigation.js'
 import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
-import './MediaPlayerControl';
-import PhotoModal from './modals/PhotoModal.js';
+import PhotoModal from './photo/PhotoModal.js';
 import VideoCard from './video/VideoCard.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
 import Filter from './filters/Filter.js';
 import {FilterButton} from './filters/FilterButton.js';
-//import { notification } from 'antd';
 import { apiRequest } from "./api/Api.js"
 import { AppContext} from './context/AppContext';
 import { DefectPopup } from './components/DefectPopup'
 import { incrementPhoto, calculateDistance } from  './util.js';
 import { LayerManager } from './layers/LayerManager';
+import { store } from './state/store'
+import { connect } from 'react-redux'
+import { addLayer } from './state/reducers/layersSlice'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -31,11 +32,13 @@ const DefaultIcon = L.icon({
   iconSize: [16, 16],
   iconAnchor: [8, 8]
 }); 
+const dispatch = store.dispatch
 
 class App extends React.Component {
   static contextType = AppContext;
-
+  
   constructor(props) {
+
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
       ruler: false,
@@ -44,7 +47,6 @@ class App extends React.Component {
       rulerDistance: 0,
       showRuler: false,
       priorityDropdown: null,
-      priorityMode: "Priority", //whether we use priority or grade
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -53,7 +55,7 @@ class App extends React.Component {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       osmThumbnail: "satellite64.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank"> OpenStreetMap</a> contributors',
-      mapMode: "map",
+      thumbnailMode: "map",
       zoom: 8,
       centreData: [],
       priority: [],
@@ -70,8 +72,7 @@ class App extends React.Component {
       filters: [],
       filterStore: [],
       activeProject: null,
-      activeLayers: [], //layers displayed on the
-      activeLayer: null, //the layer in focus
+      activeIndex: -1,
       bucket: null,
       message: "",
       selectedIndex: null,
@@ -79,9 +80,7 @@ class App extends React.Component {
       objGLData: [],
       glData: null,
       selectedGeometry: [],
-      selectedCarriage: [],
-      photoArray: null,
-      projectMode: null, //the type of project being displayed footpath or road     
+      selectedCarriage: [],   
       search: null,
       toolsRadio: null,
       activeCarriage: null, //carriageway user has clicked on - leaflet polyline
@@ -89,9 +88,11 @@ class App extends React.Component {
       filtered: false ,
       dataActive: false,
       showPhotoViewer: false,
-      imageUrl: null
+      imageUrl: null,
+      video : false,
+      isVideoOpen: false
     }; 
-    this.customModal = React.createRef();
+    //this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
@@ -101,11 +102,10 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.notificationRef = React.createRef();
-    this.popupRef = React.createRef();
+    //this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
-
   /**
    * Retores mapbox token when browser refreshes as lost from context
    * @param {logged in user} user 
@@ -120,14 +120,15 @@ class App extends React.Component {
       return mapbox
   }
 
-  componentDidMount () {
+  async componentDidMount () {
     this.leafletMap = this.map.leafletElement;
+    this.context.setLeafletMap(this.map.leafletElement);
     this.initializeGL();
     this.addEventListeners();
     if (this.state.dataActive) {
-      this.setDataActive(false)
+      this.setState({dataActive: false})
     }
-    this.archivePhotoModal.current.delegate(this);
+    //this.archivePhotoModal.current.delegate(this);
     this.rulerPolyline = null;
     this.distance = 0;
     this.position = L.positionControl();
@@ -135,16 +136,16 @@ class App extends React.Component {
     this.position.updateHTML(this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng)
     L.Marker.prototype.options.icon = DefaultIcon;
     const user = window.sessionStorage.getItem("user") 
-    const mapbox = this.restore(user)
+    const mapbox = await this.restore(user)
     if (mapbox) {
       this.context.setMapBoxKey(mapbox)
     }
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
-        this.removeLayer(this.state.activeLayer)
+        this.removeLayer(this.props.activeLayer)
       } else {
         if(this.state.objGLData.length !== 0) {
-          let body = this.filterLayer(this.state.activeLayer, true);
+          const body = this.filterLayer(this.props.activeLayer, true);
           if (body) {
             body.then((body) => {
               this.addGLGeometry(body.points, body.lines, body.type, true);
@@ -152,6 +153,7 @@ class App extends React.Component {
           }
         }
       }
+      
     }
      
     if (this.state.filtered) {
@@ -169,18 +171,10 @@ class App extends React.Component {
     this.removeEventListeners(); 
   }
 
-  setMapMode = (mode) => {
-    this.setState({mapMode: mode})
-  }
-
   initializeGL() {
     this.GLEngine = new GLEngine(this.leafletMap); 
     this.GLEngine.setAppDelegate(this);
     this.context.setGL(this.GLEngine);
-  }
-
-  getGl() {;
-    return this.GLEngine;
   }
 
       /**
@@ -284,7 +278,7 @@ class App extends React.Component {
 
   getLayerData() {
     if (!this.GLEngine.glData) return [];
-    if (this.GLEngine.glData.length != 0) {
+    if (this.GLEngine.glData.length !== 0) {
       return this.GLEngine.glData.layers[0].geometry;
     } else {
       return [];
@@ -293,7 +287,7 @@ class App extends React.Component {
 
   setPriorityObject() {
     let obj = {}
-    if (this.state.activeLayer.reverse) {
+    if (this.props.activeLayer.reverse) {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
@@ -348,15 +342,15 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap = async (e) => {
-    switch(this.state.mapMode) {
+    switch(this.context.mapMode) {
       case 'map':
-        if (!this.state.activeLayer) return;
+        if (!this.props.activeLayer) return;
         if (this.context.ratingActive) {
            let body = {
             user: this.context.login.user,
             lat: e.latlng.lat,
             lng: e.latlng.lng,
-            layer: this.state.activeLayer
+            layer: this.props.activeLayer
           }
         //let response = await PostFetch(this.context.login.host + "/carriageway", this.context.login.token, body);
         //   let geometry = JSON.parse(response.data.geojson);
@@ -407,50 +401,64 @@ class App extends React.Component {
         break;
       case 'Ruler':
         let polyline = this.state.rulerPolyline;
-      if (polyline === null) {
-        let points = [];
-        points.push(e.latlng);
-        polyline = new L.polyline(points, {
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5 
-          });
-        polyline.addTo(this.leafletMap);
-        this.setState({rulerPolyline: polyline});
-      } else {
-        let points = polyline.getLatLngs();
-        points.push(e.latlng);
-        polyline.setLatLngs(points);
-      }
+        if (polyline === null) {
+          let points = [];
+          points.push(e.latlng);
+          polyline = new L.polyline(points, {
+            color: 'blue',
+            weight: 4,
+            opacity: 0.5 
+            });
+          polyline.addTo(this.leafletMap);
+          this.setState({rulerPolyline: polyline});
+        } else {
+          let points = polyline.getLatLngs();
+          points.push(e.latlng);
+          polyline.setLatLngs(points);
+        }
         break;
       case 'video':
-      if(this.vidPolyline === null) {  
-        this.vidPolyline = this.getCarriage(e, calcGCDistance, this.getPhotos); 
-        this.vidPolyline.then((line) => {
-          if (line) {
-            this.setState({activeCarriage: line})
+        if(this.vidPolyline === null) { 
+          const geometry = await this.getVideoGeometry(e)
+          if (!geometry)  {
+            alert("no geometry");
+            return
           }
-          
-        });
-      } else {
-        this.vidPolyline.then((line) => {
-          if (line === null) {
+          if (geometry.error)  {
+            alert(geometry.error);
+            return
+          } 
+          if (calcGCDistance(geometry.data.dist) > 40) return
+          this.vidPolyline = await this.playVideo(this.getPhotos, geometry); 
+        } else {
+          if (this.vidPolyline.options.color === "blue") {
+            this.vidPolyline.remove();
             this.vidPolyline = null;
-            this.setState({activeCarriage: null});
+            this.setState({carMarker: []});
           } else {
-            if(line.options.color === "blue") {
-              line.remove();
-              this.vidPolyline = null;
-              this.setState({activeCarriage: null})
-              this.setState({carMarker: []});
-            }
-          }           
-        });
-      }      
-      break;
+            
+          } 
+        }      
+        break;
       default:
         break;
     }
+  }
+
+  getVideoGeometry = async (e) => {
+    const query = {
+      user: this.context.login.user,
+      project: this.props.activeLayer.code,
+      surface: this.props.activeLayer.surface,
+      lat: e.latlng.lat,
+      lng: e.latlng.lng
+    }
+    const body = await this.requestCarriage(query)
+    if (body.error)  {
+      alert(body.error);
+      return null
+    }
+    return body
   }
 
   onMouseMove(e) {
@@ -469,8 +477,7 @@ class App extends React.Component {
         } else {
           points[points.length - 1] = e.latlng;
           polyline.setLatLngs(points);
-          distance = calculateDistance(points);
-          
+          distance = calculateDistance(points);       
         }
         this.setState({rulerDistance: distance});
       }   
@@ -517,9 +524,9 @@ class App extends React.Component {
     if (this.context.login.user === "Login") {
       return;
     }
-    if (this.state.mapMode === "map") {
+    if (this.state.thumbnailMode === "map") {
       if (!this.context.mapBoxKey.mapBoxKey) return;
-      this.setState({mapMode: "sat"});
+      this.setState({thumbnailMode: "sat"});
       this.setState({osmThumbnail: "map64.png"});
 
       this.setState({url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=" 
@@ -527,7 +534,7 @@ class App extends React.Component {
       this.setState({attribution: 
         "&copy;<a href=https://www.mapbox.com/about/maps target=_blank>MapBox</a>&copy;<a href=https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors"})
     } else {
-      this.setState({mapMode: "map"});
+      this.setState({thumbnailMode: "map"});
       this.setState({osmThumbnail: "satellite64.png"});
       this.setState({url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"});
       this.setState({attribution: '&copy; <a href="https://www.openstreetmap.org/copyright target=_blank>OpenStreetMap</a> contributors'})
@@ -548,7 +555,7 @@ class App extends React.Component {
    */
   clickImage = () => { 
     this.photoModal.current.showModal(true, this.context.login.user, this.state.selectedGeometry, 
-      this.state.activeLayer.amazon, this.state.image);
+      this.props.activeLayer.amazon, this.state.image);
   }
 
   /**
@@ -561,13 +568,12 @@ class App extends React.Component {
     window.sessionStorage.removeItem("state");
     window.sessionStorage.removeItem("centrelines");
     window.sessionStorage.removeItem("mapbox");
+    this.context.setProjectMode(null)
     this.setState({
       activeProject: null,
       projects: [],
       priorities: [],
       objGLData: [],
-      activeLayers: [],
-      activeLayer: null,
       filterStore: [],
       rulerPoints: [],
       filters: [], 
@@ -578,9 +584,7 @@ class App extends React.Component {
       faultData: [],
       inspections: [],
       bucket: null,
-      projectMode: null,
       dataActive: false,
-      mapMode: "map"
     }, () => {
       this.leafletMap.invalidateSize(true);
       let glData = null
@@ -588,128 +592,156 @@ class App extends React.Component {
     })
   }
 
-  /**
-   * Get closest polyline to click and plots on map 
-   * Starts movie of carriagway
-   * @param {event} e 
-   * @param {callback to calculate distance} distFunc 
-   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc 
-   */
-  async getCarriage(e, distFunc, photoFunc) {
-    const response = await fetch("https://" + this.context.login.host + '/carriage', {
-      method: 'POST',
+  requestCarriage = async (query) => {
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         "authorization": this.context.login.token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',        
-      },
-      body: JSON.stringify({
-        user: this.context.login.user,
-        project: this.state.activeLayer,
-        lat: e.latlng.lat,
-        lng: e.latlng.lng
-      })
+      }  
     });
-    let vidPolyline = null;
-    const body = await response.json();
-    if (body.error == null) {
-      let geojson = JSON.parse(body.data.geojson);
-      let dist = distFunc(body.data.dist);
-      if (dist < 40) {
-        let latlngs = geojson.coordinates;
-        let coords = [];
-        latlngs.forEach( (coord) => {
-          let latlng = [coord[1], coord[0]];
-          coords.push(latlng);
-        });
-      
-        vidPolyline = L.polyline(coords, {
-          roadid: body.data.roadid,
-          carriageid: body.data.id,
-          direction: body.data.direction,
-          label: body.data.label,
-          color: 'blue',
-          weight: 4,
-          opacity: 0.5,
-          project: this.state.activeLayer,
-          login: this.context.login
-        }).addTo(this.leafletMap);
-        let parent = this;
-        vidPolyline.on('click', function (e) {
-          if (parent.state.video) {
-            let login = vidPolyline.options.login;
-            let project = vidPolyline.options.project;
-            let side = parent.videoCard.current.getSide();
-            let photo = parent.getVideoPhoto(e.latlng, project, login, side);
-            photo.then((data) => {
-              parent.videoCard.current.search(data.data.photo);
-            });
-          } else {
-            this.setStyle({
-              color: 'red',
-              weight: 4
-            });
-            let carriage = vidPolyline.options.carriageid;
-            let project = vidPolyline.options.project;
-            let login = vidPolyline.options.login;
-            let direction = vidPolyline.options.direction;
-            let body = null;
-            if (direction === 'B') {
-              body = photoFunc(carriage, 'L', project, login);
-            } else {
-              body = photoFunc(carriage, null, project, login);
+    return await response.json();
+  }
+
+  changeVideoPlayerOpen(isOpen) {
+    this.setState({isVideoOpen: isOpen});
+  }
+
+  latLngsFromGeojson(geojson) {
+    const coordinates = [];
+    geojson.forEach( (coordinate) => {
+      coordinates.push([coordinate[1], coordinate[0]]);
+    }); 
+    return coordinates
+  }
+
+  /**
+   * Get closest polyline to click and plots on map 
+   * Starts movie of carriagway
+   * @param {event} e 
+   * @param {callback to calculate distance} distFunc 
+   * @param {callback (this.getphotos) to get closest polyline to click} photoFunc - callback this.getPhotos 
+   */
+  async playVideo(photoFunc, geometry) {
+    if (this.vidPolyline) return
+    const geojson = JSON.parse(geometry.data.geojson);
+    const latlngs = this.latLngsFromGeojson(geojson.coordinates);
+    const vidPolyline = L.polyline(latlngs, {
+      class: geometry.data.class,
+      controller: geometry.data.controller,
+      cwid: geometry.data.cwid,
+      direction: geometry.data.direction,
+      endm: geometry.data.endm,
+      hierarchy: geometry.data.hierarchy,
+      label: geometry.data.label,
+      owner: geometry.data.owner,
+      pavement: geometry.data.pavement,
+      photos: null,
+      roadid: geometry.data.roadid,
+      roadtype: geometry.data.roadtype,
+      startm: geometry.data.startm,
+      tacode: geometry.data.tacode,
+      town: geometry.data.town,
+      width: geometry.data.width,
+      zone: geometry.data.zone,
+      color: 'blue',
+      weight: 4,
+      opacity: 0.5,
+      project: this.props.activeLayer,
+      login: this.context.login,
+    }).addTo(this.leafletMap);
+      const parent = this;
+      vidPolyline.on('click', async function (event) {
+          if (this.options.color === 'red') { 
+          const login = vidPolyline.options.login;
+          const side = parent.videoCard.current.getSide();
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: side,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);
+          parent.videoCard.current.refresh(photo.data);
+        } else {
+          this.setStyle({
+            color: 'red',
+            weight: 4
+          });
+          const login = vidPolyline.options.login;
+          const direction = vidPolyline.options.direction;
+          let initialSide = null;
+          if (direction === 'Both') {
+            initialSide = 'L'
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              side: 'L', 
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              tacode: vidPolyline.options.tacode
             }
-            parent.setState({video: true});
-            body.then((data) => {
-              let photo = null;
-              if (data.side === null) {
-                photo = parent.getVideoPhoto(e.latlng, project, login, null);
-              } else {
-                photo = parent.getVideoPhoto(e.latlng, project, login, 'L');
-              }
-                        
-              photo.then((initialPhoto) => {
-                let found = false;
-                if (data.data != null) {
-                  for (let i = 0; i < data.data.length; i++) {
-                    if(initialPhoto.data.photo === data.data[i].photo) {
-                      parent.setState({photoArray: data.data});
-                      parent.videoCard.current.initialise(true, parent.state.projectMode, 
-                        initialPhoto.data.side, direction, parent.state.activeLayer.amazon, parent.state.photoArray, i);
-                      found = true;
-                      break;
-                    }   
-                  }
-                }         
-                if (!found) {
-                  alert("error loading video - Not found")
-                }
-              });
-              
-            });
-          }         
-        });
-        return vidPolyline;  
-      } else {
-        return null;
-      }
-    } else {
-      alert(response.status + " " + body.error); 
-    }   
+            if (!this.options.photos) {
+              const photos = await photoFunc(request, login);
+              this.options.photos = photos.data;
+            }
+          } else {
+            const request = {
+              cwid: vidPolyline.options.cwid,
+              side: null, 
+              project: vidPolyline.options.project.code,
+              surface: vidPolyline.options.project.surface,
+              tacode: vidPolyline.options.tacode
+            }
+            if (!this.options.photos) {
+              const photos = await photoFunc(request, login);
+              this.options.photos = photos.data;
+            }
+          }
+          if (this.options.photos.error) return
+          const request = {
+            cwid: vidPolyline.options.cwid,
+            latlng: event.latlng,
+            project: vidPolyline.options.project.code,
+            surface: vidPolyline.options.project.surface,
+            login: login,
+            side: initialSide,
+            tacode: vidPolyline.options.tacode
+          }
+          const photo = await parent.getVideoPhoto(request);               
+          const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
+          if (index === -1) {
+            alert("error loading video - Not found")
+          } else {
+            const videoParameters = {
+              mode: parent.context.projectMode,
+              direction: direction,
+              amazon: parent.props.activeLayer.amazon,
+              photos: this.options.photos,
+              startingIndex: index,
+            }
+            parent.videoCard.current.initialise(videoParameters, vidPolyline);
+            parent.changeVideoPlayerOpen(true);     
+          }
+        }         
+      });
+      return vidPolyline;  
   }
 
   /**
    * Delegate function for fetching new photos if user changes side 
    * Updates video cards data array
-   * @param {the id of the carriagway} carriageid 
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(carriageid, erp, side) {
-    let body = this.updatePhoto(carriageid, erp, side, this.state.activeLayer, this.state.activeCarriage.options.login);
+  async changeSide(currentPhoto, side) {
+    const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
-      this.setState({photoArray: data.data});
-      this.videoCard.current.refresh(data.data, data.newPhoto, side);
+      this.videoCard.current.refresh(data.photo, data.data);
     });
   }
 
@@ -719,22 +751,55 @@ class App extends React.Component {
    * @param {server} host 
    * @param {user login} login 
    */
-  async getVideoPhoto(latlng, project, login, side) {
-    const response = await fetch('https://' + login.host + '/archive', {
-      method: 'POST',
+  async getVideoPhoto(request) {
+
+    const query = {
+      user: request.login.user,
+      project: request.project,
+      lat: request.latlng.lat,
+      lng: request.latlng.lng,
+      side: request.side,
+      surface: request.surface,
+      cwid: request.cwid,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${request.login.host}/closestvideophoto?${queryParams.toString()}`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json', 
+        "authorization": request.login.token,       
+      },
+
+    });
+    const body = await response.json();
+    if (body.error) {
+      alert(body.error);   
+    } else {
+      return body;
+    }   
+  }
+
+  async getPhotos(request, login) {
+    const query = {
+      user: login.user,
+      cwid: request.cwid,
+      project: request.project,
+      surface: request.surface,
+      side: request.side,
+      tacode: request.tacode
+    }
+    const queryParams = new URLSearchParams(query)
+    const response = await fetch(`https://${login.host}/photos?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
         "authorization": login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        lat: latlng.lat,
-        lng: latlng.lng,
-        side: side
-      })
     });
     const body = await response.json();
     if (response.status !== 200) {
@@ -745,52 +810,27 @@ class App extends React.Component {
     }   
   }
 
-  async getPhotos(carriageid, side, project, login) {
-    const response = await fetch('https://' + login.host + '/photos', {
-      method: 'POST',
+  async requestChangeSide(currentPhoto) {
+    const query = {
+      user: this.context.login.user,
+      project: this.props.activeLayer.code,
+      photo: JSON.stringify(currentPhoto)
+    }
+    const queryParams = new URLSearchParams(query)
+      const response = await fetch(`https://${this.context.login.host}/changeside?${queryParams.toString()}`, {
+      method: 'GET',
       credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json', 
-        "authorization": login.token,       
+        "authorization": this.context.login.token,       
       },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side
-      })
-    });
-    const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
-    } else {
-      return body;
-    }   
-  }
 
-  async updatePhoto(carriageid, erp, side, project, login) {
-    const response = await fetch('https://' + login.host + '/changeSide', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json', 
-        "authorization": login.token,       
-      },
-      body: JSON.stringify({
-        user: login.user,
-        project: project,
-        carriageid: carriageid,
-        side: side,
-        erp: erp
-      })
     });
     const body = await response.json();
-    if (response.status !== 200) {
-      alert(response.status + " " + response.statusText);  
-      throw Error(body.message);   
+    if (body.error) {
+      alert(response.status + " " + response.statusText);
+      return   
     } else {
       return body;
     }   
@@ -811,7 +851,7 @@ class App extends React.Component {
       },
       body: JSON.stringify({
         user: this.context.login.user,
-        project: this.state.activeLayer,
+        project: this.props.activeLayer,
         lat: e.latlng.lat,
         lng: e.latlng.lng
       })
@@ -820,14 +860,14 @@ class App extends React.Component {
     if (body.error == null) {
       let distance = calcGCDistance(body.data.dist);
       let assetID = null;
-      if (this.state.activeLayer.surface === "footpath") {
+      if (this.props.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
       } else {
         assetID = body.data.carriageway;
       }
       if (distance <= DIST_TOLERANCE) {
-        let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
-          amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
+        let obj = {type: this.props.activeLayer.surface, address: body.data.address, 
+          amazon: this.props.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
         roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
         this.archivePhotoModal.current.setArchiveModal(true, obj);
         let arr = this.state.archiveMarker;
@@ -845,7 +885,7 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArchiveData(photo) {
-    const response = await fetch("https://" + this.context.login.host + '/archiveData', {
+    const response = await fetch("https://" + this.context.login.host + '/archivedata', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -855,20 +895,20 @@ class App extends React.Component {
       },
       body: JSON.stringify({
         user: this.context.login.user,
-        project: this.state.activeLayer,
+        project: this.props.activeLayer,
         photo: photo
       })
     });
     const body = await response.json();
     let assetID = null;
     if (body.error == null) {
-      if (this.state.activeLayer.surface === "footpath") {
+      if (this.props.activeLayer.surface === "footpath") {
         assetID = body.data.footpathid;
       } else {
         assetID = body.data.carriageway;
       }
-    let obj = {type: this.state.activeLayer.surface, address: body.data.address, 
-      amazon: this.state.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
+    let obj = {type: this.props.activeLayer.surface, address: body.data.address, 
+      amazon: this.props.activeLayer.amazon, carriage: assetID, photo: body.data.photo, 
     roadid: body.data.roadid, side: body.data.side, erp: body.data.erp, lat: body.data.latitude, lng: body.data.longitude};
     this.archivePhotoModal.current.setArchiveModal(true, obj);
     let arr = this.state.archiveMarker;
@@ -884,7 +924,7 @@ class App extends React.Component {
     this.reset();
   }
 
-  loadLayer = async (projectMode, project) => {  
+  loadLayer = async (project) => { 
     this.context.showLoader();    
     let projectCode = project.code;
     let inspections = null;
@@ -900,33 +940,28 @@ class App extends React.Component {
     if (district.error) return;
     this.context.setDistrict(district); 
     request = {project: project, query: null};
-    let filter = await apiRequest(this.context.login, request, "/filterData");
+    let filter = await apiRequest(this.context.login, request, "/filterdata");
     if (filter.error) return; 
-    let storeFilter = await apiRequest(this.context.login, request, "/filterData");
+    let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
     if (storeFilter.error) return; 
     let filters = await this.buildFilter(filter);
-    let store = await this.buildFilter(storeFilter);
-    let layers = this.state.activeLayers;
-    layers.push(project);
+    let filterStore = await this.buildFilter(storeFilter);
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
       this.setState({rmclass: layerBody.rmclass});
       this.setState({filterRMClass: layerBody.rmclass})  
-    }     
+    }   
     this.setState(() => ({
       filterPriorities: priorities.filter, 
       priorities: priorities.priorities,
       rmclass: layerBody.rmclass,
       filterRMClass: layerBody.rmclass,
-      filterStore: store,
+      filterStore: filterStore,
       filters: filters,
-      activeLayer: project,
-      activeLayers: layers,
       inspections: inspections,
       activeProject: projectCode,
-      projectMode: projectMode,
-      priorityMode: projectMode === "road" ? "Priority": "Grade",
+      priorityMode: this.context.projectMode === "road" ? "Priority": "Grade",
       bucket: this.buildBucket(projectCode),
     }), async function() { 
       let body = await this.filterLayer(project); //fetch layer
@@ -942,33 +977,22 @@ class App extends React.Component {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
-      let layers = this.state.activeLayers;
-      if (project) {
-        for(var i = 0; i < layers.length; i += 1) {     
-          if (project.code === layers[i].code) {
-            layers.splice(i, 1);
-            break;
-          }
-        }
-      }
       this.setState(
         {
           objGLData: [],
           priorities: [],
           filterPriorities: [],
           filterRMClass: [],
-          projectMode: null,
           filterStore: [],
           filter: [],
           rmclass: [],
           faultData: [],
-          activeLayers: layers,
           inspections: [],
           bucket: null,
           activeProject: null,
-          activeLayer: null,
-          ages: layers,
-          mapMode: "map",
+          ages: null,
+          video : false,
+          isVideoOpen: false
           }, () => {
             let glData = null;
             this.GLEngine.redraw(glData, false); 
@@ -1196,11 +1220,6 @@ class App extends React.Component {
     navigator.clipboard.writeText(position);
   }
 
-  selectLayer(e, index) {
-    console.log(this.state.activeLayers[index]);
-    this.setState({activeLayer: this.state.activeLayers[index]});
-  }
-
   updateFilter = (filter) => {
     let html = this.applyRef.current.innerHTML
     if (this.state.filtered && html === "Clear Filter") {
@@ -1218,7 +1237,7 @@ class App extends React.Component {
     if (e.target.innerHTML === "Apply Filter") {
       e.target.innerHTML = "Clear Filter";
       this.setState({filtered: true})
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     } else {
       e.target.innerHTML = "Apply Filter";
@@ -1232,7 +1251,7 @@ class App extends React.Component {
         filtered: false,
         filters: newFilter
       }, async () => {
-        let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+        let body = await this.filterLayer(this.props.activeLayer); //fetch layer
         this.addGLGeometry(body.points, body.lines, body.type, false);
       });  
     }
@@ -1244,7 +1263,7 @@ class App extends React.Component {
    */
   updatePriority = (query) => {
     this.setState({filterPriorities: query}, async () => {
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     });   
   }
@@ -1254,7 +1273,7 @@ class App extends React.Component {
    */
   updateRMClass = async (query) => {
     this.setState({filterRMClass: query}, async () => {
-      let body = await this.filterLayer(this.state.activeLayer); //fetch layer
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
     });
     
@@ -1269,11 +1288,11 @@ class App extends React.Component {
     return ( 
       <> 
         <Navigation 
-          layers={this.state.activeLayers}
+          layers={this.props.activeLayers}
           remove={this.removeLayer}
           add={this.loadLayer}
           logout={this.logout}
-          project={this.state.activeLayer}
+          project={this.props.activeLayer}
           updateLogin={this.context.updateLogin}
           data={this.state.objGLData}
           centre={this.fitBounds}
@@ -1284,10 +1303,9 @@ class App extends React.Component {
           <div className={this.state.dataActive ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
-                <p>Layers</p>
+                <p>{'Layers'}</p>
               </div> 
               <LayerManager
-                layer={this.state.activeLayer}
                 prioritytitle={this.state.priorityMode}
                 priorityitems={this.state.priorities}
                 priorityfilter={this.state.filterPriorities} 
@@ -1295,28 +1313,25 @@ class App extends React.Component {
                 classfilter={this.state.filterRMClass} 
                 setDataActive={this.setDataActive} //-> data table
                 dataChecked={this.state.dataActive} //-> data table
-                setMapMode={this.state.setMapMode}
-                mapMode={this.state.mapMode}
                 updatePriority={this.updatePriority}
                 classonClick={this.updateRMClass}
-                
                 >
               </LayerManager>       
             </div>
             <div className="filters">
               <div className="filterstitle">
-                <p>Filters</p>
+                <p>{'Filters'}</p>
               </div>
               <Filter
                 filter={this.state.filters}
                 store={this.state.filterStore}
-                mode={this.state.activeLayer ? this.state.activeLayer.surface: null}
+                mode={this.props.activeLayer ? this.props.activeLayer.surface: null}
                 update={this.updateFilter}
               />
               <FilterButton
                 className="apply-btn" 
                 ref={this.applyRef} 
-                layer={this.state.activeLayer} 
+                layer={this.props.activeLayer} 
                 onClick={(e) => this.clickApply(e)}>  
               </FilterButton>
             </div>
@@ -1357,7 +1372,7 @@ class App extends React.Component {
               )}
               <VideoCard
                 ref={this.videoCard}
-                show={this.state.showVideo} 
+                show={this.state.videoViewer} 
                 parent={this}
               >
               </VideoCard>
@@ -1368,8 +1383,8 @@ class App extends React.Component {
                   data={obj}
                   login={this.context.login.user}
                   position={obj ? obj.latlng : null}
-                  photo={this.state.activeLayer ? this.state.image: null} 
-                  amazon={this.state.activeLayer ? this.state.activeLayer.amazon: null}
+                  photo={this.props.activeLayer ? this.state.image: null} 
+                  amazon={this.props.activeLayer ? this.props.activeLayer.amazon: null}
                   onClick={this.clickImage}
                   onError={() => this.onImageError(obj.photo)}
                   >
@@ -1388,7 +1403,7 @@ class App extends React.Component {
           data={this.state.objGLData}
           simulate={this.simulateClick}
           centre={this.centreMap}
-          surface={this.state.activeLayer ? this.state.activeLayer.surface: null}
+          surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
         />  
         <PhotoModal
           ref={this.photoModal}
@@ -1397,9 +1412,9 @@ class App extends React.Component {
         <ArchivePhotoModal
           ref={this.archivePhotoModal}
           show={this.state.show} 
-          amazon={!this.state.activeLayer ? null: this.state.activeLayer}
+          amazon={!this.props.activeLayer ? null: this.props.activeLayer}
           currentPhoto={this.state.currentPhoto}
-          project={this.state.activeLayer}
+          project={this.props.activeLayer}
         >
         </ArchivePhotoModal>
       </div> 
@@ -1408,7 +1423,20 @@ class App extends React.Component {
   }
   
 }
-export default App;
+
+const mapStateToProps = state => ({
+  activeLayer: state.layers.active,
+  activeLayers: state.layers.layers
+})
+
+const mapDispatchToProps = {
+  addLayer
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(App);
 
 
   // async reverseLookup(data) {

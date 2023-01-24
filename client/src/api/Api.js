@@ -53,7 +53,7 @@ const apiRequest = async (credentials, request, endpoint) => {
     });
     if(response.ok) {
       const body = await response.json();
-      if (!body.result) {
+      if (!body.login) {
         return {error: "login error"};
       } else {
         return body;            

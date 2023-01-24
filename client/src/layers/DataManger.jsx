@@ -19,7 +19,6 @@ const DataManager = () => {
                     setDataActive={this.setDataActive} //-> data table
                     dataChecked={this.state.dataActive} //-> data table
                     setMapMode={this.state.setMapMode}
-                    mapMode={this.state.mapMode}
                     updatePriority={this.updatePriority}
                     classonClick={this.updateRMClass}
                     

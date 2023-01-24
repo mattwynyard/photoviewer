@@ -1,11 +1,14 @@
-import React, { useState, useContext, useEffect, Fragment } from 'react';
+import React, { useState, useContext, useEffect, useCallback, Fragment } from 'react';
+import { store } from '../state/store'
+import { useDispatch, useSelector } from 'react-redux'
+import { addLayer, removeLayer } from '../state/reducers/layersSlice'
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';
 import { AppContext } from '../context/AppContext';
 import LoginNav from '../login/LoginNav.jsx';
 import LoginModal from '../login/LoginModal.jsx'
 import {LoginFetch, apiRequest} from '../api/Api.js';
-import ProjectNav from './ProjectNav.js';
+import { ProjectNav } from './ProjectNav.js';
 import DataNav from "./DataNav.js";
 import Modals from '../modals/Modals.js';
 import AdminModal from '../modals/AdminModal.jsx';
@@ -13,7 +16,7 @@ import {CustomLink} from "../components/Components.jsx";
 import SearchBar from './SearchBar.js'
 
 export const Navigation = (props) => {
-
+  const dispatch = useDispatch()
   const [show, setShow] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminTable, setAdminTable] = useState('user');
@@ -24,20 +27,17 @@ export const Navigation = (props) => {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin, setMapBoxKey, district } = useContext(AppContext);
-
-  useEffect(() => {
-
-  }, [])
+  const {login, updateLogin, setMapBoxKey, district, setProjectMode, projectMode } = useContext(AppContext);
 
   const showModal = () => {
     setShow(true)
   }
+  //const layers = useSelector((state) => state.layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
     const body = await LoginFetch(login.host + '/login', "", {user: user, key: password});
-    if (body.result) {
+    if (body.login) {
       const mapbox = await apiRequest({user: body.user, token: body.token, host: login.host}, {project: null, query: null}, "/mapbox");
       setMapBoxKey(mapbox);
       window.sessionStorage.setItem('token', body.token);
@@ -64,15 +64,7 @@ export const Navigation = (props) => {
     updateLogin(localLogin.user, localLogin.token);
   }, [localLogin, updateLogin]);
 
-  /**
-   * Gets the development or production host 
-   * @return {string} the host name
-   */
   useEffect(() => {
-    /**
-     * calls to server to get public projects onload
-     */
-    
      let host =  window.sessionStorage.getItem("osmiumhost");
      let user =  window.sessionStorage.getItem("user");
      const callBackendAPI = async () => {
@@ -90,6 +82,7 @@ export const Navigation = (props) => {
       }
     }
     if (user) {
+
         let token = window.sessionStorage.getItem("token");
         let item = window.sessionStorage.getItem("projects");
         let _projects = JSON.parse(item);
@@ -122,7 +115,7 @@ export const Navigation = (props) => {
 
   const buildProjects = (projects) => {    
     let obj = {road : [], footpath: []}
-    for(var i = 0; i < projects.length; i += 1) {
+    for(let i = 0; i < projects.length; i += 1) {
       if (projects[i].surface === "road") {
         obj.road.push(projects[i]);
       } else {
@@ -133,15 +126,17 @@ export const Navigation = (props) => {
     setProjects(obj);
   }
 
-  const handleClick = (e) => {
-    let projectMode = e.target.type;
-    let project = JSON.parse(e.target.title);
-    if (projectMode === 'remove') { 
+  const handleClick = useCallback((type, project) => { 
+    if (type === 'remove') { 
+      dispatch(removeLayer(project))
+      setProjectMode(null)
       props.remove(project);      
     } else {
-      props.add(projectMode, project)
+      props.add(project)
+      setProjectMode(type)
+      dispatch(addLayer(project))
     } 
-  }
+  }, [])
 
   // Admin
   const handleAdminClick = (e) => {
@@ -177,8 +172,7 @@ export const Navigation = (props) => {
           <Navbar.Collapse className={"navbar-collapse"} id="responsive-navbar-nav">
             <ProjectNav
               login={login}
-              projects={projects} 
-              layers={props.layers}
+              projects={projects ? projects : null} 
               onClick={login.user !== 'admin' ? handleClick : handleAdminClick}
               disabled = {projects === null ? true: false}
             />
