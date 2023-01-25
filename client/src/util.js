@@ -1,6 +1,14 @@
 const EARTH_RADIUS = 6378137.0; //metres
 const TILE_SIZE = 256;
 
+const latLngsFromGeojson = (geojson) => {
+  const coordinates = [];
+  geojson.forEach( (coordinate) => {
+    coordinates.push([coordinate[1], coordinate[0]]);
+  }); 
+  return coordinates;
+}
+
 const incrementPhoto = (photo, increment) => {
   const intSuffix = (parseInt(photo.slice(photo.length - 5, photo.length)));
   const n = intSuffix + increment;
@@ -279,4 +287,4 @@ const RDP = (l, eps) => {
 
   export {incrementPhoto, RDP, haversineDistance, LatLongToPixelXY, ShpericalLatLongToPixelXY, translateMatrix, 
     scaleMatrix, randomInt, pad, getColor, getMonth, formatDate, calcGCDistance, sleep, downloadCSV, geojsonToWkt,
-    calculateDistance, erp}
+    calculateDistance, erp, latLngsFromGeojson}

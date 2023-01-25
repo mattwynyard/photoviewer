@@ -25,6 +25,7 @@ import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
 import { setClassName } from './state/reducers/mapSlice'
 import { setIsOpen } from './state/reducers/videoSlice';
+import { leafletPolylineFromGeometry} from './model/photoCentreline';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -612,14 +613,6 @@ class App extends React.Component {
       this.leafletMap.invalidateSize(isOpen);
   }
 
-  latLngsFromGeojson(geojson) {
-    const coordinates = [];
-    geojson.forEach( (coordinate) => {
-      coordinates.push([coordinate[1], coordinate[0]]);
-    }); 
-    return coordinates
-  }
-
   /**
    * Get closest polyline to click and plots on map 
    * Starts movie of carriagway
@@ -629,32 +622,41 @@ class App extends React.Component {
    */
   async playVideo(photoFunc, geometry) {
     if (this.vidPolyline) return
-    const geojson = JSON.parse(geometry.data.geojson);
-    const latlngs = this.latLngsFromGeojson(geojson.coordinates);
-    const vidPolyline = L.polyline(latlngs, {
-      class: geometry.data.class,
-      controller: geometry.data.controller,
-      cwid: geometry.data.cwid,
-      direction: geometry.data.direction,
-      endm: geometry.data.endm,
-      hierarchy: geometry.data.hierarchy,
-      label: geometry.data.label,
-      owner: geometry.data.owner,
-      pavement: geometry.data.pavement,
-      photos: null,
-      roadid: geometry.data.roadid,
-      roadtype: geometry.data.roadtype,
-      startm: geometry.data.startm,
-      tacode: geometry.data.tacode,
-      town: geometry.data.town,
-      width: geometry.data.width,
-      zone: geometry.data.zone,
+    const options = {
       color: 'blue',
       weight: 4,
       opacity: 0.5,
-      project: this.props.activeLayer,
-      login: this.context.login,
-    }).addTo(this.leafletMap);
+    }
+    const vidPolyline = leafletPolylineFromGeometry(geometry, options)
+    //const geojson = JSON.parse(geometry.data.geojson);
+    //const latlngs = this.latLngsFromGeojson(geojson.coordinates);
+    // const vidPolyline = L.polyline(latlngs, {
+    //   class: geometry.data.class,
+    //   controller: geometry.data.controller,
+    //   cwid: geometry.data.cwid,
+    //   direction: geometry.data.direction,
+    //   endm: geometry.data.endm,
+    //   hierarchy: geometry.data.hierarchy,
+    //   label: geometry.data.label,
+    //   owner: geometry.data.owner,
+    //   pavement: geometry.data.pavement,
+    //   photos: null,
+    //   roadid: geometry.data.roadid,
+    //   roadtype: geometry.data.roadtype,
+    //   startm: geometry.data.startm,
+    //   tacode: geometry.data.tacode,
+    //   town: geometry.data.town,
+    //   width: geometry.data.width,
+    //   zone: geometry.data.zone,
+    //   color: 'blue',
+    //   weight: 4,
+    //   opacity: 0.5,
+    //   project: this.props.activeLayer,
+    //   login: this.context.login,
+    // }).addTo(this.leafletMap);
+      vidPolyline.options.project = this.props.activeLayer;
+      vidPolyline.options.login = this.context.login;
+      vidPolyline.addTo(this.leafletMap);
       const parent = this;
       vidPolyline.on('click', async function (event) {
           if (this.options.color === 'red') { 
@@ -727,8 +729,7 @@ class App extends React.Component {
               photos: this.options.photos,
               startingIndex: index,
             }
-            parent.videoCard.current.initialise(videoParameters, vidPolyline);
-            //parent.changeVideoPlayerOpen(true);     
+            parent.videoCard.current.initialise(videoParameters, vidPolyline);    
             dispatch(setIsOpen(true))
           }
         }         
@@ -741,7 +742,7 @@ class App extends React.Component {
    * Updates video cards data array
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(currentPhoto, side) {
+  async changeSide(currentPhoto) {
     const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
       this.videoCard.current.refresh(data.photo, data.data);
@@ -755,7 +756,6 @@ class App extends React.Component {
    * @param {user login} login 
    */
   async getVideoPhoto(request) {
-
     const query = {
       user: request.login.user,
       project: request.project,
