@@ -6,7 +6,7 @@
     position: absolute;
     right: 0%;
     top: 0%;
-    padding-left: 2px;
+    padding: 2px;
     background-color: black;
     
   }
@@ -16,21 +16,14 @@
 
   }
 
-  .container-play {
-    display: flex;
-    flex-direction: row;
-    margin-left:42%;
+  .video {
+    height: 90%;
   }
 
-  .video {
-    height: 80%;
+  .image {
+    height: 100%;
     width: 100%;
   }
-
-  .controls {
-    height: 30%;
-  }
-
 
 .sidetext {
   position: absolute;
@@ -41,23 +34,34 @@
   font-size: 14px;
 }
 
+.container-controls {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-shrink: 2;
+}
+
+.container-controls > div { 
+  padding: 2px;
+  height: 100%;
+}
+
 .controls-fastforward  {
-  margin-top: 10px;
   height: 30px;
   width: 35px;
-  margin-right: 45%;
 }
 
 .controls-fastrewind  {
-  margin-top: 10px;
   height: 30px;
   width: 35px;
-  color: white;
 } 
 
 .controls-stop, .controls-play {
-  height: 50px;
-  width: 50px;
+  height: 48px;
+  width: 48px;
 }
 
-  
+.controls-action {
+  display: flex;
+  flex-shrink: 3;
+}

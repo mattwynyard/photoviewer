@@ -1,11 +1,16 @@
 import React from 'react';
-import {ProgressBar, Button, ToggleButton}  from 'react-bootstrap';
+import {ProgressBar, ToggleButton}  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
+import { Button } from '@mui/material';
 import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.svg';
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
+import {ReactComponent as Cancel} from '../theme/svg/cancel_48dp.svg';
+import {ReactComponent as Download} from '../theme/svg/download_48dp.svg';
+import {ReactComponent as ToggleOn} from '../theme/svg/toggle_on_48dp.svg';
+import {ReactComponent as ToggleOff} from '../theme/svg/toggle_off_48dp.svg';
 
 const VideoControl = (props) => {
     if (props.play) {
@@ -16,6 +21,22 @@ const VideoControl = (props) => {
         return (
             <PlayButton className="controls-play" onClick={(e) => props.handleClick(e)}/>
         )
+    }
+}
+
+const SideControl = (props) => {
+    if (props.side === 'R') {
+        const newSide = 'L'
+        return (
+            <ToggleOn onClick={(e) => props.handleClick(e, newSide)}/>
+        )
+    } else if (props.side === 'L') {
+        const newSide = 'R'
+        return (
+            <ToggleOff onClick={(e) => props.handleClick(e, newSide)}/>
+        )
+    } else {
+        return null
     }
 }
 
@@ -87,10 +108,7 @@ export default class VideoCard extends React.Component {
             } else {
                 this.setState({disabled: true});
             }
-            
-        const latlng = this.getLatLng(videoParameters.startingIndex);
-        this.delegate.setState({carMarker: [latlng]});
-        this.props.centre(latlng.lat, latlng.lng, 16);     
+        this.update(videoParameters.startingIndex)    
     }
 
     refresh(photo, photoArray) {
@@ -115,8 +133,13 @@ export default class VideoCard extends React.Component {
             this.setState({play: true}); 
             this.setState({interval: this.photoArray[this.state.index].interval})
             this.startTimer(this.state.interval, false);
-        }
-           
+        }       
+    }
+
+    switchSide = (e, side) => {
+        e.preventDefault();
+        this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
+        this.setState({side: side});
     }
 
     startTimer = (interval, isReverse) => {
@@ -197,10 +220,7 @@ export default class VideoCard extends React.Component {
         })
     }
 
-    changeRadio(e) {
-        this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
-        this.setState({side: e});
-    }
+
 
     imageError(err) {
         if (this.photoArray.length === 0 || this.state.errors >= 10) {
@@ -225,11 +245,7 @@ export default class VideoCard extends React.Component {
         
     }
 
-    render() {
-        const radios = [
-            { name: 'Left', value: 'L' },
-            { name: 'Right', value: 'R' },
-          ];    
+    render() {  
         if (this.state.show) {
             if (!this.photoArray) return null;
             return (
@@ -253,58 +269,37 @@ export default class VideoCard extends React.Component {
                 <div 
                   className="videoModal"
                 > 
-                    <img
-                      className="video" 
-                      alt="fault"
-                      src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
-                      onError={(e) => this.imageError(e)}
-                        >
-                    </img>     
-                    <div className="controls">
+                    <div className="video" >
+                        <img className="image"
+                            
+                            alt="fault"
+                            src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
+                            onError={(e) => this.imageError(e)}
+                            >
+                        </img>
+                    </div>     
                     <ProgressBar 
                         className="videoProgress" 
                         min={0} 
                         max={this.photoArray.length} 
                         now={this.state.index} 
                     />
-                    {/* <LinearProgress
-                        className="videoProgress" 
-                        min={0} 
-                        valueBuffer={this.photoArray.length} 
-                        value={this.state.index} 
-                        variant='determinate'
-                    /> */}
-                    <div className='container-play'>
-                        <FastRewind className="controls-fastrewind" onClick={this.clickFastRewind}/>
-                        <VideoControl play={this.state.play} handleClick={this.clickPlay}/>
-                        <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
-                    </div>
-                    <div className="controls-toggle">
-                        {radios.map((radio, idx) => (
-                        <ToggleButton
-                            key={idx}
-                            type="radio"
-                            variant="light"
-                            name="radio"
-                            size="sm"
-                            value={radio.value}
-                            disabled={this.state.disabled}
-                            checked={this.state.side === radio.value}
-                            onChange={(e) => this.changeRadio(e.currentTarget.value)}
-                        >
-                            {radio.name}
-                        </ToggleButton>
-                        ))}	
-                    </div>
-                    <Button 
-                        className="controls-close"
-                        variant="light" 
-                        size="sm"
-                        onClick={(e) => this.clickClose(e)}>
-                        {'Close'}
-                    </Button>
-                    </div>  
-                </div>  
+                    <div className='container-controls'>
+                        <div>
+                            <SideControl handleClick={this.switchSide} side={this.state.side}/>
+                        </div>                     
+                        <div className = "controls-video">
+                            <FastRewind className="controls-fastrewind" onClick={this.clickFastRewind}/>
+                            <VideoControl handleClick={this.clickPlay} play={this.state.play} />
+                            <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
+                        </div>
+                        <div className = "controls-action">
+                            <Download className="controls-download" onClick={(e) => this.clickDownload(e)}/>
+                            <Cancel className="controls-close" onClick={(e) => this.clickClose(e)}/>
+                        </div>
+                        
+                    </div>    
+                </div>    
               </>
               );
         } else {

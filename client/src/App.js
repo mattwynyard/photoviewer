@@ -628,113 +628,88 @@ class App extends React.Component {
       opacity: 0.5,
     }
     const vidPolyline = leafletPolylineFromGeometry(geometry, options)
-    //const geojson = JSON.parse(geometry.data.geojson);
-    //const latlngs = this.latLngsFromGeojson(geojson.coordinates);
-    // const vidPolyline = L.polyline(latlngs, {
-    //   class: geometry.data.class,
-    //   controller: geometry.data.controller,
-    //   cwid: geometry.data.cwid,
-    //   direction: geometry.data.direction,
-    //   endm: geometry.data.endm,
-    //   hierarchy: geometry.data.hierarchy,
-    //   label: geometry.data.label,
-    //   owner: geometry.data.owner,
-    //   pavement: geometry.data.pavement,
-    //   photos: null,
-    //   roadid: geometry.data.roadid,
-    //   roadtype: geometry.data.roadtype,
-    //   startm: geometry.data.startm,
-    //   tacode: geometry.data.tacode,
-    //   town: geometry.data.town,
-    //   width: geometry.data.width,
-    //   zone: geometry.data.zone,
-    //   color: 'blue',
-    //   weight: 4,
-    //   opacity: 0.5,
-    //   project: this.props.activeLayer,
-    //   login: this.context.login,
-    // }).addTo(this.leafletMap);
-      vidPolyline.options.project = this.props.activeLayer;
-      vidPolyline.options.login = this.context.login;
-      vidPolyline.addTo(this.leafletMap);
-      const parent = this;
-      vidPolyline.on('click', async function (event) {
-          if (this.options.color === 'red') { 
-          const login = vidPolyline.options.login;
-          const side = parent.videoCard.current.getSide();
+    vidPolyline.options.project = this.props.activeLayer;
+    vidPolyline.options.login = this.context.login;
+    vidPolyline.addTo(this.leafletMap);
+    const parent = this;
+    vidPolyline.options.parent = this;
+    vidPolyline.on('click', async function (event) {
+        if (this.options.color === 'red') { 
+        const login = vidPolyline.options.login;
+        const side = parent.videoCard.current.getSide();
+        const request = {
+          cwid: vidPolyline.options.cwid,
+          latlng: event.latlng,
+          project: vidPolyline.options.project.code,
+          surface: vidPolyline.options.project.surface,
+          login: login,
+          side: side,
+          tacode: vidPolyline.options.tacode
+        }
+        const photo = await parent.getVideoPhoto(request);
+        parent.videoCard.current.refresh(photo.data);
+      } else {
+        this.setStyle({
+          color: 'red',
+          weight: 4
+        });
+        const login = vidPolyline.options.login;
+        const direction = vidPolyline.options.direction;
+        let initialSide = null;
+        if (direction === 'Both') {
+          initialSide = 'L'
           const request = {
             cwid: vidPolyline.options.cwid,
-            latlng: event.latlng,
+            side: 'L', 
             project: vidPolyline.options.project.code,
             surface: vidPolyline.options.project.surface,
-            login: login,
-            side: side,
             tacode: vidPolyline.options.tacode
           }
-          const photo = await parent.getVideoPhoto(request);
-          parent.videoCard.current.refresh(photo.data);
+          if (!this.options.photos) {
+            const photos = await photoFunc(request, login);
+            this.options.photos = photos.data;
+          }
         } else {
-          this.setStyle({
-            color: 'red',
-            weight: 4
-          });
-          const login = vidPolyline.options.login;
-          const direction = vidPolyline.options.direction;
-          let initialSide = null;
-          if (direction === 'Both') {
-            initialSide = 'L'
-            const request = {
-              cwid: vidPolyline.options.cwid,
-              side: 'L', 
-              project: vidPolyline.options.project.code,
-              surface: vidPolyline.options.project.surface,
-              tacode: vidPolyline.options.tacode
-            }
-            if (!this.options.photos) {
-              const photos = await photoFunc(request, login);
-              this.options.photos = photos.data;
-            }
-          } else {
-            const request = {
-              cwid: vidPolyline.options.cwid,
-              side: null, 
-              project: vidPolyline.options.project.code,
-              surface: vidPolyline.options.project.surface,
-              tacode: vidPolyline.options.tacode
-            }
-            if (!this.options.photos) {
-              const photos = await photoFunc(request, login);
-              this.options.photos = photos.data;
-            }
-          }
-          if (this.options.photos.error) return
           const request = {
             cwid: vidPolyline.options.cwid,
-            latlng: event.latlng,
+            side: null, 
             project: vidPolyline.options.project.code,
             surface: vidPolyline.options.project.surface,
-            login: login,
-            side: initialSide,
             tacode: vidPolyline.options.tacode
           }
-          const photo = await parent.getVideoPhoto(request);               
-          const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
-          if (index === -1) {
-            alert("error loading video - Not found")
-          } else {
-            const videoParameters = {
-              mode: parent.context.projectMode,
-              direction: direction,
-              amazon: parent.props.activeLayer.amazon,
-              photos: this.options.photos,
-              startingIndex: index,
-            }
-            parent.videoCard.current.initialise(videoParameters, vidPolyline);    
-            dispatch(setIsOpen(true))
+          if (!this.options.photos) {
+            const photos = await photoFunc(request, login);
+            this.options.photos = photos.data;
           }
-        }         
-      });
-      return vidPolyline;  
+        }
+        if (this.options.photos.error) return
+        const request = {
+          cwid: vidPolyline.options.cwid,
+          latlng: event.latlng,
+          project: vidPolyline.options.project.code,
+          surface: vidPolyline.options.project.surface,
+          login: login,
+          side: initialSide,
+          tacode: vidPolyline.options.tacode
+        }
+        const photo = await parent.getVideoPhoto(request);               
+        const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
+        if (index === -1) {
+          alert("error loading video - Not found")
+        } else {
+          const videoParameters = {
+            mode: parent.context.projectMode,
+            direction: direction,
+            amazon: parent.props.activeLayer.amazon,
+            photos: this.options.photos,
+            startingIndex: index,
+          }
+          parent.videoCard.current.initialise(videoParameters, vidPolyline);    
+          dispatch(setIsOpen(true));    
+        }
+      }         
+    });
+    return vidPolyline;  
   }
 
   /**
