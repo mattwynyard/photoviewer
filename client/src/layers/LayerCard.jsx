@@ -1,16 +1,22 @@
-import { React, useContext, useCallback, useMemo } from 'react';
+import { React, useContext, useCallback } from 'react';
 import { Card }  from 'react-bootstrap';
 import ClassDropdown from './ClassDropdown';
 import PriorityDropdown from './PriorityDropdown';
 import RatingDropdown from './RatingDropdown';
 import { AppContext } from '../context/AppContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { setMode } from '../state/reducers/mapSlice'
+
 
 import './LayerCard.css';
 
 function LayerCard(props) {
 
+    const videoOpen = useSelector((state) => state.video.isOpen)
+    const mapMode = useSelector((state) => state.map.mode)
+    const dispatch = useDispatch()
     const box = document.querySelector('.layercard-datainput');
-    const { mapMode, setMapMode, showLoader } = useContext(AppContext);
+    const { showLoader } = useContext(AppContext);
 
     const handleFocus = () => {
         box.blur();
@@ -27,12 +33,13 @@ function LayerCard(props) {
     }, [showLoader, props])
 
     const handleVideoChange = useCallback((e) => {
+        if (videoOpen) return;
         if (e.target.checked) {
-            setMapMode("video");
+            dispatch(setMode("video"))
         } else {
-            setMapMode("map");
+            dispatch(setMode("map"))
         }
-    }, [setMapMode])
+    }, [dispatch, videoOpen])
 
     const handleRatingChange = (isChecked) => {
         

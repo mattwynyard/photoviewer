@@ -168,7 +168,7 @@ const connection = new Pool({
     password: process.env.PASSWORD,
     port: process.env.DBPORT,
     max: 20,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 10000,
 })
 connection.connect(function(err) {
     if (err) {

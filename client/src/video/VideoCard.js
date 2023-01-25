@@ -6,7 +6,6 @@ import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.s
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
-import LinearProgress from '@mui/material/LinearProgress';
 
 const VideoControl = (props) => {
     if (props.play) {
@@ -316,3 +315,4 @@ export default class VideoCard extends React.Component {
       
   }
 }
+

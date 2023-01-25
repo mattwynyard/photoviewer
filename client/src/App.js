@@ -24,6 +24,7 @@ import { store } from './state/store'
 import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
 import { setClassName } from './state/reducers/mapSlice'
+import { setIsOpen } from './state/reducers/videoSlice';
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -34,7 +35,6 @@ const DefaultIcon = L.icon({
   iconAnchor: [8, 8]
 }); 
 const dispatch = store.dispatch
-
 class App extends React.Component {
   static contextType = AppContext;
   
@@ -343,7 +343,7 @@ class App extends React.Component {
    * @param {event - the mouse event} e 
    */
   clickLeafletMap = async (e) => {
-    switch(this.context.mapMode) {
+    switch(this.props.mapMode) {
       case 'map':
         if (!this.props.activeLayer) return;
         if (this.context.ratingActive) {
@@ -607,10 +607,9 @@ class App extends React.Component {
     return await response.json();
   }
 
-  changeVideoPlayerOpen(isOpen) {
-    this.setState({isVideoOpen: isOpen}, () => {
-      this.leafletMap.invalidateSize(true);
-    });
+  async changeVideoPlayerOpen (isOpen) {
+      await dispatch(setIsOpen(false))
+      this.leafletMap.invalidateSize(isOpen);
   }
 
   latLngsFromGeojson(geojson) {
@@ -729,7 +728,8 @@ class App extends React.Component {
               startingIndex: index,
             }
             parent.videoCard.current.initialise(videoParameters, vidPolyline);
-            parent.changeVideoPlayerOpen(true);     
+            //parent.changeVideoPlayerOpen(true);     
+            dispatch(setIsOpen(true))
           }
         }         
       });
@@ -1303,7 +1303,7 @@ class App extends React.Component {
           >  
         </Navigation>   
         <div className="appcontainer">     
-          <div className={(this.state.dataActive ||  this.state.isVideoOpen) ? "panel-reduced": "panel"}>
+          <div className={(this.state.dataActive ||  this.props.isVideoOpen) ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
                 <p>{'Layers'}</p>
@@ -1342,7 +1342,7 @@ class App extends React.Component {
           <div>
           <LMap        
               ref={(ref) => {this.map = ref;}}
-              className={this.state.isVideoOpen ? "map-video": this.state.dataActive ? "map-reduced" : "map"}
+              className={this.props.isVideoOpen ? "map-video": this.state.dataActive ? "map-reduced" : "map"}
               worldCopyJump={true}
               boxZoom={true}
               center={centre}
@@ -1402,14 +1402,15 @@ class App extends React.Component {
             show={this.state.videoViewer} 
             parent={this}
             centre={this.centreMap}
+            
           >
           </VideoCard>
             <DataTable 
-            className={this.state.dataActive ? "data-active": "data-inactive"}
-            data={this.state.objGLData}
-            simulate={this.simulateClick}
-            centre={this.centreMap}
-            surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
+              className={this.state.dataActive ? "data-active": "data-inactive"}
+              data={this.state.objGLData}
+              simulate={this.simulateClick}
+              centre={this.centreMap}
+              surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
           />  
           </div>  
             
@@ -1436,12 +1437,15 @@ class App extends React.Component {
 const mapStateToProps = state => ({
   activeLayer: state.layers.active,
   activeLayers: state.layers.layers,
-  className: state.map.class
+  className: state.map.class,
+  mapMode: state.map.mode,
+  isVideoOpen: state.video.isOpen
 })
 
 const mapDispatchToProps = {
   addLayer,
-  setClassName
+  setClassName,
+  setIsOpen
 }
 
 export default connect(
