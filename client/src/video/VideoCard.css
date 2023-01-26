@@ -23,6 +23,7 @@
   .image {
     height: 100%;
     width: 100%;
+    object-fit: contain;
   }
 
 .sidetext {
@@ -39,11 +40,12 @@
   flex-direction: row;
   justify-content: space-between;
   flex-shrink: 2;
+  padding: 5px;
 }
 
 .container-controls > div { 
-  padding: 2px;
-  height: 100%;
+  padding: 4px;
+  cursor: pointer
 }
 
 .controls-fastforward  {
@@ -63,5 +65,13 @@
 
 .controls-action {
   display: flex;
-  flex-shrink: 3;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.controls-download, .controls-close {
+  display: block;
+  height: 40px;
+  width: 40px;
+  margin: 5px;
 }

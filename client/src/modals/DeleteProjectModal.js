@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown, Form, Button}  from 'react-bootstrap';
 
 export function DeleteProjectModal(props) {
@@ -16,12 +17,12 @@ export function DeleteProjectModal(props) {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Insert")}
+                    onClick={() => props.setMode("Insert")}
                     >
                     Insert
                 </Dropdown.Item>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Update")}
+                    onClick={() => props.setMode("Update")}
                     >
                     Update
                 </Dropdown.Item>
@@ -45,14 +46,14 @@ export function DeleteProjectModal(props) {
                     type="checkbox" 
                     size='sm'
                     checked={props.deleteProjectDataOnly}
-                    onChange={(e) => props.deleteProjectDataOnly ? props.setDeleteProjectDataOnly(false) : props.setDeleteProjectDataOnly(true)}
+                    onChange={() => props.deleteProjectDataOnly ? props.setDeleteProjectDataOnly(false) : props.setDeleteProjectDataOnly(true)}
                 >
                 </Form.Control>
             
             </Form>
             <Button 
                 variant="primary" 
-                onClick={(e) => props.updateProject('delete')}>
+                onClick={() => props.updateProject('delete')}>
                 Delete
             </Button>
         </Modal.Body>

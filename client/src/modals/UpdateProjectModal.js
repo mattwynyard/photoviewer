@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown}  from 'react-bootstrap';
 
 export function UpdateProjectModal(props) {
@@ -19,12 +20,12 @@ return (
             </Dropdown.Toggle>
             <Dropdown.Menu>
             <Dropdown.Item
-                onClick={(e) => props.setMode("Insert")}
+                onClick={() => props.setMode("Insert")}
                 >
                 Insert
             </Dropdown.Item>
             <Dropdown.Item
-                onClick={(e) => props.setMode("Delete")}
+                onClick={() => props.setMode("Delete")}
                 >
                 Delete
             </Dropdown.Item>
@@ -211,7 +212,7 @@ return (
                 size='sm'
                 value={"submit"}
                 disabled={props.buttonDisabled}
-                onClick={(e) => props.updateProject('update')}
+                onClick={() => props.updateProject('update')}
             ></input>
         </div>
     

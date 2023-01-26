@@ -26,6 +26,7 @@ import { addLayer } from './state/reducers/layersSlice'
 import { setClassName } from './state/reducers/mapSlice'
 import { setIsOpen } from './state/reducers/videoSlice';
 import { leafletPolylineFromGeometry} from './model/photoCentreline';
+import Location  from './theme/Location'
 
 const DIST_TOLERANCE = 20; //metres 
 const ERP_DIST_TOLERANCE = 0.00004;
@@ -91,8 +92,7 @@ class App extends React.Component {
       dataActive: false,
       showPhotoViewer: false,
       imageUrl: null,
-      video : false,
-      isVideoOpen: false
+      bearing: 0
     }; 
     //this.customModal = React.createRef();
     this.search = React.createRef();
@@ -1337,11 +1337,13 @@ class App extends React.Component {
                   position={position}>
                 </Marker>
               )}
-              {this.state.carMarker.map((position, idx) =>
-                <Marker 
+              {this.state.carMarker.map((marker, idx) =>
+                <Location 
+                  className='location' 
                   key={`marker-${idx}`} 
-                  position={position}>
-                </Marker>
+                  marker={marker} 
+                  map={this.leafletMap} 
+                  style={{ zIndex: 1000 }}   />
               )}
               {this.state.selectedCarriage.map((position, idx) =>
                 <Polyline

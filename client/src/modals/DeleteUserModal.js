@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown, Form, Button}  from 'react-bootstrap';
 
 export function DeleteUserModal(props) {
@@ -16,7 +17,7 @@ export function DeleteUserModal(props) {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Insert")}
+                    onClick={() => props.setMode("Insert")}
                     >
                     Insert
                 </Dropdown.Item>
@@ -37,7 +38,7 @@ export function DeleteUserModal(props) {
             <Form.Text className= "message"></Form.Text>
             <Button 
                 variant="primary" 
-                onClick={(e) => props.updateUser('delete')}
+                onClick={() => props.updateUser('delete')}
                 >
                 Submit
             </Button>

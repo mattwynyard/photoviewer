@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect, useCallback, Fragment } from 'react';
-import { store } from '../state/store'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { addLayer, removeLayer } from '../state/reducers/layersSlice'
 import {Navbar, Nav, NavDropdown, Container}  from 'react-bootstrap';
 import './Navigation.css';

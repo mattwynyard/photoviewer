@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown, Form, Button}  from 'react-bootstrap';
 
 export function UpdateUserModal(props) {
@@ -17,12 +18,12 @@ export function UpdateUserModal(props) {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Insert")}
+                    onClick={() => props.setMode("Insert")}
                     >
                     Insert
                 </Dropdown.Item>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Delete")}
+                    onClick={() => props.setMode("Delete")}
                     >
                     Delete
                 </Dropdown.Item>                         
@@ -52,7 +53,7 @@ export function UpdateUserModal(props) {
             </Form.Group>
             <Button 
                 variant="primary" 
-                onClick={(e) => props.updateUser('update')}
+                onClick={() => props.updateUser('update')}
                 >
                 Submit
             </Button>

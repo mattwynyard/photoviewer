@@ -1,14 +1,13 @@
 import React from 'react';
-import {ProgressBar, ToggleButton}  from 'react-bootstrap';
+import {ProgressBar }  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
-import { Button } from '@mui/material';
 import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.svg';
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
-import {ReactComponent as Cancel} from '../theme/svg/cancel_48dp.svg';
-import {ReactComponent as Download} from '../theme/svg/download_48dp.svg';
+import {ReactComponent as Cancel} from '../theme/svg/close_24dp.svg';
+import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
 import {ReactComponent as ToggleOn} from '../theme/svg/toggle_on_48dp.svg';
 import {ReactComponent as ToggleOff} from '../theme/svg/toggle_off_48dp.svg';
 
@@ -57,7 +56,7 @@ const IdText = function(props) {
                 </div>
                 <div>
                     <b>{"LatLng: "}</b>{`${coordinates[1]} ${coordinates[0]}`}<br></br>
-                    <b>{"Photo: "}</b>{`${props.photo}.jpg`}<br></br>
+                    <b>{"Photo: "}</b>{`${props.photo}.jpg`}<br></br><br></br>
                     <b>{"Velocity: "}</b>{`${props.velocity} km/hr`}<br></br>
                     <b>{"PDop: "}</b>{`${props.pdop}`}<br></br>
                     <b>{"Satellites: "}</b>{`${props.satellites}`}<br></br>
@@ -120,7 +119,7 @@ export default class VideoCard extends React.Component {
         }
         this.setState({index: index});
         let latlng = this.getLatLng(index);
-        this.delegate.setState({carMarker: [latlng]});
+        this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
        
     }
         
@@ -150,7 +149,7 @@ export default class VideoCard extends React.Component {
                 } else {
                     this.update(this.state.index + 1);
                 }
-                
+              
             } else {
                 this.stopMovie()
             }           
@@ -164,7 +163,6 @@ export default class VideoCard extends React.Component {
             this.startTimer(this.state.interval / 2, false)
         } else {
             this.update(this.state.index + 1);
-            //this.startTimer(this.state.interval / 2, false) 
         }         
     }
 
@@ -187,7 +185,7 @@ export default class VideoCard extends React.Component {
         if (this.state.index < this.photoArray.length && this.state.index > 0) {
             this.setState({index: index});
             let latlng = this.getLatLng(index);
-            this.delegate.setState({carMarker: [latlng]});
+            this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
             this.props.centre(latlng.lat, latlng.lng, 16);
         } else {
             clearInterval(this.interval)
@@ -195,9 +193,12 @@ export default class VideoCard extends React.Component {
     }
 
     getLatLng(index) {
+        if (!this.photoArray[index].st_asgeojson) {
+            return
+        }
         const geojson = JSON.parse(this.photoArray[index].st_asgeojson);
         const lat = geojson.coordinates[1];
-        const lng = geojson.coordinates[0];;
+        const lng = geojson.coordinates[0];
         return new L.LatLng(lat, lng);
     }
 
@@ -218,11 +219,10 @@ export default class VideoCard extends React.Component {
         this.geometry.setStyle({
             color: 'blue'
         })
+        this.delegate.setState({carMarker: []});
     }
 
-
-
-    imageError(err) {
+    imageError() {
         if (this.photoArray.length === 0 || this.state.errors >= 10) {
             alert("Photos not Found")
             this.reset();
@@ -271,7 +271,6 @@ export default class VideoCard extends React.Component {
                 > 
                     <div className="video" >
                         <img className="image"
-                            
                             alt="fault"
                             src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
                             onError={(e) => this.imageError(e)}
