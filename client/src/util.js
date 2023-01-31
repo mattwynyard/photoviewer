@@ -46,19 +46,19 @@ const erp = (geometry, erp, latlng) => {
  * @param {point to check} c 
  * @returns 
  */
-const inBetween = (a, b , c) => {
-  let crossproduct = (c.lat - a[1]) * (b[0] - a[0]) - (c.lng - a[0]) * (b[1] - a[1]);
-  let epsilon = 0.000001;
-  if (Math.abs(crossproduct) > epsilon)
-      return false
-  let dotproduct = (c.lng - a[0]) * (b[0] - a[0]) + (c.lat - a[1]) * (b[1] - a[1])
-  if (dotproduct < 0)
-      return false;
-  let squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
-  if (dotproduct > squaredlengthba)
-      return false;
-  return true;
-}
+// const inBetween = (a, b , c) => {
+//   let crossproduct = (c.lat - a[1]) * (b[0] - a[0]) - (c.lng - a[0]) * (b[1] - a[1]);
+//   let epsilon = 0.000001;
+//   if (Math.abs(crossproduct) > epsilon)
+//       return false
+//   let dotproduct = (c.lng - a[0]) * (b[0] - a[0]) + (c.lat - a[1]) * (b[1] - a[1])
+//   if (dotproduct < 0)
+//       return false;
+//   let squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
+//   if (dotproduct > squaredlengthba)
+//       return false;
+//   return true;
+// }
 
 const inBoundingBox = (dxl, dyl, box, point) => {
   if (Math.abs(dxl) >= Math.abs(dyl)) {

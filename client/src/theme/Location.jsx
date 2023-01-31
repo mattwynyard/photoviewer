@@ -1,8 +1,5 @@
 import { Polygon } from 'react-leaflet';
 import React from 'react';
-import { CircleMarker} from 'react-leaflet';
-
-
 
 const buildLocationTriangle = (center, rotation, size) => {
     const points = [];

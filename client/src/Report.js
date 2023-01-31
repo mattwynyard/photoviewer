@@ -133,7 +133,7 @@ class Report extends React.Component {
                 }
             });
     
-            var ctx = document.getElementById("grade1").getContext('2d');
+            //var ctx2 = document.getElementById("grade1").getContext('2d');
             this.g1Chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -164,8 +164,8 @@ class Report extends React.Component {
                 }
             });
     
-            var ctx = document.getElementById("grade2").getContext('2d');
-            var g2Chart = new Chart(ctx, {
+            document.getElementById("grade2").getContext('2d');
+            this.g2Chart = new Chart(ctx, {
                 type: 'doughnut',
             data: {
                 labels: causeTop.map((causeTop) => causeTop.name + ": " + causeTop.value),
@@ -192,9 +192,7 @@ class Report extends React.Component {
                 }
             }
             });
-    
-            var ctx = document.getElementById("grade3").getContext('2d');
-                var g3Chart = new Chart(ctx, {
+            this.g3Chart = new Chart(ctx, {
                     type: 'doughnut',
                 data: {
                     labels: surfaceTop.map((surfaceTop) => surfaceTop.name + ": " + surfaceTop.value),
@@ -289,8 +287,8 @@ class Report extends React.Component {
         g2Top.push(others2);
         g3Top.push(others3);
        
-        var ctx = document.getElementById('myChart').getContext("2d");
-        let colorTable = this.buildColorTable(g1Top.length);
+        //var ctx = document.getElementById('myChart').getContext("2d");
+        //let colorTable = this.buildColorTable(g1Top.length);
         this.gradeChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -329,8 +327,8 @@ class Report extends React.Component {
             }
         });
 
-        var ctx = document.getElementById("grade1").getContext('2d');
-        var g1Chart = new Chart(ctx, {
+        //var ctx = document.getElementById("grade1").getContext('2d');
+        this.g1Chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: g1Top.map((g1Top) => g1Top.name + ": " + g1Top.value),
@@ -360,8 +358,8 @@ class Report extends React.Component {
             }
         });
 
-        var ctx = document.getElementById("grade2").getContext('2d');
-        var g2Chart = new Chart(ctx, {
+        //var ctx = document.getElementById("grade2").getContext('2d');
+        this.g2Chart = new Chart(ctx, {
             type: 'doughnut',
         data: {
             labels: g2Top.map((g2Top) => g2Top.name + ": " + g2Top.value),
@@ -389,8 +387,8 @@ class Report extends React.Component {
         }
         });
 
-        var ctx = document.getElementById("grade3").getContext('2d');
-            var g3Chart = new Chart(ctx, {
+        //var ctx = document.getElementById("grade3").getContext('2d');
+            this.g3Chart = new Chart(ctx, {
                 type: 'doughnut',
             data: {
                 labels: g3Top.map((g3Top) => g3Top.name + ": " + g3Top.value),

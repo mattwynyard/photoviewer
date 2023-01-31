@@ -7,7 +7,7 @@ import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
 import {ReactComponent as Cancel} from '../theme/svg/close_24dp.svg';
-import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
+//import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
 import {ReactComponent as ToggleOn} from '../theme/svg/toggle_on_48dp.svg';
 import {ReactComponent as ToggleOff} from '../theme/svg/toggle_off_48dp.svg';
 
@@ -293,7 +293,7 @@ export default class VideoCard extends React.Component {
                             <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
                         </div>
                         <div className = "controls-action">
-                            <Download className="controls-download" onClick={(e) => this.clickDownload(e)}/>
+                            {/* <Download className="controls-download" onClick={(e) => this.clickDownload(e)}/> */}
                             <Cancel className="controls-close" onClick={(e) => this.clickClose(e)}/>
                         </div>
                         

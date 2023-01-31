@@ -26,12 +26,11 @@ export const Navigation = (props) => {
   const [projects, setProjects] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const {login, updateLogin, setMapBoxKey, district, setProjectMode, projectMode } = useContext(AppContext);
+  const {login, updateLogin, setMapBoxKey, district, setProjectMode} = useContext(AppContext);
 
   const showModal = () => {
     setShow(true)
   }
-  //const layers = useSelector((state) => state.layers)
 
   const clickLogin = async (user, password) => {
     setLoginError("")
@@ -55,7 +54,7 @@ export const Navigation = (props) => {
     e.preventDefault();
     setIsLoggedIn(false)
     setLocalLogin({user: "Login", token: null})
-    setProjects(null);  ;
+    setProjects(null);
     props.logout();
   }
 
@@ -81,7 +80,6 @@ export const Navigation = (props) => {
       }
     }
     if (user) {
-
         let token = window.sessionStorage.getItem("token");
         let item = window.sessionStorage.getItem("projects");
         let _projects = JSON.parse(item);

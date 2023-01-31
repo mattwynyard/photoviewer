@@ -15,11 +15,11 @@ export default function Modals(props) {
         <Modal.Header>
           <Modal.Title><h2>Road Inspection Viewer</h2></Modal.Title>
         </Modal.Header>
-        <Modal.Body >	
-          By using this software you confirm you have read and agreed to the Onsite Developments Ltd. <a href={"https://osmium.nz/?#terms"}> Click for terms of use.</a><br></br>
-          All data on this site from Land Information New Zealand is made available under a Creative Commons Attribution Licence.<br></br>
-          <span >&copy; 2019 Onsite Developments Ltd. All rights reserved.</span><br></br>
-		    </Modal.Body>
+        {/* <Modal.Body >	
+          <span>{"By using this software you confirm you have read and agreed to the Onsite Developments Ltd."}<a href={"https://osmium.nz/?#terms"}>{"Click for terms of use."}</a><br></br>
+            {"All data on this site from Land Information New Zealand is made available under a Creative Commons Attribution Licence."}<br></br>
+            {"2019 Onsite Developments Ltd. All rights reserved."}</span><br></br>
+		    </Modal.Body> */}
         <Modal.Footer>
           <Button 
             variant="primary" 

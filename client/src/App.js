@@ -29,7 +29,7 @@ import { leafletPolylineFromGeometry} from './model/photoCentreline';
 import Location  from './theme/Location'
 
 const DIST_TOLERANCE = 20; //metres 
-const ERP_DIST_TOLERANCE = 0.00004;
+//const ERP_DIST_TOLERANCE = 0.00004;
 
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
@@ -145,16 +145,17 @@ class App extends React.Component {
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.props.activeLayer)
-      } else {
-        // if(this.state.objGLData.length !== 0) {
-        //   const body = this.filterLayer(this.props.activeLayer, true);
-        //   if (body) {
-        //     body.then((body) => {
-        //       this.addGLGeometry(body.points, body.lines, body.type, true);
-        //     });
-        //   }
-        // }
       }
+      // } else {
+      //   // if(this.state.objGLData.length !== 0) {
+      //   //   const body = this.filterLayer(this.props.activeLayer, true);
+      //   //   if (body) {
+      //   //     body.then((body) => {
+      //   //       this.addGLGeometry(body.points, body.lines, body.type, true);
+      //   //     });
+      //   //   }
+      //   // }
+      // }
       
     }
      
@@ -168,7 +169,7 @@ class App extends React.Component {
       try { 
         window.sessionStorage.setItem('state', JSON.stringify(this.state));
       } catch {
-  
+        console.log("state write error")
       } 
     this.removeEventListeners(); 
   }
@@ -347,13 +348,13 @@ class App extends React.Component {
     switch(this.props.mapMode) {
       case 'map':
         if (!this.props.activeLayer) return;
-        if (this.context.ratingActive) {
-           let body = {
-            user: this.context.login.user,
-            lat: e.latlng.lat,
-            lng: e.latlng.lng,
-            layer: this.props.activeLayer
-          }
+        // if (this.context.ratingActive) {
+        //    let body = {
+        //     user: this.context.login.user,
+        //     lat: e.latlng.lat,
+        //     lng: e.latlng.lng,
+        //     layer: this.props.activeLayer
+        //   }
         //let response = await PostFetch(this.context.login.host + "/carriageway", this.context.login.token, body);
         //   let geometry = JSON.parse(response.data.geojson);
         //   let erp = {
@@ -386,39 +387,39 @@ class App extends React.Component {
         //     let key = {id: response.data.id, carriage: response.data.carriageid}
         //     this.setState({notificationKey: key});
         //   }     
-        } else {
-          if (this.state.objGLData.length !== 0) {
-            if (this.context.ratingActive === true) {
-              this.GLEngine.mouseClick = null;
-            } else {
-            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
-            this.GLEngine.mouseClick = {...click};
-            this.GLEngine.redraw(this.GLEngine.glData, false);     
-            }
-          }       
+        //} else {
+        if (this.state.objGLData.length !== 0) {
+          if (this.context.ratingActive === true) {
+            this.GLEngine.mouseClick = null;
+          } else {
+          const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+          this.GLEngine.mouseClick = {...click};
+          this.GLEngine.redraw(this.GLEngine.glData, false);     
+          }
+        //}       
         }
         break;
       case 'Street':
         this.getArhivePhoto(e);
         break;
-      case 'Ruler':
-        let polyline = this.state.rulerPolyline;
-        if (polyline === null) {
-          let points = [];
-          points.push(e.latlng);
-          polyline = new L.polyline(points, {
-            color: 'blue',
-            weight: 4,
-            opacity: 0.5 
-            });
-          polyline.addTo(this.leafletMap);
-          this.setState({rulerPolyline: polyline});
-        } else {
-          let points = polyline.getLatLngs();
-          points.push(e.latlng);
-          polyline.setLatLngs(points);
-        }
-        break;
+      // case 'Ruler':
+      //   let polyline = this.state.rulerPolyline;
+      //   if (polyline === null) {
+      //     let points = [];
+      //     points.push(e.latlng);
+      //     polyline = new L.polyline(points, {
+      //       color: 'blue',
+      //       weight: 4,
+      //       opacity: 0.5 
+      //       });
+      //     polyline.addTo(this.leafletMap);
+      //     this.setState({rulerPolyline: polyline});
+      //   } else {
+      //     let points = polyline.getLatLngs();
+      //     points.push(e.latlng);
+      //     polyline.setLatLngs(points);
+      //   }
+      //   break;
       case 'video':
         if(this.vidPolyline === null) { 
           const geometry = await this.getVideoGeometry(e)
@@ -437,8 +438,6 @@ class App extends React.Component {
             this.vidPolyline.remove();
             this.vidPolyline = null;
             this.setState({carMarker: []});
-          } else {
-            
           } 
         }      
         break;
@@ -522,7 +521,7 @@ class App extends React.Component {
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
    */
-  toogleMap(e) {
+  toogleMap() {
     if (this.context.login.user === "Login") {
       return;
     }
@@ -951,7 +950,7 @@ class App extends React.Component {
    * Removes current active layer and restores to null state
    * @param {event} project  - the active project
    */
-     removeLayer = (project) => {
+     removeLayer = () => {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)

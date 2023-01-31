@@ -41,9 +41,9 @@ function LayerCard(props) {
         }
     }, [dispatch, videoOpen])
 
-    const handleRatingChange = (isChecked) => {
+    // const handleRatingChange = () => {
         
-    }
+    // }
        
     return (
         <Card className='layercard' >
@@ -70,7 +70,7 @@ function LayerCard(props) {
                 <RatingDropdown 
                     className="layercard-ratingDropdown"
                     layer={props.layer}
-                    changeCheck={handleRatingChange}
+                    //changeCheck={handleRatingChange}
                 />
                 <div className="layercard-datainput">
                     <input 
