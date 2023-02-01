@@ -822,7 +822,7 @@ module.exports = {
     },
 
     closestVideoPhoto: (view, body) => {
-        const sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom),
+        const sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, interval, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom),
         geom <-> ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}),4326) AS dist 
         FROM ${view} 
         WHERE side = '${body.side}' and tacode= '${body.tacode}' and cwid=${body.cwid}

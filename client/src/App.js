@@ -67,7 +67,7 @@ class App extends React.Component {
       carMarker: [], //position of current image in video
       layers: [],
       show: false,
-      showVideo: false,  
+      //showVideo: false,  
       showAdmin: false,
       modalPhoto: null,
       popover: false,
@@ -92,9 +92,9 @@ class App extends React.Component {
       dataActive: false,
       showPhotoViewer: false,
       imageUrl: null,
-      bearing: 0
+      bearing: 0,
+      mouseOverMap: false
     }; 
-    //this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
@@ -104,7 +104,6 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.notificationRef = React.createRef();
-    //this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
@@ -121,6 +120,15 @@ class App extends React.Component {
         {project: null, query: null}, "/mapbox");
       return mapbox
   }
+
+  unsubscribe = store.subscribe(() => {
+    const mode = store.getState().map.mode;
+    if (mode === 'map') {
+      if (this.vidPolyline) this.removePolyLine();
+    }
+  }
+    
+)
 
   async componentDidMount () {
     this.leafletMap = this.map.leafletElement;
@@ -145,17 +153,16 @@ class App extends React.Component {
     if (user) {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.props.activeLayer)
+      } else {
+        if(this.state.objGLData.length !== 0) {
+          const body = this.filterLayer(this.props.activeLayer, true);
+          if (body) {
+            body.then((body) => {
+              this.addGLGeometry(body.points, body.lines, body.type, true);
+            });
+          }
+        }
       }
-      // } else {
-      //   // if(this.state.objGLData.length !== 0) {
-      //   //   const body = this.filterLayer(this.props.activeLayer, true);
-      //   //   if (body) {
-      //   //     body.then((body) => {
-      //   //       this.addGLGeometry(body.points, body.lines, body.type, true);
-      //   //     });
-      //   //   }
-      //   // }
-      // }
       
     }
      
@@ -172,6 +179,7 @@ class App extends React.Component {
         console.log("state write error")
       } 
     this.removeEventListeners(); 
+    this.unsubscribe();
   }
 
   initializeGL() {
@@ -200,6 +208,7 @@ class App extends React.Component {
 
   centreMap = (lat, lng, zoom) => {
     if (!lat || !lng) return;
+    if ( this.state.mouseOverMap && !this.state.dataActive) return;
     const latlng = new L.LatLng(lat, lng)
     this.leafletMap.invalidateSize(true);
     this.leafletMap.setView(latlng, zoom); 
@@ -315,6 +324,12 @@ class App extends React.Component {
     this.leafletMap.addEventListener('keydown', (event) => {
       this.onKeyPress(event.originalEvent);
     });
+    this.leafletMap.addEventListener('mouseover', (event) => {
+      this.onMouseOverLeaflet(event)
+    });
+    this.leafletMap.addEventListener('mouseout', (event) => {
+      this.onMouseOutLeaflet(event)
+    });
   }
 
   
@@ -331,6 +346,12 @@ class App extends React.Component {
     this.leafletMap.removeEventListener('keydown', (event) => {
       this.onKeyPress(event.originalEvent);
     });
+    this.leafletMap.removeEventListener('mouseover', (event) => {
+      this.onMouseOverLeaflet(event)
+    });
+    this.leafletMap.removeEventListener('mouseout', (event) => {
+      this.onMouseOutLeaflet(event)
+    });
   }
 
   getPhotoBounds() {
@@ -338,6 +359,14 @@ class App extends React.Component {
     let southeast = mapBounds.getSouthEast();
     let center = this.leafletMap.getCenter();
     return L.latLngBounds(center, southeast);
+  }
+
+  onMouseOutLeaflet = () => {
+    this.setState({mouseOverMap: false})
+  }
+
+  onMouseOverLeaflet = () => {
+    this.setState({mouseOverMap: true})
   }
 
   /**
@@ -435,15 +464,19 @@ class App extends React.Component {
           this.vidPolyline = await this.playVideo(this.getPhotos, geometry); 
         } else {
           if (this.vidPolyline.options.color === "blue") {
-            this.vidPolyline.remove();
-            this.vidPolyline = null;
-            this.setState({carMarker: []});
+            this.removePolyLine();
           } 
         }      
         break;
       default:
         break;
     }
+  }
+
+  removePolyLine = () => {
+    this.vidPolyline.remove();
+    this.vidPolyline = null;
+    this.setState({carMarker: []});
   }
 
   getVideoGeometry = async (e) => {
@@ -621,12 +654,12 @@ class App extends React.Component {
    */
   async playVideo(photoFunc, geometry) {
     if (this.vidPolyline) return
-    const options = {
+    const settings = {
       color: 'blue',
       weight: 4,
       opacity: 0.5,
     }
-    const vidPolyline = leafletPolylineFromGeometry(geometry, options)
+    const vidPolyline = leafletPolylineFromGeometry(geometry, settings)
     vidPolyline.options.project = this.props.activeLayer;
     vidPolyline.options.login = this.context.login;
     vidPolyline.addTo(this.leafletMap);
@@ -691,7 +724,7 @@ class App extends React.Component {
           side: initialSide,
           tacode: vidPolyline.options.tacode
         }
-        const photo = await parent.getVideoPhoto(request);               
+        const photo = await parent.getVideoPhoto(request);             
         const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
         if (index === -1) {
           alert("error loading video - Not found")
@@ -702,6 +735,7 @@ class App extends React.Component {
             amazon: parent.props.activeLayer.amazon,
             photos: this.options.photos,
             startingIndex: index,
+            interval: photo.data.interval
           }
           parent.videoCard.current.initialise(videoParameters, vidPolyline);    
           dispatch(setIsOpen(true));    

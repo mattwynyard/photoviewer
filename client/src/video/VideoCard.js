@@ -82,12 +82,14 @@ export default class VideoCard extends React.Component {
             side: 'L',
             disabled: false,
             play: false,
-            interval: 500,
+            //interval: 500,
             errors: 0,
         }
         this.delegate = props.parent;
         this.photoArray = null;
-
+        this.index = 0;
+        this.geometry = null;
+        this.amazon = null;
 
     }
 
@@ -98,10 +100,11 @@ export default class VideoCard extends React.Component {
     initialise(videoParameters, geometry) {
         this.setState({show: true});
         this.setState({mode: videoParameters.mode});
+        this.interval = videoParameters.interval
         this.photoArray = geometry.options.photos;
         this.geometry = geometry;
         this.amazon = videoParameters.amazon;
-        this.setState({index: videoParameters.startingIndex});
+        this.index = videoParameters.startingIndex;
         if (videoParameters.direction === 'Both') { //need to handle one way
                 this.setState({disabled: false});
             } else {
@@ -118,6 +121,7 @@ export default class VideoCard extends React.Component {
             return;
         }
         this.setState({index: index});
+        this.index = index;
         let latlng = this.getLatLng(index);
         this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
        
@@ -130,65 +134,73 @@ export default class VideoCard extends React.Component {
             this.stopMovie();
         } else {
             this.setState({play: true}); 
-            this.setState({interval: this.photoArray[this.state.index].interval})
-            this.startTimer(this.state.interval, false);
+            this.startTimer(this.interval, false);
         }       
     }
 
     switchSide = (e, side) => {
         e.preventDefault();
-        this.delegate.changeSide(this.photoArray[this.state.index], this.state.side);
+        this.delegate.changeSide(this.photoArray[this.index], this.state.side);
         this.setState({side: side});
     }
 
     startTimer = (interval, isReverse) => {
-        this.interval = setInterval(() => {
-            if (this.state.index + 1 < this.photoArray.length) {
-                if (isReverse) {
-                    this.update(this.state.index - 1);
+        if (isReverse) {
+            this.timer = setInterval(() => {
+                if (this.index + 1 < this.photoArray.length) {
+                    this.update(this.index - 1);
                 } else {
-                    this.update(this.state.index + 1);
-                }
-              
-            } else {
-                this.stopMovie()
-            }           
-        }, interval);
+                    this.stopMovie()
+                }           
+            }, interval);
+        } else {
+            this.timer = setInterval(() => {
+                if (this.index + 1 < this.photoArray.length) {
+                    this.update(this.index + 1);
+                } else {
+                    this.stopMovie()
+                }           
+            }, interval); 
+        }
+        
     }
 
     clickFastForward = (e) => {
         e.preventDefault();
         if (this.state.play) {
-            clearInterval(this.interval);
-            this.startTimer(this.state.interval / 2, false)
+            clearInterval(this.timer);
+            this.startTimer(this.interval * 0.5, false)
         } else {
-            this.update(this.state.index + 1);
+            this.update(this.index + 1);
         }         
     }
 
     clickFastRewind = (e) => {
         e.preventDefault();
         if (this.state.play) {
-            clearInterval(this.interval);
-            this.startTimer(this.state.interval / 2, true)
+            clearInterval(this.timer);
+            this.startTimer(this.interval * 0.5, true)
         } else {
-            this.update(this.state.index - 1); 
+            this.update(this.index - 1); 
         }         
     }
 
     stopMovie() {
-        clearInterval(this.interval);  
+        clearInterval(this.timer);  
         this.setState({play: false});      
     }
 
     update(index) {
-        if (this.state.index < this.photoArray.length && this.state.index > 0) {
+        if (this.index < this.photoArray.length && this.index > 0) {
             this.setState({index: index});
+            this.index  = index;
+            //console.log(index)
             let latlng = this.getLatLng(index);
             this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
             this.props.centre(latlng.lat, latlng.lng, 16);
         } else {
-            clearInterval(this.interval)
+            console.log("stop timer")
+            clearInterval(this.timer)
         }   
     }
 
@@ -211,7 +223,7 @@ export default class VideoCard extends React.Component {
 
     reset() {
         this.photoArray = null;      
-        clearInterval(this.interval); 
+        clearInterval(this.timer); 
         this.setState({index: 0});
         this.setState({errors: 0});
         this.setState({side: 'L'}); 
@@ -222,15 +234,16 @@ export default class VideoCard extends React.Component {
         this.delegate.setState({carMarker: []});
     }
 
-    imageError() {
+    imageError(e) {
+        console.log(e)
         if (this.photoArray.length === 0 || this.state.errors >= 10) {
             alert("Photos not Found")
             this.reset();
             this.setState({show: false})
             return
         }   
-        if (this.state.index >= this.photoArray.length) {alert("Photos not Found")
-
+        if (this.state.index >= this.photoArray.length) {
+            alert("Photos not Found")
             this.reset();
             this.setState({show: false})
             return
@@ -241,8 +254,7 @@ export default class VideoCard extends React.Component {
         } else {
             this.setState({index: this.state.index - 1})
             this.setState({errors: this.state.errors + 1})
-        }
-        
+        }     
     }
 
     render() {  
@@ -270,9 +282,9 @@ export default class VideoCard extends React.Component {
                   className="videoModal"
                 > 
                     <div className="video" >
-                        <img className="image"
-                            alt="fault"
-                            src={this.amazon + this.photoArray[this.state.index].photo + ".jpg"} 
+                        <img 
+                            className="image"
+                            src={this.amazon + this.photoArray[this.index].photo + ".jpg"} 
                             onError={(e) => this.imageError(e)}
                             >
                         </img>

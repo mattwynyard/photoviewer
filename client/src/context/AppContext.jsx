@@ -9,10 +9,12 @@ export const AppContextProvider = ({children}) => {
     }
 
     const host = useMemo(() => {
+      console.log(process.env.NODE_ENV)
         if (process.env.NODE_ENV === "development") {
             return "localhost:8443";
           } else if (process.env.NODE_ENV === "production") {
             return "osmium.nz";
+            //return "localhost:8443"; (used for testing build)
           } else {
             return "localhost:8443";
           }
