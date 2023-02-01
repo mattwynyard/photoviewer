@@ -1,43 +1,39 @@
-body {
-  margin: 0px;
-  width: 100vw;
-  height: 100vh;
-}
 
-  .chartParent {
-    width: 100vw;
-    height: 100vh;
+  .container {
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
+    margin: 0px;
+    width: 100vw;
+    height: 100vh;
+    padding: 20px;
   }
  
+  .gradediv {
+    position: absolute;
+    width:50%;
+    height:33%; 
+  }
+
   .g1div {
     position: absolute;
-    left: 1%;
-    width:30vw;
-    height:30vh; 
+    left: 50%;
+    width:50%;
+    height:33%; 
   }
 
   .g2div {
     position: absolute;
-    left: 50%;
-    width:30vw;
-    height:30vh; 
+    bottom: 5%;
+    width:50%;
+    height:33%; 
   }
 
   .g3div {
     position: absolute;
-    left: 1%;
-    bottom: 10%;
-    width:30vw;
-    height:30vh; 
-  }
-
-  .gradediv {
-    position: absolute;
-    bottom: 10%;
+    bottom: 5%;
     left: 50%;
-    width:30vw;
-    height:30vh; 
+    width:50%;
+    height:33%; 
   } 
 

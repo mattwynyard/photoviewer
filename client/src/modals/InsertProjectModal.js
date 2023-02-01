@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown, Form, Button, Container, Col}  from 'react-bootstrap';
 
 export function InsertProjectModal(props) {
@@ -19,12 +20,12 @@ export function InsertProjectModal(props) {
                     </Dropdown.Toggle>
                     <Dropdown.Menu>
                         <Dropdown.Item
-                            onClick={(e) => props.setMode("Delete")}
+                            onClick={() => props.setMode("Delete")}
                             >
                             Delete
                         </Dropdown.Item>
                         <Dropdown.Item
-                            onClick={(e) => props.setMode("Update")}
+                            onClick={() => props.setMode("Update")}
                             >
                             Update
                         </Dropdown.Item>
@@ -158,7 +159,7 @@ export function InsertProjectModal(props) {
                             </Form.Control>
                         <Button 
                             variant="primary" 
-                            onClick={(e) => props.updateProject('insert')}
+                            onClick={() => props.updateProject('insert')}
                         >
                         Submit
                     </Button>

@@ -11,12 +11,14 @@ const FilterButton = React.forwardRef((props, ref) => {
             variant="light" 
             size="sm"
             onClick={props.onClick}
-            >Apply Filter
+            >{"Apply Filter"}
           </Button>
         );
       } else {
         return null;
       } 
 });
+
+FilterButton.displayName = 'MyFilterButton';
 
 export {FilterButton}

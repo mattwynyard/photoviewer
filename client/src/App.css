@@ -20,6 +20,15 @@ body {
   z-index: 1;
 }
 
+.map-video {
+  position: absolute;
+  top: 45%;
+  height: 45%;
+  width: 30%;
+  left: 15%;
+  z-index: 1;
+}
+
 .map-reduced {
   position: absolute;
   height: 90%;

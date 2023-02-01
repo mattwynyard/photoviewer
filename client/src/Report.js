@@ -89,8 +89,8 @@ class Report extends React.Component {
             causeTop.push(others2);
             surfaceTop.push(others3);
            
-            var ctx = document.getElementById('myChart').getContext("2d");
-            this.gradeChart = new Chart(ctx, {
+            const ctx1 = document.getElementById('grade').getContext("2d");
+            this.gradeChart = new Chart(ctx1, {
                 type: 'doughnut',
                 data: {
                     labels: gradeData.map((gradeData) => gradeData.name + ": " + gradeData.value),
@@ -108,7 +108,7 @@ class Report extends React.Component {
                             'rgba(255, 0, 255, 1)',
                             'rgba(0, 0, 255, 1)',    
                         ],
-                        borderWidth: 1
+                        //borderWidth: 1
                     }]
                 },
                 options: {
@@ -133,8 +133,8 @@ class Report extends React.Component {
                 }
             });
     
-            var ctx = document.getElementById("grade1").getContext('2d');
-            this.g1Chart = new Chart(ctx, {
+            const ctx2 = document.getElementById('fault').getContext("2d");
+            this.g1Chart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
                     labels: faultTop.map((faultTop) => faultTop.name + ": " + faultTop.value),
@@ -164,8 +164,8 @@ class Report extends React.Component {
                 }
             });
     
-            var ctx = document.getElementById("grade2").getContext('2d');
-            var g2Chart = new Chart(ctx, {
+            const ctx3 = document.getElementById('cause').getContext("2d");
+            this.g2Chart = new Chart(ctx3, {
                 type: 'doughnut',
             data: {
                 labels: causeTop.map((causeTop) => causeTop.name + ": " + causeTop.value),
@@ -192,9 +192,8 @@ class Report extends React.Component {
                 }
             }
             });
-    
-            var ctx = document.getElementById("grade3").getContext('2d');
-                var g3Chart = new Chart(ctx, {
+            const ctx4 = document.getElementById('surface').getContext("2d");
+            this.g3Chart = new Chart(ctx4, {
                     type: 'doughnut',
                 data: {
                     labels: surfaceTop.map((surfaceTop) => surfaceTop.name + ": " + surfaceTop.value),
@@ -253,7 +252,6 @@ class Report extends React.Component {
                 this.gradeMap = this.addMap(this.gradeMap, item.priority);
                 //this.faultMap = this.addMap(this.faultMap, item.class);
             });
-
             let gradeData = Array.from(this.gradeMap, ([name, value]) => ({ name, value }));
         //let faultData = Array.from(this.faultMap, ([name, value]) => ({ name, value }));
         let g1Data = Array.from(this.g1Map, ([name, value]) => ({ name, value }));
@@ -288,10 +286,9 @@ class Report extends React.Component {
         g1Top.push(others1);
         g2Top.push(others2);
         g3Top.push(others3);
-       
-        var ctx = document.getElementById('myChart').getContext("2d");
-        let colorTable = this.buildColorTable(g1Top.length);
-        this.gradeChart = new Chart(ctx, {
+    
+        const ctx1 = document.getElementById('grade').getContext("2d");
+        this.gradeChart = new Chart(ctx1, {
             type: 'doughnut',
             data: {
                 labels: gradeData.map((gradeData) => gradeData.name + ": " + gradeData.value),
@@ -316,21 +313,23 @@ class Report extends React.Component {
                 onClick: (e) => {
                     this.clickChart(e);
                 },
+                title: {
+                    display: true,
+                    text: 'Summary',
+                },
                 maintainAspectRatio: false,
                 responsive: true,
                 legend: {
-                    position: 'right',
-
+                    position: 'bottom',
                     labels: {
-                        padding: 10,
                         boxWidth: 12
                     }
                 }
             }
         });
 
-        var ctx = document.getElementById("grade1").getContext('2d');
-        var g1Chart = new Chart(ctx, {
+        const ctx2 = document.getElementById('grade1').getContext("2d");
+        this.g1Chart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
                 labels: g1Top.map((g1Top) => g1Top.name + ": " + g1Top.value),
@@ -350,18 +349,16 @@ class Report extends React.Component {
                 maintainAspectRatio: false,
                 responsive: true,
                 legend: {
-                    position: 'right',
-                    fullWidth: false,
+                    position: 'bottom',
                     labels: {
-                        padding: 10,
                         boxWidth: 12
                     }
                 }
             }
         });
 
-        var ctx = document.getElementById("grade2").getContext('2d');
-        var g2Chart = new Chart(ctx, {
+        const ctx3 = document.getElementById('grade2').getContext("2d");
+        this.g2Chart = new Chart(ctx3, {
             type: 'doughnut',
         data: {
             labels: g2Top.map((g2Top) => g2Top.name + ": " + g2Top.value),
@@ -380,17 +377,16 @@ class Report extends React.Component {
             maintainAspectRatio: false,
             responsive: true,
             legend: {
-                position: 'right',
+                position: 'bottom',
                 labels: {
-                    padding: 10,
                     boxWidth: 12
                 }
             }
         }
         });
 
-        var ctx = document.getElementById("grade3").getContext('2d');
-            var g3Chart = new Chart(ctx, {
+        const ctx4 = document.getElementById('grade3').getContext("2d");
+            this.g3Chart = new Chart(ctx4, {
                 type: 'doughnut',
             data: {
                 labels: g3Top.map((g3Top) => g3Top.name + ": " + g3Top.value),
@@ -405,15 +401,13 @@ class Report extends React.Component {
                 title: {
                     display: true,
                     text: 'Priority 3',
-                    padding: 5,
                 },
                 maintainAspectRatio: false,
                 responsive: true,
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
-                        padding: 10,
-                        boxWidth: 12
+                        boxWidth: 20
                     }
                 }
             }
@@ -428,14 +422,14 @@ class Report extends React.Component {
         this.mode = mode;
         
     return (
-        <div> 
+        <> 
             <Navbar bg="light" expand="lg">  
                 <Navbar.Brand>
                     <img
                     src="logo.png"
                     width="122"
                     height="58"
-                    className="d-inline-block align-top"
+                    //className="d-inline-block align-top"
                     alt="logo"
                     />
                 </Navbar.Brand>
@@ -452,9 +446,9 @@ class Report extends React.Component {
                     title={this.context.login.user}>
                 </CustomNav>
             </Navbar>
-            <div className="chartParent">
+            <div className="container">
                 <div className = "gradediv">
-                    <canvas className="gradeChart" id="myChart"></canvas>  
+                    <canvas className="gradeChart" id="grade"></canvas>  
                 </div>
                 <div className = "g1div">
                     <canvas className="g1Chart" id="grade1"></canvas>  
@@ -466,7 +460,7 @@ class Report extends React.Component {
                     <canvas className="g3Chart" id="grade3"></canvas>  
                 </div>    
             </div>    
-      </div> 
+      </> 
     );
     }
 }

@@ -1,4 +1,4 @@
-const setFootpathRatingColours = (data, value) => {
+const setFootpathRatingColours = (data) => {
     let colors = {r: null, g: null, b: null, a: null};
     let _alpha = 1;
     switch(data.grade) {

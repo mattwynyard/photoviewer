@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Form, Button, Row}  from 'react-bootstrap';
 import CSVReader from 'react-csv-reader';
 

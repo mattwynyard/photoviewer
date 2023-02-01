@@ -168,7 +168,7 @@ const connection = new Pool({
     password: process.env.PASSWORD,
     port: process.env.DBPORT,
     max: 20,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 10000,
 })
 connection.connect(function(err) {
     if (err) {
@@ -729,10 +729,10 @@ module.exports = {
     getPhotos: (body, view) => {
         let sql = null
         if (body.side === null) {
-            sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
+            sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, interval, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
                     WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY photo ASC`;
         } else {
-            sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
+            sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, interval, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom) from ${view} 
             WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY photo ASC`;
         }
         return new Promise((resolve, reject) => {
@@ -822,7 +822,7 @@ module.exports = {
     },
 
     closestVideoPhoto: (view, body) => {
-        const sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom),
+        const sql = `SELECT photo, erp, side, bearing, velocity, satellites, pdop, interval, inspector, datetime, cwid, tacode, ST_AsGeoJSON(geom),
         geom <-> ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}),4326) AS dist 
         FROM ${view} 
         WHERE side = '${body.side}' and tacode= '${body.tacode}' and cwid=${body.cwid}

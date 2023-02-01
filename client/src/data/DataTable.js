@@ -40,7 +40,7 @@ export default class DataTable extends React.Component {
                 {this.props.data.map((value, index) => (
                   <tr 
                     key={`index-${index}`}
-                    onClick={(e) => this.handleClick(value, index)}
+                    onClick={() => this.handleClick(value, index)}
                   >
                     <td key={`${value.id}-0`}>{index + 1}</td>
                     <td key={`${value.id}-1`}>{value.id}</td>
@@ -80,7 +80,7 @@ export default class DataTable extends React.Component {
                 {this.props.data.map((value, index) => (
                   <tr 
                     key={`index-${index}`}
-                    onClick={(e) => this.handleClick(value, index)}
+                    onClick={() => this.handleClick(value, index)}
                   >
                     <td key={`${value.id}-0`}>{index + 1}</td>
                     <td key={`${value.id}-1`}>{value.id}</td>
