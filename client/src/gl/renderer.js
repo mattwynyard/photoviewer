@@ -157,9 +157,9 @@ const setFootpathRatingColours = (data) => {
       colors.b = 0.5;
       colors.a = ALPHA;
     } else if (geometry.status === "completed") {
-      colors.r = 0.75;
-      colors.g = 0.75;
-      colors.b = 0.75;
+      colors.r = 0.6;
+      colors.g = 0.6;
+      colors.b = 0.6;
       colors.a = ALPHA;
     } else {
       colors.r = 1.0;

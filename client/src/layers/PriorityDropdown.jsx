@@ -22,9 +22,7 @@ function parsePriority(id) {
   }
 
 export default function PriorityDropdown(props) {
-    //console.log(props)
     const [rootChecked, setRootChecked] = useState(true)
-
     const isChecked = (value, parse) => {
         let priority = null;
         if (parse) {
