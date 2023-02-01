@@ -61,15 +61,15 @@ const DefectPopup = (props) => {
     useEffect(() => {  
         if (props.login === "asu" || props.login === "asm") {
             setPrefix(`${props.amazon}${props.data.inspection}/`);
-          } else if (props.data.type === 'footpath') {
+        } else if (props.data.type === 'footpath') {
             if (props.data.asset.toLowerCase() === "kerb & channel") {
                 setPrefix(`${props.amazon}kerbs/${props.data.inspection}/`);
             } else {
                 setPrefix(`${props.amazon}footpaths/${props.data.inspection}/`);
             }
-          } else {
-            setPrefix(`${props.amazon}`);
-          }
+        } else {
+          setPrefix(`${props.amazon}`);
+        }
     }, [])
 
     if (props.photo) {

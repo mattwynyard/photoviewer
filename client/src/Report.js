@@ -108,7 +108,6 @@ class Report extends React.Component {
                             'rgba(255, 0, 255, 1)',
                             'rgba(0, 0, 255, 1)',    
                         ],
-                        //borderWidth: 1
                     }]
                 },
                 options: {
@@ -133,7 +132,7 @@ class Report extends React.Component {
                 }
             });
     
-            const ctx2 = document.getElementById('fault').getContext("2d");
+            const ctx2 = document.getElementById('grade1').getContext("2d");
             this.g1Chart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
@@ -164,7 +163,7 @@ class Report extends React.Component {
                 }
             });
     
-            const ctx3 = document.getElementById('cause').getContext("2d");
+            const ctx3 = document.getElementById('grade2').getContext("2d");
             this.g2Chart = new Chart(ctx3, {
                 type: 'doughnut',
             data: {
@@ -192,7 +191,7 @@ class Report extends React.Component {
                 }
             }
             });
-            const ctx4 = document.getElementById('surface').getContext("2d");
+            const ctx4 = document.getElementById('grade3').getContext("2d");
             this.g3Chart = new Chart(ctx4, {
                     type: 'doughnut',
                 data: {
@@ -429,7 +428,6 @@ class Report extends React.Component {
                     src="logo.png"
                     width="122"
                     height="58"
-                    //className="d-inline-block align-top"
                     alt="logo"
                     />
                 </Navbar.Brand>

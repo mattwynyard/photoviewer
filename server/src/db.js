@@ -1043,7 +1043,7 @@ module.exports = {
         let _faults = buildQuery(faults.data);
         let _types = buildQuery(types.data);
         let _causes = buildQuery(causes.data);
-        let sql = `SELECT id, footpathid, roadname, roadid, position, erp, side, asset, fault, cause, 
+        let sql = `SELECT id, footpathid, roadname, roadid, position, erp, inspection, side, asset, fault, cause, 
             size, grade, faulttime, status, datefixed, photoid, ST_AsGeoJSON(geom)
             FROM ${table} 
             WHERE project = '${project}' AND asset IN (${_assets}) AND fault IN (${_faults})
