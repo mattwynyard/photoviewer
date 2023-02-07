@@ -162,10 +162,8 @@ class App extends React.Component {
             });
           }
         }
-      }
-      
-    }
-     
+      }   
+    }   
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -1411,8 +1409,7 @@ class App extends React.Component {
             ref={this.videoCard}
             show={this.state.videoViewer} 
             parent={this}
-            centre={this.centreMap}
-            
+            centre={this.centreMap} 
           >
           </VideoCard>
             <DataTable 
@@ -1423,8 +1420,6 @@ class App extends React.Component {
               surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
           />  
           </div>  
-            
-        
         <PhotoModal
           ref={this.photoModal}
         >
