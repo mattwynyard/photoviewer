@@ -72,6 +72,8 @@ app.get('/photos', videoController.photos);
 
 app.get('/closestvideophoto', videoController.closestVideoPhoto);
 
+app.get('/download', videoController.download);
+
 app.post('/user', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);
     if (result) {

@@ -747,6 +747,25 @@ module.exports = {
         });
     },
 
+    getPhotoNames: (body, view) => {
+        let sql = null
+        if (body.side === null) {
+            sql = `SELECT photo from ${view} WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY photo ASC`;
+        } else {
+            sql = `SELECT photo from ${view} WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY photo ASC`;
+        }
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let photos = resolve(result);
+                return photos;
+            });
+        });
+    },
+
     getFPPhotos: (id, project) => {
         return new Promise((resolve, reject) => {
             let sql = "SELECT photo, footpathid, erp, roadid, side, address, latitude, longitude from fpphotos WHERE footpathid = '" + id + "' and project = '" + project + "' ORDER BY photo";

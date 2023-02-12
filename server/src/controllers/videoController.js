@@ -1,5 +1,26 @@
 const securityServices = require('../services/securityServices');
-const videoServices= require('../services/videoServices');
+const videoServices = require('../services/videoServices');
+
+const download = async (req, res) => {
+    res.set('Content-Type', 'application/json');
+    try {
+        const security = await securityServices.isAuthorized(req.query.user, req.query.project, req.headers.authorization);      
+        if (security) {
+            if (!req.query.project) {
+                res.send({error: "No project selected"});
+            } else {
+                const data =  await videoServices.download(req.query);
+                //res.send(data);
+                res.send({response: "ok"})
+            }     
+        } else {
+            res.send({error: 'incorrect security credentials'});
+        }
+    } catch (err) {
+        console.log(err)
+        res.send({error: "unkown error"});
+    }   
+  };
 
 const changeSide = async (req, res) => {
     res.set('Content-Type', 'application/json');
@@ -19,8 +40,7 @@ const changeSide = async (req, res) => {
     } catch (err) {
         console.log(err)
         res.send({error: "unkown error"});
-    }
-    
+    }   
   };
 
 const photos = async (req, res) => {
@@ -66,6 +86,7 @@ const photos = async (req, res) => {
   };
 
   module.exports = {
+    download,
     changeSide,
     photos,
     closestVideoPhoto

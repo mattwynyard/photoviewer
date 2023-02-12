@@ -2,12 +2,13 @@ import React from 'react';
 import {ProgressBar }  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
+import { AppContext } from '../context/AppContext';
 import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.svg';
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
 import {ReactComponent as Cancel} from '../theme/svg/close_24dp.svg';
-//import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
+import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
 import {ReactComponent as ToggleOn} from '../theme/svg/toggle_on_48dp.svg';
 import {ReactComponent as ToggleOff} from '../theme/svg/toggle_off_48dp.svg';
 
@@ -73,6 +74,7 @@ const IdText = function(props) {
 }
 
 export default class VideoCard extends React.Component {
+    static contextType = AppContext;
     constructor(props) {
         super(props);
         this.state = {
@@ -257,6 +259,37 @@ export default class VideoCard extends React.Component {
         }     
     }
 
+    async clickDownload() {
+        const query = {
+            user: this.context.login.user,
+            project: this.props.project.code,
+            surface: this.props.project.surface,
+            cwid: this.photoArray[this.state.index].cwid,
+            side: this.state.side,
+            tacode: this.props.project.tacode,
+            amazon: this.props.project.amazon
+        }
+        const queryParams = new URLSearchParams(query)
+            const response = await fetch(`https://${this.context.login.host}/download?${queryParams.toString()}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json', 
+            "authorization": this.context.login.token,       
+            },
+    
+        });
+        const body = await response.json();
+        if (body.error) {
+            alert(response.status + " " + response.statusText);
+            return   
+        } else {
+            return body;
+        }   
+        
+    }
+
     render() {  
         if (this.state.show) {
             if (!this.photoArray) return null;
@@ -305,7 +338,7 @@ export default class VideoCard extends React.Component {
                             <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
                         </div>
                         <div className = "controls-action">
-                            {/* <Download className="controls-download" onClick={(e) => this.clickDownload(e)}/> */}
+                            <Download className="controls-download" onClick={() => this.clickDownload()}/>
                             <Cancel className="controls-close" onClick={(e) => this.clickClose(e)}/>
                         </div>
                         

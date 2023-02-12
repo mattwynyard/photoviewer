@@ -154,14 +154,14 @@ class App extends React.Component {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.props.activeLayer)
       } else {
-        if(this.state.objGLData.length !== 0) {
-          const body = this.filterLayer(this.props.activeLayer, true);
-          if (body) {
-            body.then((body) => {
-              this.addGLGeometry(body.points, body.lines, body.type, true);
-            });
-          }
-        }
+        // if(this.state.objGLData.length !== 0) {
+        //   const body = this.filterLayer(this.props.activeLayer, true);
+        //   if (body) {
+        //     body.then((body) => {
+        //       this.addGLGeometry(body.points, body.lines, body.type, true);
+        //     });
+        //   }
+        // }
       }   
     }   
     if (this.state.filtered) {
@@ -1410,6 +1410,7 @@ class App extends React.Component {
             show={this.state.videoViewer} 
             parent={this}
             centre={this.centreMap} 
+            project={this.props.activeLayer}
           >
           </VideoCard>
             <DataTable 

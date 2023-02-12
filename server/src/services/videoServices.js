@@ -1,5 +1,79 @@
 const db = require('../db');
 const util = require('../util');
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require('../s3Client.js');
+const { Converter } = require("ffmpeg-stream");
+const { createReadStream, createWriteStream } = require("fs")
+
+const BUCKET= 'onsitenz';
+const PREFIX = 'taranaki/roads/2022_10'
+
+const download = async (query) => {
+    const view = util.getPhotoView(query.project);
+    const results = await db.getPhotoNames(query, view);
+    const frames = results.rows;
+    const converter = new Converter()
+    const input = converter.createInputStream({f: 'image2pipe', r: 30})
+    converter.createOutputToFile('out.mp4', {vcodec: 'libx264', pix_fmt: 'yuv420p'})
+
+
+    for (const frame of frames) {
+        const bucketParams = {
+                Bucket: BUCKET,
+                Key: `${PREFIX}/${frame.photo}.jpg`
+            };
+        const response = await s3Client.send(new GetObjectCommand(bucketParams))
+        const stream = response.Body
+       
+        const ws = createWriteStream(`./temp/${frame.photo}.jpg`);
+        stream.pipe(ws)
+
+        stream.on('end', ()=>{
+            
+            console.log("finished")
+        });
+        stream.on('error', ()=>{
+            
+            console.log("error")
+        });
+        
+    }
+    // frames.map(frame => () => {
+        
+    //     new Promise( async (resolve, reject) => {
+    //         const bucketParams = {
+    //             Bucket: BUCKET,
+    //             Key: `${PREFIX}/${frame.photo}.jpg`
+    //         };
+    //         try {  
+    //             const response = await s3Client.send(new GetObjectCommand(bucketParams))
+    //             const stream = response.Body  
+    //             stream.on('end', resolve) // fulfill promise on frame end
+    //             .on('error', reject) // reject promise on error
+    //             .pipe(input, {end: false}) // pipe to converter, but don't end the input yet
+    //         } catch (err) {
+    //             console.log(err)
+    //         }     
+    //     })
+            
+    // })       
+    // .reduce((prev, next) => prev.then(next), Promise.resolve())
+    // .then (() => input.end())          
+    // converter.run()
+
+}
+
+const getS3Object = async (params) => {
+    const response = await s3Client.send(new GetObjectCommand(params))
+    const stream = response.Body    
+        return new Promise((resolve, reject) => {
+            const chunks = []
+            stream.on('data', chunk => chunks.push(chunk))
+            stream.once('end', () => resolve(Buffer.concat(chunks)))
+            stream.once('error', reject)
+        })
+
+}
 
 const changeSide = async (query) => {
     try {
@@ -86,6 +160,7 @@ const closestVideoPhoto = async (query) => {
 
 
 module.exports = {
+    download,
     changeSide,
     photos,
     closestVideoPhoto
