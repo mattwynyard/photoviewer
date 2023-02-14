@@ -750,9 +750,9 @@ module.exports = {
     getPhotoNames: (body, view) => {
         let sql = null
         if (body.side === null) {
-            sql = `SELECT photo from ${view} WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY photo ASC`;
+            sql = `SELECT photo, erp, datetime, ST_AsGeoJSON(geom) from ${view} WHERE cwid = ${body.cwid} and tacode = ${body.tacode} ORDER BY photo ASC`;
         } else {
-            sql = `SELECT photo from ${view} WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY photo ASC`;
+            sql = `SELECT photo, erp, datetime, ST_AsGeoJSON(geom) from ${view} WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}' ORDER BY photo ASC`;
         }
         return new Promise((resolve, reject) => {
             connection.query(sql, (err, result) => {

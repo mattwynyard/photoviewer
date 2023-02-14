@@ -267,7 +267,9 @@ export default class VideoCard extends React.Component {
             cwid: this.photoArray[this.state.index].cwid,
             side: this.state.side,
             tacode: this.props.project.tacode,
-            amazon: this.props.project.amazon
+            amazon: this.props.project.amazon,
+            roadid: this.geometry.options.roadid,
+            label: this.geometry.options.label,
         }
         const queryParams = new URLSearchParams(query)
             const response = await fetch(`https://${this.context.login.host}/download?${queryParams.toString()}`, {

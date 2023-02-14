@@ -2,68 +2,122 @@ const db = require('../db');
 const util = require('../util');
 const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require('../s3Client.js');
-const { Converter } = require("ffmpeg-stream");
-const { createReadStream, createWriteStream } = require("fs")
+const { createWriteStream, unlink, readdir } = require('fs')
+const ffmpeg = require('fluent-ffmpeg');
+const Jimp = require('jimp') ;
+const path = require("path");
 
 const BUCKET= 'onsitenz';
 const PREFIX = 'taranaki/roads/2022_10'
+
+const stitch = async ( options ) => {
+    await new Promise((resolve, reject) => {
+        ffmpeg()
+        .input(options.inputFilepath)
+        .inputOptions([
+        `-framerate ${options.frameRate}`,
+        ])
+        .videoCodec('libx264')
+        .outputOptions([
+        '-pix_fmt yuv420p',
+        ])
+        .noAudio()
+        .fps(options.frameRate)
+        // .videoFilters([
+        //     {
+        //       filter: 'drawtext',
+        //       options: 'in:0:30'
+        //     }
+        //   ])
+        .saveToFile(options.outputFilepath)
+        .on('progress', function(progress) {
+            console.log('Processing: ' + progress.percent + '% done');
+        })
+        .on('stderr', function(stderrLine) {
+            console.log('Stderr output: ' + stderrLine);
+        })
+        .on('end', () => {
+            resolve()
+        })
+        .on('error', (error) => reject(new Error(error)));
+    });
+}
+
+const writeLabel = (prefix, label) => {
+    if (prefix) return `${prefix} ${label}`
+    return `${label.toString()}`
+}
 
 const download = async (query) => {
     const view = util.getPhotoView(query.project);
     const results = await db.getPhotoNames(query, view);
     const frames = results.rows;
-    const converter = new Converter()
-    const input = converter.createInputStream({f: 'image2pipe', r: 30})
-    converter.createOutputToFile('out.mp4', {vcodec: 'libx264', pix_fmt: 'yuv420p'})
-
-
+    let counter = 0;
+    const label = {
+        side: query.side,
+        name: query.label,
+        cwid: query.cwid   
+    }
+    const FILE_PREFIX = 'image'
     for (const frame of frames) {
         const bucketParams = {
                 Bucket: BUCKET,
                 Key: `${PREFIX}/${frame.photo}.jpg`
             };
+        label.erp = frame.erp
+        const date  = new Date(frame.datetime)
+        label.datetime = date.toISOString()
+        const labelRoad = writeLabel(null, label.name)
+        const labelCwid = writeLabel('carriage:', label.cwid)
+        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
+        const labelDateTime = writeLabel(null, label.datetime)
+        const labelErp = writeLabel('erp:', label.erp)
+        const index = String(counter).padStart(4, "0")  
         const response = await s3Client.send(new GetObjectCommand(bucketParams))
         const stream = response.Body
-       
-        const ws = createWriteStream(`./temp/${frame.photo}.jpg`);
+        const ws = createWriteStream(`./temp/images/${frame.photo}.jpg`);
         stream.pipe(ws)
-
-        stream.on('end', ()=>{
-            
-            console.log("finished")
+        stream.on('error', (err) => {
+            console.log(`error: ${err}`)
         });
-        stream.on('error', ()=>{
-            
-            console.log("error")
-        });
-        
+        ws.on('close', async () => {
+            console.log(`./temp/images/${frame.photo}.jpg`)
+            const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
+            const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
+            image.print(font, 10, 10, `${labelRoad}`);
+            image.print(font, 10, 30, `${labelCwid}`);
+            image.print(font, 10, 50, `${labelSide}`);
+            image.print(font, 10, 70, `${labelErp}`);
+            image.print(font, 10, 90, `${labelDateTime}`);
+            await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`);
+            await unlink(`./temp/images/${frame.photo}.jpg`, (err) => {
+                if (err) {
+                  console.error(err)
+                  return
+                }})
+        })
+        counter++;  
     }
-    // frames.map(frame => () => {
-        
-    //     new Promise( async (resolve, reject) => {
-    //         const bucketParams = {
-    //             Bucket: BUCKET,
-    //             Key: `${PREFIX}/${frame.photo}.jpg`
-    //         };
-    //         try {  
-    //             const response = await s3Client.send(new GetObjectCommand(bucketParams))
-    //             const stream = response.Body  
-    //             stream.on('end', resolve) // fulfill promise on frame end
-    //             .on('error', reject) // reject promise on error
-    //             .pipe(input, {end: false}) // pipe to converter, but don't end the input yet
-    //         } catch (err) {
-    //             console.log(err)
-    //         }     
-    //     })
-            
-    // })       
-    // .reduce((prev, next) => prev.then(next), Promise.resolve())
-    // .then (() => input.end())          
-    // converter.run()
-
+    const options = {
+        frameRate: 2,
+        duration: frames / 2,
+        outputFilepath: './temp/video/out.mp4',
+        inputFilepath: './temp/images/image%04d.jpg'
+    }
+    await stitch(options)
+    const directory = './temp/images';
+    readdir(directory, (err, files) => {
+        if (err) throw err;
+      
+        for (const file of files) {
+            unlink(path.join(directory, file), (err) => {
+            if (err) throw err;
+          });
+        }
+      });
 }
 
-const getS3Object = async (params) => {
+const getS3ObjectBuffer = async (params) => {
     const response = await s3Client.send(new GetObjectCommand(params))
     const stream = response.Body    
         return new Promise((resolve, reject) => {

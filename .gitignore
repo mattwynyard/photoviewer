@@ -16,6 +16,7 @@
 .pdf
 .docx
 *.jpg
+*.mp4
 ./server/*.env
 server/log.txt
 server/server.key
