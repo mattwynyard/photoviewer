@@ -9,7 +9,7 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import PhotoModal from './photo/PhotoModal.js';
-import VideoCard from './video/VideoCard.js';
+import VideoController from './video/VideoController.js';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
@@ -23,7 +23,7 @@ import { LayerManager } from './layers/LayerManager';
 import { store } from './state/store'
 import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
-import { setClassName } from './state/reducers/mapSlice'
+import { setClassName, setCentre } from './state/reducers/mapSlice'
 import { setIsOpen } from './state/reducers/videoSlice';
 import { leafletPolylineFromGeometry} from './model/photoCentreline';
 import Location  from './theme/Location'
@@ -44,12 +44,12 @@ class App extends React.Component {
 
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
-      ruler: false,
-      rulerOrigin: null,
-      rulerPolyline: null,
-      rulerDistance: 0,
-      showRuler: false,
-      priorityDropdown: null,
+      // ruler: false,
+      // rulerOrigin: null,
+      // rulerPolyline: null,
+      // rulerDistance: 0,
+      // showRuler: false,
+      //priorityDropdown: null,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -67,7 +67,6 @@ class App extends React.Component {
       carMarker: [], //position of current image in video
       layers: [],
       show: false,
-      //showVideo: false,  
       showAdmin: false,
       modalPhoto: null,
       popover: false,
@@ -210,6 +209,7 @@ class App extends React.Component {
     const latlng = new L.LatLng(lat, lng)
     this.leafletMap.invalidateSize(true);
     this.leafletMap.setView(latlng, zoom); 
+    //this.props.setCentre({lat: lat, lng: lng})
   }
 
   simulateClick = (index) => {
@@ -609,7 +609,7 @@ class App extends React.Component {
       filterStore: [],
       rulerPoints: [],
       filters: [], 
-      priorityDropdown: null, 
+      //priorityDropdown: null, 
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
@@ -1293,7 +1293,8 @@ class App extends React.Component {
   }
 
   render() {
-    const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
+    //const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
+    const centre = [this.props.centre.lat, this.props.centre.lng];
     return ( 
       <> 
         <Navigation 
@@ -1405,14 +1406,14 @@ class App extends React.Component {
                 thumbnail={true}
               />
           </LMap >
-          <VideoCard
+          <VideoController
             ref={this.videoCard}
             show={this.state.videoViewer} 
             parent={this}
             centre={this.centreMap} 
             project={this.props.activeLayer}
           >
-          </VideoCard>
+          </VideoController>
             <DataTable 
               className={this.state.dataActive ? "data-active": "data-inactive"}
               data={this.state.objGLData}
@@ -1445,13 +1446,15 @@ const mapStateToProps = state => ({
   activeLayers: state.layers.layers,
   className: state.map.class,
   mapMode: state.map.mode,
+  centre: state.map.centre,
   isVideoOpen: state.video.isOpen
 })
 
 const mapDispatchToProps = {
   addLayer,
   setClassName,
-  setIsOpen
+  setIsOpen,
+  setCentre,
 }
 
 export default connect(

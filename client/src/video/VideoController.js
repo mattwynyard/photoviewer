@@ -73,7 +73,7 @@ const IdText = function(props) {
     }
 }
 
-export default class VideoCard extends React.Component {
+export default class VideoController extends React.Component {
     static contextType = AppContext;
     constructor(props) {
         super(props);
@@ -85,6 +85,7 @@ export default class VideoCard extends React.Component {
             disabled: false,
             play: false,
             //interval: 500,
+            initialised: false,
             errors: 0,
         }
         this.delegate = props.parent;
@@ -118,7 +119,7 @@ export default class VideoCard extends React.Component {
     refresh(photo, photoArray) {
         if (photoArray) this.photoArray = photoArray
         const index = this.photoArray.findIndex((element) => element.photo === photo.photo) 
-        if (index === -1) {
+        if (index === - 1) {
             alert("error - photo not found");
             return;
         }
@@ -196,10 +197,10 @@ export default class VideoCard extends React.Component {
         if (this.index < this.photoArray.length && this.index > 0) {
             this.setState({index: index});
             this.index  = index;
-            //console.log(index)
             let latlng = this.getLatLng(index);
-            this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
             this.props.centre(latlng.lat, latlng.lng, 16);
+            this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
+           
         } else {
             console.log("stop timer")
             clearInterval(this.timer)

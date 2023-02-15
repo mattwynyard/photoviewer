@@ -108,57 +108,8 @@ function parseDateTime(dateTime) {
         return "'" + timestamp + "'";
     }
     return "'NULL'";
-    }
-    
-function pad(n, width, z) {
-    z = z || '0';
-    n = n + '';
-    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-    }
-
-
-function parseDate(date) {
-    
-    let dateFormat = /^(0?[1-9]|[12][0-9]|3[01])[\/](0?[1-9]|1[012])[\/]\d{4}$/; //dd/mm/yyyy
-    if(date.match(dateFormat))
-    {   
-        const [day, month, year] = date.split('/')
-        return "'" + `${year}-${month}-${day}` + "'";
-    }
-    //dateFormat = /^\d{1,2}-[a-zA-Z]{3}-\d{4}$/;
-    dateFormat = /^\d{1,2}-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\-\d{2,4}$/; //d-MMM-yy or dd-MMM-yy or d-MMM-yyyy or dd-MMM-yyyy
-    if(date.match(dateFormat))
-    {   
-        let [day, month, year] = date.split('-')
-        if (day.length === 1) {
-            day = pad(day, 2)
-        }
-        if (year.length === 2) {
-            year = pad(year, 3, '0');
-            year = pad(year, 4, '2');
-        }
-        
-
-        let monthNumeric = monthToNumeric(month.toLowerCase());
-        return "'" + `${year}-${monthNumeric}-${day}` + "'";
-    }
-    dateFormat = /^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$/;
-    if(date.match(dateFormat))
-    {   
-        return "'" + date + "'";
-    }
-    dateFormat = /^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$/;
-    if(date.match(dateFormat))
-    {   
-        return "'" + date + "'";
-    }
-    dateFormat = /^((?:19|20)\d\d)[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/;
-    if(date.match(dateFormat))
-    {   
-        return "'" + date + "'";
-    }
 }
-
+    
 const { Pool } = require('pg');
 
 const connection = new Pool({

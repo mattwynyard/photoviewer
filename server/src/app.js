@@ -37,7 +37,6 @@ if(environment === 'production') {
 
 console.log("mode: " + environment);
 app.use(cors());
-//app.use(morgan('dev'));
 app.use(helmet());
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(express.json({limit: '50mb', extended: false, strict: true}));

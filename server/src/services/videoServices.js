@@ -2,10 +2,10 @@ const db = require('../db');
 const util = require('../util');
 const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require('../s3Client.js');
-const { createWriteStream, unlink, readdir } = require('fs')
+const { createWriteStream, unlink } = require('fs')
 const ffmpeg = require('fluent-ffmpeg');
 const Jimp = require('jimp') ;
-const path = require("path");
+//const path = require("path");
 
 const BUCKET= 'onsitenz';
 const PREFIX = 'taranaki/roads/2022_10'
@@ -23,12 +23,6 @@ const stitch = async ( options ) => {
         ])
         .noAudio()
         .fps(options.frameRate)
-        // .videoFilters([
-        //     {
-        //       filter: 'drawtext',
-        //       options: 'in:0:30'
-        //     }
-        //   ])
         .saveToFile(options.outputFilepath)
         .on('progress', function(progress) {
             console.log('Processing: ' + progress.percent + '% done');
@@ -58,21 +52,16 @@ const download = async (query) => {
         name: query.label,
         cwid: query.cwid   
     }
+    let minERP = Number.MAX_SAFE_INTEGER;
+    let maxERP = Number.MIN_SAFE_INTEGER
     const FILE_PREFIX = 'image'
     for (const frame of frames) {
+        //download
         const bucketParams = {
                 Bucket: BUCKET,
                 Key: `${PREFIX}/${frame.photo}.jpg`
             };
-        label.erp = frame.erp
-        const date  = new Date(frame.datetime)
-        label.datetime = date.toISOString()
-        const labelRoad = writeLabel(null, label.name)
-        const labelCwid = writeLabel('carriage:', label.cwid)
-        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
-        const labelDateTime = writeLabel(null, label.datetime)
-        const labelErp = writeLabel('erp:', label.erp)
-        const index = String(counter).padStart(4, "0")  
+          
         const response = await s3Client.send(new GetObjectCommand(bucketParams))
         const stream = response.Body
         const ws = createWriteStream(`./temp/images/${frame.photo}.jpg`);
@@ -80,6 +69,20 @@ const download = async (query) => {
         stream.on('error', (err) => {
             console.log(`error: ${err}`)
         });
+
+        //write label
+        label.erp = frame.erp
+        if (frame.erp < minERP) minERP = frame.erp
+        if (frame.erp > maxERP) maxERP = frame.erp
+        label.datetime = util.dateToISOString(new Date(frame.datetime))
+        const labelRoad = writeLabel(null, label.name)
+        const labelCwid = writeLabel('carriage:', label.cwid)
+        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
+        const labelDateTime = writeLabel(null, label.datetime)
+        const labelErp = writeLabel('erp:', label.erp)
+        const index = String(counter).padStart(4, "0")
+
+        //save file
         ws.on('close', async () => {
             console.log(`./temp/images/${frame.photo}.jpg`)
             const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
@@ -87,7 +90,7 @@ const download = async (query) => {
             image.print(font, 10, 10, `${labelRoad}`);
             image.print(font, 10, 30, `${labelCwid}`);
             image.print(font, 10, 50, `${labelSide}`);
-            image.print(font, 10, 70, `${labelErp}`);
+            image.print(font, 10, 70, `${labelErp} m`);
             image.print(font, 10, 90, `${labelDateTime}`);
             await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`);
             await unlink(`./temp/images/${frame.photo}.jpg`, (err) => {
@@ -101,21 +104,13 @@ const download = async (query) => {
     const options = {
         frameRate: 2,
         duration: frames / 2,
-        outputFilepath: './temp/video/out.mp4',
+        outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: './temp/images/image%04d.jpg'
     }
     await stitch(options)
-    const directory = './temp/images';
-    readdir(directory, (err, files) => {
-        if (err) throw err;
-      
-        for (const file of files) {
-            unlink(path.join(directory, file), (err) => {
-            if (err) throw err;
-          });
-        }
-      });
+    util.deleteFiles('./temp/images');
 }
+
 
 const getS3ObjectBuffer = async (params) => {
     const response = await s3Client.send(new GetObjectCommand(params))
@@ -125,7 +120,7 @@ const getS3ObjectBuffer = async (params) => {
             stream.on('data', chunk => chunks.push(chunk))
             stream.once('end', () => resolve(Buffer.concat(chunks)))
             stream.once('error', reject)
-        })
+    })
 
 }
 
