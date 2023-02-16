@@ -12,7 +12,8 @@ const app = express();
 const users = require('./user.js');
 const util = require('./util.js');
 const fs = require('fs');
-const https = require('https');
+
+
 const proxy_port = process.env.PROXY_PORT;
 const port = process.env.PORT;
 const host = process.env.PROXY;
@@ -20,9 +21,9 @@ const environment = process.env.ENVIRONMENT;
 // comment out create server code below when deploying to server
 // server created in index.js
 
-
 if(environment === 'production') {
-  app.listen(proxy_port, () => {
+  const http = require('http');
+  http.createServer(app).listen(proxy_port, () => {
     console.log(`Listening: http://${host}:${proxy_port}`);
   });
 } else {
@@ -30,6 +31,7 @@ if(environment === 'production') {
     key: fs.readFileSync('./server.key', 'utf8'),
     cert: fs.readFileSync('./server.cert', 'utf8')
   }
+  const https = require('https');
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
