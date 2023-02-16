@@ -1,7 +1,4 @@
 'use strict';
-const securityController = require('./controllers/securityController');
-const geometryController = require('./controllers/geometryController');
-const videoController = require('./controllers/videoController');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -13,6 +10,7 @@ const users = require('./user.js');
 const util = require('./util.js');
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
 const proxy_port = process.env.PROXY_PORT;
 const port = process.env.PORT;
 const host = process.env.PROXY;
@@ -20,6 +18,9 @@ const environment = process.env.ENVIRONMENT;
 // comment out create server code below when deploying to server
 // server created in index.js
 
+const securityController = require('./controllers/securityController');
+const geometryController = require('./controllers/geometryController');
+const videoController = require('./controllers/videoController');
 
 if(environment === 'production') {
   app.listen(proxy_port, () => {
@@ -33,6 +34,12 @@ if(environment === 'production') {
   https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
     });
+    const io = new Server(server, {
+      cors: {
+        origin: true,
+        methods: ["GET", "POST"]
+      }
+    })
 }
 
 console.log("mode: " + environment);
