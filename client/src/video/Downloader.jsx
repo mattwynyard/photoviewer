@@ -18,9 +18,38 @@ export const Downloader = () => {
     const [mouseDown, setMouseDown] = useState(false)
     const [mousePosition, setMousePosition] = useState(null);
 
-    useEffect(() => {
-        console.log(req)
-    }, [req]);
+    const download = useCallback(async (download) => {
+        console.log(download)
+        if(!req) return;
+        dispatch(setIsDownloading(download))
+        const query = {
+            query: JSON.stringify(req),
+            download: download,
+          }
+        const queryParams = new URLSearchParams(query)
+            const response = await fetch(`https://${context.login.host}/download?${queryParams.toString()}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json', 
+            "authorization": context.login.token,       
+            },
+        });
+        const body = await response.json();
+        if (body.error) {
+            alert(response.status + " " + response.statusText);
+            return   
+        } else {
+            return body;
+        }   
+    }, [req])
+
+    useEffect(async () => {
+        if(!req) return;
+        const body = await download(false)
+        console.log(body)
+    }, [req, download]);
 
     const mouseOverCard = useCallback(() => {
         cardRef.current.style.cursor = 'pointer';
@@ -64,27 +93,7 @@ export const Downloader = () => {
         dispatch(setOpenDownload({show:false, request: null}))
     },[dispatch])
 
-    const clickDownload = async (e) => {
-        e.preventDefault();
-        dispatch(setIsDownloading(true))
-        const queryParams = new URLSearchParams(req)
-            const response = await fetch(`https://${context.login.host}/download?${queryParams.toString()}`, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json', 
-            "authorization": context.login.token,       
-            },
-        });
-        const body = await response.json();
-        if (body.error) {
-            alert(response.status + " " + response.statusText);
-            return   
-        } else {
-            return body;
-        }   
-    }
+    
     
     if (!req) return null;
     return (
@@ -105,7 +114,7 @@ export const Downloader = () => {
                 
             </CardContent>  
             <CardActions>
-                <Button variant="outlined" onClick={(e) => clickDownload(e)}>Download</Button>
+                <Button variant="outlined" onClick={() => download(true)}>Download</Button>
                 <Button 
                     variant="outlined"
                     onClick={(e) => clickCancel(e)}

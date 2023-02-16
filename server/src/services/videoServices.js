@@ -42,6 +42,19 @@ const writeLabel = (prefix, label) => {
     return `${label.toString()}`
 }
 
+const headDownload = async (query) => {
+    const view = util.getPhotoView(query.project);
+    const results = await db.getPhotoNames(query, view);
+    const frames = results.rows;
+    let minERP = Number.MAX_SAFE_INTEGER;
+    let maxERP = Number.MIN_SAFE_INTEGER;
+    for (const frame of frames) {
+        if (frame.erp < minERP) minERP = frame.erp
+        if (frame.erp > maxERP) maxERP = frame.erp
+    }
+    return ({length: frames.length, minERP: minERP, maxERP: maxERP})
+}
+
 const download = async (query) => {
     const view = util.getPhotoView(query.project);
     const results = await db.getPhotoNames(query, view);
@@ -53,7 +66,7 @@ const download = async (query) => {
         cwid: query.cwid   
     }
     let minERP = Number.MAX_SAFE_INTEGER;
-    let maxERP = Number.MIN_SAFE_INTEGER
+    let maxERP = Number.MIN_SAFE_INTEGER;
     const FILE_PREFIX = 'image'
     for (const frame of frames) {
         //download
@@ -103,7 +116,7 @@ const download = async (query) => {
     }
     const options = {
         frameRate: 2,
-        duration: frames / 2,
+        //duration: frames / 2,
         outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: './temp/images/image%04d.jpg'
     }
@@ -209,6 +222,7 @@ const closestVideoPhoto = async (query) => {
 
 
 module.exports = {
+    headDownload,
     download,
     changeSide,
     photos,

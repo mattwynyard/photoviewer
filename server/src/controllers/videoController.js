@@ -4,14 +4,23 @@ const videoServices = require('../services/videoServices');
 const download = async (req, res) => {
     res.set('Content-Type', 'application/json');
     try {
-        const security = await securityServices.isAuthorized(req.query.user, req.query.project, req.headers.authorization);      
+        const query = JSON.parse(req.query.query)
+        const download = JSON.parse(req.query.download)
+        const security = await securityServices.isAuthorized(query.user, query.project, req.headers.authorization);      
         if (security) {
-            if (!req.query.project) {
+            if (!query.project) {
                 res.send({error: "No project selected"});
             } else {
-                const data =  await videoServices.download(req.query);
-                //res.send(data);
-                res.send({response: "ok"})
+                if (download) {
+                    const data =  await videoServices.download(query);
+                    res.send({response: "ok"})
+                } else {
+                    const result =  await videoServices.headDownload(query);
+                    res.send(result);
+                }
+                
+                
+                
             }     
         } else {
             res.send({error: 'incorrect security credentials'});
