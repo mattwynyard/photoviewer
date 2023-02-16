@@ -9,7 +9,7 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import PhotoModal from './photo/PhotoModal.js';
-import VideoController from './video/VideoController.js';
+import VideoController from './video/VideoController.jsx';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
@@ -24,9 +24,11 @@ import { store } from './state/store'
 import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
 import { setClassName, setCentre } from './state/reducers/mapSlice'
+import { setOpenDownload } from './state/reducers/downloadSlice'
 import { setIsOpen } from './state/reducers/videoSlice';
 import { leafletPolylineFromGeometry} from './model/photoCentreline';
 import Location  from './theme/Location'
+import { Downloader } from './video/Downloader';
 
 const DIST_TOLERANCE = 20; //metres 
 //const ERP_DIST_TOLERANCE = 0.00004;
@@ -50,6 +52,7 @@ class App extends React.Component {
       // rulerDistance: 0,
       // showRuler: false,
       //priorityDropdown: null,
+      showDownload: false,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -209,7 +212,6 @@ class App extends React.Component {
     const latlng = new L.LatLng(lat, lng)
     this.leafletMap.invalidateSize(true);
     this.leafletMap.setView(latlng, zoom); 
-    //this.props.setCentre({lat: lat, lng: lng})
   }
 
   simulateClick = (index) => {
@@ -472,9 +474,10 @@ class App extends React.Component {
   }
 
   removePolyLine = () => {
-    this.vidPolyline.remove();
-    this.vidPolyline = null;
-    this.setState({carMarker: []});
+    if (this.vidPolyline) 
+      this.vidPolyline.remove();
+      this.vidPolyline = null;
+      this.setState({carMarker: []});
   }
 
   getVideoGeometry = async (e) => {
@@ -609,7 +612,7 @@ class App extends React.Component {
       filterStore: [],
       rulerPoints: [],
       filters: [], 
-      //priorityDropdown: null, 
+      carMarker: [], 
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
@@ -1292,6 +1295,10 @@ class App extends React.Component {
     this.setState({image: incrementPhoto(photo, -1)})
   }
 
+  openDownload = (request) => {
+    dispatch(setOpenDownload({show:true, request: request}))
+  }
+
   render() {
     //const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
     const centre = [this.props.centre.lat, this.props.centre.lng];
@@ -1374,10 +1381,11 @@ class App extends React.Component {
                   className='location' 
                   key={`marker-${idx}`} 
                   marker={marker} 
+                  center = {this.leafletMap ? this.leafletMap.latLngToContainerPoint(marker.position[0]) : null}
                   map={this.leafletMap} 
                   style={{ zIndex: 1000 }}   />
               )}
-              {this.state.selectedCarriage.map((position, idx) =>
+              {this.state.selectedCarriage.map((position, idx) => 
                 <Polyline
                   key={`marker-${idx}`} 
                   position={position}>
@@ -1412,8 +1420,9 @@ class App extends React.Component {
             parent={this}
             centre={this.centreMap} 
             project={this.props.activeLayer}
+            clickDownload={this.openDownload}
           >
-          </VideoController>
+          </VideoController >
             <DataTable 
               className={this.state.dataActive ? "data-active": "data-inactive"}
               data={this.state.objGLData}
@@ -1421,7 +1430,9 @@ class App extends React.Component {
               centre={this.centreMap}
               surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
           />  
-          </div>  
+          </div> 
+          <Downloader
+          />
         <PhotoModal
           ref={this.photoModal}
         >

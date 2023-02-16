@@ -2,6 +2,7 @@ import React from 'react';
 import {ProgressBar }  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
+import { store } from '../state/store'
 import { AppContext } from '../context/AppContext';
 import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.svg';
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
@@ -84,17 +85,18 @@ export default class VideoController extends React.Component {
             side: 'L',
             disabled: false,
             play: false,
-            //interval: 500,
             initialised: false,
             errors: 0,
+           
         }
         this.delegate = props.parent;
         this.photoArray = null;
         this.index = 0;
         this.geometry = null;
         this.amazon = null;
-
     }
+
+
 
     getSide() {
         return this.state.side;
@@ -260,8 +262,10 @@ export default class VideoController extends React.Component {
         }     
     }
 
-    async clickDownload() {
-        const query = {
+    clickDownload = () => {
+        if (store.getState().download.showDownload) return
+        if (this.state.play) return
+        const downloadRequest = {
             user: this.context.login.user,
             project: this.props.project.code,
             surface: this.props.project.surface,
@@ -272,26 +276,10 @@ export default class VideoController extends React.Component {
             roadid: this.geometry.options.roadid,
             label: this.geometry.options.label,
         }
-        const queryParams = new URLSearchParams(query)
-            const response = await fetch(`https://${this.context.login.host}/download?${queryParams.toString()}`, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json', 
-            "authorization": this.context.login.token,       
-            },
-    
-        });
-        const body = await response.json();
-        if (body.error) {
-            alert(response.status + " " + response.statusText);
-            return   
-        } else {
-            return body;
-        }   
-        
+        this.props.clickDownload(downloadRequest);
     }
+
+
 
     render() {  
         if (this.state.show) {
@@ -341,7 +329,7 @@ export default class VideoController extends React.Component {
                             <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
                         </div>
                         <div className = "controls-action">
-                            <Download className="controls-download" onClick={() => this.clickDownload()}/>
+                            <Download className="controls-download" onClick={this.clickDownload}/>
                             <Cancel className="controls-close" onClick={(e) => this.clickClose(e)}/>
                         </div>
                         
