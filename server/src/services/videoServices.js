@@ -10,7 +10,8 @@ const Jimp = require('jimp') ;
 const BUCKET= 'onsitenz';
 const PREFIX = 'taranaki/roads/2022_10'
 
-const stitch = async ( options ) => {
+const stitch = async ( socket, options ) => {
+    socket.emit("stitch")
     await new Promise((resolve, reject) => {
         ffmpeg()
         .input(options.inputFilepath)
@@ -25,12 +26,15 @@ const stitch = async ( options ) => {
         .fps(options.frameRate)
         .saveToFile(options.outputFilepath)
         .on('progress', function(progress) {
+            socket.emit("progress", progress)
             console.log('Processing: ' + progress.percent + '% done');
         })
         .on('stderr', function(stderrLine) {
             console.log('Stderr output: ' + stderrLine);
         })
         .on('end', () => {
+            const token = options.outputFilepath.split('/').pop()
+            socket.emit("end", token)
             resolve()
         })
         .on('error', (error) => reject(new Error(error)));
@@ -42,11 +46,24 @@ const writeLabel = (prefix, label) => {
     return `${label.toString()}`
 }
 
-const headerDownload = async (query) => {
+const deleteVideo = async (query) => {
+
+    await unlink(query, (err) => {
+        if (err) {
+            console.error(err)
+            return err
+        }})
+        console.log("ok")
+    
+}
+
+const headerDownload = async (socket, query) => {
     const view = util.getPhotoView(query.project);
     const minMax = await db.getMinMaxErp(query, view);
     const results = await db.getPhotoNames(query, view);
     const frames = results.rows;
+    count = 0;
+    socket.emit('head', {count: count, length: frames.length})
     let bytes = 0;
     for (const frame of frames) {
         const bucketParams = {
@@ -55,25 +72,26 @@ const headerDownload = async (query) => {
             };
         const response = await s3Client.send(new HeadObjectCommand(bucketParams))
         bytes += response.ContentLength
+        count += 1
+        socket.emit('head', {count: count, length: frames.length})
     }
-    return ({bytes: bytes, count: minMax.rows[0].length, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
+    return ({bytes: bytes, count: results.rowCount, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
 }
 
-const download = async (query) => {
-    const view = util.getPhotoView(query.project);
-    const results = await db.getPhotoNames(query, view);
+const download = async (socket) => {
+    const view = util.getPhotoView(socket.handshake.query.project);
+    const results = await db.getPhotoNames(socket.handshake.query, view);
     const frames = results.rows;
     let counter = 0;
     const label = {
-        side: query.side,
-        name: query.label,
-        cwid: query.cwid   
+        side: socket.handshake.query.side,
+        name: socket.handshake.query.label,
+        cwid: socket.handshake.query.cwid   
     }
     let minERP = Number.MAX_SAFE_INTEGER;
     let maxERP = Number.MIN_SAFE_INTEGER;
     const FILE_PREFIX = 'image'
     for (const frame of frames) {
-        //download
         const bucketParams = {
                 Bucket: BUCKET,
                 Key: `${PREFIX}/${frame.photo}.jpg`
@@ -82,6 +100,7 @@ const download = async (query) => {
         const response = await s3Client.send(new GetObjectCommand(bucketParams))
         const stream = response.Body
         const ws = createWriteStream(`./temp/images/${frame.photo}.jpg`);
+        socket.emit("photo")
         stream.pipe(ws)
         stream.on('error', (err) => {
             console.log(`error: ${err}`)
@@ -101,7 +120,6 @@ const download = async (query) => {
 
         //save file
         ws.on('close', async () => {
-            console.log(`./temp/images/${frame.photo}.jpg`)
             const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
             const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
             image.print(font, 10, 10, `${labelRoad}`);
@@ -124,22 +142,22 @@ const download = async (query) => {
         outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: './temp/images/image%04d.jpg'
     }
-    await stitch(options)
+    await stitch(socket, options)
     util.deleteFiles('./temp/images');
 }
 
 
-const getS3ObjectBuffer = async (params) => {
-    const response = await s3Client.send(new GetObjectCommand(params))
-    const stream = response.Body    
-        return new Promise((resolve, reject) => {
-            const chunks = []
-            stream.on('data', chunk => chunks.push(chunk))
-            stream.once('end', () => resolve(Buffer.concat(chunks)))
-            stream.once('error', reject)
-    })
+// const getS3ObjectBuffer = async (params) => {
+//     const response = await s3Client.send(new GetObjectCommand(params))
+//     const stream = response.Body    
+//         return new Promise((resolve, reject) => {
+//             const chunks = []
+//             stream.on('data', chunk => chunks.push(chunk))
+//             stream.once('end', () => resolve(Buffer.concat(chunks)))
+//             stream.once('error', reject)
+//     })
 
-}
+// }
 
 const changeSide = async (query) => {
     try {
@@ -226,6 +244,7 @@ const closestVideoPhoto = async (query) => {
 
 
 module.exports = {
+    deleteVideo,
     headerDownload,
     download,
     changeSide,

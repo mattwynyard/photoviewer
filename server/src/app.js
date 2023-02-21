@@ -58,19 +58,23 @@ if(environment === 'production') {
     });
     io.on('connection', async (socket) => {
       socket.on('header', async query => {
-        const header = await videoController.downloadHead(query)
+        const header = await videoController.downloadHead(socket, query)
         socket.emit("header", header)
       })
-      socket.on('download', async() => {
-        const data = await videoController.download(socket.handshake.query)
+      socket.on('download', async () => {
+        const data = await videoController.download(socket)
         socket.emit("download", data)
       })
+      socket.on('delete', async (file) => {
+        console.log("delete")
+        const data = await videoController.deleteVideo(file)
+      })
     })
-    io.on('errror',(socket) => {
-      console.log("disconnect")
+    io.on('error', (err) => {
+      console.log(err)
     })
     
-    io.on('disconnect',(socket) => {
+    io.on('disconnect', () => {
       console.log("disconnect")
     })
 }
@@ -113,7 +117,7 @@ app.get('/photos', videoController.photos);
 
 app.get('/closestvideophoto', videoController.closestVideoPhoto);
 
-app.get('/download', videoController.download);
+app.get('/download', videoController.downloadVideo);
 
 app.post('/user', async (req, res, next) => {
   const result = users.findUserToken(req.headers.authorization, req.body.user);

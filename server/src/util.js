@@ -65,10 +65,10 @@ const changeSide = (side) => {
 
 const deleteFiles = (directory) => {
     readdir(directory, (err, files) => {
-        if (err) throw err;
+        if (err) console.log(err);
         for (const file of files) {
             unlink(path.join(directory, file), (err) => {
-            if (err) throw err;
+            if (err) console.log(err);
           });
         }
       });
