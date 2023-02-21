@@ -1,55 +1,85 @@
-import { React, useRef, useState, useContext, useCallback, useEffect } from 'react';
+import { React, useRef, useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Card, CardContent, CardActions, Button, Typography } from '@mui/material';
-import { ProgressBar } from '../components/ProgressBar.jsx'
+import { Card, CardContent, CardActions, Button,} from '@mui/material';
+import { ProgressBar, ProgressBarIndeterminate } from '../components/Progress.jsx'
 import { setOpenDownload, setIsDownloading } from '../state/reducers/downloadSlice';
 import { AppContext} from '../context/AppContext';
 import './Downloader.css'
+import socketIOClient from "socket.io-client";
 
 export const Downloader = () => {
-
     const show = useSelector(state => state.download.showDownload)
     const req = useSelector(state => state.download.request)
-    const context = useContext(AppContext)
+    const { login } = useContext(AppContext)
     const dispatch = useDispatch()
     const cardRef = useRef(null);
-    const [progress] = useState(0);
+    const [progress] = useState({frames: 0, MB: 0});
+    const [downloadCount] = useState(0)
+    const [message, setMessage] = useState('')
+    const [header, setHeader] = useState(null)
     const [moving, setMoving] = useState(false);
     const [mouseDown, setMouseDown] = useState(false)
     const [mousePosition, setMousePosition] = useState(null);
+    const SERVER_URL = "https://localhost:8443";
+    const [socket, setSocket] = useState(null)
 
-    const download = useCallback(async (download) => {
-        console.log(download)
+    const progressPercent = useMemo(() => {
+        if (!header) return 0
+        return Math.round(((progress.MB / header.bytes) + Number.EPSILON) * 100) / 100
+    }, [progress, header])
+
+    const download = useCallback(async () => {
         if(!req) return;
-        dispatch(setIsDownloading(download))
-        const query = {
-            query: JSON.stringify(req),
-            download: download,
-          }
-        const queryParams = new URLSearchParams(query)
-            const response = await fetch(`https://${context.login.host}/download?${queryParams.toString()}`, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json', 
-            "authorization": context.login.token,       
-            },
-        });
-        const body = await response.json();
-        if (body.error) {
-            alert(response.status + " " + response.statusText);
-            return   
-        } else {
-            return body;
-        }   
+        dispatch(setIsDownloading(true))
+        socket.emit('download')
+
+        
+ 
     }, [req])
+
+    useEffect(() => {
+        if(!req) return
+        socket.emit("header", req)
+    }, [socket])
 
     useEffect(async () => {
         if(!req) return;
-        const body = await download(false)
-        console.log(body)
-    }, [req, download]);
+        setMessage("requesting query data....")
+        const socket = socketIOClient(SERVER_URL, {
+            cors: {
+              origin: "https://localhost:3000",
+              methods: ["GET", "HEAD"]
+            },
+            auth: {
+                token: login.token,
+                user: login.user
+            },
+            query: req
+          });
+        
+        socket.on("connect", () => {
+            setSocket(socket)
+            console.log("connected to server")
+        })
+        socket.on("header", (data) => {
+            const header = {
+                bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
+                frames: data.count,
+                min: data.minERP,
+                max: data.maxERP
+            }
+            setMessage('')
+            setHeader(header)
+        });
+        socket.on("connect_error", (err) => {
+            console.log(err instanceof Error); 
+            console.log(err.message); 
+            console.log(err.data); 
+          });
+        socket.on("disconnect", (reason) => {
+            console.log(`disconnect: ${reason}`); 
+        });
+    }, [req]);
 
     const mouseOverCard = useCallback(() => {
         cardRef.current.style.cursor = 'pointer';
@@ -90,11 +120,10 @@ export const Downloader = () => {
 
     const clickCancel = useCallback((e) => {
         e.preventDefault();
+        setHeader(null)
         dispatch(setOpenDownload({show:false, request: null}))
     },[dispatch])
 
-    
-    
     if (!req) return null;
     return (
         <Card 
@@ -109,16 +138,23 @@ export const Downloader = () => {
             <CardContent
                 className="card-body"
             >
-                <Typography component="div">{req.label}</Typography>
-                <ProgressBar value={progress}></ProgressBar>
-                
+                <b>{`${req.label} (${req.side === 'L' ? 'Left' : 'Right'})`}</b>
+                <p>{`carriage: ${req.cwid}`}</p>
+                {header ? <p>{`erp: ${header.min}-${header.max} m`}</p> : null}
+                {header ? <ProgressBar value={progressPercent}></ProgressBar> : <ProgressBarIndeterminate/>}
+                {<p className='message-text'>{`${message}`}</p>}
+                {header ? <p>{`${downloadCount}/${header.frames} frames ${header.bytes} MB`}
+                </p> : null}
             </CardContent>  
-            <CardActions>
-                <Button variant="outlined" onClick={() => download(true)}>Download</Button>
-                <Button 
-                    variant="outlined"
-                    onClick={(e) => clickCancel(e)}
-                    >Cancel</Button>
+            <CardActions className="card-actions">
+                <div>
+                <Button variant="outlined" disabled={!header} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
+                </div>
+                <div>
+                <Button variant="outlined" fullWidth={true} onClick={(e) => clickCancel(e)}>{`${'Cancel'}`}</Button>
+                </div>
+                
+                
             </CardActions>
         </Card>   
     );

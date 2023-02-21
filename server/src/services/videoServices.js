@@ -1,6 +1,6 @@
 const db = require('../db');
 const util = require('../util');
-const { GetObjectCommand } = require("@aws-sdk/client-s3");
+const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require('../s3Client.js');
 const { createWriteStream, unlink } = require('fs')
 const ffmpeg = require('fluent-ffmpeg');
@@ -42,17 +42,21 @@ const writeLabel = (prefix, label) => {
     return `${label.toString()}`
 }
 
-const headDownload = async (query) => {
+const headerDownload = async (query) => {
     const view = util.getPhotoView(query.project);
+    const minMax = await db.getMinMaxErp(query, view);
     const results = await db.getPhotoNames(query, view);
     const frames = results.rows;
-    let minERP = Number.MAX_SAFE_INTEGER;
-    let maxERP = Number.MIN_SAFE_INTEGER;
+    let bytes = 0;
     for (const frame of frames) {
-        if (frame.erp < minERP) minERP = frame.erp
-        if (frame.erp > maxERP) maxERP = frame.erp
+        const bucketParams = {
+                Bucket: BUCKET,
+                Key: `${PREFIX}/${frame.photo}.jpg`
+            };
+        const response = await s3Client.send(new HeadObjectCommand(bucketParams))
+        bytes += response.ContentLength
     }
-    return ({length: frames.length, minERP: minERP, maxERP: maxERP})
+    return ({bytes: bytes, count: minMax.rows[0].length, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
 }
 
 const download = async (query) => {
@@ -222,7 +226,7 @@ const closestVideoPhoto = async (query) => {
 
 
 module.exports = {
-    headDownload,
+    headerDownload,
     download,
     changeSide,
     photos,

@@ -698,6 +698,25 @@ module.exports = {
         });
     },
 
+    getMinMaxErp: (body, view) => {
+        let sql = null
+        if (body.side === null) {
+            sql = `SELECT count(id) as length, min(erp) as min, max(erp) as max from ${view} WHERE cwid = ${body.cwid} and tacode = ${body.tacode}`;
+        } else {
+            sql = `SELECT count(id) as length, min(erp) as min, max(erp) as max from ${view} WHERE cwid = ${body.cwid} and side = '${body.side}' and tacode = '${body.tacode}'`;
+        }
+        return new Promise((resolve, reject) => {
+            connection.query(sql, (err, result) => {
+                if (err) {
+                    console.error('Error executing query', err.stack)
+                    return reject(err);
+                }
+                let minmax = resolve(result);
+                return minmax;
+            });
+        });
+    },
+
     getPhotoNames: (body, view) => {
         let sql = null
         if (body.side === null) {
