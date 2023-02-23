@@ -205,6 +205,7 @@ export const Downloader = () => {
     const close = useCallback(() => {
         setHeader(null)
         setFrames(0)
+        setStatus(0)
         setProgress(0)
         setStatus({head: false, download: false})
         setMessage('')
