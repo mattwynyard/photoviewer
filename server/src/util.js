@@ -1,3 +1,6 @@
+const { readdir, unlink } = require('fs');
+const path = require('path');
+
 const getCentrelineView = (user) => {
     let view = null;
     switch (user) {
@@ -8,6 +11,16 @@ const getCentrelineView = (user) => {
             view = null      
     }
     return view;
+}
+
+const dateToISOString = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth()).padStart(2, '0')
+    const day = String(date.getDay()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    const second = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
 }
 
 const getFaultView = (user) => {
@@ -50,7 +63,20 @@ const changeSide = (side) => {
     }
 }
 
+const deleteFiles = (directory) => {
+    readdir(directory, (err, files) => {
+        if (err) console.log(err);
+        for (const file of files) {
+            unlink(path.join(directory, file), (err) => {
+            if (err) console.log(err);
+          });
+        }
+      });
+}
+
 module.exports = {
+    dateToISOString,
+    deleteFiles,
     getCentrelineView,
     getPhotoView,
     changeSide,

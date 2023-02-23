@@ -1,5 +1,5 @@
 import { Polygon } from 'react-leaflet';
-import React from 'react';
+import { React } from 'react';
 
 const buildLocationTriangle = (center, rotation, size) => {
     const points = [];
@@ -39,36 +39,22 @@ export const LeafletTriangle = (props) => {
             }}
         >
         </Polygon>
-
     );
 }
 
 export default function Location(props) {
     if (props.marker) {
-        const center = props.map.latLngToContainerPoint(props.marker.position[0]);
         return (
             <>
-            {/* <CircleMarker
-                center={props.marker.position[0]}
-                radius ={12}
-                pathOptions={{color: "grey"}}
-                stroke={true}
-                weight={1}
-                opacity={1}
-                fillColor={"grey"}
-                fillOpacity={0.8}
-            >
-            </CircleMarker> */}
             <LeafletTriangle  
                 data={props.marker.position[0]} 
                 bearing={props.marker.bearing}
                 radius={4} 
-                center={center} 
+                center={props.center} 
                 color={"blue"}
                 map={props.map}
             >   
             </LeafletTriangle>
-
             </>   
         ) 
     } else {

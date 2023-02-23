@@ -2,12 +2,14 @@ import React from 'react';
 import {ProgressBar }  from 'react-bootstrap';
 import L from 'leaflet';
 import './VideoCard.css';
+import { store } from '../state/store'
+import { AppContext } from '../context/AppContext';
 import {ReactComponent as PlayButton} from '../theme/svg/play_arrow_white_24dp.svg';
 import {ReactComponent as StopButton} from '../theme/svg/stop_white_24dp.svg';
 import {ReactComponent as FastForward} from '../theme/svg/fast_forward_white_24dp.svg';
 import {ReactComponent as FastRewind} from '../theme/svg/fast_rewind_white_24dp.svg';
 import {ReactComponent as Cancel} from '../theme/svg/close_24dp.svg';
-//import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
+import {ReactComponent as Download} from '../theme/svg/download_24dp.svg';
 import {ReactComponent as ToggleOn} from '../theme/svg/toggle_on_48dp.svg';
 import {ReactComponent as ToggleOff} from '../theme/svg/toggle_off_48dp.svg';
 
@@ -72,7 +74,8 @@ const IdText = function(props) {
     }
 }
 
-export default class VideoCard extends React.Component {
+export default class VideoController extends React.Component {
+    static contextType = AppContext;
     constructor(props) {
         super(props);
         this.state = {
@@ -82,16 +85,18 @@ export default class VideoCard extends React.Component {
             side: 'L',
             disabled: false,
             play: false,
-            //interval: 500,
+            initialised: false,
             errors: 0,
+           
         }
         this.delegate = props.parent;
         this.photoArray = null;
         this.index = 0;
         this.geometry = null;
         this.amazon = null;
-
     }
+
+
 
     getSide() {
         return this.state.side;
@@ -116,7 +121,7 @@ export default class VideoCard extends React.Component {
     refresh(photo, photoArray) {
         if (photoArray) this.photoArray = photoArray
         const index = this.photoArray.findIndex((element) => element.photo === photo.photo) 
-        if (index === -1) {
+        if (index === - 1) {
             alert("error - photo not found");
             return;
         }
@@ -194,10 +199,10 @@ export default class VideoCard extends React.Component {
         if (this.index < this.photoArray.length && this.index > 0) {
             this.setState({index: index});
             this.index  = index;
-            //console.log(index)
             let latlng = this.getLatLng(index);
-            this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
             this.props.centre(latlng.lat, latlng.lng, 16);
+            this.delegate.setState({carMarker: [{position: [latlng], bearing: this.photoArray[index].bearing}]});
+           
         } else {
             console.log("stop timer")
             clearInterval(this.timer)
@@ -257,6 +262,25 @@ export default class VideoCard extends React.Component {
         }     
     }
 
+    clickDownload = () => {
+        if (store.getState().download.showDownload) return
+        if (this.state.play) return
+        const downloadRequest = {
+            user: this.context.login.user,
+            project: this.props.project.code,
+            surface: this.props.project.surface,
+            cwid: this.photoArray[this.state.index].cwid,
+            side: this.state.side,
+            tacode: this.props.project.tacode,
+            amazon: this.props.project.amazon,
+            roadid: this.geometry.options.roadid,
+            label: this.geometry.options.label,
+        }
+        this.props.clickDownload(downloadRequest);
+    }
+
+
+
     render() {  
         if (this.state.show) {
             if (!this.photoArray) return null;
@@ -305,7 +329,7 @@ export default class VideoCard extends React.Component {
                             <FastForward className="controls-fastforward" onClick={this.clickFastForward}/>
                         </div>
                         <div className = "controls-action">
-                            {/* <Download className="controls-download" onClick={(e) => this.clickDownload(e)}/> */}
+                            <Download className="controls-download" onClick={this.clickDownload}/>
                             <Cancel className="controls-close" onClick={(e) => this.clickClose(e)}/>
                         </div>
                         
