@@ -250,7 +250,7 @@ export const Downloader = () => {
                 <Button variant="outlined" disabled={!header || status !== 2} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
                 </div>
                 <div>
-                <Button variant="outlined" disabled={status === 3 || status === 4} fullWidth={true} onClick={(e) => clickCancel(e)}>{status >= 4 ?  `${'Close'}` : `${'Cancel'}`}</Button>
+                <Button variant="outlined" disabled={status === 3 || status === 4} fullWidth={true} onClick={(e) => clickCancel(e)}>{status === 5 ?  `${'Close'}` : `${'Cancel'}`}</Button>
                 </div>
             </CardActions>
         </Card>   
