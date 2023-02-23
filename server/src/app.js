@@ -66,7 +66,6 @@ if(environment === 'production') {
         //socket.emit("download", data)
       })
       socket.on('delete', async (file) => {
-        console.log("delete")
         const data = await videoController.deleteVideo(file)
       })
     })

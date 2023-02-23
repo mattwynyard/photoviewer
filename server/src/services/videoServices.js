@@ -37,7 +37,10 @@ const stitch = async ( socket, options ) => {
             socket.emit("end", token)
             resolve()
         })
-        .on('error', (error) => reject(new Error(error)));
+        .on('error', (error) => {
+            socket.emit("error", error)
+            reject(new Error(error))
+        });
     });
 }
 
@@ -52,7 +55,7 @@ const deleteVideo = async (query) => {
             console.error(err)
             return err
         }})
-        console.log("ok") 
+        return false
 }
 
 const headerDownload = async (socket, query) => {
@@ -98,10 +101,18 @@ const download = async (socket) => {
         const response = await s3Client.send(new GetObjectCommand(bucketParams))
         const stream = response.Body
         const ws = createWriteStream(`./temp/images/${frame.photo}.jpg`);
-        socket.emit("photo")
+        
         stream.pipe(ws)
         stream.on('error', (err) => {
             console.log(`error: ${err}`)
+            return
+        });
+        let size = 0
+        stream.on('data', (chunk) => {
+            size += chunk.length
+        });
+        stream.on('end', () => {
+            socket.emit("photo", size)
         });
 
         //write label
@@ -141,7 +152,11 @@ const download = async (socket) => {
         inputFilepath: './temp/images/image%04d.jpg'
     }
     await stitch(socket, options)
-    util.deleteFiles('./temp/images');
+    try {
+        util.deleteFiles('./temp/images');
+    } catch (err) {
+        socket.emit("error", "error deleteing files")
+    }
     return "ok"
 }
 

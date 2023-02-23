@@ -15,7 +15,8 @@ const download = async (socket) => {
 }
 
 const deleteVideo = async (query) => {
-    await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);
+    const error = await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);
+    if (error) socket.emit("error", error)
 }
 
 const downloadVideo = async (req, res) => {
