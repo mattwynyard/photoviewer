@@ -2,10 +2,19 @@ import { React, useRef, useState, useContext, useCallback, useEffect} from 'reac
 import { useSelector, useDispatch } from 'react-redux';
 import { Card, CardContent, CardActions, Button,} from '@mui/material';
 import { ProgressBar, ProgressBarIndeterminate } from '../components/Progress.jsx'
-import { setOpenDownload, setIsDownloading} from '../state/reducers/downloadSlice';
+import { setOpenDownload } from '../state/reducers/downloadSlice';
 import { AppContext} from '../context/AppContext';
 import './Downloader.css'
 import socketIOClient from "socket.io-client";
+
+// status
+// -1: error
+// 0: not connected
+// 1: connected and requesting head
+// 2: connected and received head
+// 3: downloading
+// 4: finish
+
 
 export const Downloader = () => {
     const show = useSelector(state => state.download.showDownload)
@@ -13,7 +22,7 @@ export const Downloader = () => {
     const { login } = useContext(AppContext)
     const dispatch = useDispatch()
     const cardRef = useRef(null);
-    const [status, setStatus] = useState({head: false, download: false});
+    const [status, setStatus] = useState(0);
     const [progress, setProgress] = useState(0);
     const [frames, setFrames] = useState(0);
     const [targetSize, setTargetSize] = useState(0)
@@ -25,7 +34,7 @@ export const Downloader = () => {
     const SERVER_URL = "https://localhost:8443";
     const [socket, setSocket] = useState(null)
 
-    useEffect(async () => {
+    useEffect(() => {
         if(!req) return;
         setMessage("requesting download data....")
         const socket = socketIOClient(SERVER_URL, {
@@ -43,30 +52,44 @@ export const Downloader = () => {
         socket.on("connect", () => {
             if (header) return;
             setSocket(socket)
+            setStatus(1)
         })
-        socket.on("head", (frames)=> { //called everytime HEAD on photo
+        socket.on("head", (frames)=> { 
+            console.log("frame:" + frames)
             setMessage(`requesting metadata data... found ${frames.count}/${frames.length} frames`)       
         })
         socket.on("header", (data) => {
+            console.log("header " + data)
             const header = {
                 bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
                 frames: data.count,
                 min: data.minERP,
                 max: data.maxERP
             }
-            setMessage(`ready for download, esimated video size ${header.bytes} MB`)
+            setMessage(`ready for download, esimated video size ${Math.round(header.bytes)} MB`)
             setHeader(header)
             setFrames(0)
+            setStatus(2)
         });
         socket.on("connect_error", (err) => {
             console.log(err instanceof Error); 
             console.log(err.message); 
             console.log(err.data); 
+            setStatus(-1)
           });
         socket.on("disconnect", (reason) => {
             console.log(`disconnect: ${reason}`); 
+            setStatus(0)
+            setSocket(null)
         });
     }, [req]);
+
+    useEffect(() => {
+        if(!req) return
+        if(!socket) return
+        if(status.head || status.download) return
+        socket.emit("header", req)
+    }, [socket])
 
     const downloadVideo = useCallback(async (filename) => {
         const query = {
@@ -98,13 +121,15 @@ export const Downloader = () => {
           } finally {
             setMessage(`video file saved to downloads folder...`)
             socket.emit("delete", filename)
+            setStatus(4)
+            socket.disconnect()
+            setSocket(null)
           }   
     })
 
     const download = useCallback(async () => {
         if(!req) return;
-        dispatch(setIsDownloading(true))
-        setStatus({head: true, download: true})
+        setStatus(3)
         setMessage("downloading frames...")
         socket.emit('download')
         socket.on("photo", ()=> {
@@ -131,15 +156,8 @@ export const Downloader = () => {
         if(!header) return
         const progress = Math.round(((frames / header.frames) + Number.EPSILON) * 100)
         setProgress(progress)
-    }, [frames, header])
+    }, [frames])
 
-    useEffect(() => {
-        if(!req) return
-        if(!socket) return
-        if(status.head || status.download) return
-        setStatus({head: true, download: false})
-        socket.emit("header", req)
-    }, [req, socket])
 
 
     const mouseOverCard = useCallback(() => {
@@ -191,7 +209,7 @@ export const Downloader = () => {
             socket.disconnect()
             setSocket(null)
         }    
-    }, [socket])
+    }, [socket, dispatch])
 
     const clickCancel = useCallback((e) => {
         e.preventDefault();
@@ -199,6 +217,7 @@ export const Downloader = () => {
     },[])
 
     if (!req) return null;
+    console.log(status)
     return (
         <Card 
             ref={cardRef} 
@@ -224,10 +243,10 @@ export const Downloader = () => {
             </CardContent>  
             <CardActions className="card-actions">
                 <div>
-                <Button variant="outlined" disabled={!header || status.download} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
+                <Button variant="outlined" disabled={!header || status !== 2} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
                 </div>
                 <div>
-                <Button variant="outlined" fullWidth={true} onClick={(e) => clickCancel(e)}>{`${'Cancel'}`}</Button>
+                <Button variant="outlined" disabled={status === 3} fullWidth={true} onClick={(e) => clickCancel(e)}>{`${'Cancel'}`}</Button>
                 </div>
             </CardActions>
         </Card>   
