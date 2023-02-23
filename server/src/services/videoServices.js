@@ -47,14 +47,12 @@ const writeLabel = (prefix, label) => {
 }
 
 const deleteVideo = async (query) => {
-
     await unlink(query, (err) => {
         if (err) {
             console.error(err)
             return err
         }})
-        console.log("ok")
-    
+        console.log("ok") 
 }
 
 const headerDownload = async (socket, query) => {
@@ -121,7 +119,7 @@ const download = async (socket) => {
         //save file
         ws.on('close', async () => {
             const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
-            const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
+            const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
             image.print(font, 10, 10, `${labelRoad}`);
             image.print(font, 10, 30, `${labelCwid}`);
             image.print(font, 10, 50, `${labelSide}`);
@@ -144,6 +142,7 @@ const download = async (socket) => {
     }
     await stitch(socket, options)
     util.deleteFiles('./temp/images');
+    return "ok"
 }
 
 

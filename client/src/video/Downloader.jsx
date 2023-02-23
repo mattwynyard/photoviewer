@@ -13,7 +13,7 @@ export const Downloader = () => {
     const { login } = useContext(AppContext)
     const dispatch = useDispatch()
     const cardRef = useRef(null);
-    const [downloading, setDownloading] = useState(false);
+    const [status, setStatus] = useState({head: false, download: false});
     const [progress, setProgress] = useState(0);
     const [frames, setFrames] = useState(0);
     const [targetSize, setTargetSize] = useState(0)
@@ -25,7 +25,50 @@ export const Downloader = () => {
     const SERVER_URL = "https://localhost:8443";
     const [socket, setSocket] = useState(null)
 
-    const downloadVideo = useCallback( async (filename) => {
+    useEffect(async () => {
+        if(!req) return;
+        setMessage("requesting download data....")
+        const socket = socketIOClient(SERVER_URL, {
+            cors: {
+              origin: "https://localhost:3000",
+              methods: ["GET", "HEAD"]
+            },
+            auth: {
+                token: login.token,
+                user: login.user
+            },
+            query: req
+          });
+        
+        socket.on("connect", () => {
+            if (header) return;
+            setSocket(socket)
+        })
+        socket.on("head", (frames)=> { //called everytime HEAD on photo
+            setMessage(`requesting metadata data... found ${frames.count}/${frames.length} frames`)       
+        })
+        socket.on("header", (data) => {
+            const header = {
+                bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
+                frames: data.count,
+                min: data.minERP,
+                max: data.maxERP
+            }
+            setMessage(`ready for download, esimated video size ${header.bytes} MB`)
+            setHeader(header)
+            setFrames(0)
+        });
+        socket.on("connect_error", (err) => {
+            console.log(err instanceof Error); 
+            console.log(err.message); 
+            console.log(err.data); 
+          });
+        socket.on("disconnect", (reason) => {
+            console.log(`disconnect: ${reason}`); 
+        });
+    }, [req]);
+
+    const downloadVideo = useCallback(async (filename) => {
         const query = {
             user: login.user,
             filename: filename,
@@ -53,36 +96,36 @@ export const Downloader = () => {
           } catch (err) {
             console.log(err)
           } finally {
-            setMessage(`video file downloaded`)
+            setMessage(`video file saved to downloads folder...`)
             socket.emit("delete", filename)
-          }
-        
+          }   
     })
 
     const download = useCallback(async () => {
         if(!req) return;
         dispatch(setIsDownloading(true))
-        setDownloading(true)
+        setStatus({head: true, download: true})
         setMessage("downloading frames...")
         socket.emit('download')
         socket.on("photo", ()=> {
             setFrames(frames => frames + 1)  
         }) 
         socket.on("stitch", ()=> {
-            setMessage("building video...")       
+            setMessage("compiling video...")       
         })
         socket.on("progress", (data)=> {
+            console.log(data)
             if(!data) return
-            setMessage(`building video at ${data.currentFps} fps`)
+            setMessage(`compiling video at ${data.currentFps} fps`)
             setFrames(data.frames)
-            setTargetSize(data.targetSize / 100)
+            setTargetSize(data.targetSize / 1000)
               
         })
         socket.on("end", (filename) => {
             setMessage(`${filename} completed`)
             downloadVideo(filename)
         })
-    }, [header])
+    }, [header, socket])
 
     useEffect(() => {
         if(!header) return
@@ -93,52 +136,11 @@ export const Downloader = () => {
     useEffect(() => {
         if(!req) return
         if(!socket) return
-        if(downloading) return
+        if(status.head || status.download) return
+        setStatus({head: true, download: false})
         socket.emit("header", req)
-    }, [socket, req, downloading])
+    }, [req, socket])
 
-    useEffect(async () => {
-        if(!req) return;
-        setMessage("requesting download data....")
-        const socket = socketIOClient(SERVER_URL, {
-            cors: {
-              origin: "https://localhost:3000",
-              methods: ["GET", "HEAD"]
-            },
-            auth: {
-                token: login.token,
-                user: login.user
-            },
-            query: req
-          });
-        
-        socket.on("connect", () => {
-            if (header) return;
-            setSocket(socket)
-        })
-        socket.on("head", (frames)=> {
-            setMessage(`requesting metadata data: found ${frames.count}/${frames.length} frames`)       
-        })
-        socket.on("header", (data) => {
-            //if (header) return;
-            const header = {
-                bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
-                frames: data.count,
-                min: data.minERP,
-                max: data.maxERP
-            }
-            setMessage(`ready for download, esimated video size ${header.bytes} MB`)
-            setHeader(header)
-        });
-        socket.on("connect_error", (err) => {
-            console.log(err instanceof Error); 
-            console.log(err.message); 
-            console.log(err.data); 
-          });
-        socket.on("disconnect", (reason) => {
-            console.log(`disconnect: ${reason}`); 
-        });
-    }, [req]);
 
     const mouseOverCard = useCallback(() => {
         cardRef.current.style.cursor = 'pointer';
@@ -181,11 +183,15 @@ export const Downloader = () => {
         setHeader(null)
         setFrames(0)
         setProgress(0)
-        setDownloading(false)
+        setStatus({head: false, download: false})
         setMessage('')
-        if (socket) socket.disconnect()
+        setTargetSize(0)
         dispatch(setOpenDownload({show:false, request: null}))
-    }, [dispatch])
+        if (socket) {
+            socket.disconnect()
+            setSocket(null)
+        }    
+    }, [socket])
 
     const clickCancel = useCallback((e) => {
         e.preventDefault();
@@ -218,7 +224,7 @@ export const Downloader = () => {
             </CardContent>  
             <CardActions className="card-actions">
                 <div>
-                <Button variant="outlined" disabled={!header || downloading} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
+                <Button variant="outlined" disabled={!header || status.download} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
                 </div>
                 <div>
                 <Button variant="outlined" fullWidth={true} onClick={(e) => clickCancel(e)}>{`${'Cancel'}`}</Button>

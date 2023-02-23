@@ -10,8 +10,7 @@ const downloadHead = async (socket, query) => {
 }
 
 const download = async (socket) => {
-    const result =  await videoServices.download(socket);
-    console.log(result)
+    const result = await videoServices.download(socket);
     return result
 }
 
