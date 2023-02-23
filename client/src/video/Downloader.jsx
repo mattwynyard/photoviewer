@@ -13,7 +13,8 @@ import socketIOClient from "socket.io-client";
 // 1: connected and requesting head
 // 2: connected and received head
 // 3: downloading
-// 4: finish
+// 4 : compiling
+// 5: finish
 
 
 export const Downloader = () => {
@@ -119,7 +120,7 @@ export const Downloader = () => {
           } finally {
             setMessage(`video file saved to downloads folder...`)
             socket.emit("delete", filename)
-            setStatus(4)
+            setStatus(5)
             socket.disconnect()
             setSocket(null)
           }   
@@ -131,15 +132,13 @@ export const Downloader = () => {
         setMessage("downloading frames...")
         socket.emit('download')
         socket.on("photo", (size)=> {
-            
-            //const size = data 
-            //console.log(size)
             const sizeMB = size / 1000000
             setTargetSize(targetSize => Math.round(((targetSize += sizeMB)  + Number.EPSILON) * 100) / 100)//MB
             setFrames(frames => frames + 1)  
         }) 
         socket.on("stitch", ()=> {
-            setMessage("compiling video...")       
+            setMessage("compiling video...")  
+            setStatus(4)     
         })
         //bug only fires on first download
         // socket.on("progress", (data)=> {
@@ -150,7 +149,6 @@ export const Downloader = () => {
               
         // })
         socket.on("end", (filename) => {
-            console.log("targetsize: " + targetSize)
             setMessage(`${filename} completed`)
             downloadVideo(filename)
         })
@@ -240,7 +238,7 @@ export const Downloader = () => {
                 <b>{`${req.label} (${req.side === 'L' ? 'Left' : 'Right'})`}</b>
                 <p>{`carriage: ${req.cwid}`}</p>
                 {header ? <p>{`erp: ${header.min}-${header.max} m`}</p> : null}
-                {header ? <ProgressBar value={progress}></ProgressBar> : <ProgressBarIndeterminate/>}
+                {(header || status !== 4) ? <ProgressBar value={progress}></ProgressBar> : <ProgressBarIndeterminate/>}
                 {<p className='message-text'>{`${message}`}</p>}
                 {header ? <p className='message-text'>{`received ${frames}/${header.frames} frames`}
                 </p> : null}
@@ -252,7 +250,7 @@ export const Downloader = () => {
                 <Button variant="outlined" disabled={!header || status !== 2} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
                 </div>
                 <div>
-                <Button variant="outlined" disabled={status === 3} fullWidth={true} onClick={(e) => clickCancel(e)}>{`${'Cancel'}`}</Button>
+                <Button variant="outlined" disabled={status === 3 || status === 4} fullWidth={true} onClick={(e) => clickCancel(e)}>{status >= 4 ?  `${'Close'}` : `${'Cancel'}`}</Button>
                 </div>
             </CardActions>
         </Card>   

@@ -11,7 +11,6 @@ const BUCKET= 'onsitenz';
 const PREFIX = 'taranaki/roads/2022_10'
 
 const stitch = async ( socket, options ) => {
-    socket.emit("stitch")
     await new Promise((resolve, reject) => {
         ffmpeg()
         .input(options.inputFilepath)
@@ -25,10 +24,10 @@ const stitch = async ( socket, options ) => {
         .noAudio()
         .fps(options.frameRate)
         .saveToFile(options.outputFilepath)
-        .on('progress', function(progress) {
-            socket.emit("progress", progress)
-            console.log('Processing: ' + progress.percent + '% done');
-        })
+        // .on('progress', function(progress) {
+        //     socket.emit("progress", progress)
+        //     console.log('Processing: ' + progress.percent + '% done');
+        // })
         .on('stderr', function(stderrLine) {
             console.log('Stderr output: ' + stderrLine);
         })
@@ -151,6 +150,7 @@ const download = async (socket) => {
         outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: './temp/images/image%04d.jpg'
     }
+    socket.emit("stitch")
     await stitch(socket, options)
     try {
         util.deleteFiles('./temp/images');
