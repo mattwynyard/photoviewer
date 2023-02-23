@@ -54,12 +54,10 @@ export const Downloader = () => {
             setSocket(socket)
             setStatus(1)
         })
-        socket.on("head", (frames)=> { 
-            console.log("frame:" + frames)
-            setMessage(`requesting metadata data... found ${frames.count}/${frames.length} frames`)       
+        socket.on("head", (head)=> { 
+            setMessage(`requesting metadata data... found ${head.count}/${head.length} frames`)       
         })
         socket.on("header", (data) => {
-            console.log("header " + data)
             const header = {
                 bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
                 frames: data.count,
@@ -132,23 +130,32 @@ export const Downloader = () => {
         setStatus(3)
         setMessage("downloading frames...")
         socket.emit('download')
-        socket.on("photo", ()=> {
+        socket.on("photo", (size)=> {
+            
+            //const size = data 
+            //console.log(size)
+            const sizeMB = size / 1000000
+            setTargetSize(targetSize => Math.round(((targetSize += sizeMB)  + Number.EPSILON) * 100) / 100)//MB
             setFrames(frames => frames + 1)  
         }) 
         socket.on("stitch", ()=> {
             setMessage("compiling video...")       
         })
-        socket.on("progress", (data)=> {
-            console.log(data)
-            if(!data) return
-            setMessage(`compiling video at ${data.currentFps} fps`)
-            setFrames(data.frames)
-            setTargetSize(data.targetSize / 1000)
+        //bug only fires on first download
+        // socket.on("progress", (data)=> {
+        //     if(!data) return
+        //     setMessage(`compiling video at ${data.currentFps} fps`)
+        //     setFrames(data.frames)
+        //     setTargetSize(data.targetSize / 1000)
               
-        })
+        // })
         socket.on("end", (filename) => {
+            console.log("targetsize: " + targetSize)
             setMessage(`${filename} completed`)
             downloadVideo(filename)
+        })
+        socket.on("error", (error) => {
+            console.log(error)
         })
     }, [header, socket])
 
@@ -217,7 +224,6 @@ export const Downloader = () => {
     },[])
 
     if (!req) return null;
-    console.log(status)
     return (
         <Card 
             ref={cardRef} 
