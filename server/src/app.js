@@ -25,8 +25,7 @@ const securityServices = require('./services/securityServices');
 if(environment === 'production') {
   const http = require('http');
   const server = http.createServer(app).listen(proxy_port, () => {
-    console.log(`Listening: http://${host}:${proxy_port}`);
-  });
+  console.log(`Listening: http://${host}:${proxy_port}`);
 } else {
   const https = require('https');
   const options = {
