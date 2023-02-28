@@ -5,12 +5,13 @@ const { s3Client } = require('../s3Client.js');
 const { createWriteStream, unlink } = require('fs')
 const ffmpeg = require('fluent-ffmpeg');
 const Jimp = require('jimp') ;
-//const path = require("path");
 
+const FILE_PREFIX = 'image'
 const BUCKET= 'onsitenz';
 const PREFIX = 'taranaki/roads/2022_10'
 
-const stitch = async ( socket, options ) => {
+const stitch = async (socket, options) => {
+    socket.emit("stitch")
     await new Promise((resolve, reject) => {
         ffmpeg()
         .input(options.inputFilepath)
@@ -29,18 +30,51 @@ const stitch = async ( socket, options ) => {
         //     console.log('Processing: ' + progress.percent + '% done');
         // })
         .on('stderr', function(stderrLine) {
-            console.log('Stderr output: ' + stderrLine);
+            //console.log('Stderr output: ' + stderrLine);
         })
         .on('end', () => {
             const token = options.outputFilepath.split('/').pop()
-            socket.emit("end", token)
-            resolve()
+            resolve(token)
         })
         .on('error', (error) => {
             socket.emit("error", error)
             reject(new Error(error))
         });
     });
+}
+
+const label = async () => {
+    try {
+                    
+        console.log("read")
+        label.erp = frame.erp
+        if (frame.erp < minERP) minERP = frame.erp
+        if (frame.erp > maxERP) maxERP = frame.erp
+        label.datetime = util.dateToISOString(new Date(frame.datetime))
+        const labelRoad = writeLabel(null, label.name)
+        const labelCwid = writeLabel('carriage:', label.cwid)
+        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
+        const labelDateTime = writeLabel(null, label.datetime)
+        const labelErp = writeLabel('erp:', label.erp)
+        const index = String(counter).padStart(4, "0")
+        const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
+        const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
+        image.print(font, 10, 10, `${labelRoad}`);
+        image.print(font, 10, 30, `${labelCwid}`);
+        image.print(font, 10, 50, `${labelSide}`);
+        image.print(font, 10, 70, `${labelErp} m`);
+        image.print(font, 10, 90, `${labelDateTime}`);
+        
+        await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
+        console.log("write")
+        // await unlink(`./temp/images/${frame.photo}.jpg`, (err) => {
+        //     if (err) {
+        //     console.error(err)
+        //     }
+        // })
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 const writeLabel = (prefix, label) => {
@@ -78,11 +112,38 @@ const headerDownload = async (socket, query) => {
     return ({bytes: bytes, count: results.rowCount, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
 }
 
+const writeImageFromS3 = async(frame, index) => {
+    return new Promise(async (resolve, reject) => {
+        let size = 0
+        const bucketParams = {
+            Bucket: BUCKET,
+            Key: `${PREFIX}/${frame.photo}.jpg`
+        };   
+        const response = await s3Client.send(new GetObjectCommand(bucketParams))
+        const stream = response.Body
+        //const ws = await createWriteStream(`./temp/images/${frame.photo}.jpg`);  
+        const ws = await createWriteStream(`./temp/images/${FILE_PREFIX}${index}.jpg`);  
+        stream.pipe(ws)
+
+        stream.on('error', (err) => {
+            console.log(`error: ${err}`)
+            reject(0)
+        }); 
+        stream.on('data', (chunk) => {
+            size += chunk.length
+        });
+        stream.on('end', () => {
+        }); 
+        ws.on('close', async () => {
+            resolve(size)
+        })
+    })
+}
+
 const download = async (socket) => {
     const view = util.getPhotoView(socket.handshake.query.project);
     const results = await db.getPhotoNames(socket.handshake.query, view);
     const frames = results.rows;
-    let counter = 0;
     const label = {
         side: socket.handshake.query.side,
         name: socket.handshake.query.label,
@@ -90,88 +151,36 @@ const download = async (socket) => {
     }
     let minERP = Number.MAX_SAFE_INTEGER;
     let maxERP = Number.MIN_SAFE_INTEGER;
-    const FILE_PREFIX = 'image'
-    for (const frame of frames) {
-        const bucketParams = {
-                Bucket: BUCKET,
-                Key: `${PREFIX}/${frame.photo}.jpg`
-            };
-          
-        const response = await s3Client.send(new GetObjectCommand(bucketParams))
-        const stream = response.Body
-        const ws = createWriteStream(`./temp/images/${frame.photo}.jpg`);
-        
-        stream.pipe(ws)
-        stream.on('error', (err) => {
-            console.log(`error: ${err}`)
-            return
-        });
-        let size = 0
-        stream.on('data', (chunk) => {
-            size += chunk.length
-        });
-        stream.on('end', () => {
-            socket.emit("photo", size)
-        });
-
-        //write label
-        label.erp = frame.erp
-        if (frame.erp < minERP) minERP = frame.erp
-        if (frame.erp > maxERP) maxERP = frame.erp
-        label.datetime = util.dateToISOString(new Date(frame.datetime))
-        const labelRoad = writeLabel(null, label.name)
-        const labelCwid = writeLabel('carriage:', label.cwid)
-        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
-        const labelDateTime = writeLabel(null, label.datetime)
-        const labelErp = writeLabel('erp:', label.erp)
-        const index = String(counter).padStart(4, "0")
-
-        //save file
-        ws.on('close', async () => {
-            const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
-            const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
+    try {
+        for (let i = 0; i < frames.length; i++) {
+            const index = String(i).padStart(4, "0")
+            const size = await writeImageFromS3(frames[i], index)
+            label.datetime = util.dateToISOString(new Date(frames[i].datetime))
+            const labelRoad = writeLabel(null, label.name)
+            const labelCwid = writeLabel('carriage:', label.cwid)
+            const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
+            const labelDateTime = writeLabel(null, label.datetime)
+            const labelErp = writeLabel('erp:', label.erp)
+            const image = await Jimp.read(`./temp/images/${FILE_PREFIX}${index}.jpg`)
+            const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
             image.print(font, 10, 10, `${labelRoad}`);
             image.print(font, 10, 30, `${labelCwid}`);
             image.print(font, 10, 50, `${labelSide}`);
             image.print(font, 10, 70, `${labelErp} m`);
             image.print(font, 10, 90, `${labelDateTime}`);
-            await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`);
-            await unlink(`./temp/images/${frame.photo}.jpg`, (err) => {
-                if (err) {
-                  console.error(err)
-                  return
-                }})
-        })
-        counter++;  
-    }
-    const options = {
+            await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
+            socket.emit("photo", size)
+        }    
+    } catch (err) {
+        console.log(err)
+    } 
+    return {
         frameRate: 2,
         //duration: frames / 2,
         outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: './temp/images/image%04d.jpg'
-    }
-    socket.emit("stitch")
-    await stitch(socket, options)
-    try {
-        util.deleteFiles('./temp/images');
-    } catch (err) {
-        socket.emit("error", "error deleteing files")
-    }
-    return "ok"
+    } 
 }
-
-
-// const getS3ObjectBuffer = async (params) => {
-//     const response = await s3Client.send(new GetObjectCommand(params))
-//     const stream = response.Body    
-//         return new Promise((resolve, reject) => {
-//             const chunks = []
-//             stream.on('data', chunk => chunks.push(chunk))
-//             stream.once('end', () => resolve(Buffer.concat(chunks)))
-//             stream.once('error', reject)
-//     })
-
-// }
 
 const changeSide = async (query) => {
     try {
@@ -260,6 +269,7 @@ const closestVideoPhoto = async (query) => {
 module.exports = {
     deleteVideo,
     headerDownload,
+    stitch,
     download,
     changeSide,
     photos,

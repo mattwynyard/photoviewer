@@ -32,15 +32,18 @@ export const Downloader = () => {
     const [moving, setMoving] = useState(false);
     const [mouseDown, setMouseDown] = useState(false)
     const [mousePosition, setMousePosition] = useState(null);
-    const SERVER_URL = "https://localhost:8443";
+
+    const SERVER_URL =`https://${login.host}`
     const [socket, setSocket] = useState(null)
 
     useEffect(() => {
         if(!req) return;
         setMessage("requesting download data....")
         const socket = socketIOClient(SERVER_URL, {
+            path: '/socket.io/',
+            secure: true,
             cors: {
-              origin: "https://localhost:3000",
+              origin: `https://${login.host}`,
               methods: ["GET", "HEAD"]
             },
             auth: {
@@ -56,7 +59,7 @@ export const Downloader = () => {
             setStatus(1)
         })
         socket.on("head", (head)=> { 
-            setMessage(`requesting metadata data... found ${head.count}/${head.length} frames`)       
+            setMessage(`requesting metadata... found ${head.count}/${head.length} frames`)       
         })
         socket.on("header", (data) => {
             const header = {
@@ -162,8 +165,6 @@ export const Downloader = () => {
         const progress = Math.round(((frames / header.frames) + Number.EPSILON) * 100)
         setProgress(progress)
     }, [frames])
-
-
 
     const mouseOverCard = useCallback(() => {
         cardRef.current.style.cursor = 'pointer';

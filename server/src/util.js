@@ -74,7 +74,14 @@ const deleteFiles = (directory) => {
       });
 }
 
+const wait = async (ms) => {
+    console.log('start timer');
+    await new Promise(resolve => setTimeout(resolve, ms));
+    console.log('after 1 second');
+  }
+
 module.exports = {
+    wait,
     dateToISOString,
     deleteFiles,
     getCentrelineView,

@@ -1,18 +1,39 @@
 const securityServices = require('../services/securityServices');
 const videoServices = require('../services/videoServices');
+const { deleteFiles } = require('../util');
 
 const VIDEO_PATH = './temp/video/'
 
 const downloadHead = async (socket, query) => {
     const result =  await videoServices.headerDownload(socket, query);
-    console.log(result)
     return result
 }
 
 const download = async (socket) => {
-    const result = await videoServices.download(socket);
-    return result
+    const options = await videoServices.download(socket);
+    console.log(options)
+    if (options) return options
+    // if (options) {
+    //     const path = await videoServices.stitch(socket, options);
+    //     console.log(path)
+    //     if (path) {
+    //         socket.emit("end", path)
+    //     }
+    // }
+    // try {
+    //     deleteFiles('./temp/images');
+    // } catch (err) {
+    //     console.log(err)
+    //     //socket.emit("error", "error deleteing files")
+    // }
 }
+
+// const stitch = async (socket) => {
+    
+//     console.log(result)
+//     socket.emit("end", result)
+//     return result
+// }
 
 const deleteVideo = async (query) => {
     const error = await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);

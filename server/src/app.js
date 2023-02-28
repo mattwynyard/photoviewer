@@ -21,63 +21,70 @@ const securityController = require('./controllers/securityController');
 const geometryController = require('./controllers/geometryController');
 const videoController = require('./controllers/videoController');
 const securityServices = require('./services/securityServices');
+let server = null;
 
 if(environment === 'production') {
   const http = require('http');
-  const server = http.createServer(app).listen(proxy_port, () => {
-  console.log(`Listening: http://${host}:${proxy_port}`);
+  server = http.createServer(app).listen(proxy_port, () => {
+    console.log(`Listening: http://${host}:${proxy_port}`);
+  })
 } else {
   const https = require('https');
   const options = {
     key: fs.readFileSync('./server.key', 'utf8'),
     cert: fs.readFileSync('./server.cert', 'utf8')
   }
-  const server = https.createServer(options, app).listen(port, () => {
+  server = https.createServer(options, app).listen(port, () => {
     console.log(`Listening: https://${host}:${port}`);
-    });
-    const io = new Server(server, {
-      cors: {
-        origin: true,
-        methods: ["GET", "HEAD"]
-      }
-    })
-    io.use(async (socket, next) => {
-      try {
-        const security = await securityServices.isAuthorized(socket.handshake.auth.user, 
-          socket.handshake.query.project, socket.handshake.auth.token);
-        if (!security) {
-          socket.disconnect()
-          next(new Error({error: "invalid credentials"}));
-        } else {
-          next()
-        }
-      } catch (err) {
-        console.log(err)
-      }
-    });
-    io.on('connection', async (socket) => {
-      socket.on('header', async query => {
-        const header = await videoController.downloadHead(socket, query)
-        socket.emit("header", header)
-      })
-      socket.on('download', async () => {
-        const data = await videoController.download(socket)
-        //socket.emit("download", data)
-      })
-      socket.on('delete', async (file) => {
-        const data = await videoController.deleteVideo(file)
-      })
-    })
-    io.on('error', (err) => {
-      console.log(err)
-    })
-    
-    io.on('disconnect', () => {
-      console.log("disconnect")
-    })
+  });
 }
+const io = new Server(server, {
+  cors: {
+    origin: ["https://osmium.nz", "http://localhost:3000"],
+    methods: ["GET", "HEAD"],
+  },
+  secure: true,
 
+})
+io.use(async (socket, next) => {
+  try {
+    const security = await securityServices.isAuthorized(socket.handshake.auth.user, 
+      socket.handshake.query.project, socket.handshake.auth.token);
+    if (!security) {
+      socket.disconnect()
+      next(new Error({error: "invalid credentials"}));
+    } else {
+      next()
+    }
+  } catch (err) {
+    console.log(err)
+  }
+});
+io.on('connection', async (socket) => {
+  socket.on('header', async query => {
+    const header = await videoController.downloadHead(socket, query)
+    socket.emit("header", header)
+  })
+  socket.on('download', async () => {
+    const result = await videoController.download(socket)
+    socket.emit("download", result)
+  })
+  socket.on('delete', async (file) => {
+    const data = await videoController.deleteVideo(file)
+    //send to log 
+  })
+  // socket.on('stitch', async () => {
+  //   const data = await videoController.stitch(socket)
+  //   //send to log 
+  // })
+})
+io.on('error', (err) => {
+  console.log(err)
+})
 
+io.on('disconnect', () => {
+  console.log("disconnect")
+})
 
 console.log("mode: " + environment);
 app.use(cors());
