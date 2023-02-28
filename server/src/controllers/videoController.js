@@ -11,33 +11,27 @@ const downloadHead = async (socket, query) => {
 
 const download = async (socket) => {
     const options = await videoServices.download(socket);
-    console.log(options)
-    if (options) return options
-    // if (options) {
-    //     const path = await videoServices.stitch(socket, options);
-    //     console.log(path)
-    //     if (path) {
-    //         socket.emit("end", path)
-    //     }
-    // }
-    // try {
-    //     deleteFiles('./temp/images');
-    // } catch (err) {
-    //     console.log(err)
-    //     //socket.emit("error", "error deleteing files")
-    // }
+    if (options) {
+        const path = await videoServices.stitch(socket, options);
+        try {
+            deleteFiles('./temp/images');
+        } catch (err) {
+            console.log(err) ////error deleting
+        }
+        if (path) {
+            return path
+        } else {
+            deleteFiles('./temp/images');
+            return null //error stitching
+        }
+    } else {
+        deleteFiles('./temp/images');
+        return null //error downloading
+    }
 }
 
-// const stitch = async (socket) => {
-    
-//     console.log(result)
-//     socket.emit("end", result)
-//     return result
-// }
-
 const deleteVideo = async (query) => {
-    const error = await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);
-    if (error) socket.emit("error", error)
+    await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);
 }
 
 const downloadVideo = async (req, res) => {

@@ -152,8 +152,13 @@ export const Downloader = () => {
               
         // })
         socket.on("end", (filename) => {
-            setMessage(`${filename} completed`)
-            downloadVideo(filename)
+            if (filename) {
+                setMessage(`${filename} completed`)
+                downloadVideo(filename)
+            } else {
+                setMessage(`error`)
+            }
+            
         })
         socket.on("error", (error) => {
             console.log(error)

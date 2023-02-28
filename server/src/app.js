@@ -67,16 +67,12 @@ io.on('connection', async (socket) => {
   })
   socket.on('download', async () => {
     const result = await videoController.download(socket)
-    socket.emit("download", result)
+    socket.emit("end", result)
   })
-  socket.on('delete', async (file) => {
-    const data = await videoController.deleteVideo(file)
-    //send to log 
+  socket.on('delete', async (query) => {
+    const result = await videoController.deleteVideo(query)
   })
-  // socket.on('stitch', async () => {
-  //   const data = await videoController.stitch(socket)
-  //   //send to log 
-  // })
+
 })
 io.on('error', (err) => {
   console.log(err)

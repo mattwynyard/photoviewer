@@ -3,7 +3,9 @@ const util = require('../util');
 const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require('../s3Client.js');
 const { createWriteStream, unlink } = require('fs')
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
 const Jimp = require('jimp') ;
 
 const FILE_PREFIX = 'image'
@@ -12,7 +14,7 @@ const PREFIX = 'taranaki/roads/2022_10'
 
 const stitch = async (socket, options) => {
     socket.emit("stitch")
-    await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
         ffmpeg()
         .input(options.inputFilepath)
         .inputOptions([
@@ -37,44 +39,11 @@ const stitch = async (socket, options) => {
             resolve(token)
         })
         .on('error', (error) => {
-            socket.emit("error", error)
-            reject(new Error(error))
+            console.log(error)
+            //socket.emit("error", error)
+            reject()
         });
     });
-}
-
-const label = async () => {
-    try {
-                    
-        console.log("read")
-        label.erp = frame.erp
-        if (frame.erp < minERP) minERP = frame.erp
-        if (frame.erp > maxERP) maxERP = frame.erp
-        label.datetime = util.dateToISOString(new Date(frame.datetime))
-        const labelRoad = writeLabel(null, label.name)
-        const labelCwid = writeLabel('carriage:', label.cwid)
-        const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
-        const labelDateTime = writeLabel(null, label.datetime)
-        const labelErp = writeLabel('erp:', label.erp)
-        const index = String(counter).padStart(4, "0")
-        const image = await Jimp.read(`./temp/images/${frame.photo}.jpg`)
-        const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
-        image.print(font, 10, 10, `${labelRoad}`);
-        image.print(font, 10, 30, `${labelCwid}`);
-        image.print(font, 10, 50, `${labelSide}`);
-        image.print(font, 10, 70, `${labelErp} m`);
-        image.print(font, 10, 90, `${labelDateTime}`);
-        
-        await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
-        console.log("write")
-        // await unlink(`./temp/images/${frame.photo}.jpg`, (err) => {
-        //     if (err) {
-        //     console.error(err)
-        //     }
-        // })
-    } catch (err) {
-        console.log(err)
-    }
 }
 
 const writeLabel = (prefix, label) => {
@@ -86,9 +55,7 @@ const deleteVideo = async (query) => {
     await unlink(query, (err) => {
         if (err) {
             console.error(err)
-            return err
         }})
-        return false
 }
 
 const headerDownload = async (socket, query) => {
@@ -155,12 +122,14 @@ const download = async (socket) => {
         for (let i = 0; i < frames.length; i++) {
             const index = String(i).padStart(4, "0")
             const size = await writeImageFromS3(frames[i], index)
+            if (frames[i].erp < minERP) minERP = frames[i].erp
+            if (frames[i].erp > maxERP) maxERP = frames[i].erp
             label.datetime = util.dateToISOString(new Date(frames[i].datetime))
             const labelRoad = writeLabel(null, label.name)
             const labelCwid = writeLabel('carriage:', label.cwid)
             const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
             const labelDateTime = writeLabel(null, label.datetime)
-            const labelErp = writeLabel('erp:', label.erp)
+            const labelErp = writeLabel('erp:', frames[i].erp)
             const image = await Jimp.read(`./temp/images/${FILE_PREFIX}${index}.jpg`)
             const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
             image.print(font, 10, 10, `${labelRoad}`);
@@ -170,16 +139,17 @@ const download = async (socket) => {
             image.print(font, 10, 90, `${labelDateTime}`);
             await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
             socket.emit("photo", size)
-        }    
+        }
+        return {
+            frameRate: 2,
+            //duration: frames / 2,
+            outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
+            inputFilepath: './temp/images/image%04d.jpg'
+        }     
     } catch (err) {
         console.log(err)
-    } 
-    return {
-        frameRate: 2,
-        //duration: frames / 2,
-        outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
-        inputFilepath: './temp/images/image%04d.jpg'
-    } 
+        return null
+    }   
 }
 
 const changeSide = async (query) => {

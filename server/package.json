@@ -21,6 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.266.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "axios": "^0.21.4",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.20.1",
