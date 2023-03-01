@@ -1,4 +1,4 @@
-const setFootpathRatingColours = (data, value) => {
+const setFootpathRatingColours = (data) => {
     let colors = {r: null, g: null, b: null, a: null};
     let _alpha = 1;
     switch(data.grade) {
@@ -157,9 +157,9 @@ const setFootpathRatingColours = (data, value) => {
       colors.b = 0.5;
       colors.a = ALPHA;
     } else if (geometry.status === "completed") {
-      colors.r = 0.75;
-      colors.g = 0.75;
-      colors.b = 0.75;
+      colors.r = 0.6;
+      colors.g = 0.6;
+      colors.b = 0.6;
       colors.a = ALPHA;
     } else {
       colors.r = 1.0;

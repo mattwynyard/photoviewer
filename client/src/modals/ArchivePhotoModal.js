@@ -85,7 +85,7 @@ export default class ArchivePhotoModal extends React.Component {
       await this.delegate.getArchiveData(newPhoto);
     }
       
-    closePhotoModal(e) {
+    closePhotoModal() {
         this.setState({show: false});     
     }
 

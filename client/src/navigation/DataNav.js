@@ -52,7 +52,7 @@ export default function DataNav(props) {
         downloadCSV(csvContent, fileName, 'text/csv;encoding:utf-8');
     }
 
-    const closeModal = (e) => {
+    const closeModal = () => {
         setshow(false)
     }
 

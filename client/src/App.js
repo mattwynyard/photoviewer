@@ -9,7 +9,7 @@ import './gl/L.CanvasOverlay';
 import GLEngine from './gl/GLEngine.js';
 import './PositionControl';
 import PhotoModal from './photo/PhotoModal.js';
-import VideoCard from './video/VideoCard.js';
+import VideoController from './video/VideoController.jsx';
 import ArchivePhotoModal from './modals/ArchivePhotoModal.js';
 import { calcGCDistance } from  './util.js';
 import DataTable from "./data/DataTable.js"
@@ -23,9 +23,15 @@ import { LayerManager } from './layers/LayerManager';
 import { store } from './state/store'
 import { connect } from 'react-redux'
 import { addLayer } from './state/reducers/layersSlice'
+import { setClassName, setCentre } from './state/reducers/mapSlice'
+import { setOpenDownload } from './state/reducers/downloadSlice'
+import { setIsOpen } from './state/reducers/videoSlice';
+import { leafletPolylineFromGeometry} from './model/photoCentreline';
+import Location  from './theme/Location'
+import { Downloader } from './video/Downloader';
 
 const DIST_TOLERANCE = 20; //metres 
-const ERP_DIST_TOLERANCE = 0.00004;
+//const ERP_DIST_TOLERANCE = 0.00004;
 
 const DefaultIcon = L.icon({
   iconUrl: './OpenCamera20px.png',
@@ -33,7 +39,6 @@ const DefaultIcon = L.icon({
   iconAnchor: [8, 8]
 }); 
 const dispatch = store.dispatch
-
 class App extends React.Component {
   static contextType = AppContext;
   
@@ -41,12 +46,13 @@ class App extends React.Component {
 
     super(props);
     this.state = JSON.parse(window.sessionStorage.getItem('state')) || {
-      ruler: false,
-      rulerOrigin: null,
-      rulerPolyline: null,
-      rulerDistance: 0,
-      showRuler: false,
-      priorityDropdown: null,
+      // ruler: false,
+      // rulerOrigin: null,
+      // rulerPolyline: null,
+      // rulerDistance: 0,
+      // showRuler: false,
+      //priorityDropdown: null,
+      showDownload: false,
       priorities: [], 
       filterPriorities: [],
       filterRMClass: [],
@@ -64,7 +70,6 @@ class App extends React.Component {
       carMarker: [], //position of current image in video
       layers: [],
       show: false,
-      showVideo: false,  
       showAdmin: false,
       modalPhoto: null,
       popover: false,
@@ -89,10 +94,9 @@ class App extends React.Component {
       dataActive: false,
       showPhotoViewer: false,
       imageUrl: null,
-      video : false,
-      isVideoOpen: false
+      bearing: 0,
+      mouseOverMap: false
     }; 
-    //this.customModal = React.createRef();
     this.search = React.createRef();
     this.photoModal = React.createRef();
     this.archivePhotoModal = React.createRef();
@@ -102,7 +106,6 @@ class App extends React.Component {
     this.searchRef = React.createRef();
     this.applyRef = React.createRef();
     this.notificationRef = React.createRef();
-    //this.popupRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
   }
@@ -119,6 +122,15 @@ class App extends React.Component {
         {project: null, query: null}, "/mapbox");
       return mapbox
   }
+
+  unsubscribe = store.subscribe(() => {
+    const mode = store.getState().map.mode;
+    if (mode === 'map') {
+      if (this.vidPolyline) this.removePolyLine();
+    }
+  }
+    
+)
 
   async componentDidMount () {
     this.leafletMap = this.map.leafletElement;
@@ -144,18 +156,16 @@ class App extends React.Component {
       if (user !== this.context.login.user) { //hack to deal with context not updating on browswer refresh
         this.removeLayer(this.props.activeLayer)
       } else {
-        if(this.state.objGLData.length !== 0) {
-          const body = this.filterLayer(this.props.activeLayer, true);
-          if (body) {
-            body.then((body) => {
-              this.addGLGeometry(body.points, body.lines, body.type, true);
-            });
-          }
-        }
-      }
-      
-    }
-     
+        // if(this.state.objGLData.length !== 0) {
+        //   const body = this.filterLayer(this.props.activeLayer, true);
+        //   if (body) {
+        //     body.then((body) => {
+        //       this.addGLGeometry(body.points, body.lines, body.type, true);
+        //     });
+        //   }
+        // }
+      }   
+    }   
     if (this.state.filtered) {
       this.applyRef.current.innerHTML = "Clear Filter"
     } 
@@ -166,9 +176,10 @@ class App extends React.Component {
       try { 
         window.sessionStorage.setItem('state', JSON.stringify(this.state));
       } catch {
-  
+        console.log("state write error")
       } 
     this.removeEventListeners(); 
+    this.unsubscribe();
   }
 
   initializeGL() {
@@ -197,6 +208,7 @@ class App extends React.Component {
 
   centreMap = (lat, lng, zoom) => {
     if (!lat || !lng) return;
+    if ( this.state.mouseOverMap && !this.state.dataActive) return;
     const latlng = new L.LatLng(lat, lng)
     this.leafletMap.invalidateSize(true);
     this.leafletMap.setView(latlng, zoom); 
@@ -312,6 +324,12 @@ class App extends React.Component {
     this.leafletMap.addEventListener('keydown', (event) => {
       this.onKeyPress(event.originalEvent);
     });
+    this.leafletMap.addEventListener('mouseover', (event) => {
+      this.onMouseOverLeaflet(event)
+    });
+    this.leafletMap.addEventListener('mouseout', (event) => {
+      this.onMouseOutLeaflet(event)
+    });
   }
 
   
@@ -328,6 +346,12 @@ class App extends React.Component {
     this.leafletMap.removeEventListener('keydown', (event) => {
       this.onKeyPress(event.originalEvent);
     });
+    this.leafletMap.removeEventListener('mouseover', (event) => {
+      this.onMouseOverLeaflet(event)
+    });
+    this.leafletMap.removeEventListener('mouseout', (event) => {
+      this.onMouseOutLeaflet(event)
+    });
   }
 
   getPhotoBounds() {
@@ -337,21 +361,29 @@ class App extends React.Component {
     return L.latLngBounds(center, southeast);
   }
 
+  onMouseOutLeaflet = () => {
+    this.setState({mouseOverMap: false})
+  }
+
+  onMouseOverLeaflet = () => {
+    this.setState({mouseOverMap: true})
+  }
+
   /**
    * Handles click events on lealfet map
    * @param {event - the mouse event} e 
    */
   clickLeafletMap = async (e) => {
-    switch(this.context.mapMode) {
+    switch(this.props.mapMode) {
       case 'map':
         if (!this.props.activeLayer) return;
-        if (this.context.ratingActive) {
-           let body = {
-            user: this.context.login.user,
-            lat: e.latlng.lat,
-            lng: e.latlng.lng,
-            layer: this.props.activeLayer
-          }
+        // if (this.context.ratingActive) {
+        //    let body = {
+        //     user: this.context.login.user,
+        //     lat: e.latlng.lat,
+        //     lng: e.latlng.lng,
+        //     layer: this.props.activeLayer
+        //   }
         //let response = await PostFetch(this.context.login.host + "/carriageway", this.context.login.token, body);
         //   let geometry = JSON.parse(response.data.geojson);
         //   let erp = {
@@ -384,39 +416,39 @@ class App extends React.Component {
         //     let key = {id: response.data.id, carriage: response.data.carriageid}
         //     this.setState({notificationKey: key});
         //   }     
-        } else {
-          if (this.state.objGLData.length !== 0) {
-            if (this.context.ratingActive === true) {
-              this.GLEngine.mouseClick = null;
-            } else {
-            const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
-            this.GLEngine.mouseClick = {...click};
-            this.GLEngine.redraw(this.GLEngine.glData, false);     
-            }
-          }       
+        //} else {
+        if (this.state.objGLData.length !== 0) {
+          if (this.context.ratingActive === true) {
+            this.GLEngine.mouseClick = null;
+          } else {
+          const click = {x: e.originalEvent.layerX, y: e.originalEvent.layerY}
+          this.GLEngine.mouseClick = {...click};
+          this.GLEngine.redraw(this.GLEngine.glData, false);     
+          }
+        //}       
         }
         break;
       case 'Street':
         this.getArhivePhoto(e);
         break;
-      case 'Ruler':
-        let polyline = this.state.rulerPolyline;
-        if (polyline === null) {
-          let points = [];
-          points.push(e.latlng);
-          polyline = new L.polyline(points, {
-            color: 'blue',
-            weight: 4,
-            opacity: 0.5 
-            });
-          polyline.addTo(this.leafletMap);
-          this.setState({rulerPolyline: polyline});
-        } else {
-          let points = polyline.getLatLngs();
-          points.push(e.latlng);
-          polyline.setLatLngs(points);
-        }
-        break;
+      // case 'Ruler':
+      //   let polyline = this.state.rulerPolyline;
+      //   if (polyline === null) {
+      //     let points = [];
+      //     points.push(e.latlng);
+      //     polyline = new L.polyline(points, {
+      //       color: 'blue',
+      //       weight: 4,
+      //       opacity: 0.5 
+      //       });
+      //     polyline.addTo(this.leafletMap);
+      //     this.setState({rulerPolyline: polyline});
+      //   } else {
+      //     let points = polyline.getLatLngs();
+      //     points.push(e.latlng);
+      //     polyline.setLatLngs(points);
+      //   }
+      //   break;
       case 'video':
         if(this.vidPolyline === null) { 
           const geometry = await this.getVideoGeometry(e)
@@ -432,17 +464,20 @@ class App extends React.Component {
           this.vidPolyline = await this.playVideo(this.getPhotos, geometry); 
         } else {
           if (this.vidPolyline.options.color === "blue") {
-            this.vidPolyline.remove();
-            this.vidPolyline = null;
-            this.setState({carMarker: []});
-          } else {
-            
+            this.removePolyLine();
           } 
         }      
         break;
       default:
         break;
     }
+  }
+
+  removePolyLine = () => {
+    if (this.vidPolyline) 
+      this.vidPolyline.remove();
+      this.vidPolyline = null;
+      this.setState({carMarker: []});
   }
 
   getVideoGeometry = async (e) => {
@@ -520,7 +555,7 @@ class App extends React.Component {
    * toogles between satellite and map view by swapping z-index
    * @param {the control} e 
    */
-  toogleMap(e) {
+  toogleMap() {
     if (this.context.login.user === "Login") {
       return;
     }
@@ -577,7 +612,7 @@ class App extends React.Component {
       filterStore: [],
       rulerPoints: [],
       filters: [], 
-      priorityDropdown: null, 
+      carMarker: [], 
       filterPriorities: [],
       filterRMClass: [],
       rmclass: [],
@@ -606,16 +641,9 @@ class App extends React.Component {
     return await response.json();
   }
 
-  changeVideoPlayerOpen(isOpen) {
-    this.setState({isVideoOpen: isOpen});
-  }
-
-  latLngsFromGeojson(geojson) {
-    const coordinates = [];
-    geojson.forEach( (coordinate) => {
-      coordinates.push([coordinate[1], coordinate[0]]);
-    }); 
-    return coordinates
+  async changeVideoPlayerOpen (isOpen) {
+      await dispatch(setIsOpen(false))
+      this.leafletMap.invalidateSize(isOpen);
   }
 
   /**
@@ -627,110 +655,95 @@ class App extends React.Component {
    */
   async playVideo(photoFunc, geometry) {
     if (this.vidPolyline) return
-    const geojson = JSON.parse(geometry.data.geojson);
-    const latlngs = this.latLngsFromGeojson(geojson.coordinates);
-    const vidPolyline = L.polyline(latlngs, {
-      class: geometry.data.class,
-      controller: geometry.data.controller,
-      cwid: geometry.data.cwid,
-      direction: geometry.data.direction,
-      endm: geometry.data.endm,
-      hierarchy: geometry.data.hierarchy,
-      label: geometry.data.label,
-      owner: geometry.data.owner,
-      pavement: geometry.data.pavement,
-      photos: null,
-      roadid: geometry.data.roadid,
-      roadtype: geometry.data.roadtype,
-      startm: geometry.data.startm,
-      tacode: geometry.data.tacode,
-      town: geometry.data.town,
-      width: geometry.data.width,
-      zone: geometry.data.zone,
+    const settings = {
       color: 'blue',
       weight: 4,
       opacity: 0.5,
-      project: this.props.activeLayer,
-      login: this.context.login,
-    }).addTo(this.leafletMap);
-      const parent = this;
-      vidPolyline.on('click', async function (event) {
-          if (this.options.color === 'red') { 
-          const login = vidPolyline.options.login;
-          const side = parent.videoCard.current.getSide();
+    }
+    const vidPolyline = leafletPolylineFromGeometry(geometry, settings)
+    vidPolyline.options.project = this.props.activeLayer;
+    vidPolyline.options.login = this.context.login;
+    vidPolyline.addTo(this.leafletMap);
+    const parent = this;
+    vidPolyline.options.parent = this;
+    vidPolyline.on('click', async function (event) {
+        if (this.options.color === 'red') { 
+        const login = vidPolyline.options.login;
+        const side = parent.videoCard.current.getSide();
+        const request = {
+          cwid: vidPolyline.options.cwid,
+          latlng: event.latlng,
+          project: vidPolyline.options.project.code,
+          surface: vidPolyline.options.project.surface,
+          login: login,
+          side: side,
+          tacode: vidPolyline.options.tacode
+        }
+        const photo = await parent.getVideoPhoto(request);
+        parent.videoCard.current.refresh(photo.data);
+      } else {
+        this.setStyle({
+          color: 'red',
+          weight: 4
+        });
+        const login = vidPolyline.options.login;
+        const direction = vidPolyline.options.direction;
+        let initialSide = null;
+        if (direction === 'Both') {
+          initialSide = 'L'
           const request = {
             cwid: vidPolyline.options.cwid,
-            latlng: event.latlng,
+            side: 'L', 
             project: vidPolyline.options.project.code,
             surface: vidPolyline.options.project.surface,
-            login: login,
-            side: side,
             tacode: vidPolyline.options.tacode
           }
-          const photo = await parent.getVideoPhoto(request);
-          parent.videoCard.current.refresh(photo.data);
+          if (!this.options.photos) {
+            const photos = await photoFunc(request, login);
+            this.options.photos = photos.data;
+          }
         } else {
-          this.setStyle({
-            color: 'red',
-            weight: 4
-          });
-          const login = vidPolyline.options.login;
-          const direction = vidPolyline.options.direction;
-          let initialSide = null;
-          if (direction === 'Both') {
-            initialSide = 'L'
-            const request = {
-              cwid: vidPolyline.options.cwid,
-              side: 'L', 
-              project: vidPolyline.options.project.code,
-              surface: vidPolyline.options.project.surface,
-              tacode: vidPolyline.options.tacode
-            }
-            if (!this.options.photos) {
-              const photos = await photoFunc(request, login);
-              this.options.photos = photos.data;
-            }
-          } else {
-            const request = {
-              cwid: vidPolyline.options.cwid,
-              side: null, 
-              project: vidPolyline.options.project.code,
-              surface: vidPolyline.options.project.surface,
-              tacode: vidPolyline.options.tacode
-            }
-            if (!this.options.photos) {
-              const photos = await photoFunc(request, login);
-              this.options.photos = photos.data;
-            }
-          }
-          if (this.options.photos.error) return
           const request = {
             cwid: vidPolyline.options.cwid,
-            latlng: event.latlng,
+            side: null, 
             project: vidPolyline.options.project.code,
             surface: vidPolyline.options.project.surface,
-            login: login,
-            side: initialSide,
             tacode: vidPolyline.options.tacode
           }
-          const photo = await parent.getVideoPhoto(request);               
-          const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
-          if (index === -1) {
-            alert("error loading video - Not found")
-          } else {
-            const videoParameters = {
-              mode: parent.context.projectMode,
-              direction: direction,
-              amazon: parent.props.activeLayer.amazon,
-              photos: this.options.photos,
-              startingIndex: index,
-            }
-            parent.videoCard.current.initialise(videoParameters, vidPolyline);
-            parent.changeVideoPlayerOpen(true);     
+          if (!this.options.photos) {
+            const photos = await photoFunc(request, login);
+            this.options.photos = photos.data;
           }
-        }         
-      });
-      return vidPolyline;  
+        }
+        if (this.options.photos.error) return
+        const request = {
+          cwid: vidPolyline.options.cwid,
+          latlng: event.latlng,
+          project: vidPolyline.options.project.code,
+          surface: vidPolyline.options.project.surface,
+          login: login,
+          side: initialSide,
+          tacode: vidPolyline.options.tacode
+        }
+        const photo = await parent.getVideoPhoto(request);             
+        const index = this.options.photos.findIndex((element) => element.photo === photo.data.photo) 
+        if (index === -1) {
+          alert("error loading video - Not found")
+        } else {
+          const videoParameters = {
+            mode: parent.context.projectMode,
+            direction: direction,
+            amazon: parent.props.activeLayer.amazon,
+            photos: this.options.photos,
+            startingIndex: index,
+            interval: photo.data.interval
+          }
+          parent.videoCard.current.initialise(videoParameters, vidPolyline);    
+          dispatch(setIsOpen(true));    
+        }
+      }         
+    });
+    return vidPolyline;  
   }
 
   /**
@@ -738,7 +751,7 @@ class App extends React.Component {
    * Updates video cards data array
    * @param {left 'L' or right 'R' side of road} side 
    */
-  async changeSide(currentPhoto, side) {
+  async changeSide(currentPhoto) {
     const body = this.requestChangeSide(currentPhoto);
     body.then((data) => {
       this.videoCard.current.refresh(data.photo, data.data);
@@ -752,7 +765,6 @@ class App extends React.Component {
    * @param {user login} login 
    */
   async getVideoPhoto(request) {
-
     const query = {
       user: request.login.user,
       project: request.project,
@@ -973,7 +985,7 @@ class App extends React.Component {
    * Removes current active layer and restores to null state
    * @param {event} project  - the active project
    */
-     removeLayer = (project) => {
+     removeLayer = () => {
       window.sessionStorage.removeItem("state");
       window.sessionStorage.removeItem("centrelines");
       this.setDataActive(false)
@@ -1283,8 +1295,12 @@ class App extends React.Component {
     this.setState({image: incrementPhoto(photo, -1)})
   }
 
+  openDownload = (request) => {
+    dispatch(setOpenDownload({show:true, request: request}))
+  }
+
   render() {
-    const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
+    const centre = [this.props.centre.lat, this.props.centre.lng];
     return ( 
       <> 
         <Navigation 
@@ -1300,7 +1316,7 @@ class App extends React.Component {
           >  
         </Navigation>   
         <div className="appcontainer">     
-          <div className={this.state.dataActive ? "panel-reduced": "panel"}>
+          <div className={(this.state.dataActive ||  this.props.isVideoOpen) ? "panel-reduced": "panel"}>
             <div className="layers">
               <div className="layerstitle">
                 <p>{'Layers'}</p>
@@ -1335,10 +1351,11 @@ class App extends React.Component {
                 onClick={(e) => this.clickApply(e)}>  
               </FilterButton>
             </div>
-          </div>   
-            <LMap        
+          </div> 
+          <div>
+          <LMap        
               ref={(ref) => {this.map = ref;}}
-              className={this.state.dataActive ? "map-reduced": "map"}
+              className={this.props.isVideoOpen ? "map-video": this.state.dataActive ? "map-reduced" : "map"}
               worldCopyJump={true}
               boxZoom={true}
               center={centre}
@@ -1358,24 +1375,22 @@ class App extends React.Component {
                   position={position}>
                 </Marker>
               )}
-              {this.state.carMarker.map((position, idx) =>
-                <Marker 
+              {this.state.carMarker.map((marker, idx) =>
+                <Location 
+                  className='location' 
                   key={`marker-${idx}`} 
-                  position={position}>
-                </Marker>
+                  marker={marker} 
+                  center = {this.leafletMap ? this.leafletMap.latLngToContainerPoint(marker.position[0]) : null}
+                  map={this.leafletMap} 
+                  style={{ zIndex: 1000 }}   />
               )}
-              {this.state.selectedCarriage.map((position, idx) =>
+              {this.state.selectedCarriage.map((position, idx) => 
                 <Polyline
                   key={`marker-${idx}`} 
                   position={position}>
                 </Polyline>
               )}
-              <VideoCard
-                ref={this.videoCard}
-                show={this.state.videoViewer} 
-                parent={this}
-              >
-              </VideoCard>
+              
               <LayerGroup >
                 {this.state.selectedGeometry.map((obj, index) =>   
                 <DefectPopup 
@@ -1398,13 +1413,25 @@ class App extends React.Component {
                 thumbnail={true}
               />
           </LMap >
-        <DataTable 
-          className={this.state.dataActive ? "data-active": "data-inactive"}
-          data={this.state.objGLData}
-          simulate={this.simulateClick}
-          centre={this.centreMap}
-          surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
-        />  
+          <VideoController
+            ref={this.videoCard}
+            show={this.state.videoViewer} 
+            parent={this}
+            centre={this.centreMap} 
+            project={this.props.activeLayer}
+            clickDownload={this.openDownload}
+          >
+          </VideoController >
+            <DataTable 
+              className={this.state.dataActive ? "data-active": "data-inactive"}
+              data={this.state.objGLData}
+              simulate={this.simulateClick}
+              centre={this.centreMap}
+              surface={this.props.activeLayer ? this.props.activeLayer.surface: null}
+          />  
+          </div> 
+          <Downloader
+          />
         <PhotoModal
           ref={this.photoModal}
         >
@@ -1426,11 +1453,18 @@ class App extends React.Component {
 
 const mapStateToProps = state => ({
   activeLayer: state.layers.active,
-  activeLayers: state.layers.layers
+  activeLayers: state.layers.layers,
+  className: state.map.class,
+  mapMode: state.map.mode,
+  centre: state.map.centre,
+  isVideoOpen: state.video.isOpen
 })
 
 const mapDispatchToProps = {
-  addLayer
+  addLayer,
+  setClassName,
+  setIsOpen,
+  setCentre,
 }
 
 export default connect(

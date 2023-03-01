@@ -124,7 +124,7 @@ export default class PhotoModal extends React.Component {
         return (
             <div>
             {props.data.map((field, index) => 
-              <DataRow key={index.toString()} name={field.name} data={field.data} symbol={field.symbol}></DataRow>    
+              <DataRow className={'datarow'} key={index.toString()} name={field.name} data={field.data} symbol={field.symbol}></DataRow>    
             )}
             </div>
         );
@@ -139,7 +139,7 @@ export default class PhotoModal extends React.Component {
       const CustomTable = (props) => {
         if(props.obj.type === "road") {
           return (
-            <div className="col-md-8"  >
+            <div>
                   <DataColumn data={[
                     {name: "Fault ID: ", data: props.obj.id},
                     {name: "Priority: ", data: props.obj.priority},
@@ -215,9 +215,6 @@ export default class PhotoModal extends React.Component {
           centered={true}
           onHide={this.closePhotoModal}
       >
-        <Modal.Header>
-        
-        </Modal.Header>
         <Modal.Body >	
           <div>
             <PhotoMagnifier image={this.state.amazon + this.state.photo + ".jpg"}/>
@@ -236,10 +233,9 @@ export default class PhotoModal extends React.Component {
             <CustomTable 
               obj={this.state.marker[0]}
               copy={(e) => this.copyToClipboard(e, this.state.latlng)}>      
-          </CustomTable>
+            </CustomTable>
             </div >    
         </Modal.Body >
-        
     </Modal>
     );
   }

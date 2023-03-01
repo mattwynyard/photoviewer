@@ -71,11 +71,11 @@ export default function AdminModal(props) {
         }    
       }
 
-    const fileLoaded = (data, info) => {
+    const fileLoaded = (data) => {
         setData(data)
     }
 
-    const handleImport = (e) => {
+    const handleImport = () => {
         if (!project) {
             alert("No project specified");
             return;

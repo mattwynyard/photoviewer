@@ -1,3 +1,4 @@
+import React from 'react';
 import Magnifier from "react-magnifier";
 
 export default function PhotoMagnifier(props) {

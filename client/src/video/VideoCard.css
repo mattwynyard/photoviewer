@@ -1,76 +1,77 @@
 .videoModal {
-    width: 50%;
+    display: flex;
+    flex-direction: column;
+    width: 55%;
+    height: 90%;
     position: absolute;
-    margin: 0px;
-    padding: 0px;
-    z-index: 1000;
-    right: 2%;
-    top: 2%;
+    right: 0%;
+    top: 0%;
+    padding: 2px;
+    background-color: black;
+    
   }
-  
-  .videoBody .video {
-    height: 100%;
-    width: 100%;
-    position: relative;
-  }
-  
   
   .videoProgress {
     width: 100%;
+
   }
 
-  .controls {
-    display: grid;
-    gap: 5px;
-    /* grid-template-columns: repeat(3, auto); */
-    grid-template-columns: 60%, auto, auto;
-    grid-auto-rows: minmax(5px, auto);
-    padding: 5px;   
+  .video {
+    height: 90%;
   }
-  
-.controls-text {
-  font-family: "Century Gothic", sans-serif;
-  font-size: 14px !important;
-  grid-column: 1 / 3;
-  grid-row: 1;
-  
+
+  .image {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+  }
+
+.sidetext {
+  position: absolute;
+  width: 30%;
+  height: 100%;
+  padding: 15px;
+  margin-left: 15%;
+  font-size: 14px;
 }
 
-.controls-text div {
-  padding: 5px; 
-}
-
-.controls-play {
+.container-controls {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  grid-column: 2 / 3;
-  grid-row: 1;
-  padding: 5px;  
-  justify-content: center; 
+  flex-direction: row;
+  justify-content: space-between;
+  flex-shrink: 2;
+  padding: 5px;
 }
 
-.controls-play div {
-  width: 50%;
-  height: auto;
+.container-controls > div { 
+  padding: 4px;
+  cursor: pointer
 }
 
-.controls-play img {
-  width: 50%;
-    height: auto;
+.controls-fastforward  {
+  height: 30px;
+  width: 35px;
 }
 
-.controls-toggle {
-  grid-column: 3 / 3;
-  grid-row: 1;
-  padding: 5px; 
-  margin: auto;  
+.controls-fastrewind  {
+  height: 30px;
+  width: 35px;
+} 
+
+.controls-stop, .controls-play {
+  height: 48px;
+  width: 48px;
 }
 
-.controls-close {
-  grid-column: 3 / 3;
-  grid-row: 2;
-  padding: 5px; 
-  width: 50%; 
+.controls-action {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
 }
-  
+
+.controls-download, .controls-close {
+  display: block;
+  height: 40px;
+  width: 40px;
+  margin: 5px;
+}

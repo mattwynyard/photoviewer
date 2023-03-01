@@ -1,3 +1,4 @@
+import React from 'react';
 import {Modal, Dropdown, Form, Button}  from 'react-bootstrap';
 
 export function InsertUserModal(props) {
@@ -17,7 +18,7 @@ export function InsertUserModal(props) {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                 <Dropdown.Item
-                    onClick={(e) => props.setMode("Delete")}
+                    onClick={() => props.setMode("Delete")}
                     >
                     Delete
                 </Dropdown.Item>
@@ -46,7 +47,7 @@ export function InsertUserModal(props) {
             </Form.Group>
             <Button 
                 variant="primary" 
-                onClick={(e) => props.updateUser('insert')}
+                onClick={() => props.updateUser('insert')}
                 >
                 Submit
             </Button>

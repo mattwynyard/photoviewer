@@ -1,3 +1,4 @@
+import React from 'react';
 const CustomSVG = (props) => {
     if (props.value === "Structural Rating" || props.value === "Surface Rating" || props.value === "Drainage Rating") return null;
     if (!props.reverse) {
