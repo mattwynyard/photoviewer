@@ -24,14 +24,13 @@ const stitch = async (socket, options) => {
         .outputOptions([
         '-pix_fmt yuv420p',
         ])
-        .noAudio()
         .fps(options.frameRate)
         .saveToFile(options.outputFilepath)
-        // .on('progress', function(progress) {
-        //     socket.emit("progress", progress)
-        //     console.log('Processing: ' + progress.percent + '% done');
-        // })
-        .on('stderr', function(stderrLine) {
+        .on('progress', (progress) => {
+            socket.emit("progress", progress)
+            console.log('Processing: ' + progress.percent + '% done');
+        })
+        .on('stderr', (stderrLine) => {
             //console.log('Stderr output: ' + stderrLine);
         })
         .on('end', () => {

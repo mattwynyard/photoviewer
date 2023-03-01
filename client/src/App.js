@@ -1300,7 +1300,6 @@ class App extends React.Component {
   }
 
   render() {
-    //const centre = [this.context.MAP_CENTRE.lat, this.context.MAP_CENTRE.lng];
     const centre = [this.props.centre.lat, this.props.centre.lng];
     return ( 
       <> 

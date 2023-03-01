@@ -84,7 +84,7 @@ export const Downloader = () => {
             setStatus(0)
             setSocket(null)
         });
-    }, [req]);
+    }, [req, show]);
 
     useEffect(() => {
         if(!req) return
@@ -110,7 +110,7 @@ export const Downloader = () => {
                     "authorization": login.token,       
                 },
             });
-            response.blob().then(blob => {
+            await response.blob().then(blob => {
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
                 a.href = url;
@@ -120,13 +120,15 @@ export const Downloader = () => {
             });
           } catch (err) {
             console.log(err)
+            return false
           } finally {
-            setMessage(`video file saved to downloads folder...`)
             socket.emit("delete", filename)
             setStatus(5)
             socket.disconnect()
             setSocket(null)
-          }   
+            
+          }
+          return true   
     })
 
     const download = useCallback(async () => {
@@ -144,17 +146,22 @@ export const Downloader = () => {
             setStatus(4)     
         })
         //bug only fires on first download
-        // socket.on("progress", (data)=> {
-        //     if(!data) return
-        //     setMessage(`compiling video at ${data.currentFps} fps`)
-        //     setFrames(data.frames)
-        //     setTargetSize(data.targetSize / 1000)
+        socket.on("progress", (data)=> {
+            if(!data) return
+            setMessage(`compiling video at ${data.currentFps} fps`)
+            setFrames(data.frames)
+            setTargetSize(data.targetSize / 1000)
               
-        // })
+        })
         socket.on("end", (filename) => {
             if (filename) {
                 setMessage(`${filename} completed`)
-                downloadVideo(filename)
+                const result = downloadVideo(filename)
+                if (result) {
+                    setMessage(`saved video to downloads folder...`)
+                } else {
+                    setMessage(`error`)
+                }
             } else {
                 setMessage(`error`)
             }
@@ -221,7 +228,7 @@ export const Downloader = () => {
             socket.disconnect()
             setSocket(null)
         }    
-    }, [socket, dispatch])
+    }, [])
 
     const clickCancel = useCallback((e) => {
         e.preventDefault();
@@ -245,7 +252,7 @@ export const Downloader = () => {
                 <b>{`${req.label} (${req.side === 'L' ? 'Left' : 'Right'})`}</b>
                 <p>{`carriage: ${req.cwid}`}</p>
                 {header ? <p>{`erp: ${header.min}-${header.max} m`}</p> : null}
-                {(header || status !== 4) ? <ProgressBar value={progress}></ProgressBar> : <ProgressBarIndeterminate/>}
+                {(!header || status === 4) ? <ProgressBarIndeterminate/> : <ProgressBar value={progress}></ProgressBar>}
                 {<p className='message-text'>{`${message}`}</p>}
                 {header ? <p className='message-text'>{`received ${frames}/${header.frames} frames`}
                 </p> : null}
