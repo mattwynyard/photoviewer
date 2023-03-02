@@ -1,18 +1,6 @@
 const { readdir, unlink } = require('fs');
 const path = require('path');
 
-const getCentrelineView = (user) => {
-    let view = null;
-    switch (user) {
-        case 'tsd':
-            view = 'tsd_centreline';
-            break;
-        default:
-            view = null      
-    }
-    return view;
-}
-
 const dateToISOString = (date) => {
     const year = date.getFullYear()
     const month = String(date.getMonth()).padStart(2, '0')
@@ -23,11 +11,29 @@ const dateToISOString = (date) => {
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`
 }
 
+const getCentrelineView = (user) => {
+    let view = null;
+    switch (user) {
+        case 'tsd':
+            view = 'tsd_centreline';
+            break;
+        case 'gdc':
+            view = 'gdc_centreline';
+            break;
+        default:
+            view = null      
+    }
+    return view;
+}
+
 const getFaultView = (user) => {
     let view = null;
     switch (user) {
         case 'tsd':
             view = 'tsd_faults';
+            break;
+        case 'gdc':
+            view = 'gdc_faults';
             break;
         case 'swdc':
             view = 'vw_swdc_fp';
@@ -46,6 +52,9 @@ const getPhotoView = (project) => {
     switch (project) {
         case 'TSD_RD_1022':
             view = 'tsd_rd_1022_photos';
+            break;
+        case 'GDC_RD_0819':
+            view = 'gdc_rd_0819_photos';
             break;
         default:
             view = null      
