@@ -10,7 +10,13 @@ const Jimp = require('jimp') ;
 
 const FILE_PREFIX = 'image'
 const BUCKET= 'onsitenz';
-const PREFIX = 'taranaki/roads/2022_10'
+let PREFIX = 'taranaki/roads/2022_10'
+
+//todo move prefix to db
+const prefix = (amazon) => {
+    const tokens = amazon.split('/')
+    return `${tokens[tokens.length - 4]}/${tokens[tokens.length - 3]}/${tokens[tokens.length - 2]}`
+}
 
 const stitch = async (socket, options) => {
     socket.emit("stitch")
@@ -64,18 +70,24 @@ const headerDownload = async (socket, query) => {
     const frames = results.rows;
     count = 0;
     socket.emit('head', {count: count, length: frames.length})
+    PREFIX = prefix(query.amazon)
     let bytes = 0;
     for (const frame of frames) {
         const bucketParams = {
                 Bucket: BUCKET,
                 Key: `${PREFIX}/${frame.photo}.jpg`
             };
-        const response = await s3Client.send(new HeadObjectCommand(bucketParams))
-        bytes += response.ContentLength
-        count += 1
-        socket.emit('head', {count: count, length: frames.length})
+        try {
+            const response = await s3Client.send(new HeadObjectCommand(bucketParams))
+            bytes += response.ContentLength
+            count += 1
+            socket.emit('head', {count: count, length: frames.length})
+            
+        } catch (err) {
+            console.log(err)
+        }    
     }
-    return ({bytes: bytes, count: results.rowCount, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
+    return ({bytes: bytes, found: count, total: results.rowCount, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
 }
 
 const writeImageFromS3 = async(frame, index) => {
@@ -84,25 +96,31 @@ const writeImageFromS3 = async(frame, index) => {
         const bucketParams = {
             Bucket: BUCKET,
             Key: `${PREFIX}/${frame.photo}.jpg`
-        };   
-        const response = await s3Client.send(new GetObjectCommand(bucketParams))
-        const stream = response.Body
-        //const ws = await createWriteStream(`./temp/images/${frame.photo}.jpg`);  
-        const ws = await createWriteStream(`./temp/images/${FILE_PREFIX}${index}.jpg`);  
-        stream.pipe(ws)
+        };
+        try {
+            const response = await s3Client.send(new GetObjectCommand(bucketParams))
+            const stream = response.Body
+            //const ws = await createWriteStream(`./temp/images/${frame.photo}.jpg`);  
+            const ws = await createWriteStream(`./temp/images/${FILE_PREFIX}${index}.jpg`);  
+            stream.pipe(ws)
+    
+            stream.on('error', (err) => {
+                console.log(`error: ${err}`)
+                reject(0)
+            }); 
+            stream.on('data', (chunk) => {
+                size += chunk.length
+            });
+            stream.on('end', () => {
+            }); 
+            ws.on('close', async () => {
+                resolve(size)
+            })
+        } catch (err) {
+           console.log(err) 
+           resolve(0)        
+        }
 
-        stream.on('error', (err) => {
-            console.log(`error: ${err}`)
-            reject(0)
-        }); 
-        stream.on('data', (chunk) => {
-            size += chunk.length
-        });
-        stream.on('end', () => {
-        }); 
-        ws.on('close', async () => {
-            resolve(size)
-        })
     })
 }
 
@@ -110,15 +128,18 @@ const download = async (socket) => {
     const view = util.getPhotoView(socket.handshake.query.project);
     const results = await db.getPhotoNames(socket.handshake.query, view);
     const frames = results.rows;
+    
+    
+    let minERP = Number.MAX_SAFE_INTEGER;
+    let maxERP = Number.MIN_SAFE_INTEGER;
     const label = {
         side: socket.handshake.query.side,
         name: socket.handshake.query.label,
-        cwid: socket.handshake.query.cwid   
+        cwid: socket.handshake.query.cwid, 
     }
-    let minERP = Number.MAX_SAFE_INTEGER;
-    let maxERP = Number.MIN_SAFE_INTEGER;
-    try {
-        for (let i = 0; i < frames.length; i++) {
+    for (let i = 0; i < frames.length; i++) {
+        try {
+            const json = JSON.parse(frames[i].st_asgeojson)
             const index = String(i).padStart(4, "0")
             const size = await writeImageFromS3(frames[i], index)
             if (frames[i].erp < minERP) minERP = frames[i].erp
@@ -129,26 +150,29 @@ const download = async (socket) => {
             const labelSide = writeLabel('side: ', label.side === 'L' ? 'Left' : 'Right')
             const labelDateTime = writeLabel(null, label.datetime)
             const labelErp = writeLabel('erp:', frames[i].erp)
+            const labelLat = writeLabel('latitude:', json.coordinates[1])
+            const labelLng = writeLabel('longitude:', json.coordinates[0])
             const image = await Jimp.read(`./temp/images/${FILE_PREFIX}${index}.jpg`)
             const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
             image.print(font, 10, 10, `${labelRoad}`);
             image.print(font, 10, 30, `${labelCwid}`);
             image.print(font, 10, 50, `${labelSide}`);
             image.print(font, 10, 70, `${labelErp} m`);
-            image.print(font, 10, 90, `${labelDateTime}`);
+            image.print(font, 10, 90, `${labelLat}`);
+            image.print(font, 10, 110, `${labelLng}`);
+            image.print(font, 10, 130, `${labelDateTime}`);
             await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
             socket.emit("photo", size)
+        } catch (err) {
+            console.log(err)
         }
-        return {
-            frameRate: 2,
-            //duration: frames / 2,
-            outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
-            inputFilepath: './temp/images/image%04d.jpg'
-        }     
-    } catch (err) {
-        console.log(err)
-        return null
-    }   
+    }
+    return {
+        frameRate: 2,
+        //duration: frames / 2,
+        outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
+        inputFilepath: './temp/images/image%04d.jpg'
+    }       
 }
 
 const changeSide = async (query) => {

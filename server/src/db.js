@@ -148,6 +148,9 @@ const getTable = (user) => {
         case 'tsd':
             table = 'tsd_faults';
             break;
+        case 'gdc':
+            table = 'gdc_faults';
+            break;
         default:
             table = 'roadfaults'      
     }

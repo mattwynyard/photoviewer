@@ -196,7 +196,7 @@ export default class VideoController extends React.Component {
     }
 
     update(index) {
-        if (this.index < this.photoArray.length && this.index > 0) {
+        if (this.index < this.photoArray.length && this.index >= 0) {
             this.setState({index: index});
             this.index  = index;
             let latlng = this.getLatLng(index);
@@ -239,9 +239,8 @@ export default class VideoController extends React.Component {
         this.delegate.setState({carMarker: []});
     }
 
-    imageError(e) {
-        console.log(e)
-        if (this.photoArray.length === 0 || this.state.errors >= 10) {
+    imageError() {
+        if (this.photoArray.length === 0 || this.state.errors >= 15) {
             alert("Photos not Found")
             this.reset();
             this.setState({show: false})
@@ -254,12 +253,13 @@ export default class VideoController extends React.Component {
             return
         } 
         if (this.state.index < this.photoArray.length / 2) {
-            this.setState({index: this.state.index + 1})
+            this.update(this.index + 1);
             this.setState({errors: this.state.errors + 1})
         } else {
             this.setState({index: this.state.index - 1})
+            this.update(this.index - 1);
             this.setState({errors: this.state.errors + 1})
-        }     
+        }    
     }
 
     clickDownload = () => {
@@ -281,7 +281,7 @@ export default class VideoController extends React.Component {
 
 
 
-    render() {  
+    render() { 
         if (this.state.show) {
             if (!this.photoArray) return null;
             return (
@@ -309,7 +309,7 @@ export default class VideoController extends React.Component {
                         <img 
                             className="image"
                             src={this.amazon + this.photoArray[this.index].photo + ".jpg"} 
-                            onError={(e) => this.imageError(e)}
+                            onError={() => this.imageError()}
                             >
                         </img>
                     </div>     

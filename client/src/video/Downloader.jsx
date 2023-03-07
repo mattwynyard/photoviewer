@@ -64,7 +64,8 @@ export const Downloader = () => {
         socket.on("header", (data) => {
             const header = {
                 bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
-                frames: data.count,
+                frames: data.found,
+                count: data.total,
                 min: data.minERP,
                 max: data.maxERP
             }

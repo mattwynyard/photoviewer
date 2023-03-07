@@ -690,10 +690,10 @@ class App extends React.Component {
         const direction = vidPolyline.options.direction;
         let initialSide = null;
         if (direction === 'Both') {
-          initialSide = 'L'
+          initialSide = 'R'
           const request = {
             cwid: vidPolyline.options.cwid,
-            side: 'L', 
+            side: initialSide, 
             project: vidPolyline.options.project.code,
             surface: vidPolyline.options.project.surface,
             tacode: vidPolyline.options.tacode
