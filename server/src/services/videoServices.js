@@ -1,8 +1,10 @@
 const db = require('../db');
 const util = require('../util');
+const { mkdir } = require('fs');
+const path = require('path');
 const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require('../s3Client.js');
-const { createWriteStream, unlink } = require('fs')
+const { createWriteStream, unlink, rm } = require('fs')
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -10,10 +12,11 @@ const Jimp = require('jimp') ;
 
 const FILE_PREFIX = 'image'
 const BUCKET= 'onsitenz';
-let PREFIX = 'taranaki/roads/2022_10'
+let PREFIX = null
 
 //todo move prefix to db
 const prefix = (amazon) => {
+    if(!amazon) return
     const tokens = amazon.split('/')
     return `${tokens[tokens.length - 4]}/${tokens[tokens.length - 3]}/${tokens[tokens.length - 2]}`
 }
@@ -70,12 +73,11 @@ const headerDownload = async (socket, query) => {
     const frames = results.rows;
     count = 0;
     socket.emit('head', {count: count, length: frames.length})
-    PREFIX = prefix(query.amazon)
     let bytes = 0;
     for (const frame of frames) {
         const bucketParams = {
                 Bucket: BUCKET,
-                Key: `${PREFIX}/${frame.photo}.jpg`
+                Key: `${prefix(query.amazon)}/${frame.photo}.jpg`
             };
         try {
             const response = await s3Client.send(new HeadObjectCommand(bucketParams))
@@ -90,18 +92,17 @@ const headerDownload = async (socket, query) => {
     return ({bytes: bytes, found: count, total: results.rowCount, minERP: minMax.rows[0].min, maxERP: minMax.rows[0].max})
 }
 
-const writeImageFromS3 = async(frame, index) => {
+const writeImageFromS3 = async(frame, index, uuid, amazon) => {
     return new Promise(async (resolve, reject) => {
         let size = 0
         const bucketParams = {
             Bucket: BUCKET,
-            Key: `${PREFIX}/${frame.photo}.jpg`
+            Key: `${prefix(amazon)}/${frame.photo}.jpg`
         };
         try {
             const response = await s3Client.send(new GetObjectCommand(bucketParams))
-            const stream = response.Body
-            //const ws = await createWriteStream(`./temp/images/${frame.photo}.jpg`);  
-            const ws = await createWriteStream(`./temp/images/${FILE_PREFIX}${index}.jpg`);  
+            const stream = response.Body 
+            const ws = await createWriteStream(`./temp/${uuid}/images/${FILE_PREFIX}${index}.jpg`);  
             stream.pipe(ws)
     
             stream.on('error', (err) => {
@@ -124,7 +125,41 @@ const writeImageFromS3 = async(frame, index) => {
     })
 }
 
-const download = async (socket) => {
+const deleteDirectory = async (directory) => {
+    await rm(directory, { recursive: true }, (error) => {
+        // if any error
+        if (error) {
+          console.error(error);
+          return false;
+        }
+      
+        return true
+      });
+}
+
+const createDirectory = async (uuid) => {
+    try {
+        const fs = require('fs').promises;
+        await fs.mkdir(`./temp/${uuid}/`, (err) => {
+            console.log(err)
+            return false
+        })
+        await fs.mkdir(`./temp/${uuid}/images/`, (err) => {
+            console.log(err)
+            return false
+        })
+        await fs.mkdir(`./temp/${uuid}/videos/`, (err) => {
+            console.log(err)
+            return false
+        })
+        return true  
+    } catch (err) {
+        console.log(err)
+        return false
+    }
+}  
+
+const download = async (socket, uuid) => {
     const view = util.getPhotoView(socket.handshake.query.project);
     const results = await db.getPhotoNames(socket.handshake.query, view);
     const frames = results.rows;
@@ -141,7 +176,7 @@ const download = async (socket) => {
         try {
             const json = JSON.parse(frames[i].st_asgeojson)
             const index = String(i).padStart(4, "0")
-            const size = await writeImageFromS3(frames[i], index)
+            const size = await writeImageFromS3(frames[i], index, uuid, socket.handshake.query.amazon)
             if (frames[i].erp < minERP) minERP = frames[i].erp
             if (frames[i].erp > maxERP) maxERP = frames[i].erp
             label.datetime = util.dateToISOString(new Date(frames[i].datetime))
@@ -152,7 +187,7 @@ const download = async (socket) => {
             const labelErp = writeLabel('erp:', frames[i].erp)
             const labelLat = writeLabel('latitude:', json.coordinates[1])
             const labelLng = writeLabel('longitude:', json.coordinates[0])
-            const image = await Jimp.read(`./temp/images/${FILE_PREFIX}${index}.jpg`)
+            const image = await Jimp.read(`./temp/${uuid}/images/${FILE_PREFIX}${index}.jpg`)
             const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
             image.print(font, 10, 10, `${labelRoad}`);
             image.print(font, 10, 30, `${labelCwid}`);
@@ -161,7 +196,7 @@ const download = async (socket) => {
             image.print(font, 10, 90, `${labelLat}`);
             image.print(font, 10, 110, `${labelLng}`);
             image.print(font, 10, 130, `${labelDateTime}`);
-            await image.writeAsync(`./temp/images/${FILE_PREFIX}${index}.jpg`)
+            await image.writeAsync(`./temp/${uuid}/images/${FILE_PREFIX}${index}.jpg`)
             socket.emit("photo", size)
         } catch (err) {
             console.log(err)
@@ -170,8 +205,8 @@ const download = async (socket) => {
     return {
         frameRate: 2,
         //duration: frames / 2,
-        outputFilepath: `./temp/video/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
-        inputFilepath: './temp/images/image%04d.jpg'
+        outputFilepath: `./temp/${uuid}/videos/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
+        inputFilepath: `./temp/${uuid}/images/image%04d.jpg`
     }       
 }
 
@@ -260,7 +295,9 @@ const closestVideoPhoto = async (query) => {
 
 
 module.exports = {
+    deleteDirectory,
     deleteVideo,
+    createDirectory,
     headerDownload,
     stitch,
     download,

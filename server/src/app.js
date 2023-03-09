@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
@@ -61,16 +62,20 @@ io.use(async (socket, next) => {
   }
 });
 io.on('connection', async (socket) => {
+  const uuid = uuidv4()
   socket.on('header', async query => {
     const header = await videoController.downloadHead(socket, query)
-    socket.emit("header", header)
+    socket.emit("header", {header: header, uuid: uuid})
   })
-  socket.on('download', async () => {
-    const result = await videoController.download(socket)
-    socket.emit("end", result)
+  socket.on('download', async (uuid) => {
+    //console.log(uuid)
+    const result = await videoController.download(socket, uuid)
+    //console.log(result)
+    socket.emit("end", result, uuid)
   })
-  socket.on('delete', async (query) => {
-    const result = await videoController.deleteVideo(query)
+  socket.on('delete', async (filename, uuid) => {
+    const result = await videoController.cleanup(filename, uuid)
+    socket.emit("cleanup", result)
   })
 
 })
