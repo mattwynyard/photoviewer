@@ -73,7 +73,6 @@ export const Downloader = () => {
             setMessage(`ready for download, esimated video size ${Math.round(header.bytes)} MB`)
             setHeader(header)
             setUuid(data.uuid)
-            console.log(data.uuid)
             setFrames(0)
             setStatus(2)
         });

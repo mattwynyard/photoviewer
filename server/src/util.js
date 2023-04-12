@@ -36,11 +36,20 @@ const getFaultView = (user) => {
             view = 'gdc_faults';
             break;
         case 'swdc':
-            view = 'vw_swdc_fp';
-        break;
+            view = 'swdc_fp_faults';
+            break;
+        case 'kdc':
+            view = 'kdc_fp_faults';
+            break;
         case 'ncc':
-            view = 'vw_ncc_fp';
-        break;
+            view = 'ncc_fp_faults';
+            break;
+        case 'fndc':
+            view = 'fndc_fp_faults';
+            break;
+        case 'wgdc':
+            view = 'wgdc_fp_faults';
+            break;
         default:
             view = 'footpaths'      
     }

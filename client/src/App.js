@@ -941,13 +941,13 @@ class App extends React.Component {
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
-      let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
-      if(!body) return;
-      if (!body.error) {
-        inspections = this.buildInspections(body)
-      } else {
-        return;
-      } 
+    let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
+    if(!body) return;
+    if (!body.error) {
+      inspections = this.buildInspections(body)
+    } else {
+      return;
+    } 
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return;
     this.context.setDistrict(district); 
