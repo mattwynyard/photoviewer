@@ -204,7 +204,6 @@ const download = async (socket, uuid) => {
     }
     return {
         frameRate: 2,
-        //duration: frames / 2,
         outputFilepath: `./temp/${uuid}/videos/${label.name}_${label.cwid}_${label.side}_${minERP}_${maxERP}.mp4`,
         inputFilepath: `./temp/${uuid}/images/image%04d.jpg`
     }       
