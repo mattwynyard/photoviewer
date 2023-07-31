@@ -40,10 +40,6 @@ function LayerCard(props) {
             dispatch(setMode("map"))
         }
     }, [dispatch, videoOpen])
-
-    // const handleRatingChange = () => {
-        
-    // }
        
     return (
         <Card className='layercard' >
