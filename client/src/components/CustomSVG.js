@@ -68,11 +68,11 @@ const CustomSVG = (props) => {
         }
         
       }
-
+//reverse
     } else {
       if (props.value === "Grade 5" || props.value === "Priority 5" || props.value === "Rating 5") {
         return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="red" fill="red">
             <circle cx="5" cy="5" r="3" />
           </svg>
           );
@@ -98,7 +98,7 @@ const CustomSVG = (props) => {
           );
         } else {
           return ( 
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="gold" fill="gold">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
@@ -131,7 +131,7 @@ const CustomSVG = (props) => {
         );
       } else if (props.value === "Completed") {
         return (
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreeb" fill="limegreen" opacity="0.8">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );

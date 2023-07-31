@@ -126,29 +126,44 @@ const setFootpathRatingColours = (data) => {
 
     if (geometry.status === "active") {
       if(priority === priorities.high) { //magenta
-        colors.r = 1.0;
-        colors.g = 0.0;
-        colors.b = 1.0;
-        colors.a = ALPHA;  
+        if (geometry.grade) {
+          colors.r = 1.0;
+          colors.g = 0.0;
+          colors.b = 0.0;
+          colors.a = ALPHA;
+        } else {
+          colors.r = 1.0;
+          colors.g = 0.0;
+          colors.b = 1.0;
+          colors.a = ALPHA;
+        }
+          
       } else if(priority === priorities.med) {
-        colors.r = 1.0;
-        colors.g = 0.5;
-        colors.b = 0.0;
-        colors.a = ALPHA;
+          colors.r = 1.0;
+          colors.g = 0.5;
+          colors.b = 0.0;
+          colors.a = ALPHA;
       } else if (priority === priorities.low) {
-        colors.r = 0.0;
-        colors.g = 0.8;
-        colors.b = 0.0;
-        colors.a = ALPHA;
+        if (geometry.grade) {
+          colors.r = 1.0;
+          colors.g = 0.85;
+          colors.b = 0.0;
+          colors.a = ALPHA;
+        } else {
+          colors.r = 0.2;
+          colors.g = 0.8;
+          colors.b = 0.2;
+          colors.a = ALPHA;
+        }
       } else if (priority === 99) {
         colors.r = 0.0;
         colors.g = 0.0;
         colors.b = 1.0;
         colors.a = ALPHA;
       } else {
-        colors.r = 0.0;
-        colors.g = 0.8;
-        colors.b = 0.8;
+        colors.r = 0.6;
+        colors.g = 0.6;
+        colors.b = 0.6;
         colors.a = ALPHA;
       }
     } else if (geometry.status === "programmed") {
@@ -157,14 +172,14 @@ const setFootpathRatingColours = (data) => {
       colors.b = 0.5;
       colors.a = ALPHA;
     } else if (geometry.status === "completed") {
+      colors.r = 0.2;
+      colors.g = 0.8;
+      colors.b = 0.2;
+      colors.a = ALPHA;
+    } else {
       colors.r = 0.6;
       colors.g = 0.6;
       colors.b = 0.6;
-      colors.a = ALPHA;
-    } else {
-      colors.r = 1.0;
-      colors.g = 0.0;
-      colors.b = 0.0;
       colors.a = ALPHA
     }
     return colors;
