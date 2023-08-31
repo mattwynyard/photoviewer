@@ -780,6 +780,7 @@ app.post('/import', async (req, res) => {
     let surface = await db.projecttype(project);
     let clientResult = await db.client(project);
     let client = clientResult.rows[0].client;
+    if (client === 'asm') staged = true;
     let rows = 0;
     let errors = 0;
     let inserted = 0;
@@ -790,7 +791,7 @@ app.post('/import', async (req, res) => {
         rows++;
         try {
           let result = null;
-          if (!staged) {
+          if (!staged ) {
             result = await db.import(data);
             if(result.rowCount === 1) {
               inserted++;

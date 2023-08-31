@@ -29,7 +29,7 @@ export default class PhotoModal extends React.Component {
       this.setState({photo: photo});
       this.setState({date: marker[0].datetime.split('T')[0]});
       this.setState({time: marker[0].datetime.split('T')[1].substr(0,8)});
-      if (login === 'asu') {
+      if (login === 'asu' || login === 'asm') {
         this.setState({amazon: amazon + marker[0].inspection + "/"});
         this.setState({show: show});
       } else {
@@ -120,6 +120,7 @@ export default class PhotoModal extends React.Component {
     }
 
     render() {
+      if (this.state.photo == null) return null
       const DataColumn = (props) => {
         return (
             <div>
