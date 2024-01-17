@@ -957,17 +957,10 @@ class App extends React.Component {
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return;
     this.context.setDistrict(district);
-    body = {project: project, query: null}; 
     request = {project: project, query: null};
-    let filter = await apiRequest(this.context.login, request, "/filterdata");
-    console.log(filter)
-    if (filter.error) return; 
-    // let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
-    // if (storeFilter.error) return; 
-    let filters = this.buildFilter(filter);
-    let filterStore = this.buildFilter(JSON.parse(JSON.stringify(filter)));
-    // const filters = await this.requestFilters(body)
-    // const filterStore = await this.requestFilters(body)
+    const filter = await this.requestFilters(request)
+    const filters = this.buildFilter(filter)
+    const filterStore = this.buildFilter(JSON.parse(JSON.stringify(filter)));
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -995,10 +988,9 @@ class App extends React.Component {
   
     let filter = await apiRequest(this.context.login, request, "/filterdata");
     console.log(filter)
-    if (filter.error) return; 
-    let filters = this.buildFilter(filter);
+    if (filter.error) return;
 
-    return filters
+    return filter
   }
 
     /**
