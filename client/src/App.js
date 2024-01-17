@@ -262,6 +262,7 @@ class App extends React.Component {
  */
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
+
     let options = {type: type, render: "Fault", priorities: priorities, count: 0};
     let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
@@ -955,14 +956,18 @@ class App extends React.Component {
     } 
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return;
-    this.context.setDistrict(district); 
+    this.context.setDistrict(district);
+    body = {project: project, query: null}; 
     request = {project: project, query: null};
     let filter = await apiRequest(this.context.login, request, "/filterdata");
+    console.log(filter)
     if (filter.error) return; 
-    let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
-    if (storeFilter.error) return; 
-    let filters = await this.buildFilter(filter);
-    let filterStore = await this.buildFilter(storeFilter);
+    // let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
+    // if (storeFilter.error) return; 
+    let filters = this.buildFilter(filter);
+    let filterStore = this.buildFilter(JSON.parse(JSON.stringify(filter)));
+    // const filters = await this.requestFilters(body)
+    // const filterStore = await this.requestFilters(body)
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -984,6 +989,16 @@ class App extends React.Component {
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
     });
+  }
+
+  requestFilters = async (request) => {
+  
+    let filter = await apiRequest(this.context.login, request, "/filterdata");
+    console.log(filter)
+    if (filter.error) return; 
+    let filters = this.buildFilter(filter);
+
+    return filters
   }
 
     /**
@@ -1017,7 +1032,7 @@ class App extends React.Component {
       );  
     }
 
-  buildFilter = async (filters) => {
+  buildFilter = (filters) => {
     if (!filters) return {};
     filters.forEach(filter => {
       let data = filter.data.map(element => Object.values(element)[0]);
