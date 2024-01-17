@@ -108,6 +108,7 @@ class App extends React.Component {
     this.notificationRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
+   
   }
   /**
    * Retores mapbox token when browser refreshes as lost from context
@@ -303,10 +304,14 @@ class App extends React.Component {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
+      obj.vlow = 2;
+      obj.vvlow = 1;
     } else {
       obj.high = 1;
       obj.med = 2;
       obj.low = 3;
+      obj.vlow = 2;
+      obj.vvlow = 1;
     }
     return obj;
   }

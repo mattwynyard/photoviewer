@@ -72,7 +72,7 @@ vec2 highPrescisionVertex(vec2 vertex, vec2 vertex_low) {
 }
 void main() {
     highp int index = int(a_vertex.z);
-    vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy);
+    vec2 curr = highPrescisionVertex(a_vertex.xy, a_vertex_low.xy); 
     vec2 p;
     if (index < 0) { //point
         p = curr;

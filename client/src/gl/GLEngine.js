@@ -314,7 +314,9 @@ export default class GLEngine {
           let colors = null;  
           let line = linestring.coordinates;
           if (options.render === "Rating") {
+           
             if (options.type === "footpath") {
+              
               colors = setFootpathRatingColours(data[i]);
               ++count;
             } else {

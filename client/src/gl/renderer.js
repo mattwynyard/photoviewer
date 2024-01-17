@@ -116,7 +116,7 @@ const setFootpathRatingColours = (data) => {
 
   const setFaultColors = (geometry, type, priorities) => {
     const ALPHA = 1.0
-    let colors = {r: null, b: null, g: null, a: null}
+    const colors = {r: null, b: null, g: null, a: null}
     let priority = null;
     if (type === "road") {
       priority = geometry.priority;
@@ -153,6 +153,30 @@ const setFootpathRatingColours = (data) => {
           colors.r = 0.2;
           colors.g = 0.8;
           colors.b = 0.2;
+          colors.a = ALPHA;
+        }
+      } else if (priority === priorities.vlow) {
+        if (geometry.grade) {
+          colors.r = 0.21;
+          colors.g = 0.32;
+          colors.b = 0.68;
+          colors.a = ALPHA;
+        } else {
+          colors.r = 0.21;
+          colors.g = 0.32;
+          colors.b = 0.68;
+          colors.a = ALPHA;
+        }
+      } else if (priority === priorities.vvlow) {
+        if (geometry.grade) {
+          colors.r = 0.16;
+          colors.g = 0.01;
+          colors.b = 0.45;
+          colors.a = ALPHA;
+        } else {
+          colors.r = 0.16;
+          colors.g = 0.01;
+          colors.b = 0.45;
           colors.a = ALPHA;
         }
       } else if (priority === 99) {
