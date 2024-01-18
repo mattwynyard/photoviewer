@@ -68,11 +68,11 @@ const CustomSVG = (props) => {
         }
         
       }
-
+//reverse
     } else {
       if (props.value === "Grade 5" || props.value === "Priority 5" || props.value === "Rating 5") {
         return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="magenta" fill="magenta">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="red" fill="red">
             <circle cx="5" cy="5" r="3" />
           </svg>
           );
@@ -89,16 +89,9 @@ const CustomSVG = (props) => {
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
-        }
-        if (props.login === "chbdc") {
-          return ( 
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke="yellow" fill="yellow">
-              <circle cx="5" cy="5" r="3" />
-            </svg>
-          );
         } else {
           return ( 
-            <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen">
+            <svg viewBox="1 1 10 10" x="16" width="16" stroke="gold" fill="gold">
               <circle cx="5" cy="5" r="3" />
             </svg>
           );
@@ -113,13 +106,13 @@ const CustomSVG = (props) => {
           );
         }
         return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(54,82,173)" fill="rgb(54,82,173)">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
       } else if (props.value === "Grade 1" || props.value === "Priority 1" || props.value === "Rating 1") {
         return ( 
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(0,204,204)" fill="rgb(0,204,204)">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="rgb(40,2,116)" fill="rgb(40,2,116)">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );
@@ -131,7 +124,7 @@ const CustomSVG = (props) => {
         );
       } else if (props.value === "Completed") {
         return (
-          <svg viewBox="1 1 10 10" x="16" width="16" stroke="grey" fill="grey" opacity="0.8">
+          <svg viewBox="1 1 10 10" x="16" width="16" stroke="limegreen" fill="limegreen" opacity="0.8">
             <circle cx="5" cy="5" r="3" />
           </svg>
         );

@@ -2,43 +2,49 @@ const securityServices = require('../services/securityServices');
 const videoServices = require('../services/videoServices');
 const { deleteFiles } = require('../util');
 
-const VIDEO_PATH = './temp/video/'
+//const VIDEO_PATH = './temp/video/'
 
 const downloadHead = async (socket, query) => {
     const result =  await videoServices.headerDownload(socket, query);
     return result
 }
 
-const download = async (socket) => {
-    const options = await videoServices.download(socket);
+const download = async (socket, uuid) => {
+    const result = await videoServices.createDirectory(uuid)
+    if (!result) {
+        console.log("error creating directory")
+        return null
+    }
+    const options = await videoServices.download(socket, uuid);
     if (options) {
         const path = await videoServices.stitch(socket, options);
         try {
-            deleteFiles('./temp/images');
+            deleteFiles(`./temp/${uuid}/images`);
         } catch (err) {
             console.log(err) ////error deleting
         }
         if (path) {
-            return path
+            return {video: path, uuid: uuid}
         } else {
-            deleteFiles('./temp/images');
+            deleteFiles(`./temp/${uuid}/images`);
             return null //error stitching
         }
     } else {
-        deleteFiles('./temp/images');
+        deleteFiles(`./temp/${uuid}/images`);
         return null //error downloading
     }
 }
 
-const deleteVideo = async (query) => {
-    await videoServices.deleteVideo(`${VIDEO_PATH}/${query}`);
+const cleanup = async (filename, uuid) => {
+    const result = await videoServices.deleteDirectory(`./temp/${uuid}`);
+    return result
 }
 
 const downloadVideo = async (req, res) => {
     try {
         const security = await securityServices.isAuthorized(req.query.user, req.query.project, req.headers.authorization);      
         if (security) {
-            res.download(`${VIDEO_PATH}/${req.query.filename}`)
+            res.download(`./temp/${req.query.uuid}/videos/${req.query.filename}`)
         } else {
             res.send({error: 'incorrect security credentials'});
         }
@@ -112,7 +118,7 @@ const photos = async (req, res) => {
   };
 
   module.exports = {
-    deleteVideo,
+    cleanup,
     downloadHead,
     download,
     downloadVideo,

@@ -108,6 +108,7 @@ class App extends React.Component {
     this.notificationRef = React.createRef();
     this.vidPolyline = null;  
     this.selectedIndex = null;
+   
   }
   /**
    * Retores mapbox token when browser refreshes as lost from context
@@ -261,6 +262,7 @@ class App extends React.Component {
  */
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
+
     let options = {type: type, render: "Fault", priorities: priorities, count: 0};
     let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
@@ -303,10 +305,14 @@ class App extends React.Component {
       obj.high = 5;
       obj.med = 4;
       obj.low = 3;
+      obj.vlow = 2;
+      obj.vvlow = 1;
     } else {
       obj.high = 1;
       obj.med = 2;
       obj.low = 3;
+      obj.vlow = 2;
+      obj.vvlow = 1;
     }
     return obj;
   }
@@ -941,23 +947,21 @@ class App extends React.Component {
     let projectCode = project.code;
     let inspections = null;
     let request = {project: project.code, query: null}
-      let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
-      if(!body) return;
-      if (!body.error) {
-        inspections = this.buildInspections(body)
-      } else {
-        return;
-      } 
+    let body = await apiRequest(this.context.login, request, "/age"); //fix for footpaths
+    if(!body) return;
+    if (!body.error) {
+      inspections = this.buildInspections(body)
+    } else {
+      return;
+    } 
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return;
-    this.context.setDistrict(district); 
-    request = {project: project, query: null};
-    let filter = await apiRequest(this.context.login, request, "/filterdata");
-    if (filter.error) return; 
-    let storeFilter = await apiRequest(this.context.login, request, "/filterdata");
-    if (storeFilter.error) return; 
-    let filters = await this.buildFilter(filter);
-    let filterStore = await this.buildFilter(storeFilter);
+    this.context.setDistrict(district);
+    request = {project: project, query: null, type: null};
+    const filter = await this.requestFilters(request)
+    const filters = this.buildFilter(filter)
+    const store = await this.requestFilters(request)
+    const filterStore = this.buildFilter(store)
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -979,6 +983,15 @@ class App extends React.Component {
       let body = await this.filterLayer(project); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, true);
     });
+  }
+
+  requestFilters = async (request) => {
+  
+    let filter = await apiRequest(this.context.login, request, "/filterdata");
+    console.log(filter)
+    if (filter.error) return;
+
+    return filter
   }
 
     /**
@@ -1012,7 +1025,7 @@ class App extends React.Component {
       );  
     }
 
-  buildFilter = async (filters) => {
+  buildFilter = (filters) => {
     if (!filters) return {};
     filters.forEach(filter => {
       let data = filter.data.map(element => Object.values(element)[0]);
@@ -1159,6 +1172,8 @@ class App extends React.Component {
  */
   filterLayer = async (project) => {
     this.context.showLoader();
+    // const filter = await this.requestFilters(request)
+    // const filters = this.buildFilter(filter)
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     try {
@@ -1273,10 +1288,16 @@ class App extends React.Component {
    * callback for prioritydropdwon to update priority filter
    * @param {array} query 
    */
-  updatePriority = (query) => {
+  updatePriority = async (query) => {
+    console.log(query)
+    
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
+      const request = {project: this.props.activeLayer, query: query, type: 'priority'}
+      const filter = await this.requestFilters(request)
+      const filters = this.buildFilter(filter)
+      this.setState({filters: filters})
     });   
   }
   /**

@@ -29,6 +29,7 @@ export const Downloader = () => {
     const [targetSize, setTargetSize] = useState(0)
     const [message, setMessage] = useState('')
     const [header, setHeader] = useState(null)
+    const [uuid, setUuid ] = useState(null)
     const [moving, setMoving] = useState(false);
     const [mouseDown, setMouseDown] = useState(false)
     const [mousePosition, setMousePosition] = useState(null);
@@ -63,16 +64,20 @@ export const Downloader = () => {
         })
         socket.on("header", (data) => {
             const header = {
-                bytes: Math.round(((data.bytes / 1000000) + Number.EPSILON) * 100) / 100,
-                frames: data.found,
-                count: data.total,
-                min: data.minERP,
-                max: data.maxERP
+                bytes: Math.round(((data.header.bytes / 1000000) + Number.EPSILON) * 100) / 100,
+                frames: data.header.found,
+                count: data.header.total,
+                min: data.header.minERP,
+                max: data.header.maxERP
             }
             setMessage(`ready for download, esimated video size ${Math.round(header.bytes)} MB`)
             setHeader(header)
+            setUuid(data.uuid)
             setFrames(0)
             setStatus(2)
+        });
+        socket.on("cleanup", (result) => {
+            console.log("cleanup: " + result); 
         });
         socket.on("connect_error", (err) => {
             console.log(err instanceof Error); 
@@ -84,6 +89,7 @@ export const Downloader = () => {
             console.log(`disconnect: ${reason}`); 
             setStatus(0)
             setSocket(null)
+            setUuid(null)
         });
     }, [req, show]);
 
@@ -94,10 +100,11 @@ export const Downloader = () => {
         socket.emit("header", req)
     }, [socket])
 
-    const downloadVideo = useCallback(async (filename) => {
+    const downloadVideo = useCallback(async (filename, uuid) => {
         const query = {
             user: login.user,
             filename: filename,
+            uuid: uuid,
             project: req.project
           }
           try {
@@ -123,20 +130,21 @@ export const Downloader = () => {
             console.log(err)
             return false
           } finally {
-            socket.emit("delete", filename)
+            socket.emit("delete", filename, uuid)
             setStatus(5)
+            setMessage(`${filename} saved to downloads folder....`)
             socket.disconnect()
             setSocket(null)
-            
+            setUuid(null) 
           }
           return true   
-    })
+    }, [uuid, req])
 
     const download = useCallback(async () => {
         if(!req) return;
         setStatus(3)
         setMessage("downloading frames...")
-        socket.emit('download')
+        socket.emit('download', uuid)
         socket.on("photo", (size)=> {
             const sizeMB = size / 1000000
             setTargetSize(targetSize => Math.round(((targetSize += sizeMB)  + Number.EPSILON) * 100) / 100)//MB
@@ -154,12 +162,12 @@ export const Downloader = () => {
             setTargetSize(data.targetSize / 1000)
               
         })
-        socket.on("end", (filename) => {
-            if (filename) {
-                setMessage(`${filename} completed`)
-                const result = downloadVideo(filename)
+        socket.on("end", ({video, uuid}) => {
+            if (video) {
+                setMessage(`${video} completed`)
+                const result = downloadVideo(video, uuid)
                 if (result) {
-                    setMessage(`saved video to downloads folder...`)
+                    setMessage(`saving video to downloads folder...`)
                 } else {
                     setMessage(`error`)
                 }
@@ -171,7 +179,7 @@ export const Downloader = () => {
         socket.on("error", (error) => {
             console.log(error)
         })
-    }, [header, socket])
+    }, [header, socket, uuid])
 
     useEffect(() => {
         if(!header) return
@@ -224,6 +232,7 @@ export const Downloader = () => {
         setStatus({head: false, download: false})
         setMessage('')
         setTargetSize(0)
+        setUuid(null)
         dispatch(setOpenDownload({show:false, request: null}))
         if (socket) {
             socket.disconnect()
@@ -265,7 +274,7 @@ export const Downloader = () => {
                 <Button variant="outlined" disabled={!header || status !== 2} fullWidth={true} onClick={download}>{`${'Download'}`}</Button>
                 </div>
                 <div>
-                <Button variant="outlined" disabled={status === 3 || status === 4} fullWidth={true} onClick={(e) => clickCancel(e)}>{status === 5 ?  `${'Close'}` : `${'Cancel'}`}</Button>
+                <Button variant="outlined" disabled={status === 3 || status === 4 || status === 1} fullWidth={true} onClick={(e) => clickCancel(e)}>{status === 5 ?  `${'Close'}` : `${'Cancel'}`}</Button>
                 </div>
             </CardActions>
         </Card>   

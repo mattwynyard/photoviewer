@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const db = require('./db.js');
 const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const app = express();
 const users = require('./user.js');
@@ -61,16 +62,20 @@ io.use(async (socket, next) => {
   }
 });
 io.on('connection', async (socket) => {
+  const uuid = uuidv4()
   socket.on('header', async query => {
     const header = await videoController.downloadHead(socket, query)
-    socket.emit("header", header)
+    socket.emit("header", {header: header, uuid: uuid})
   })
-  socket.on('download', async () => {
-    const result = await videoController.download(socket)
-    socket.emit("end", result)
+  socket.on('download', async (uuid) => {
+    //console.log(uuid)
+    const result = await videoController.download(socket, uuid)
+    //console.log(result)
+    socket.emit("end", result, uuid)
   })
-  socket.on('delete', async (query) => {
-    const result = await videoController.deleteVideo(query)
+  socket.on('delete', async (filename, uuid) => {
+    const result = await videoController.cleanup(filename, uuid)
+    socket.emit("cleanup", result)
   })
 
 })
@@ -532,11 +537,11 @@ app.post('/class', async (req, res) => {
           let faults = await db.faults(user, project, faultData[i].code, archive);
           faultData[i].data = faults.rows;
         } else {
-          let faults = await db.footpathFaults(project, faultData[i].description);
-  
-          faultData[i].data = faults.rows;
+            let faults = await db.footpathFilters(project, faultData[i].description, req.body.type, req.body.query);
+            faultData[i].data = faults.rows;
         }    
       }
+      console.log(faultData[0].data)
       res.set('Content-Type', 'application/json')
       res.send({result: faultData});
     } catch (error) {
@@ -775,6 +780,7 @@ app.post('/import', async (req, res) => {
     let surface = await db.projecttype(project);
     let clientResult = await db.client(project);
     let client = clientResult.rows[0].client;
+    if (client === 'asm') staged = true;
     let rows = 0;
     let errors = 0;
     let inserted = 0;
@@ -785,7 +791,7 @@ app.post('/import', async (req, res) => {
         rows++;
         try {
           let result = null;
-          if (!staged) {
+          if (!staged ) {
             result = await db.import(data);
             if(result.rowCount === 1) {
               inserted++;

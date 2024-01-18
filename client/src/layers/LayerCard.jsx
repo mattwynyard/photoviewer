@@ -11,7 +11,6 @@ import { setMode } from '../state/reducers/mapSlice'
 import './LayerCard.css';
 
 function LayerCard(props) {
-
     const videoOpen = useSelector((state) => state.video.isOpen)
     const mapMode = useSelector((state) => state.map.mode)
     const dispatch = useDispatch()
@@ -40,10 +39,6 @@ function LayerCard(props) {
             dispatch(setMode("map"))
         }
     }, [dispatch, videoOpen])
-
-    // const handleRatingChange = () => {
-        
-    // }
        
     return (
         <Card className='layercard' >
