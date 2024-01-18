@@ -11,6 +11,7 @@ const apiRequest = async (credentials, request, endpoint) => {
           user: credentials.user,
           project: request.project,
           query: request.query,
+          type: request.type
         })
         });
         if(response.ok) {

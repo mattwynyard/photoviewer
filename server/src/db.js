@@ -598,7 +598,9 @@ module.exports = {
 
     footpathFaults: (project, parameter) => {
         return new Promise((resolve, reject) => {
-            let sql = "SELECT " + parameter + " FROM footpaths WHERE project = '" + project + "' GROUP BY " + parameter + "";
+            // sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
+            //     WHERE project = '${project}' GROUP BY class) ORDER BY priority`
+            let sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' GROUP BY ${parameter}`;
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)

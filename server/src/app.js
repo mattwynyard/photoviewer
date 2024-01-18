@@ -537,11 +537,11 @@ app.post('/class', async (req, res) => {
           let faults = await db.faults(user, project, faultData[i].code, archive);
           faultData[i].data = faults.rows;
         } else {
-          let faults = await db.footpathFaults(project, faultData[i].description);
-  
-          faultData[i].data = faults.rows;
+            let faults = await db.footpathFaults(project, faultData[i].description, req.body.type, req.body.query);
+            faultData[i].data = faults.rows;
         }    
       }
+      console.log(faultData[0].data)
       res.set('Content-Type', 'application/json')
       res.send({result: faultData});
     } catch (error) {

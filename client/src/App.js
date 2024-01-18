@@ -957,10 +957,11 @@ class App extends React.Component {
     let district = await apiRequest(this.context.login, request, "/district");
     if (district.error) return;
     this.context.setDistrict(district);
-    request = {project: project, query: null};
+    request = {project: project, query: null, type: null};
     const filter = await this.requestFilters(request)
     const filters = this.buildFilter(filter)
-    const filterStore = this.buildFilter(JSON.parse(JSON.stringify(filter)));
+    const store = await this.requestFilters(request)
+    const filterStore = this.buildFilter(store)
     let layerBody = await apiRequest(this.context.login, request, "/layerdropdowns");
     let priorities = this.buildPriority(layerBody.priority, project.priority, project.ramm); 
     if (layerBody.rmclass) {
@@ -1171,6 +1172,8 @@ class App extends React.Component {
  */
   filterLayer = async (project) => {
     this.context.showLoader();
+    // const filter = await this.requestFilters(request)
+    // const filters = this.buildFilter(filter)
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     try {
@@ -1285,10 +1288,16 @@ class App extends React.Component {
    * callback for prioritydropdwon to update priority filter
    * @param {array} query 
    */
-  updatePriority = (query) => {
+  updatePriority = async (query) => {
+    console.log(query)
+    
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
+      const request = {project: this.props.activeLayer, query: query, type: 'priority'}
+      const filter = await this.requestFilters(request)
+      const filters = this.buildFilter(filter)
+      console.log(filters)
     });   
   }
   /**
