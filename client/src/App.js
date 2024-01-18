@@ -1297,7 +1297,7 @@ class App extends React.Component {
       const request = {project: this.props.activeLayer, query: query, type: 'priority'}
       const filter = await this.requestFilters(request)
       const filters = this.buildFilter(filter)
-      console.log(filters)
+      this.setState({filters: filters})
     });   
   }
   /**
