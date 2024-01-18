@@ -537,7 +537,7 @@ app.post('/class', async (req, res) => {
           let faults = await db.faults(user, project, faultData[i].code, archive);
           faultData[i].data = faults.rows;
         } else {
-            let faults = await db.footpathFaults(project, faultData[i].description, req.body.type, req.body.query);
+            let faults = await db.footpathFilters(project, faultData[i].description, req.body.type, req.body.query);
             faultData[i].data = faults.rows;
         }    
       }

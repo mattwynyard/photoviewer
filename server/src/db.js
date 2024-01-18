@@ -596,18 +596,28 @@ module.exports = {
         });
     },
 
-    footpathFaults: (project, parameter) => {
+    footpathFilters: (project, parameter, type, query) => {
+        console.log(type)
         return new Promise((resolve, reject) => {
             // sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
             //     WHERE project = '${project}' GROUP BY class) ORDER BY priority`
-            let sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' GROUP BY ${parameter}`;
+            let sql = null
+            if (query != null) {
+                if (type === "priority") {
+                    sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' AND grade IN (${query}) GROUP BY ${parameter}`;
+                } else {
+                    sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' GROUP BY ${parameter}`;  
+                }
+            } else {
+                sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' GROUP BY ${parameter}`; 
+            }
+            //let sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' AND grade IN ${query} GROUP BY ${parameter}`;
             connection.query(sql, (err, result) => {
                 if (err) {
                     console.error('Error executing query', err.stack)
                     return reject(err);
                 }
-                let type = resolve(result);
-                return type;
+                return  resolve(result);
             });
         });
     },
