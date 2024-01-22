@@ -35,7 +35,7 @@ export default function FilterMenu(props) {
 
   return (
       <Dropdown.Menu className="custommenu">
-      {props.store.map((value, index) =>
+      {props.filter.map((value, index) =>
         <div key={`${index}`}>
           <input
             key={`${index}`} 
