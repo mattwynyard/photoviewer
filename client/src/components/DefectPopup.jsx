@@ -55,7 +55,6 @@ import { useEffect } from 'react';
 // }
 
 const DefectPopup = (props) => {
-
     const [prefix, setPrefix] = useState(null);
     
     useEffect(() => {  

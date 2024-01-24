@@ -95,7 +95,7 @@ class App extends React.Component {
       showPhotoViewer: false,
       imageUrl: null,
       bearing: 0,
-      mouseOverMap: false
+      mouseOverMap: false,
     }; 
     this.search = React.createRef();
     this.photoModal = React.createRef();
@@ -988,7 +988,6 @@ class App extends React.Component {
   requestFilters = async (request) => {
   
     let filter = await apiRequest(this.context.login, request, "/filterdata");
-    console.log(filter)
     if (filter.error) return;
 
     return filter
@@ -1289,8 +1288,6 @@ class App extends React.Component {
    * @param {array} query 
    */
   updatePriority = async (query) => {
-    console.log(query)
-    
     this.setState({filterPriorities: query}, async () => {
       let body = await this.filterLayer(this.props.activeLayer); //fetch layer
       this.addGLGeometry(body.points, body.lines, body.type, false);
