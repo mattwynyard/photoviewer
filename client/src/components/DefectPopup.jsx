@@ -58,7 +58,7 @@ const DefectPopup = (props) => {
     const [prefix, setPrefix] = useState(null);
     
     useEffect(() => {  
-        if (props.login === "asu" || props.login === "asm") {
+        if (props.login === "fhsu" || props.login === "asm") {
             setPrefix(`${props.amazon}${props.data.inspection}/`);
         } else if (props.data.type === 'footpath') {
             if (props.data.asset.toLowerCase() === "kerb & channel") {

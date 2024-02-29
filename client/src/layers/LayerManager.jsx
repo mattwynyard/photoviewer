@@ -5,16 +5,17 @@ import { useSelector } from 'react-redux'
 const LayerManager = (props) => {
     const active = useSelector((state) => state.layers.active)
     if (active) {
+
         return (
             <LayerCard
-                classtitle={'layermanager'}
+                classtitle={'RM Class'}
                 layer={active}
                 prioritytitle={props.prioritytitle}
                 priorityitems={props.priorityitems}
                 priorityfilter={props.priorityfilter} 
                 priorityonClick={props.updatePriority}
-                classitems={props.rmclass ? props.rmclass: []}
-                classfilter={props.filterRMClass} 
+                classitems={props.classitems ? props.classitems: []}
+                classfilter={props.classfilter} 
                 classonClick={props.classonClick}
                 setDataActive={props.setDataActive} //-> data table
                 dataChecked={props.dataActive} //-> data table

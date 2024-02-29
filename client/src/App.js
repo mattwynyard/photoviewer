@@ -635,7 +635,8 @@ class App extends React.Component {
 
   requestCarriage = async (query) => {
     const queryParams = new URLSearchParams(query)
-    const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
+    //const response = await fetch(`https://${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
+      const response = await fetch(`${this.context.login.host}/closestcarriage?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -782,7 +783,7 @@ class App extends React.Component {
       tacode: request.tacode
     }
     const queryParams = new URLSearchParams(query)
-    const response = await fetch(`https://${request.login.host}/closestvideophoto?${queryParams.toString()}`, {
+    const response = await fetch(`${request.login.host}/closestvideophoto?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -810,7 +811,7 @@ class App extends React.Component {
       tacode: request.tacode
     }
     const queryParams = new URLSearchParams(query)
-    const response = await fetch(`https://${login.host}/photos?${queryParams.toString()}`, {
+    const response = await fetch(`${login.host}/photos?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -835,7 +836,8 @@ class App extends React.Component {
       photo: JSON.stringify(currentPhoto)
     }
     const queryParams = new URLSearchParams(query)
-      const response = await fetch(`https://${this.context.login.host}/changeside?${queryParams.toString()}`, {
+      //const response = await fetch(`https://${this.context.login.host}/changeside?${queryParams.toString()}`, {
+      const response = await fetch(`${this.context.login.host}/changeside?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'same-origin',
       headers: {
@@ -859,7 +861,7 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArhivePhoto(e) {
-    const response = await fetch("https://" + this.context.login.host + '/archive', {
+    const response = await fetch(this.context.login.host + '/archive', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -903,7 +905,7 @@ class App extends React.Component {
    * @param {the click event i.e} e 
    */
   async getArchiveData(photo) {
-    const response = await fetch("https://" + this.context.login.host + '/archivedata', {
+    const response = await fetch(this.context.login.host + '/archivedata', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1128,7 +1130,7 @@ class App extends React.Component {
 
   async sendData(project, data, endpoint) {
     if (this.context.login.user !== "Login") {
-      await fetch('https://' + this.context.login.host + endpoint, {
+      await fetch(this.context.login.host + endpoint, {
       method: 'POST',
       headers: {
         "authorization": this.context.login.token,
@@ -1176,7 +1178,7 @@ class App extends React.Component {
     const body = this.getBody(project, this.context.login.user);
     if (!body) return;
     try {
-      const response = await fetch('https://' + this.context.login.host + '/layer', {
+      const response = await fetch(this.context.login.host + '/layer', {
         method: 'POST',
         headers: {
           "authorization": this.context.login.token,
@@ -1204,7 +1206,7 @@ class App extends React.Component {
 
   async loadCentreline(e) {
     if (this.context.login.user !== "Login") {
-        await fetch('https://' + this.state.host + '/roads', {
+        await fetch(this.state.host + '/roads', {
         method: 'POST',
         headers: {
           "authorization": this.context.login.token,

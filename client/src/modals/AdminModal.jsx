@@ -39,7 +39,7 @@ export default function AdminModal(props) {
 
     const sendData = async (endpoint) => {
         if (props.login.user === "admin") {
-          await fetch('https://' + props.login.host + endpoint, {
+          await fetch(props.login.host + endpoint, {
           method: 'POST',
           headers: {
             "authorization": props.login.token,
@@ -161,7 +161,7 @@ export default function AdminModal(props) {
 
     const updateUser = async (type) => {
         if (props.login.user === "admin") {
-          await fetch('https://' + props.login.host + '/user', {
+          await fetch(props.login.host + '/user', {
             method: 'POST',
             headers: {
               "authorization": props.login.token,
@@ -211,7 +211,7 @@ export default function AdminModal(props) {
       const updateProject = async (type) => {
         if (props.login.user !== "admin") return;
         if (props.login.user === "admin") {
-          await fetch('https://' + props.login.host + '/project', {
+          await fetch(props.login.host + '/project', {
             method: 'POST',
             headers: {
               "authorization": props.login.token,

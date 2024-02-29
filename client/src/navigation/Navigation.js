@@ -67,7 +67,7 @@ export const Navigation = (props) => {
      let user =  window.sessionStorage.getItem("user");
      const callBackendAPI = async () => {
       try {
-        const response = await fetch("https://" + host + '/api'); 
+        const response = await fetch(host + '/api'); 
         const body = await response.json();
         if (response.status !== 200) {
           alert(body);   

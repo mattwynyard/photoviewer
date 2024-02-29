@@ -1,7 +1,7 @@
 
 const Fetcher = async (login, project, query) => {
 
-    const response = await fetch("https://" + login.host + "/carriageway", {
+    const response = await fetch(login.host + "/carriageway", {
         method: 'POST',
         credentials: 'same-origin',
         headers: {

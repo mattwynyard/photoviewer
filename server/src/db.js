@@ -58,6 +58,13 @@ function monthToNumeric(month) {
     }
 }
 
+function parseInspection(inspection) {
+    const tokens = inspection.substring(1, inspection.length - 1).split(' ')
+    const dataTokens = tokens[0].split('-')
+    const insp = `${dataTokens[0]}/${dataTokens[1]}`
+    return parseString(insp)
+}
+
 function parseInteger(x) {
     let n = parseInt(x)
     if (Number.isNaN(n)) {
@@ -139,7 +146,7 @@ connection.on('error', error => {
 const getTable = (user) => {
     let table = null;
     switch (user) {
-        case 'asu':
+        case 'fhsu':
             table = 'asufaults';
             break;
         case 'asm':
@@ -406,10 +413,10 @@ module.exports = {
     },
 
     stagedImport: (data, client) => {
-        let table =null;
+        let table = null;
         if (client === 'asm') {
             table = 'asmfaults'
-        } else if (client = 'asu') {
+        } else if (client === 'fhsu') {
             table = 'asufaults'
         } else {
             return;
@@ -434,7 +441,12 @@ module.exports = {
         data[17] = parseInteger(data[17]); //count
         data[18] = parseDateTime(data[18]); //faulttime
         data[19] = parseString(data[19]); //inspector
-        data[20] = parseString(data[20]); //inspection
+        if (table === 'asmfaults') {
+            data[20] = parseString(data[20])
+        } else {
+            data[20] = parseInspection(data[18]) //inspection
+        }
+        
         data[21] = parseInteger(data[21]); //seq
         data[22] = parseString(data[22]); //photoid
         data[23] = parseString(data[23]); //status

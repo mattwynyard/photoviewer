@@ -52,7 +52,7 @@ export default class Roadlines extends Component {
     }
 
     async loadCentrelines(project) {
-        await fetch('https://' + this.context.login.host + '/centrelines', {
+        await fetch(this.context.login.host + '/centrelines', {
           method: 'POST',
           headers: {
             "authorization": this.context.login.token,

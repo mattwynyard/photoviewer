@@ -1,6 +1,6 @@
 const apiRequest = async (credentials, request, endpoint) => {
     try {
-        const response = await fetch('https://' + credentials.host + endpoint, {
+        const response = await fetch(credentials.host + endpoint, {
         method: 'POST',
         headers: {
           "authorization": credentials.token,
@@ -42,7 +42,7 @@ const apiRequest = async (credentials, request, endpoint) => {
  export default async function LoginFetch(address, token, _body) {
 
   try {
-      const response = await fetch("https://" + address, {
+      const response = await fetch(address, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {

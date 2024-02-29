@@ -2,7 +2,7 @@
   "name": "client",
   "version": "2.4.2",
   "private": true,
-  "proxy": "https://localhost:8443/",
+  "proxy": "https://localhost:8443",
   "start": "HTTPS=true react-scripts start",
   "dependencies": {
     "@emotion/react": "^11.10.5",

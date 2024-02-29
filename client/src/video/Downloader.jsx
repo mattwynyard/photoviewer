@@ -34,7 +34,7 @@ export const Downloader = () => {
     const [mouseDown, setMouseDown] = useState(false)
     const [mousePosition, setMousePosition] = useState(null);
 
-    const SERVER_URL =`https://${login.host}`
+    const SERVER_URL =`${login.host}`
     const [socket, setSocket] = useState(null)
 
     useEffect(() => {
@@ -44,7 +44,7 @@ export const Downloader = () => {
             path: '/socket.io/',
             secure: true,
             cors: {
-              origin: `https://${login.host}`,
+              origin: `${login.host}`,
               methods: ["GET", "HEAD"]
             },
             auth: {
@@ -109,7 +109,7 @@ export const Downloader = () => {
           }
           try {
             const queryParams = new URLSearchParams(query)
-            const response = await fetch(`https://${login.host}/download?${queryParams.toString()}`, {
+            const response = await fetch(`${login.host}/download?${queryParams.toString()}`, {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: {

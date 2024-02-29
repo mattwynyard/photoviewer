@@ -12,7 +12,7 @@ export default function useGetQuery(query) {
         try {
             const queryParams = new URLSearchParams(query)
             setLoading(true)
-            const response = await fetch(`https://${login.host}/download?${queryParams.toString()}`, {
+            const response = await fetch(`${login.host}/download?${queryParams.toString()}`, {
             method: 'GET',
             credentials: 'same-origin',
             headers: {
