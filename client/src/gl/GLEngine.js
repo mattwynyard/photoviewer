@@ -4,14 +4,13 @@ import Gradient from "javascript-color-gradient";
 import './L.CanvasOverlay';
 import { setFootpathRatingColours, setFaultColors, setCentreColors } from './renderer.js'
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
-import { AppContext} from '../context/AppContext';
+
 
 const DUPLICATE_OFFSET = 0.00002;
 const ALPHA = 1.0;
 const VERTEX_SIZE = 10;
 
 export default class GLEngine {
-  static contextType = AppContext;
     constructor(leaflet) {
         this.leafletMap = leaflet;
         this.mouseClick = null;
@@ -251,16 +250,16 @@ export default class GLEngine {
       let centreCount  = numCentreVerts - 4; //ignores last four points as next is duplcate of current
       let lineCount  = numLineVerts - 4;
       let pointCount = numPointVerts - 4; //last four null points ignored
+      const user = this.delegate.appDelegate.context.login.user
+      let pointcorrection = 6
+      if(user === 'asm') pointcorrection = 2
       if (zIndex === 1) {
         gl.uniform1f(thickness, t);
         if (lineCount > 0) {
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, lineCount);
         } 
         if (numPointVerts > 0) {
-          let pointSize = Math.max(params.map.getZoom() - 6.0, 1.0);
-          console.log(pointSize, params.map.getZoom())
-          //const user = this.context.login.user
-          //console.log(user)
+          let pointSize = Math.max(params.map.getZoom() - pointcorrection, 1.0);
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numLineVerts, pointCount); 
@@ -279,7 +278,7 @@ export default class GLEngine {
           gl.drawArrays(gl.TRIANGLE_STRIP, numCentreVerts, lineCount);
         } 
         if (numPointVerts > 0) {
-          let pointSize = Math.max(params.zoom - 6.0, 1.0);
+          let pointSize = Math.max(params.zoom - pointcorrection, 1.0);
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numCentreVerts + numLineVerts, pointCount); 

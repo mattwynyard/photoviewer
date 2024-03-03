@@ -114,7 +114,7 @@ const setFootpathRatingColours = (data) => {
     return colors;
   }
 
-  const setFaultColors = (geometry, type, priorities, user) => {
+  const setFaultColors = (geometry, type, priorities) => {
     const ALPHA = 1.0
     const colors = {r: null, b: null, g: null, a: null}
     let priority = null;
@@ -123,8 +123,6 @@ const setFootpathRatingColours = (data) => {
     } else {
       priority = geometry.grade;
     }
-    console.log(user)
-    //if (user === 'asm')
     if (geometry.status === "active") {
       if(priority === priorities.high) { //magenta
         if (geometry.grade) {

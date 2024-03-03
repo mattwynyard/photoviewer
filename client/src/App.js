@@ -1,7 +1,7 @@
 import React from 'react';
 import { Map as LMap, TileLayer, ScaleControl, LayerGroup, Marker, Polyline}  from 'react-leaflet';
 import { Image }  from 'react-bootstrap';
-import L from 'leaflet';
+import L from 'leaflet';AppContext
 import './App.css';
 import './components/ToolsMenu.css';
 import { Navigation } from './navigation/Navigation.js'
