@@ -4,13 +4,14 @@ import Gradient from "javascript-color-gradient";
 import './L.CanvasOverlay';
 import { setFootpathRatingColours, setFaultColors, setCentreColors } from './renderer.js'
 import {compileShader, createProgram, vshader, fshader, vshader300, fshader300} from './shaders.js'
+import { AppContext} from '../context/AppContext';
 
 const DUPLICATE_OFFSET = 0.00002;
 const ALPHA = 1.0;
 const VERTEX_SIZE = 10;
 
 export default class GLEngine {
- 
+  static contextType = AppContext;
     constructor(leaflet) {
         this.leafletMap = leaflet;
         this.mouseClick = null;
@@ -257,6 +258,9 @@ export default class GLEngine {
         } 
         if (numPointVerts > 0) {
           let pointSize = Math.max(params.map.getZoom() - 6.0, 1.0);
+          console.log(pointSize, params.map.getZoom())
+          //const user = this.context.login.user
+          //console.log(user)
           gl.aPointSize = gl.getAttribLocation(this.delegate.program, "a_pointSize");
           gl.vertexAttrib1f(gl.aPointSize, pointSize);
           gl.drawArrays(gl.POINTS, numLineVerts, pointCount); 
@@ -325,7 +329,7 @@ export default class GLEngine {
             }
             
           } else {
-            colors = setFaultColors(data[i], options.type, options.priorities);
+            colors = setFaultColors(data[i], options.type, options.priorities, options.user);
             ++count;
           }   
           lengths.push(line.length);
@@ -380,7 +384,7 @@ export default class GLEngine {
     for (let i = 0; i < points.length; i++) { //start at one index 0 will be black
       const position = JSON.parse(points[i].st_asgeojson);
       const indexType = this.getIndex(points[i].asset); //different symbols
-      let colors = setFaultColors(points[i], options.type, options.priorities);
+      let colors = setFaultColors(points[i], options.type, options.priorities, options.user);
       const lng = position.coordinates[0];
       const lat = position.coordinates[1];
       const latlng = L.latLng(lat, lng);

@@ -543,7 +543,7 @@ app.post('/class', async (req, res) => {
             faultData[i].data = faults.rows;
         }    
       }
-      console.log(faultData[0].data)
+      //console.log(faultData[0].data)
       res.set('Content-Type', 'application/json')
       res.send({result: faultData});
     } catch (error) {

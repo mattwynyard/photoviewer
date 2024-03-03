@@ -262,11 +262,12 @@ class App extends React.Component {
  */
   addGLGeometry(points, lines, type, zoom) {
     const priorities = this.setPriorityObject();
-
-    let options = {type: type, render: "Fault", priorities: priorities, count: 0};
+    const user = this.context.login.user
+    let options = {type: type, render: "Fault", priorities: priorities, count: 0, user: user};
     let glLines = this.GLEngine.loadLines([], lines, options);
     if (!glLines) return;
-    options = {type: type, priorities: priorities, count: glLines.count};
+    
+    options = {type: type, priorities: priorities, count: glLines.count, user: user};
     let glPoints = this.GLEngine.loadPoints([], points, options); 
     const geom =  this.getLayerData();
     const glData = {
@@ -988,10 +989,8 @@ class App extends React.Component {
   }
 
   requestFilters = async (request) => {
-  
     let filter = await apiRequest(this.context.login, request, "/filterdata");
     if (filter.error) return;
-
     return filter
   }
 
@@ -1291,12 +1290,13 @@ class App extends React.Component {
    */
   updatePriority = async (query) => {
     this.setState({filterPriorities: query}, async () => {
-      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
-      this.addGLGeometry(body.points, body.lines, body.type, false);
       const request = {project: this.props.activeLayer, query: query, type: 'priority'}
       const filter = await this.requestFilters(request)
       const filters = this.buildFilter(filter)
       this.setState({filters: filters})
+      let body = await this.filterLayer(this.props.activeLayer); //fetch layer
+      this.addGLGeometry(body.points, body.lines, body.type, false);
+     
     });   
   }
   /**

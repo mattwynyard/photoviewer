@@ -58,11 +58,16 @@ function monthToNumeric(month) {
     }
 }
 
-function parseInspection(inspection) {
+function parseInspection(inspection, client) {
     const tokens = inspection.substring(1, inspection.length - 1).split(' ')
     const dataTokens = tokens[0].split('-')
-    const insp = `${dataTokens[0]}/${dataTokens[1]}`
-    return parseString(insp)
+    if (client === 'asm') {
+        return parseString(`${dataTokens[0]}_${dataTokens[1]}`)
+    } else if (client === 'fhsu') {
+        return parseString(`${dataTokens[0]}/${dataTokens[1]}`)
+    } else {
+        return parseString(`${dataTokens[0]}_${dataTokens[1]}`)
+    }
 }
 
 function parseInteger(x) {
@@ -441,11 +446,11 @@ module.exports = {
         data[17] = parseInteger(data[17]); //count
         data[18] = parseDateTime(data[18]); //faulttime
         data[19] = parseString(data[19]); //inspector
-        if (table === 'asmfaults') {
-            data[20] = parseString(data[20])
-        } else {
-            data[20] = parseInspection(data[18]) //inspection
-        }
+        //if (table === 'asmfaults') {
+            //data[20] = parseString(data[20])
+        //} else {
+            data[20] = parseInspection(data[18], client) //inspection
+        //}
         
         data[21] = parseInteger(data[21]); //seq
         data[22] = parseString(data[22]); //photoid
@@ -609,12 +614,12 @@ module.exports = {
     },
 
     footpathFilters: (project, parameter, type, query) => {
-        console.log(type)
         return new Promise((resolve, reject) => {
             // sql = `SELECT code, description FROM assetclass WHERE code IN (SELECT class FROM ${table}
             //     WHERE project = '${project}' GROUP BY class) ORDER BY priority`
             let sql = null
             if (query != null) {
+                if (query.length === 0) query = 'NULL'
                 if (type === "priority") {
                     sql = `SELECT ${parameter} FROM footpaths WHERE project = '${project}' AND grade IN (${query}) GROUP BY ${parameter}`;
                 } else {
